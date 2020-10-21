@@ -10,7 +10,7 @@ on:
       - 'README.md'
       - '.editorconfig'
     branches:
-      - master 
+      - main 
     tags:
       - "*.*.*"
 
