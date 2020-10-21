@@ -70,8 +70,10 @@ namespace Elastic.Transport
 				using (var stream = requestData.MemoryStreamFactory.Create())
 				{
 					if (requestData.HttpCompression)
-						using (var zipStream = new GZipStream(stream, CompressionMode.Compress))
-							data.Write(zipStream, requestData.ConnectionSettings);
+					{
+						using var zipStream = new GZipStream(stream, CompressionMode.Compress);
+						data.Write(zipStream, requestData.ConnectionSettings);
+					}
 					else
 						data.Write(stream, requestData.ConnectionSettings);
 				}
@@ -97,8 +99,10 @@ namespace Elastic.Transport
 				using (var stream = requestData.MemoryStreamFactory.Create())
 				{
 					if (requestData.HttpCompression)
-						using (var zipStream = new GZipStream(stream, CompressionMode.Compress))
-							await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+					{
+						using var zipStream = new GZipStream(stream, CompressionMode.Compress);
+						await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+					}
 					else
 						await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
 				}

@@ -10,7 +10,7 @@ namespace Elastic.Transport.Tests
 		[Fact]
 		public void SerializableMultiJson()
 		{
-			var p = PostData.MultiJson(new A[] {new A()});
+			var p = PostData.MultiJson(new [] {new A()});
 			p.Type.Should().Be(PostType.EnumerableOfObject);
 		}
 

@@ -77,7 +77,7 @@ namespace Elastic.Transport
 			}
 
 			RunAs = local?.RunAs;
-			SkipDeserializationForStatusCodes = global?.SkipDeserializationForStatusCodes;
+			SkipDeserializationForStatusCodes = global.SkipDeserializationForStatusCodes;
 			ThrowExceptions = local?.ThrowExceptions ?? global.ThrowExceptions;
 
 			RequestTimeout = local?.RequestTimeout ?? global.RequestTimeout;

@@ -58,7 +58,8 @@ namespace Elastic.Transport.VirtualizedCluster.Products.Elasticsearch
 
 			var nodeResponse = new
 			{
-				name = name,
+				name,
+				settings,
 				transport_address = $"127.0.0.1:{port + 1000}]",
 				host = Guid.NewGuid().ToString("N").Substring(0, 8),
 				ip = "127.0.0.1",
@@ -75,8 +76,7 @@ namespace Elastic.Transport.VirtualizedCluster.Products.Elasticsearch
 						//publish_address = $"{fqdn}${publishAddress}"
 						publish_address = $"{fqdn}{host}:{port}"
 					}
-					: null,
-				settings = settings
+					: null
 			};
 			if (node.HasFeature(ElasticsearchNodeFeatures.MasterEligible)) nodeResponse.roles.Add("master");
 			if (node.HasFeature(ElasticsearchNodeFeatures.HoldsData)) nodeResponse.roles.Add("data");

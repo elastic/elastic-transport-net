@@ -1,4 +1,6 @@
+#if NETSTANDARD2_1
 using System;
+#endif
 
 namespace Elastic.Transport
 {

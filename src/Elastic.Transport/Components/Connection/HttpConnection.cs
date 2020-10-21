@@ -323,8 +323,11 @@ namespace Elastic.Transport
 			if (!requestData.Uri.UserInfo.IsNullOrEmpty())
 				userInfo = Uri.UnescapeDataString(requestData.Uri.UserInfo);
 			else if (requestData.BasicAuthorizationCredentials != null)
+			{
 				userInfo =
 					$"{requestData.BasicAuthorizationCredentials.Username}:{requestData.BasicAuthorizationCredentials.Password.CreateString()}";
+			}
+
 			if (!userInfo.IsNullOrEmpty())
 			{
 				var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(userInfo!));
@@ -338,8 +341,10 @@ namespace Elastic.Transport
 			var requestMessage = new HttpRequestMessage(method, requestData.Uri);
 
 			if (requestData.Headers != null)
+			{
 				foreach (string key in requestData.Headers)
 					requestMessage.Headers.TryAddWithoutValidation(key, requestData.Headers.GetValues(key));
+			}
 
 			requestMessage.Headers.Connection.Clear();
 			requestMessage.Headers.ConnectionClose = false;
@@ -366,8 +371,10 @@ namespace Elastic.Transport
 			{
 				var stream = requestData.MemoryStreamFactory.Create();
 				if (requestData.HttpCompression)
-					using (var zipStream = new GZipStream(stream, CompressionMode.Compress, true))
-						requestData.PostData.Write(zipStream, requestData.ConnectionSettings);
+				{
+					using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
+					requestData.PostData.Write(zipStream, requestData.ConnectionSettings);
+				}
 				else
 					requestData.PostData.Write(stream, requestData.ConnectionSettings);
 
@@ -398,8 +405,10 @@ namespace Elastic.Transport
 			{
 				var stream = requestData.MemoryStreamFactory.Create();
 				if (requestData.HttpCompression)
-					using (var zipStream = new GZipStream(stream, CompressionMode.Compress, true))
-						await requestData.PostData.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				{
+					using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
+					await requestData.PostData.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				}
 				else
 					await requestData.PostData.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
 

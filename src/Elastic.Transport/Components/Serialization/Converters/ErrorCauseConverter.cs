@@ -41,9 +41,11 @@ namespace Elastic.Transport
 		public override TErrorCause Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
 			if (reader.TokenType != JsonTokenType.StartObject)
+			{
 				return reader.TokenType == JsonTokenType.String
 					? new TErrorCause { Reason = reader.GetString() }
 					: null;
+			}
 
 			var errorCause = new TErrorCause();
 			var additionalProperties = new Dictionary<string, object>();

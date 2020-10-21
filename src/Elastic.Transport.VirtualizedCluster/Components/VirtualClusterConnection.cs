@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Elastic.Transport.Products.Elasticsearch;
 using Elastic.Transport.VirtualizedCluster.Products;
 using Elastic.Transport.VirtualizedCluster.Products.Elasticsearch;
 using Elastic.Transport.VirtualizedCluster.Providers;
@@ -218,8 +217,10 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 				var time = timeout < rule.Takes.Value ? timeout : rule.Takes.Value;
 				_dateTimeProvider.ChangeTime(d => d.Add(time));
 				if (rule.Takes.Value > requestData.RequestTimeout)
+				{
 					throw new TheException(
 						$"Request timed out after {time} : call configured to take {rule.Takes.Value} while requestTimeout was: {timeout}");
+				}
 			}
 
 			return rule.Succeeds
@@ -238,8 +239,10 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 				var time = timeout < rule.Takes.Value ? timeout : rule.Takes.Value;
 				_dateTimeProvider.ChangeTime(d => d.Add(time));
 				if (rule.Takes.Value > requestData.RequestTimeout)
+				{
 					throw new TheException(
 						$"Request timed out after {time} : call configured to take {rule.Takes.Value} while requestTimeout was: {timeout}");
+				}
 			}
 
 			if (rule.Succeeds)

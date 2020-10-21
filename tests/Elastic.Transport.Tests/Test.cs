@@ -1,8 +1,8 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Elastic.Transport.Products;
 using Elastic.Transport.Products.Elasticsearch;
+// ReSharper disable UnusedVariable
+// ReSharper disable NotAccessedField.Local
 
 namespace Elastic.Transport.Tests
 {

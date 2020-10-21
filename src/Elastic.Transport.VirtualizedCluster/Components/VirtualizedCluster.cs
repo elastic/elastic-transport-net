@@ -5,7 +5,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Elastic.Transport.VirtualizedCluster.Products;
 using Elastic.Transport.VirtualizedCluster.Providers;
 
 namespace Elastic.Transport.VirtualizedCluster.Components

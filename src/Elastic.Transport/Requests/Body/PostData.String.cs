@@ -59,10 +59,8 @@ namespace Elastic.Transport
 				var stringBytes = WrittenBytes ?? _literalString.Utf8Bytes();
 				WrittenBytes ??= stringBytes;
 				if (!disableDirectStreaming)
-				{
 					await stream.WriteAsync(stringBytes, 0, stringBytes.Length, cancellationToken)
 						.ConfigureAwait(false);
-				}
 				else
 					buffer = settings.MemoryStreamFactory.Create(stringBytes);
 

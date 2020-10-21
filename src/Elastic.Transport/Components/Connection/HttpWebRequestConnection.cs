@@ -65,8 +65,10 @@ namespace Elastic.Transport
 					using (var stream = request.GetRequestStream())
 					{
 						if (requestData.HttpCompression)
-							using (var zipStream = new GZipStream(stream, CompressionMode.Compress))
-								data.Write(zipStream, requestData.ConnectionSettings);
+						{
+							using var zipStream = new GZipStream(stream, CompressionMode.Compress);
+							data.Write(zipStream, requestData.ConnectionSettings);
+						}
 						else
 							data.Write(stream, requestData.ConnectionSettings);
 					}
@@ -138,8 +140,10 @@ namespace Elastic.Transport
 						using (var stream = await apmGetRequestStreamTask.ConfigureAwait(false))
 						{
 							if (requestData.HttpCompression)
-								using (var zipStream = new GZipStream(stream, CompressionMode.Compress))
-									await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+							{
+								using var zipStream = new GZipStream(stream, CompressionMode.Compress);
+								await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+							}
 							else
 								await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
 						}
@@ -301,7 +305,7 @@ namespace Elastic.Transport
 			}
 
 			if (requestData.DisableAutomaticProxyDetection)
-				request.Proxy = null;
+				request.Proxy = null!;
 		}
 
 		/// <summary> Hook for subclasses to set authentication on <paramref name="request"/></summary>
@@ -325,8 +329,10 @@ namespace Elastic.Transport
 			if (!string.IsNullOrEmpty(requestData.Uri.UserInfo))
 				userInfo = Uri.UnescapeDataString(requestData.Uri.UserInfo);
 			else if (requestData.BasicAuthorizationCredentials != null)
+			{
 				userInfo =
 					$"{requestData.BasicAuthorizationCredentials.Username}:{requestData.BasicAuthorizationCredentials.Password.CreateString()}";
+			}
 
 			if (string.IsNullOrWhiteSpace(userInfo))
 				return;
@@ -361,7 +367,7 @@ namespace Elastic.Transport
 			var waitHandle = result.AsyncWaitHandle;
 			var registeredWaitHandle =
 				ThreadPool.RegisterWaitForSingleObject(waitHandle, TimeoutCallback, request, requestData.RequestTimeout, true);
-			return () => registeredWaitHandle?.Unregister(waitHandle);
+			return () => registeredWaitHandle.Unregister(waitHandle);
 		}
 
 		private static void TimeoutCallback(object state, bool timedOut)

@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
-using Elastic.Transport;
 using FluentAssertions;
 using Xunit;
 
@@ -25,7 +23,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 		*/
 		[Fact] public void AbstractClassNamesEndWithBase()
 		{
-			var exceptions = new Type[]
+			var exceptions = new []
 			{
 				typeof(PostData), typeof(RequestParameters<>)
 			};
@@ -120,7 +118,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 					case UnicodeCategory.SpacingCombiningMark:
 					case UnicodeCategory.DecimalDigitNumber:
 					case UnicodeCategory.ConnectorPunctuation:
-						if (nextMustBeStartChar && (int)character != 95)
+						if (nextMustBeStartChar && character != 95)
 							return false;
 						nextMustBeStartChar = false;
 						break;
@@ -135,7 +133,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 
 		private static bool IsSpecialTypeChar(char ch, ref bool nextMustBeStartChar)
 		{
-			if ((uint)ch <= 62U)
+			if (ch <= 62U)
 			{
 				switch (ch)
 				{
@@ -154,9 +152,9 @@ namespace Elastic.Transport.Tests.CodeStandards
 						goto label_6;
 				}
 			}
-			else if ((int)ch != 91 && (int)ch != 93)
+			else if (ch != 91 && ch != 93)
 			{
-				if ((int)ch == 96)
+				if (ch == 96)
 					return true;
 				goto label_6;
 			}

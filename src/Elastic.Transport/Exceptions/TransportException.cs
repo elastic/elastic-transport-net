@@ -83,13 +83,17 @@ namespace Elastic.Transport
 					if (Request.Uri != null)
 						sb.AppendLine(Request.Uri.ToString());
 					else
+					{
 						sb.Append(Request.PathAndQuery)
 							.AppendLine(" on an empty node, likely a node predicate on ConnectionSettings not matching ANY nodes");
+					}
 				}
 				else if (Response != null)
+				{
 					sb.Append(Response.HttpMethod.GetStringValue())
 						.Append(" on ")
 						.AppendLine(Response.Uri.ToString());
+				}
 				else
 					sb.AppendLine("a request");
 
@@ -102,9 +106,11 @@ namespace Elastic.Transport
 				}
 
 				if (InnerException != null)
+				{
 					sb.Append("# Inner Exception: ")
 						.AppendLine(InnerException.Message)
 						.AppendLine(InnerException.ToString());
+				}
 
 				sb.AppendLine("# Exception:")
 					.AppendLine(ToString());

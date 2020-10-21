@@ -48,7 +48,7 @@ namespace Elastic.Transport
 					throw new Exception(
 						$"{nameof(PostDataMultiJson<T>)} only does not support {nameof(PostType)}.{Type.GetStringValue()}");
 
-				var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
+				var stream = InitWrite(writableStream, settings, out var buffer, out _);
 
 				switch (Type)
 				{
@@ -102,7 +102,7 @@ namespace Elastic.Transport
 					throw new Exception(
 						$"{nameof(PostDataMultiJson<T>)} only does not support {nameof(PostType)}.{Type.GetStringValue()}");
 
-				var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
+				var stream = InitWrite(writableStream, settings, out var buffer, out _);
 
 				switch (Type)
 				{

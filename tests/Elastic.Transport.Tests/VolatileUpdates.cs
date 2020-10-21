@@ -57,7 +57,8 @@ namespace Elastic.Transport.Tests
 			{
 				foreach (var _ in CallGetNext(pool))
 				{
-					if (_random.Next(10) % 2 == 0) pool.Reseed(_update);
+					if (_random.Next(10) % 2 == 0)
+						pool.Reseed(_update);
 				}
 			}
 		});
