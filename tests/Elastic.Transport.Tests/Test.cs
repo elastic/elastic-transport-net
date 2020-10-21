@@ -1,6 +1,7 @@
 using System;
 using Elastic.Transport.Products;
 using Elastic.Transport.Products.Elasticsearch;
+
 // ReSharper disable UnusedVariable
 // ReSharper disable NotAccessedField.Local
 
@@ -10,7 +11,7 @@ namespace Elastic.Transport.Tests
 	{
 		public void Usage()
 		{
-			var pool = new StaticConnectionPool(new [] { new Node(new Uri("http://localhost:9200")) });
+			var pool = new StaticConnectionPool(new[] {new Node(new Uri("http://localhost:9200"))});
 			var connection = new HttpConnection();
 			var serializer = LowLevelRequestResponseSerializer.Instance;
 			var product = ElasticsearchProductRegistration.Default;
@@ -24,6 +25,17 @@ namespace Elastic.Transport.Tests
 		public void MinimalUsage()
 		{
 			var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
+			var transport = new Transport(settings);
+
+			var response = transport.Get<StringResponse>("/");
+
+			var headResponse = transport.Head("/");
+		}
+
+		public void MinimalElasticsearch()
+		{
+			var uri = new Uri("http://localhost:9200");
+			var settings = new TransportConfiguration(uri, ElasticsearchProductRegistration.Default);
 			var transport = new Transport(settings);
 
 			var response = transport.Get<StringResponse>("/");
@@ -50,7 +62,9 @@ namespace Elastic.Transport.Tests
 
 		public class MyClientRequestPipeline : RequestPipeline<MyClientConfiguration>
 		{
-			public MyClientRequestPipeline(MyClientConfiguration configurationValues, IDateTimeProvider dateTimeProvider, IMemoryStreamFactory memoryStreamFactory, IRequestParameters requestParameters)
+			public MyClientRequestPipeline(MyClientConfiguration configurationValues,
+				IDateTimeProvider dateTimeProvider, IMemoryStreamFactory memoryStreamFactory,
+				IRequestParameters requestParameters)
 				: base(configurationValues, dateTimeProvider, memoryStreamFactory, requestParameters)
 			{
 			}
@@ -61,11 +75,6 @@ namespace Elastic.Transport.Tests
 			var clientConfiguration = new MyClientConfiguration()
 				.NewSettings("some-value");
 			var transport = new Transport<MyClientConfiguration>(clientConfiguration);
-
-
-
-
 		}
-
 	}
 }
