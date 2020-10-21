@@ -39,10 +39,10 @@ namespace Elastic.Transport.Products
 			statusCode >= 200 && statusCode < 300;
 
 		/// <inheritdoc cref="IProductRegistration.TryGetServerErrorReason{TResponse}"/>>
-		public bool TryGetServerErrorReason<TResponse>(TResponse response, out string o)
+		public bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason)
 			where TResponse : ITransportResponse
 		{
-			o = null;
+			reason = null;
 			return false;
 		}
 

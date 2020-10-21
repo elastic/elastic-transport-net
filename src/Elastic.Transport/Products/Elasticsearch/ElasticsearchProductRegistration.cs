@@ -50,17 +50,17 @@ namespace Elastic.Transport.Products.Elasticsearch
 			  !node.HasFeature(ElasticsearchNodeFeatures.HoldsData));
 
 		/// <inheritdoc cref="IProductRegistration.HttpStatusCodeClassifier"/>
-		public bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
+		public virtual bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
 			statusCode >= 200 && statusCode < 300;
 
 		/// <inheritdoc cref="IProductRegistration.TryGetServerErrorReason{TResponse}"/>>
-		public bool TryGetServerErrorReason<TResponse>(TResponse response, out string o)
+		public virtual bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason)
 			where TResponse : ITransportResponse
 		{
-			o = null;
-			if (response is StringResponse s && s.TryGetElasticsearchServerError(out var e)) o = e.Error?.ToString();
-			else if (response is BytesResponse b && b.TryGetElasticsearchServerError(out e)) o = e.Error?.ToString();
-			else if (response.TryGetElasticsearchServerError(out e)) o = e.Error?.ToString();
+			reason = null;
+			if (response is StringResponse s && s.TryGetElasticsearchServerError(out var e)) reason = e.Error?.ToString();
+			else if (response is BytesResponse b && b.TryGetElasticsearchServerError(out e)) reason = e.Error?.ToString();
+			else if (response.TryGetElasticsearchServerError(out e)) reason = e.Error?.ToString();
 			return e != null;
 		}
 

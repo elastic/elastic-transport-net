@@ -93,6 +93,6 @@ namespace Elastic.Transport.Products
 		bool HttpStatusCodeClassifier(HttpMethod method, int statusCode);
 
 		/// <summary> Try to obtain a server error from the response, this is used for debugging and exception messages </summary>
-		bool TryGetServerErrorReason<TResponse>(TResponse response, out string o) where TResponse : ITransportResponse;
+		bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason) where TResponse : ITransportResponse;
 	}
 }

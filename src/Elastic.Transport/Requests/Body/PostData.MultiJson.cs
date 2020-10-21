@@ -17,7 +17,7 @@ namespace Elastic.Transport
 		/// Create a <see cref="PostData"/> instance that will write the <paramref name="listOfString"/> as multiline/ndjson.
 		/// </summary>
 		public static PostData MultiJson(IEnumerable<string> listOfString) =>
-			new PostDataMultiJson<object>(listOfString);
+			new PostDataMultiJson<string>(listOfString);
 
 		/// <summary>
 		/// Create a <see cref="PostData"/> instance that will serialize the <paramref name="listOfSerializables"/> as multiline/ndjson.
@@ -68,7 +68,7 @@ namespace Elastic.Transport
 							stream.Write(NewLineByteArray, 0, 1);
 						} while (enumerator.MoveNext());
 
-						return;
+						break;
 					}
 					case PostType.EnumerableOfObject:
 					{

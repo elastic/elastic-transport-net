@@ -2,16 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Transport.Products;
-using Elastic.Transport.Products.Elasticsearch;
-using Elastic.Transport.VirtualizedCluster.Products;
-
 namespace Elastic.Transport.VirtualizedCluster.Components
 {
 	/// <summary>
 	/// An implementation that exposes all the components so that <see cref="VirtualCluster"/> can reference them directly.
 	/// </summary>
-	internal class ExposingPipelineFactory : IRequestPipelineFactory
+	public class ExposingPipelineFactory : IRequestPipelineFactory
 	{
 		public ExposingPipelineFactory(ITransportConfigurationValues connectionSettings, IDateTimeProvider dateTimeProvider)
 		{
