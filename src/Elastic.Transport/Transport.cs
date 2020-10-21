@@ -17,8 +17,33 @@ using System.Net;
 namespace Elastic.Transport
 {
 	/// <inheritdoc cref="ITransport{TConnectionSettings}"/>
-	public class Transport<TSettings> : ITransport<TSettings>
-		where TSettings : class, ITransportConfigurationValues
+	public class Transport : Transport<TransportConfiguration>
+	{
+		/// <summary>
+		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different nodes
+		/// </summary>
+		/// <param name="configurationValues">The connection settings to use for this transport</param>
+		public Transport(TransportConfiguration configurationValues) : base(configurationValues)
+		{
+		}
+
+		/// <summary>
+		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different nodes
+		/// </summary>
+		/// <param name="configurationValues">The connection settings to use for this transport</param>
+		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
+		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
+		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
+		public Transport(TransportConfiguration configurationValues, IRequestPipelineFactory<TransportConfiguration> pipelineProvider = null, IDateTimeProvider dateTimeProvider = null, IMemoryStreamFactory memoryStreamFactory = null)
+			: base(configurationValues, pipelineProvider, dateTimeProvider, memoryStreamFactory)
+		{
+		}
+	}
+
+
+	/// <inheritdoc cref="ITransport{TConfiguration}"/>
+	public class Transport<TConfiguration> : ITransport<TConfiguration>
+		where TConfiguration : class, ITransportConfigurationValues
 	{
 		private readonly IProductRegistration _productRegistration;
 
@@ -26,8 +51,7 @@ namespace Elastic.Transport
 		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
-		public Transport(TSettings configurationValues)
-			: this(configurationValues, null, null, null) { }
+		public Transport(TConfiguration configurationValues) : this(configurationValues, null, null, null) { }
 
 		/// <summary>
 		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different nodes
@@ -37,10 +61,10 @@ namespace Elastic.Transport
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
 		public Transport(
-			TSettings configurationValues,
-			IRequestPipelineFactory pipelineProvider,
-			IDateTimeProvider dateTimeProvider,
-			IMemoryStreamFactory memoryStreamFactory
+			TConfiguration configurationValues,
+			IRequestPipelineFactory<TConfiguration> pipelineProvider = null,
+			IDateTimeProvider dateTimeProvider = null,
+			IMemoryStreamFactory memoryStreamFactory = null
 		)
 		{
 			configurationValues.ThrowIfNull(nameof(configurationValues));
@@ -50,19 +74,19 @@ namespace Elastic.Transport
 
 			_productRegistration = configurationValues.ProductRegistration;
 			Settings = configurationValues;
-			PipelineProvider = pipelineProvider ?? new RequestPipelineFactory();
+			PipelineProvider = pipelineProvider ?? new RequestPipelineFactory<TConfiguration>();
 			DateTimeProvider = dateTimeProvider ?? Elastic.Transport.DateTimeProvider.Default;
 			MemoryStreamFactory = memoryStreamFactory ?? configurationValues.MemoryStreamFactory;
 		}
 
 		/// <inheritdoc cref="ITransport{TConnectionSettings}.Settings"/>
-		public TSettings Settings { get; }
+		public TConfiguration Settings { get; }
 
 		private IDateTimeProvider DateTimeProvider { get; }
 		private IMemoryStreamFactory MemoryStreamFactory { get; }
-		private IRequestPipelineFactory PipelineProvider { get; }
+		private IRequestPipelineFactory<TConfiguration> PipelineProvider { get; }
 
-		/// <inheritdoc cref="ITransport{TConnectionSettings}.Request{TResponse}"/>
+		/// <inheritdoc cref="ITransport.Request{TResponse}"/>
 		public TResponse Request<TResponse>(HttpMethod method, string path, PostData data = null, IRequestParameters requestParameters = null)
 			where TResponse : class, ITransportResponse, new()
 		{
@@ -117,7 +141,7 @@ namespace Elastic.Transport
 			}
 		}
 
-		/// <inheritdoc cref="ITransport{TConnectionSettings}.RequestAsync{TResponse}"/>
+		/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>
 		public async Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path, CancellationToken cancellationToken,
 			PostData data = null, IRequestParameters requestParameters = null
 		)

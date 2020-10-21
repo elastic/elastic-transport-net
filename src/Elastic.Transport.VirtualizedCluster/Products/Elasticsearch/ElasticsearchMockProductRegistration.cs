@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.Collections.Generic;
 using Elastic.Transport.Products;
 using Elastic.Transport.Products.Elasticsearch;
@@ -20,5 +21,12 @@ namespace Elastic.Transport.VirtualizedCluster.Products.Elasticsearch
 		/// <inheritdoc cref="IMockProductRegistration.CreateSniffResponseBytes"/>>
 		public byte[] CreateSniffResponseBytes(IReadOnlyList<Node> nodes, string stackVersion, string publishAddressOverride, bool returnFullyQualifiedDomainNames) =>
 			ElasticsearchSniffResponseFactory.Create(nodes, stackVersion, publishAddressOverride, returnFullyQualifiedDomainNames);
+
+		public bool IsSniffRequest(RequestData requestData) =>
+			requestData.PathAndQuery.StartsWith(ElasticsearchProductRegistration.SniffPath, StringComparison.Ordinal);
+
+		public bool IsPingRequest(RequestData requestData) =>
+			requestData.Method == HttpMethod.HEAD &&
+			(requestData.PathAndQuery == string.Empty || requestData.PathAndQuery.StartsWith("?"));
 	}
 }

@@ -6,9 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "scripts", "build\scripts\scripts.fsproj", "{4779DD6F-AE49-4A80-9F67-D9F2DB05E557}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{7610B796-BB3E-4CB2-8296-79BBFF6D23FC}"
-	ProjectSection(SolutionItems) = preProject
-		Directory.Build.props = Directory.Build.props
-	EndProjectSection
+ProjectSection(SolutionItems) = preProject
+	src\Directory.Build.props = src\Directory.Build.props
+EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{3582B07D-C2B0-49CC-B676-EAF806EB010E}"
 EndProject
@@ -22,9 +22,7 @@ ProjectSection(SolutionItems) = preProject
 	README.md = README.md
 	build.bat = build.bat
 	build.sh = build.sh
-	nuget.config = nuget.config
 	Directory.Build.props = Directory.Build.props
-	.ci\Jenkinsfile = .ci\Jenkinsfile
 	.github\workflows\ci.yml = .github\workflows\ci.yml
 EndProjectSection
 EndProject

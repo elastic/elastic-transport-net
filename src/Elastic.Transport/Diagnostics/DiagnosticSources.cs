@@ -81,7 +81,7 @@ namespace Elastic.Transport.Diagnostics
 		public class RequestPipelineDiagnosticKeys : IDiagnosticsKeys
 		{
 			/// <inheritdoc cref="IDiagnosticsKeys.SourceName"/>
-			public string SourceName { get; } = typeof(RequestPipeline).FullName;
+			public string SourceName { get; } = "RequestPipeline";
 
 			/// <summary>
 			/// Start and stop event around <see cref="IRequestPipeline.CallProductEndpoint{TResponse}"/> invocations

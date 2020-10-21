@@ -26,5 +26,13 @@ namespace Elastic.Transport.VirtualizedCluster.Products
 		/// <param name="publishAddressOverride">Return this hostname instead of some IP</param>
 		/// <param name="returnFullyQualifiedDomainNames">If the sniff can return internal + external information return both</param>
 		byte[] CreateSniffResponseBytes(IReadOnlyList<Node> nodes, string stackVersion, string publishAddressOverride, bool returnFullyQualifiedDomainNames);
+
+		/// <summary>
+		/// see <see cref="VirtualClusterConnection.Request{TResponse}"/> uses this to determine if the current request is a sniff request and should follow
+		/// the sniffing rules
+		/// </summary>
+		bool IsSniffRequest(RequestData requestData);
+
+		bool IsPingRequest(RequestData requestData);
 	}
 }

@@ -3,7 +3,7 @@ module Paths
 open System
 open System.IO
 
-let ToolName = "ecs-dotnet"
+let ToolName = "elastic-transport-net"
 let Repository = sprintf "elastic/%s" ToolName
 let MainTFM = "netstandard2.0"
 let SignKey = "069ca2728db333c1"

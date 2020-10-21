@@ -31,7 +31,8 @@ namespace Elastic.Transport.Products.Elasticsearch
 		/// <inheritdoc cref="IProductRegistration.SupportsSniff"/>
 		public bool SupportsSniff { get; } = true;
 
-		private static string SniffPath => "_nodes/http,settings";
+		/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
+		public const string SniffPath = "_nodes/http,settings";
 
 		/// <summary>
 		/// Implements an ordering that prefers master eligible nodes when attempting to sniff the

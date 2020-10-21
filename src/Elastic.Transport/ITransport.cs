@@ -7,18 +7,9 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport
 {
-	/// <summary>
-	/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different nodes
-	/// </summary>
-	public interface ITransport<out TSettings>
-		where TSettings : ITransportConfigurationValues
-
+	/// <summary> Represents a transport you can call requests, it is recommended to implement <see cref="ITransport{TSettings}"/></summary>
+	public interface ITransport
 	{
-		/// <summary>
-		/// The <see cref="ITransportConfigurationValues"/> in use by this transport instance
-		/// </summary>
-		TSettings Settings { get; }
-
 		/// <summary>
 		/// Perform a request into the products cluster using <see cref="IRequestPipeline"/>'s workflow.
 		/// </summary>
@@ -30,5 +21,20 @@ namespace Elastic.Transport
 			HttpMethod method, string path, CancellationToken ctx, PostData data = null, IRequestParameters requestParameters = null
 		)
 			where TResponse : class, ITransportResponse, new();
+
+	}
+
+	/// <summary>
+	/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different nodes
+	/// </summary>
+	public interface ITransport<out TConfiguration> : ITransport
+		where TConfiguration : ITransportConfigurationValues
+
+	{
+		/// <summary>
+		/// The <see cref="ITransportConfigurationValues"/> in use by this transport instance
+		/// </summary>
+		TConfiguration Settings { get; }
+
 	}
 }

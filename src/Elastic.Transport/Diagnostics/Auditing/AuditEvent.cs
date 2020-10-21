@@ -6,7 +6,7 @@ namespace Elastic.Transport.Diagnostics.Auditing
 {
 	/// <summary>
 	/// Enumeration of different auditable events that can occur in the execution of
-	/// <see cref="ITransport{TConnectionSettings}.RequestAsync{TResponse}"/> as modeled by
+	/// <see cref="ITransport.RequestAsync{TResponse}"/> as modeled by
 	/// <see cref="IRequestPipeline"/>.
 	/// </summary>
 	public enum AuditEvent
@@ -52,14 +52,14 @@ namespace Elastic.Transport.Diagnostics.Auditing
 		HealthyResponse,
 
 		/// <summary>
-		/// The call into <see cref="ITransport{TConnectionSettings}.Request{TResponse}"/> took too long.
+		/// The call into <see cref="ITransport.Request{TResponse}"/> took too long.
 		/// This could mean the call was retried but retrying was to slow and cumulative this exceeded
 		/// <see cref="ITransportConfigurationValues.MaxRetryTimeout"/>
 		/// </summary>
 		MaxTimeoutReached,
 
 		/// <summary>
-		/// The call into <see cref="ITransport{TConnectionSettings}.Request{TResponse}"/> was not able to complete
+		/// The call into <see cref="ITransport.Request{TResponse}"/> was not able to complete
 		/// successfully and exceeded the available retries as configured on
 		/// <see cref="ITransportConfigurationValues.MaxRetries"/>.
 		/// </summary>

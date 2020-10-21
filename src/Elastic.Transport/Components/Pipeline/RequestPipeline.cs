@@ -17,27 +17,32 @@ using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
 
 namespace Elastic.Transport
 {
-	/// <inheritdoc cref="IRequestPipeline"/>
-	public class RequestPipeline : IRequestPipeline
+	internal static class RequestPipelineStatics
 	{
-		private static readonly string NoNodesAttemptedMessage =
+		public static readonly string NoNodesAttemptedMessage =
 			"No nodes were attempted, this can happen when a node predicate does not match any nodes";
 
+		public static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.RequestPipeline.SourceName);
+	}
+
+
+	/// <inheritdoc cref="IRequestPipeline"/>
+	public class RequestPipeline<TConfiguration> : IRequestPipeline
+		where TConfiguration : class, ITransportConfigurationValues
+	{
 		private readonly IConnection _connection;
 		private readonly IConnectionPool _connectionPool;
 		private readonly IDateTimeProvider _dateTimeProvider;
 		private readonly IMemoryStreamFactory _memoryStreamFactory;
 		private readonly IProductRegistration _productRegistration;
-		private readonly ITransportConfigurationValues _settings;
+		private readonly TConfiguration _settings;
 		private readonly Func<Node, bool> _nodePredicate;
 
 		private RequestConfiguration PingRequestConfiguration { get; }
 
-		private static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.RequestPipeline.SourceName);
-
 		/// <inheritdoc cref="IRequestPipeline"/>
 		public RequestPipeline(
-			ITransportConfigurationValues configurationValues,
+			TConfiguration configurationValues,
 			IDateTimeProvider dateTimeProvider,
 			IMemoryStreamFactory memoryStreamFactory,
 			IRequestParameters requestParameters
@@ -105,8 +110,6 @@ namespace Elastic.Transport
 			.ToList()
 			.OrderBy(n => _productRegistration.SniffOrder(n));
 
-		public static string SniffPath => "_nodes/http,settings";
-
 		public bool SniffsOnConnectionFailure =>
 			!RequestDisabledSniff
 			&& _connectionPool.SupportsReseeding && _settings.SniffsOnConnectionFault;
@@ -137,7 +140,7 @@ namespace Elastic.Transport
 		private TimeSpan PingTimeout =>
 			RequestConfiguration?.PingTimeout
 			?? _settings.PingTimeout
-			?? (_connectionPool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSSL : TransportConfiguration.DefaultPingTimeout);
+			?? (_connectionPool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
 
 		private IRequestConfiguration RequestConfiguration { get; }
 
@@ -169,7 +172,7 @@ namespace Elastic.Transport
 			where TResponse : class, ITransportResponse, new()
 		{
 			using (var audit = Audit(HealthyResponse, requestData.Node))
-			using (var d = DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
 			{
 				audit.Path = requestData.PathAndQuery;
 				try
@@ -194,7 +197,7 @@ namespace Elastic.Transport
 			where TResponse : class, ITransportResponse, new()
 		{
 			using (var audit = Audit(HealthyResponse, requestData.Node))
-			using (var d = DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
 			{
 				audit.Path = requestData.PathAndQuery;
 				try
@@ -391,7 +394,7 @@ namespace Elastic.Transport
 
 			var pingData = _productRegistration.CreatePingRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
 			using (var audit = Audit(PingSuccess, node))
-			using (var d = DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping, pingData))
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping, pingData))
 			{
 				audit.Path = pingData.PathAndQuery;
 				try
@@ -420,7 +423,7 @@ namespace Elastic.Transport
 
 			var pingData = _productRegistration.CreatePingRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
 			using (var audit = Audit(PingSuccess, node))
-			using (var d = DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping, pingData))
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping, pingData))
 			{
 				audit.Path = pingData.PathAndQuery;
 				try
@@ -451,8 +454,8 @@ namespace Elastic.Transport
 			{
 				var requestData = _productRegistration.CreateSniffRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
 				using (var audit = Audit(SniffSuccess, node))
-				using (var d = DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff, requestData))
-				using(DiagnosticSource.Diagnose(DiagnosticSources.RequestPipeline.Sniff, requestData))
+				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff, requestData))
+				using(RequestPipelineStatics.DiagnosticSource.Diagnose(DiagnosticSources.RequestPipeline.Sniff, requestData))
 				{
 					try
 					{
@@ -490,7 +493,7 @@ namespace Elastic.Transport
 			{
 				var requestData = _productRegistration.CreateSniffRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
 				using (var audit = Audit(SniffSuccess, node))
-				using (var d = DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff, requestData))
+				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff, requestData))
 				{
 					try
 					{
@@ -559,7 +562,7 @@ namespace Elastic.Transport
 
 		public void ThrowNoNodesAttempted(RequestData requestData, List<PipelineException> seenExceptions)
 		{
-			var clientException = new TransportException(PipelineFailure.NoNodesAttempted, NoNodesAttemptedMessage, (Exception)null);
+			var clientException = new TransportException(PipelineFailure.NoNodesAttempted, RequestPipelineStatics.NoNodesAttemptedMessage, (Exception)null);
 			using (Audit(NoNodesAttempted))
 				throw new UnexpectedTransportException(clientException, seenExceptions)
 				{

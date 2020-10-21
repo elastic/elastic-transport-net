@@ -12,7 +12,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 {
 	public class VirtualizedCluster
 	{
-		private readonly ExposingPipelineFactory _exposingRequestPipeline;
+		private readonly ExposingPipelineFactory<TransportConfiguration> _exposingRequestPipeline;
 		private readonly TestableDateTimeProvider _dateTimeProvider;
 		private readonly TransportConfiguration _settings;
 
@@ -25,7 +25,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 		{
 			_dateTimeProvider = dateTimeProvider;
 			_settings = settings;
-			_exposingRequestPipeline = new ExposingPipelineFactory(settings, _dateTimeProvider);
+			_exposingRequestPipeline = new ExposingPipelineFactory<TransportConfiguration>(settings, _dateTimeProvider);
 
 			_syncCall = (t, r) => t.Request<VirtualResponse>(
 				HttpMethod.GET, "/",

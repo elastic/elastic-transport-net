@@ -12,7 +12,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// Allows you to inject per <see cref="ITransport{TConnectionSettings}.Request{TResponse}"/> overrides to the current <see cref="ITransportConfigurationValues"/>.
+	/// Allows you to inject per <see cref="ITransport.Request{TResponse}"/> overrides to the current <see cref="ITransportConfigurationValues"/>.
 	/// </summary>
 	public interface IRequestConfiguration
 	{

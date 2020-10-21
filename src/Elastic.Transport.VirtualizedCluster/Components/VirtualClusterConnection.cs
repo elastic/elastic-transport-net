@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Elastic.Transport.Products.Elasticsearch;
 using Elastic.Transport.VirtualizedCluster.Products;
 using Elastic.Transport.VirtualizedCluster.Products.Elasticsearch;
 using Elastic.Transport.VirtualizedCluster.Providers;
@@ -105,12 +106,9 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 			}
 		}
 
-		private static bool IsSniffRequest(RequestData requestData) =>
-			requestData.PathAndQuery.StartsWith(RequestPipeline.SniffPath, StringComparison.Ordinal);
+		private bool IsSniffRequest(RequestData requestData) => _productRegistration.IsSniffRequest(requestData);
 
-		private static bool IsPingRequest(RequestData requestData) =>
-			requestData.Method == HttpMethod.HEAD &&
-			(requestData.PathAndQuery == string.Empty || requestData.PathAndQuery.StartsWith("?"));
+		private bool IsPingRequest(RequestData requestData) => _productRegistration.IsPingRequest(requestData);
 
 		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}"/>>
 		public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) =>

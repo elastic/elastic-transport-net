@@ -79,7 +79,7 @@ namespace Elastic.Transport
 		/// The default ping timeout when the connection is over HTTPS. Defaults to
 		/// 5 seconds
 		/// </summary>
-		public static readonly TimeSpan DefaultPingTimeoutOnSSL = TimeSpan.FromSeconds(5);
+		public static readonly TimeSpan DefaultPingTimeoutOnSsl = TimeSpan.FromSeconds(5);
 
 		/// <summary>
 		/// The default timeout before the client aborts a request to Elasticsearch.
@@ -109,66 +109,35 @@ namespace Elastic.Transport
 		/// Creates a new instance of <see cref="TransportConfiguration"/>
 		/// </summary>
 		/// <param name="uri">The root of the Elastic stack product node we want to connect to. Defaults to http://localhost:9200</param>
+		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration"/></param>
 		[SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-		public TransportConfiguration(Uri uri = null)
-			: this(new SingleNodeConnectionPool(uri ?? new Uri("http://localhost:9200"))) { }
+		public TransportConfiguration(Uri uri = null, IProductRegistration productRegistration = null)
+			: this(new SingleNodeConnectionPool(uri ?? new Uri("http://localhost:9200")), productRegistration: productRegistration) { }
 
 		/// <summary>
 		/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
 		/// <para><see cref="CloudConnectionPool"/> documentation for more information on how to obtain your Cloud Id</para>
 		/// </summary>
-		public TransportConfiguration(string cloudId, BasicAuthenticationCredentials credentials) : this(new CloudConnectionPool(cloudId, credentials)) { }
+		public TransportConfiguration(string cloudId, BasicAuthenticationCredentials credentials, IProductRegistration productRegistration = null)
+			: this(new CloudConnectionPool(cloudId, credentials), productRegistration: productRegistration) { }
 
 		/// <summary>
 		/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
 		/// <para><see cref="CloudConnectionPool"/> documentation for more information on how to obtain your Cloud Id</para>
 		/// </summary>
-		public TransportConfiguration(string cloudId, ApiKeyAuthenticationCredentials credentials) : this(new CloudConnectionPool(cloudId, credentials)) { }
+		public TransportConfiguration(string cloudId, ApiKeyAuthenticationCredentials credentials, IProductRegistration productRegistration = null)
+			: this(new CloudConnectionPool(cloudId, credentials), productRegistration: productRegistration) { }
 
-		/// <summary>
-		/// Creates a new instance of <see cref="TransportConfiguration"/>
-		/// </summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool"/></param>
-		// ReSharper disable once MemberCanBePrivate.Global
-		public TransportConfiguration(IConnectionPool connectionPool)
-			// ReSharper disable once IntroduceOptionalParameters.Global
-			: this(connectionPool, null, null) { }
-
-		/// <summary>
-		/// <inheritdoc cref="TransportConfiguration"/>
-		/// </summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool"/></param>
-		/// <param name="connection"><inheritdoc cref="IConnection"/></param>
-		public TransportConfiguration(IConnectionPool connectionPool, IConnection connection)
-			// ReSharper disable once IntroduceOptionalParameters.Global
-			: this(connectionPool, connection, null) { }
-
-		/// <summary>
-		/// <inheritdoc cref="TransportConfiguration"/>
-		/// </summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool"/></param>
-		/// <param name="serializer"><inheritdoc cref="ITransportSerializer"/></param>
-		public TransportConfiguration(IConnectionPool connectionPool, ITransportSerializer serializer)
-			: this(connectionPool, null, serializer) { }
-
-		/// <summary>
-		/// <inheritdoc cref="TransportConfiguration"/>
-		/// </summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool"/></param>
-		/// <param name="connection"><inheritdoc cref="IConnection"/></param>
-		/// <param name="serializer"><inheritdoc cref="ITransportSerializer"/></param>
-		// ReSharper disable once MemberCanBePrivate.Global
-		public TransportConfiguration(IConnectionPool connectionPool, IConnection connection, ITransportSerializer serializer)
-			: this(connectionPool, connection, serializer, null) { }
-
-		/// <summary>
-		/// <inheritdoc cref="TransportConfiguration"/>
-		/// </summary>
+		/// <summary> <inheritdoc cref="TransportConfiguration"/></summary>
 		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool"/></param>
 		/// <param name="connection"><inheritdoc cref="IConnection"/></param>
 		/// <param name="serializer"><inheritdoc cref="ITransportSerializer"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration"/></param>
-		public TransportConfiguration(IConnectionPool connectionPool, IConnection connection, ITransportSerializer serializer, IProductRegistration productRegistration)
+		public TransportConfiguration(
+			IConnectionPool connectionPool,
+			IConnection connection = null,
+			ITransportSerializer serializer = null,
+			IProductRegistration productRegistration = null)
 			: base(connectionPool, connection, serializer, productRegistration) { }
 
 	}

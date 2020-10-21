@@ -7,16 +7,16 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 	/// <summary>
 	/// An implementation that exposes all the components so that <see cref="VirtualCluster"/> can reference them directly.
 	/// </summary>
-	public class ExposingPipelineFactory : IRequestPipelineFactory
+	public class ExposingPipelineFactory<TConfiguration> : IRequestPipelineFactory<TConfiguration> where TConfiguration : class, ITransportConfigurationValues
 	{
-		public ExposingPipelineFactory(ITransportConfigurationValues connectionSettings, IDateTimeProvider dateTimeProvider)
+		public ExposingPipelineFactory(TConfiguration connectionSettings, IDateTimeProvider dateTimeProvider)
 		{
 			DateTimeProvider = dateTimeProvider;
 			MemoryStreamFactory = TransportConfiguration.DefaultMemoryStreamFactory;
 
 			Settings = connectionSettings;
 			Pipeline = Create(Settings, DateTimeProvider, MemoryStreamFactory, new RequestParameters(HttpMethod.GET, supportsBody: false));
-			Transport = new Transport<ITransportConfigurationValues>(Settings, this, DateTimeProvider, MemoryStreamFactory);
+			Transport = new Transport<TConfiguration>(Settings, this, DateTimeProvider, MemoryStreamFactory);
 		}
 
 		// ReSharper disable once MemberCanBePrivate.Global
@@ -24,13 +24,13 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 
 		private IDateTimeProvider DateTimeProvider { get; }
 		private IMemoryStreamFactory MemoryStreamFactory { get; }
-		private ITransportConfigurationValues Settings { get; }
+		private TConfiguration Settings { get; }
 		public ITransport<ITransportConfigurationValues> Transport { get; }
 
 
-		public IRequestPipeline Create(ITransportConfigurationValues configurationValues, IDateTimeProvider dateTimeProvider,
+		public IRequestPipeline Create(TConfiguration configurationValues, IDateTimeProvider dateTimeProvider,
 			IMemoryStreamFactory memoryStreamFactory, IRequestParameters requestParameters
 		) =>
-			new RequestPipeline(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters ?? new RequestParameters(HttpMethod.GET, supportsBody: false));
+			new RequestPipeline<TConfiguration>(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters ?? new RequestParameters(HttpMethod.GET, supportsBody: false));
 	}
 }

@@ -7,25 +7,28 @@ using Elastic.Transport.Products;
 namespace Elastic.Transport
 {
 	/// <summary> A factory that creates instances of <see cref="IRequestPipeline"/>, this factory exists so that transport can be tested. </summary>
-	public interface IRequestPipelineFactory
+	public interface IRequestPipelineFactory<TConfiguration>
+		where TConfiguration : class, ITransportConfigurationValues
 	{
 		/// <summary> Create an instance of <see cref="IRequestPipeline"/> </summary>
-		IRequestPipeline Create(ITransportConfigurationValues configurationValues, IDateTimeProvider dateTimeProvider,
+		IRequestPipeline Create(TConfiguration configuration, IDateTimeProvider dateTimeProvider,
 			IMemoryStreamFactory memoryStreamFactory, IRequestParameters requestParameters
 		);
 	}
 
 	/// <summary>
-	/// The default implementation for <see cref="IRequestPipeline"/> that returns <see cref="RequestPipeline"/>
+	/// The default implementation for <see cref="IRequestPipeline"/> that returns <see cref="RequestPipeline{TConfiguration}"/>
 	/// </summary>
-	public class RequestPipelineFactory : IRequestPipelineFactory
+	public class RequestPipelineFactory<TConfiguration> : IRequestPipelineFactory<TConfiguration>
+		where TConfiguration : class, ITransportConfigurationValues
 	{
 		/// <summary>
-		/// returns instances of <see cref="RequestPipeline"/>
+		/// returns instances of <see cref="RequestPipeline{TConfiguration}"/>
 		/// </summary>
-		public IRequestPipeline Create(ITransportConfigurationValues configurationValues, IDateTimeProvider dateTimeProvider,
+		public IRequestPipeline Create(TConfiguration configurationValues, IDateTimeProvider dateTimeProvider,
 			IMemoryStreamFactory memoryStreamFactory, IRequestParameters requestParameters
 		) =>
-			new RequestPipeline(configurationValues, dateTimeProvider, memoryStreamFactory, requestParameters);
+			new RequestPipeline<TConfiguration>(configurationValues, dateTimeProvider, memoryStreamFactory, requestParameters);
+
 	}
 }

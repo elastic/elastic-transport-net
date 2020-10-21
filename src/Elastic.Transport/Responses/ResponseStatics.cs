@@ -14,7 +14,7 @@ namespace Elastic.Transport
 	//TODO Put in diagnostics folder/namespace
 	/// <summary>
 	/// Creates human readable debug strings based on <see cref="IApiCallDetails"/> so that
-	/// its clear what exactly transpired during a call into <see cref="ITransport{TConnectionSettings}.Request{TResponse}"/>
+	/// its clear what exactly transpired during a call into <see cref="ITransport.Request{TResponse}"/>
 	/// </summary>
 	public static class ResponseStatics
 	{
