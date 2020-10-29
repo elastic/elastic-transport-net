@@ -94,8 +94,7 @@ namespace Elastic.Transport
 			ProxyUsername = global.ProxyUsername;
 			ProxyPassword = global.ProxyPassword;
 			DisableAutomaticProxyDetection = global.DisableAutomaticProxyDetection;
-			BasicAuthorizationCredentials = local?.BasicAuthenticationCredentials ?? global.BasicAuthenticationCredentials;
-			ApiKeyAuthenticationCredentials = local?.ApiKeyAuthenticationCredentials ?? global.ApiKeyAuthenticationCredentials;
+			AuthenticationHeader = local?.AuthenticationHeader ?? global.AuthenticationHeader;
 			AllowedStatusCodes = local?.AllowedStatusCodes ?? EmptyReadOnly<int>.Collection;
 			ClientCertificates = local?.ClientCertificates ?? global.ClientCertificates;
 			UserAgent = global.UserAgent;
@@ -109,9 +108,7 @@ namespace Elastic.Transport
 		public string Accept { get; }
 		public IReadOnlyCollection<int> AllowedStatusCodes { get; }
 
-		public ApiKeyAuthenticationCredentials ApiKeyAuthenticationCredentials { get; }
-
-		public BasicAuthenticationCredentials BasicAuthorizationCredentials { get; }
+		public IAuthenticationHeader AuthenticationHeader { get; }
 
 		public X509CertificateCollection ClientCertificates { get; }
 		public ITransportConfigurationValues ConnectionSettings { get; }
