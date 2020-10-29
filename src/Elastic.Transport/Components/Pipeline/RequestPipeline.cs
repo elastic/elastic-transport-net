@@ -62,8 +62,7 @@ namespace Elastic.Transport
 			{
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
-				BasicAuthenticationCredentials = _settings.BasicAuthenticationCredentials,
-				ApiKeyAuthenticationCredentials = _settings.ApiKeyAuthenticationCredentials,
+				AuthenticationHeader = _settings.AuthenticationHeader,
 				EnableHttpPipelining = RequestConfiguration?.EnableHttpPipelining ?? _settings.HttpPipeliningEnabled,
 				ForceNode = RequestConfiguration?.ForceNode
 			};

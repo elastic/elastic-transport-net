@@ -19,21 +19,8 @@ namespace Elastic.Transport
 	/// </summary>
 	public interface ITransportConfigurationValues : IDisposable
 	{
-		/// <summary>
-		/// Basic access authorization credentials to specify with all requests.
-		/// </summary>
-		/// <remarks>
-		/// Cannot be used in conjuction with <see cref="ApiKeyAuthenticationCredentials"/>
-		/// </remarks>
-		BasicAuthenticationCredentials BasicAuthenticationCredentials { get; }
-
-		/// <summary>
-		/// Api Key authorization credentials to specify with all requests.
-		/// </summary>
-		/// <remarks>
-		/// Cannot be used in conjuction with <see cref="BasicAuthenticationCredentials"/>
-		/// </remarks>
-		ApiKeyAuthenticationCredentials ApiKeyAuthenticationCredentials { get; }
+		/// <inheritdoc cref="IAuthenticationHeader"/>
+		IAuthenticationHeader AuthenticationHeader { get; }
 
 		/// <summary> Provides a semaphoreslim to transport implementations that need to limit access to a resource</summary>
 		SemaphoreSlim BootstrapLock { get; }

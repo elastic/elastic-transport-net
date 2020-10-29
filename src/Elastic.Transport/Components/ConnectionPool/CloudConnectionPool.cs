@@ -37,32 +37,8 @@ namespace Elastic.Transport
 		/// </param>
 		/// <param name="credentials"></param>
 		/// <param name="dateTimeProvider">Optionally inject an instance of <see cref="IDateTimeProvider"/> used to set <see cref="IConnectionPool.LastUpdate"/></param>
-		public CloudConnectionPool(string cloudId, BasicAuthenticationCredentials credentials, IDateTimeProvider dateTimeProvider = null) : this(ParseCloudId(cloudId), dateTimeProvider) =>
-			BasicCredentials = credentials;
-
-		/// <summary>
-		/// An <see cref="IConnectionPool"/> implementation that can be seeded with a cloud id
-		/// and will signal the right defaults for the client to use for Elastic Cloud to <see cref="ITransportConfigurationValues"/>.
-		///
-		/// <para>Read more about Elastic Cloud Id here</para>
-		/// <para>https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html</para>
-		/// </summary>
-		/// <param name="cloudId">
-		/// The Cloud Id, this is available on your cluster's dashboard and is a string in the form of <code>cluster_name:base_64_encoded_string</code>
-		/// <para>Base64 encoded string contains the following tokens in order separated by $:</para>
-		/// <para>* Host Name (mandatory)</para>
-		/// <para>* Elasticsearch UUID (mandatory)</para>
-		/// <para>* Kibana UUID</para>
-		/// <para>* APM UUID</para>
-		/// <para></para>
-		/// <para> We then use these tokens to create the URI to your Elastic Cloud cluster!</para>
-		/// <para></para>
-		/// <para> Read more here: https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html</para>
-		/// </param>
-		/// <param name="credentials"></param>
-		/// <param name="dateTimeProvider">Optionally inject an instance of <see cref="IDateTimeProvider"/> used to set <see cref="IConnectionPool.LastUpdate"/></param>
-		public CloudConnectionPool(string cloudId, ApiKeyAuthenticationCredentials credentials, IDateTimeProvider dateTimeProvider = null) : this(ParseCloudId(cloudId), dateTimeProvider) =>
-			ApiKeyCredentials  = credentials;
+		public CloudConnectionPool(string cloudId, IAuthenticationHeader credentials, IDateTimeProvider dateTimeProvider = null) : this(ParseCloudId(cloudId), dateTimeProvider) =>
+			AuthenticationHeader  = credentials;
 
 		private CloudConnectionPool(ParsedCloudId parsedCloudId, IDateTimeProvider dateTimeProvider = null) : base(parsedCloudId.Uri, dateTimeProvider) =>
 			ClusterName = parsedCloudId.Name;
@@ -71,11 +47,8 @@ namespace Elastic.Transport
 		// ReSharper disable once UnusedAutoPropertyAccessor.Local
 		private string ClusterName { get; }
 
-		/// <summary> Read-only access to the basic authentication credentials that were passed in </summary>
-		public BasicAuthenticationCredentials BasicCredentials { get; }
-
-		/// <summary> Read-only access to the api key authentication credentials that were passed in </summary>
-		public ApiKeyAuthenticationCredentials ApiKeyCredentials { get; }
+		/// <inheritdoc cref="IAuthenticationHeader"/>
+		public IAuthenticationHeader AuthenticationHeader { get; }
 
 		private readonly struct ParsedCloudId
 		{
@@ -121,10 +94,6 @@ namespace Elastic.Transport
 		}
 
 		/// <summary> Allows subclasses to hook into the parents dispose </summary>
-		protected override void DisposeManagedResources()
-		{
-			ApiKeyCredentials?.Dispose();
-			BasicCredentials?.Dispose();
-		}
+		protected override void DisposeManagedResources() => AuthenticationHeader?.Dispose();
 	}
 }

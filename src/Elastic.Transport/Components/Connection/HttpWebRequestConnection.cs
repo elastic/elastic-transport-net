@@ -311,11 +311,14 @@ namespace Elastic.Transport
 		/// <summary> Hook for subclasses to set authentication on <paramref name="request"/></summary>
 		protected virtual void SetAuthenticationIfNeeded(RequestData requestData, HttpWebRequest request)
 		{
-			// Api Key authentication takes precedence
-			var apiKeySet = SetApiKeyAuthenticationIfNeeded(request, requestData);
-
-			if (!apiKeySet)
-				SetBasicAuthenticationIfNeeded(request, requestData);
+			//If user manually specifies an Authorization Header give it preference
+			if (requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
+			{
+				var header = requestData.Headers["Authorization"];
+				request.Headers["Authorization"] = header;
+				return;
+			}
+			SetBasicAuthenticationIfNeeded(request, requestData);
 		}
 
 		private static void SetBasicAuthenticationIfNeeded(HttpWebRequest request, RequestData requestData)
@@ -325,37 +328,28 @@ namespace Elastic.Transport
 			// 2 - Specified at the global IConnectionSettings level
 			// 3 - Specified with the URI (lowest precedence)
 
-			string userInfo = null;
-			if (!string.IsNullOrEmpty(requestData.Uri.UserInfo))
-				userInfo = Uri.UnescapeDataString(requestData.Uri.UserInfo);
-			else if (requestData.BasicAuthorizationCredentials != null)
+
+			// Basic auth credentials take the following precedence (highest -> lowest):
+			// 1 - Specified with the URI (highest precedence)
+			// 2 - Specified on the request
+			// 3 - Specified at the global IConnectionSettings level (lowest precedence)
+
+			string value = null;
+			string key = null;
+			if (!requestData.Uri.UserInfo.IsNullOrEmpty())
 			{
-				userInfo =
-					$"{requestData.BasicAuthorizationCredentials.Username}:{requestData.BasicAuthorizationCredentials.Password.CreateString()}";
+				value = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(requestData.Uri.UserInfo));
+				key = BasicAuthentication.Base64Header;
+			}
+			else if (requestData.AuthenticationHeader != null && requestData.AuthenticationHeader.TryGetHeader(out var v))
+			{
+				value = v;
+				key = requestData.AuthenticationHeader.Header;
 			}
 
-			if (string.IsNullOrWhiteSpace(userInfo))
-				return;
+			if (value.IsNullOrEmpty()) return;
 
-			request.Headers["Authorization"] = $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes(userInfo))}";
-		}
-
-		private static bool SetApiKeyAuthenticationIfNeeded(HttpWebRequest request, RequestData requestData)
-		{
-			// ApiKey auth credentials take the following precedence (highest -> lowest):
-			// 1 - Specified on the request (highest precedence)
-			// 2 - Specified at the global IConnectionSettings level
-
-			string apiKey = null;
-			if (requestData.ApiKeyAuthenticationCredentials != null)
-				apiKey = requestData.ApiKeyAuthenticationCredentials.Base64EncodedApiKey.CreateString();
-
-			if (string.IsNullOrWhiteSpace(apiKey))
-				return false;
-
-			request.Headers["Authorization"] = $"ApiKey {apiKey}";
-			return true;
-
+			request.Headers["Authorization"] = $"{key} {value}";
 		}
 
 		/// <summary>

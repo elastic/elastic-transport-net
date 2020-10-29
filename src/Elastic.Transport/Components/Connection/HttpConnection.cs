@@ -286,53 +286,31 @@ namespace Elastic.Transport
 				return;
 			}
 
-			// Api Key authentication takes precedence
-			var apiKeySet = SetApiKeyAuthenticationIfNeeded(requestMessage, requestData);
-
-			if (!apiKeySet)
-				SetBasicAuthenticationIfNeeded(requestMessage, requestData);
+			SetConfiguredAuthenticationHeaderIfNeeded(requestMessage, requestData);
 		}
 
-		private static bool SetApiKeyAuthenticationIfNeeded(HttpRequestMessage requestMessage, RequestData requestData)
-		{
-			// ApiKey auth credentials take the following precedence (highest -> lowest):
-			// 1 - Specified on the request (highest precedence)
-			// 2 - Specified at the global IConnectionSettings level
-
-
-			string apiKey = null;
-			if (requestData.ApiKeyAuthenticationCredentials != null)
-				apiKey = requestData.ApiKeyAuthenticationCredentials.Base64EncodedApiKey.CreateString();
-
-			if (string.IsNullOrWhiteSpace(apiKey))
-				return false;
-
-			requestMessage.Headers.Authorization = new AuthenticationHeaderValue("ApiKey", apiKey);
-			return true;
-
-		}
-
-		private static void SetBasicAuthenticationIfNeeded(HttpRequestMessage requestMessage, RequestData requestData)
+		private static void SetConfiguredAuthenticationHeaderIfNeeded(HttpRequestMessage requestMessage, RequestData requestData)
 		{
 			// Basic auth credentials take the following precedence (highest -> lowest):
-			// 1 - Specified on the request (highest precedence)
-			// 2 - Specified at the global IConnectionSettings level
-			// 3 - Specified with the URI (lowest precedence)
+			// 1 - Specified with the URI (highest precedence)
+			// 2 - Specified on the request
+			// 3 - Specified at the global IConnectionSettings level (lowest precedence)
 
-			string userInfo = null;
+			string value = null;
+			string key = null;
 			if (!requestData.Uri.UserInfo.IsNullOrEmpty())
-				userInfo = Uri.UnescapeDataString(requestData.Uri.UserInfo);
-			else if (requestData.BasicAuthorizationCredentials != null)
 			{
-				userInfo =
-					$"{requestData.BasicAuthorizationCredentials.Username}:{requestData.BasicAuthorizationCredentials.Password.CreateString()}";
+				value = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(requestData.Uri.UserInfo));
+				key = BasicAuthentication.Base64Header;
+			}
+			else if (requestData.AuthenticationHeader != null && requestData.AuthenticationHeader.TryGetHeader(out var v))
+			{
+				value = v;
+				key = requestData.AuthenticationHeader.Header;
 			}
 
-			if (!userInfo.IsNullOrEmpty())
-			{
-				var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(userInfo!));
-				requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-			}
+			if (value.IsNullOrEmpty()) return;
+			requestMessage.Headers.Authorization = new AuthenticationHeaderValue(key, value);
 		}
 
 		private static HttpRequestMessage CreateRequestMessage(RequestData requestData)

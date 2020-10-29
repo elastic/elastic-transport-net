@@ -27,22 +27,9 @@ namespace Elastic.Transport
 		IReadOnlyCollection<int> AllowedStatusCodes { get; set; }
 
 		/// <summary>
-		/// Basic access authorization credentials to specify with this request.
-		/// Overrides any credentials that are set at the global IConnectionSettings level.
+		/// Provide an authentication header override for this request
 		/// </summary>
-		/// <remarks>
-		///	Cannot be used in conjunction with <see cref="ApiKeyAuthenticationCredentials"/>
-		/// </remarks>
-		BasicAuthenticationCredentials BasicAuthenticationCredentials { get; set; }
-
-		/// <summary>
-		/// An API-key authorization credentials to specify with this request.
-		/// Overrides any credentials that are set at the global IConnectionSettings level.
-		/// </summary>
-		/// <remarks>
-		///	Cannot be used in conjunction with <see cref="BasicAuthenticationCredentials"/>
-		/// </remarks>
-		ApiKeyAuthenticationCredentials ApiKeyAuthenticationCredentials { get; set; }
+		IAuthenticationHeader AuthenticationHeader { get; set; }
 
 		/// <summary>
 		/// Use the following client certificates to authenticate this single request
@@ -140,9 +127,7 @@ namespace Elastic.Transport
 		/// <inheritdoc />
 		public IReadOnlyCollection<int> AllowedStatusCodes { get; set; }
 		/// <inheritdoc />
-		public BasicAuthenticationCredentials BasicAuthenticationCredentials { get; set; }
-		/// <inheritdoc />
-		public ApiKeyAuthenticationCredentials ApiKeyAuthenticationCredentials { get; set; }
+		public IAuthenticationHeader AuthenticationHeader { get; set; }
 		/// <inheritdoc />
 		public X509CertificateCollection ClientCertificates { get; set; }
 		/// <inheritdoc />
@@ -195,8 +180,7 @@ namespace Elastic.Transport
 			Self.DisablePing = config?.DisablePing;
 			Self.DisableDirectStreaming = config?.DisableDirectStreaming;
 			Self.AllowedStatusCodes = config?.AllowedStatusCodes;
-			Self.BasicAuthenticationCredentials = config?.BasicAuthenticationCredentials;
-			Self.ApiKeyAuthenticationCredentials = config?.ApiKeyAuthenticationCredentials;
+			Self.AuthenticationHeader = config?.AuthenticationHeader;
 			Self.EnableHttpPipelining = config?.EnableHttpPipelining ?? true;
 			Self.RunAs = config?.RunAs;
 			Self.ClientCertificates = config?.ClientCertificates;
@@ -210,8 +194,7 @@ namespace Elastic.Transport
 
 		string IRequestConfiguration.Accept { get; set; }
 		IReadOnlyCollection<int> IRequestConfiguration.AllowedStatusCodes { get; set; }
-		BasicAuthenticationCredentials IRequestConfiguration.BasicAuthenticationCredentials { get; set; }
-		ApiKeyAuthenticationCredentials IRequestConfiguration.ApiKeyAuthenticationCredentials { get; set; }
+		IAuthenticationHeader IRequestConfiguration.AuthenticationHeader { get; set; }
 		X509CertificateCollection IRequestConfiguration.ClientCertificates { get; set; }
 		string IRequestConfiguration.ContentType { get; set; }
 		bool? IRequestConfiguration.DisableDirectStreaming { get; set; }
@@ -329,45 +312,10 @@ namespace Elastic.Transport
 			return this;
 		}
 
-		/// <inheritdoc cref="IRequestConfiguration.BasicAuthenticationCredentials"/>
-		public RequestConfigurationDescriptor BasicAuthentication(string userName, string password)
+		/// <inheritdoc cref="IAuthenticationHeader"/>
+		public RequestConfigurationDescriptor Authentication(IAuthenticationHeader authentication)
 		{
-			Self.BasicAuthenticationCredentials = new BasicAuthenticationCredentials(userName, password);
-			return this;
-		}
-
-		/// <inheritdoc cref="IRequestConfiguration.BasicAuthenticationCredentials"/>
-		public RequestConfigurationDescriptor BasicAuthentication(string userName, SecureString password)
-		{
-			Self.BasicAuthenticationCredentials = new BasicAuthenticationCredentials(userName, password);
-			return this;
-		}
-
-		/// <inheritdoc cref="IRequestConfiguration.ApiKeyAuthenticationCredentials"/>
-		public RequestConfigurationDescriptor ApiKeyAuthentication(string id, string apiKey)
-		{
-			Self.ApiKeyAuthenticationCredentials = new ApiKeyAuthenticationCredentials(id, apiKey);
-			return this;
-		}
-
-		/// <inheritdoc cref="IRequestConfiguration.ApiKeyAuthenticationCredentials"/>
-		public RequestConfigurationDescriptor ApiKeyAuthentication(string id, SecureString apiKey)
-		{
-			Self.ApiKeyAuthenticationCredentials = new ApiKeyAuthenticationCredentials(id, apiKey);
-			return this;
-		}
-
-		/// <inheritdoc cref="IRequestConfiguration.RunAs"/>
-		public RequestConfigurationDescriptor ApiKeyAuthentication(string base64EncodedApiKey)
-		{
-			Self.ApiKeyAuthenticationCredentials = new ApiKeyAuthenticationCredentials(base64EncodedApiKey);
-			return this;
-		}
-
-		/// <inheritdoc cref="IRequestConfiguration.RunAs"/>
-		public RequestConfigurationDescriptor ApiKeyAuthentication(SecureString base64EncodedApiKey)
-		{
-			Self.ApiKeyAuthenticationCredentials = new ApiKeyAuthenticationCredentials(base64EncodedApiKey);
+			Self.AuthenticationHeader = authentication;
 			return this;
 		}
 

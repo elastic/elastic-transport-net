@@ -118,14 +118,14 @@ namespace Elastic.Transport
 		/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
 		/// <para><see cref="CloudConnectionPool"/> documentation for more information on how to obtain your Cloud Id</para>
 		/// </summary>
-		public TransportConfiguration(string cloudId, BasicAuthenticationCredentials credentials, IProductRegistration productRegistration = null)
+		public TransportConfiguration(string cloudId, BasicAuthentication credentials, IProductRegistration productRegistration = null)
 			: this(new CloudConnectionPool(cloudId, credentials), productRegistration: productRegistration) { }
 
 		/// <summary>
 		/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
 		/// <para><see cref="CloudConnectionPool"/> documentation for more information on how to obtain your Cloud Id</para>
 		/// </summary>
-		public TransportConfiguration(string cloudId, ApiKeyAuthenticationCredentials credentials, IProductRegistration productRegistration = null)
+		public TransportConfiguration(string cloudId, Base64ApiKey credentials, IProductRegistration productRegistration = null)
 			: this(new CloudConnectionPool(cloudId, credentials), productRegistration: productRegistration) { }
 
 		/// <summary> <inheritdoc cref="TransportConfiguration"/></summary>
@@ -156,8 +156,7 @@ namespace Elastic.Transport
 		private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 		private readonly UrlFormatter _urlFormatter;
 
-		private BasicAuthenticationCredentials _basicAuthCredentials;
-		private ApiKeyAuthenticationCredentials _apiKeyAuthCredentials;
+		private IAuthenticationHeader _authenticationHeader;
 		private X509CertificateCollection _clientCertificates;
 		private Action<IApiCallDetails> _completedRequestHandler = DefaultCompletedRequestHandler;
 		private int _connectionLimit;
@@ -223,8 +222,7 @@ namespace Elastic.Transport
 
 			if (connectionPool is CloudConnectionPool cloudPool)
 			{
-				_basicAuthCredentials = cloudPool.BasicCredentials;
-				_apiKeyAuthCredentials = cloudPool.ApiKeyCredentials;
+				_authenticationHeader = cloudPool.AuthenticationHeader;
 				_enableHttpCompression = true;
 			}
 
@@ -238,8 +236,7 @@ namespace Elastic.Transport
 		// ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
 		protected ITransportSerializer UseThisRequestResponseSerializer { get; set; }
 
-		BasicAuthenticationCredentials ITransportConfigurationValues.BasicAuthenticationCredentials => _basicAuthCredentials;
-		ApiKeyAuthenticationCredentials ITransportConfigurationValues.ApiKeyAuthenticationCredentials => _apiKeyAuthCredentials;
+		IAuthenticationHeader ITransportConfigurationValues.AuthenticationHeader => _authenticationHeader;
 		SemaphoreSlim ITransportConfigurationValues.BootstrapLock => _semaphore;
 		X509CertificateCollection ITransportConfigurationValues.ClientCertificates => _clientCertificates;
 		IConnection ITransportConfigurationValues.Connection => _connection;
@@ -392,25 +389,8 @@ namespace Elastic.Transport
 		public T OnRequestDataCreated(Action<RequestData> handler) =>
 			Assign(handler, (a, v) => a._onRequestDataCreated += v ?? DefaultRequestDataCreated);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.BasicAuthenticationCredentials"/>
-		public T BasicAuthentication(string username, string password) =>
-			Assign(new BasicAuthenticationCredentials(username, password), (a, v) => a._basicAuthCredentials = v);
-
-		/// <inheritdoc cref="ITransportConfigurationValues.BasicAuthenticationCredentials"/>
-		public T BasicAuthentication(string username, SecureString password) =>
-			Assign(new BasicAuthenticationCredentials(username, password), (a, v) => a._basicAuthCredentials = v);
-
-		/// <inheritdoc cref="ITransportConfigurationValues.ApiKeyAuthenticationCredentials"/>
-		public T ApiKeyAuthentication(string id, SecureString apiKey) =>
-			Assign(new ApiKeyAuthenticationCredentials(id, apiKey), (a, v) => a._apiKeyAuthCredentials = v);
-
-		/// <inheritdoc cref="ITransportConfigurationValues.ApiKeyAuthenticationCredentials"/>
-		public T ApiKeyAuthentication(string id, string apiKey) =>
-			Assign(new ApiKeyAuthenticationCredentials(id, apiKey), (a, v) => a._apiKeyAuthCredentials = v);
-
-		/// <inheritdoc cref="ITransportConfigurationValues.ApiKeyAuthenticationCredentials"/>
-		public T ApiKeyAuthentication(ApiKeyAuthenticationCredentials credentials) =>
-			Assign(credentials, (a, v) => a._apiKeyAuthCredentials = v);
+		/// <inheritdoc cref="IAuthenticationHeader"/>
+		public T Authentication(IAuthenticationHeader header) => Assign(header, (a, v) => a._authenticationHeader = v);
 
 		/// <inheritdoc cref="ITransportConfigurationValues.HttpPipeliningEnabled"/>
 		public T EnableHttpPipelining(bool enabled = true) => Assign(enabled, (a, v) => a._enableHttpPipelining = v);
@@ -491,8 +471,7 @@ namespace Elastic.Transport
 			_connection?.Dispose();
 			_semaphore?.Dispose();
 			_proxyPassword?.Dispose();
-			_basicAuthCredentials?.Dispose();
-			_apiKeyAuthCredentials?.Dispose();
+			_authenticationHeader?.Dispose();
 		}
 
 		/// <summary> Allows subclasses to add/remove default global query string parameters </summary>
