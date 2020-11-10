@@ -11,7 +11,7 @@ namespace Elastic.Transport.Benchmarks
 			.ClientCalls(c => c.SucceedAlways())
 			.StaticConnectionPool()
 			.Settings(s => s.DisablePing());
-		
+
 		[Benchmark]
 		public void TransportSuccessfulRequestBenchmark() => ClusterWithSuccess.Transport.Get<R>("/");
 
