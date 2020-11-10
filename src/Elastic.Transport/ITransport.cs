@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport
 {
-	/// <summary> Represents a transport you can call requests, it is recommended to implement <see cref="ITransport{TSettings}"/></summary>
+	/// <summary>
+	/// Represents a transport you can call requests, it is recommended to implement <see cref="ITransport{TSettings}"/>
+	/// </summary>
 	public interface ITransport
 	{
 		/// <summary>
@@ -17,11 +19,8 @@ namespace Elastic.Transport
 			where TResponse : class, ITransportResponse, new();
 
 		/// <inheritdoc cref="Request{TResponse}"/>
-		Task<TResponse> RequestAsync<TResponse>(
-			HttpMethod method, string path, CancellationToken ctx, PostData data = null, IRequestParameters requestParameters = null
-		)
+		Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path, CancellationToken ctx, PostData data = null, IRequestParameters requestParameters = null)
 			where TResponse : class, ITransportResponse, new();
-
 	}
 
 	/// <summary>
@@ -29,12 +28,10 @@ namespace Elastic.Transport
 	/// </summary>
 	public interface ITransport<out TConfiguration> : ITransport
 		where TConfiguration : ITransportConfigurationValues
-
 	{
 		/// <summary>
 		/// The <see cref="ITransportConfigurationValues"/> in use by this transport instance
 		/// </summary>
 		TConfiguration Settings { get; }
-
 	}
 }
