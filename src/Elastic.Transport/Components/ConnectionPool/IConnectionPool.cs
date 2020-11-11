@@ -9,29 +9,31 @@ using Elastic.Transport.Diagnostics.Auditing;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A connection pool is responsible for maintain a read only collection of <see cref="Node"/> under <see cref="Nodes"/>.
+	/// A connection pool is responsible for maintaining a read only collection of <see cref="Node"/>(s) under <see cref="Nodes"/>.
+	/// <para>
 	/// Unlike the name might suggest this component is not responsible for IO level pooling. For that we rely on <see cref="IConnection"/> abstracting away
 	/// the connection IO pooling.
-	/// <para> This interface signals the current connection strategy to <see cref="ITransport{TConnectionSettings}"/></para>
+	/// </para>
+	/// <para>This interface signals the current connection strategy to <see cref="ITransport{TConnectionSettings}"/>.</para>
 	/// </summary>
 	public interface IConnectionPool : IDisposable
 	{
 		/// <summary>
-		/// The last time that this instance was updated
+		/// The last time that this instance was updated.
 		/// </summary>
 		DateTime LastUpdate { get; }
 
 		/// <summary>
 		/// Returns the default maximum retries for the connection pool implementation.
-		/// Most implementation default to number of nodes, note that this can be overidden
-		/// in the connection settings
+		/// Most implementations default to number of nodes, note that this can be overridden
+		/// in the connection settings.
 		/// </summary>
 		int MaxRetries { get; }
 
 		/// <summary>
 		/// Returns a read only view of all the nodes in the cluster, which might involve creating copies of nodes e.g
 		/// if you are using <see cref="SniffingConnectionPool" />.
-		/// If you do not need an isolated copy of the nodes, please read <see cref="CreateView" /> to completion
+		/// If you do not need an isolated copy of the nodes, please read <see cref="CreateView" /> to completion.
 		/// </summary>
 		IReadOnlyCollection<Node> Nodes { get; }
 
@@ -42,17 +44,17 @@ namespace Elastic.Transport
 		bool SniffedOnStartup { get; set; }
 
 		/// <summary>
-		/// Whether pinging is supported
+		/// Whether pinging is supported.
 		/// </summary>
 		bool SupportsPinging { get; }
 
 		/// <summary>
-		/// Whether reseeding with new nodes is supported
+		/// Whether reseeding with new nodes is supported.
 		/// </summary>
 		bool SupportsReseeding { get; }
 
 		/// <summary>
-		/// Whether SSL/TLS is being used
+		/// Whether SSL/TLS is being used.
 		/// </summary>
 		bool UsingSsl { get; }
 
@@ -64,7 +66,7 @@ namespace Elastic.Transport
 		IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null);
 
 		/// <summary>
-		/// Reseeds the nodes. The implementation is responsible for thread safety
+		/// Reseeds the nodes. The implementation is responsible for thread safety.
 		/// </summary>
 		void Reseed(IEnumerable<Node> nodes);
 	}
