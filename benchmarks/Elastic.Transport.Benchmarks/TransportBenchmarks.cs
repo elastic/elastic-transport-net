@@ -1,21 +1,34 @@
-﻿using BenchmarkDotNet.Attributes;
-using Elastic.Transport.VirtualizedCluster;
+﻿// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System;
+using System.Threading.Tasks;
+using BenchmarkDotNet.Attributes;
 
 namespace Elastic.Transport.Benchmarks
 {
-	[MemoryDiagnoser]
 	public class TransportBenchmarks
 	{
-		private static readonly VirtualizedCluster.Components.VirtualizedCluster ClusterWithSuccess = Virtual.Elasticsearch
-			.Bootstrap(1)
-			.ClientCalls(c => c.SucceedAlways())
-			.StaticConnectionPool()
-			.Settings(s => s.DisablePing());
+		private Transport _transport;
+
+		[GlobalSetup]
+		public void Setup()
+		{
+			var connection = new InMemoryConnection();
+			var pool = new SingleNodeConnectionPool(new Uri("http://localhost:9200"));
+			var settings = new TransportConfiguration(pool, connection);
+
+			_transport = new Transport(settings);
+		}
 
 		[Benchmark]
-		public void TransportSuccessfulRequestBenchmark() => ClusterWithSuccess.Transport.Get<R>("/");
+		public void TransportSuccessfulRequestBenchmark() => _transport.Get<EmptyResponse>("/");
 
-		private class R : ITransportResponse
+		[Benchmark]
+		public async Task TransportSuccessfulAsyncRequestBenchmark() => await _transport.GetAsync<EmptyResponse>("/");
+
+		private class EmptyResponse : ITransportResponse
 		{
 			public IApiCallDetails ApiCall { get; set; }
 		}
