@@ -16,8 +16,8 @@ namespace Elastic.Transport.Benchmarks
 		{
 			var config = ManualConfig
 				.Create(DefaultConfig.Instance)
-				.With(MemoryDiagnoser.Default)
-				.With(new SummaryStyle(false, SizeUnit.B, null));
+				.AddDiagnoser(MemoryDiagnoser.Default)
+				.WithSummaryStyle(new SummaryStyle(null, false, SizeUnit.B, null));
 
 			BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, config);
 		}
