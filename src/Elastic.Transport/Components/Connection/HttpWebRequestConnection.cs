@@ -9,10 +9,8 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Security;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -27,7 +25,7 @@ namespace Elastic.Transport
 	/// </para>
 	/// <para/>
 	/// <para>Do NOT use this class directly on .NET Core. <see cref="HttpWebRequest"/> is monkey patched
-	/// over <see cref="HttpClient"/> and does not reuse its instances of <see cref="HttpClient"/>
+	/// over HttpClient and does not reuse its instances of HttpClient
 	/// </para>
 	/// </summary>
 #if DOTNETCORE
