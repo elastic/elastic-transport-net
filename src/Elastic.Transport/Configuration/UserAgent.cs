@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport
 {
