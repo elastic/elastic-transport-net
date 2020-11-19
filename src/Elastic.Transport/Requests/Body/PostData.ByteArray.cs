@@ -24,7 +24,7 @@ namespace Elastic.Transport
 				Type = PostType.ByteArray;
 			}
 
-			public override void Write(Stream writableStream, ITransportConfigurationValues settings)
+			public override void Write(Stream writableStream, ITransportConfiguration settings)
 			{
 				if (WrittenBytes == null) return;
 
@@ -38,7 +38,7 @@ namespace Elastic.Transport
 				FinishStream(writableStream, buffer, settings);
 			}
 
-			public override async Task WriteAsync(Stream writableStream, ITransportConfigurationValues settings,
+			public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
 				CancellationToken cancellationToken)
 			{
 				if (WrittenBytes == null) return;

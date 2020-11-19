@@ -43,6 +43,16 @@ namespace Elastic.Transport.Tests
 			var headResponse = transport.Head("/");
 		}
 
+		public void MinimalUsageWithRequestParameters()
+		{
+			var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
+			var transport = new Transport(settings);
+
+			var response = transport.Get<StringResponse>("/", new RequestParameters());
+
+			var headResponse = transport.Head("/");
+		}
+
 		public class MyClientConfiguration : TransportConfigurationBase<MyClientConfiguration>
 		{
 			public MyClientConfiguration(

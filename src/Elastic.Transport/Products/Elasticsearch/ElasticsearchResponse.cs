@@ -34,7 +34,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 		/// <summary>
 		/// Try to parse an Elasticsearch <see cref="ServerError"/>, this only works if
-		/// <see cref="ITransportConfigurationValues.DisableDirectStreaming"/> gives us access to <see cref="IApiCallDetails.RequestBodyInBytes"/>
+		/// <see cref="ITransportConfiguration.DisableDirectStreaming"/> gives us access to <see cref="IApiCallDetails.RequestBodyInBytes"/>
 		/// </summary>
 		public static bool TryGetElasticsearchServerError(this ITransportResponse response, out ServerError serverError)
 		{

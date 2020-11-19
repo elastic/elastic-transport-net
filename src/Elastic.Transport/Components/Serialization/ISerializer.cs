@@ -11,7 +11,7 @@ namespace Elastic.Transport
 {
 	/// <summary>
 	/// When the <see cref="ITransport{TConnectionSettings}"/> needs to (de)serialize anything it will call into the
-	/// <see cref="ITransportConfigurationValues.RequestResponseSerializer"/>  implementation of this interface.
+	/// <see cref="ITransportConfiguration.RequestResponseSerializer"/>  implementation of this interface.
 	///
 	/// <para>e.g: Whenever the <see cref="ITransport{TConnectionSettings}"/> receives <see cref="PostData.Serializable{T}"/>
 	/// to serialize that data.</para>

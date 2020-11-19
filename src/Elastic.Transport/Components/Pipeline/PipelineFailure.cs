@@ -28,17 +28,17 @@ namespace Elastic.Transport
 		SniffFailure,
 
 		/// <summary>
-		/// See <see cref="ITransportConfigurationValues.SniffsOnStartup"/> was requested but the first API call failed to sniff
+		/// See <see cref="ITransportConfiguration.SniffsOnStartup"/> was requested but the first API call failed to sniff
 		/// </summary>
 		CouldNotStartSniffOnStartup,
 
 		/// <summary>
-		/// The overall timeout specified by <see cref="ITransportConfigurationValues.MaxRetryTimeout"/> was reached
+		/// The overall timeout specified by <see cref="ITransportConfiguration.MaxRetryTimeout"/> was reached
 		/// </summary>
 		MaxTimeoutReached,
 
 		/// <summary>
-		/// The overall max retries as specified by <see cref="ITransportConfigurationValues.MaxRetries"/> was reached
+		/// The overall max retries as specified by <see cref="ITransportConfiguration.MaxRetries"/> was reached
 		/// </summary>
 		MaxRetriesReached,
 
@@ -51,7 +51,7 @@ namespace Elastic.Transport
 		BadRequest,
 
 		/// <summary>
-		/// Rare but if <see cref="ITransportConfigurationValues.NodePredicate"/> is too stringent it could mean no
+		/// Rare but if <see cref="ITransportConfiguration.NodePredicate"/> is too stringent it could mean no
 		/// nodes were considered for the API call
 		/// </summary>
 		NoNodesAttempted

@@ -16,8 +16,8 @@ namespace Elastic.Transport.Tests
 {
 	public class ResponseBuilderDisposeTests
 	{
-		private readonly ITransportConfigurationValues _settings = InMemoryConnectionFactory.Create().DisableDirectStreaming(false);
-		private readonly ITransportConfigurationValues _settingsDisableDirectStream = InMemoryConnectionFactory.Create().DisableDirectStreaming();
+		private readonly ITransportConfiguration _settings = InMemoryConnectionFactory.Create().DisableDirectStreaming(false);
+		private readonly ITransportConfiguration _settingsDisableDirectStream = InMemoryConnectionFactory.Create().DisableDirectStreaming();
 
 		[Fact] public async Task ResponseWithHttpStatusCode() => await AssertRegularResponse(false, 1);
 

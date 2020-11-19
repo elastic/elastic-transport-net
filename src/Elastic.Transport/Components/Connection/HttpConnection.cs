@@ -207,7 +207,7 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
 		/// <exception cref="Exception">
-		/// Can throw if <see cref="ITransportConfigurationValues.ConnectionLimit"/> is set but the platform does
+		/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit"/> is set but the platform does
 		/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer"/>
 		/// </exception>
 		protected virtual HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
@@ -263,7 +263,7 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
 		/// <exception cref="Exception">
-		/// Can throw if <see cref="ITransportConfigurationValues.ConnectionLimit"/> is set but the platform does
+		/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit"/> is set but the platform does
 		/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer"/>
 		/// </exception>
 		protected virtual HttpRequestMessage CreateHttpRequestMessage(RequestData requestData)

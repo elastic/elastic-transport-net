@@ -12,19 +12,6 @@ namespace Elastic.Transport
 	/// <inheritdoc cref="IRequestParameters"/>
 	public class RequestParameters : RequestParameters<RequestParameters>
 	{
-		//TODO these properties have nothing to do with request parameters
-		/// <inheritdoc cref="IRequestParameters"/>
-		public RequestParameters(HttpMethod method, bool supportsBody)
-		{
-			DefaultHttpMethod = method;
-			SupportsBody = supportsBody;
-		}
-
-		/// <inheritdoc cref="IRequestParameters.DefaultHttpMethod"/>
-		public override HttpMethod DefaultHttpMethod { get; }
-
-		/// <inheritdoc cref="IRequestParameters.SupportsBody"/>
-		public override bool SupportsBody { get; }
 	}
 
 	/// <summary>
@@ -34,12 +21,6 @@ namespace Elastic.Transport
 	/// <typeparam name="T"></typeparam>
 	public abstract class RequestParameters<T> : IRequestParameters where T : RequestParameters<T>
 	{
-		/// <inheritdoc cref="IRequestParameters.DefaultHttpMethod"/>
-		public abstract HttpMethod DefaultHttpMethod { get; }
-
-		/// <inheritdoc cref="IRequestParameters.SupportsBody"/>
-		public abstract bool SupportsBody { get; }
-
 		/// <inheritdoc cref="IRequestParameters.CustomResponseBuilder"/>
 		public CustomResponseBuilderBase CustomResponseBuilder { get; set; }
 
@@ -68,8 +49,8 @@ namespace Elastic.Transport
 		}
 
 		/// <inheritdoc />
-		public string GetResolvedQueryStringValue(string n, ITransportConfigurationValues s) =>
-			CreateString(GetQueryStringValue<object>(n), s);
+		public string GetResolvedQueryStringValue(string name, ITransportConfiguration transportConfiguration) =>
+			CreateString(GetQueryStringValue<object>(name), transportConfiguration);
 
 		/// <inheritdoc />
 		public void SetQueryString(string name, object value)

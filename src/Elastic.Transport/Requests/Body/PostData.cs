@@ -57,13 +57,13 @@ namespace Elastic.Transport
 		/// Implementations of <see cref="PostData"/> are expected to implement writing the data they hold to
 		/// <paramref name="writableStream"/>
 		/// </summary>
-		public abstract void Write(Stream writableStream, ITransportConfigurationValues settings);
+		public abstract void Write(Stream writableStream, ITransportConfiguration settings);
 
 		/// <summary>
 		/// Implementations of <see cref="PostData"/> are expected to implement writing the data they hold to
 		/// <paramref name="writableStream"/>
 		/// </summary>
-		public abstract Task WriteAsync(Stream writableStream, ITransportConfigurationValues settings,
+		public abstract Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
 			CancellationToken cancellationToken);
 
 		/// <summary>
@@ -74,7 +74,7 @@ namespace Elastic.Transport
 
 		/// <summary> Sets up the stream and buffer and determines if direct streaming should be disabled </summary>
 		// ReSharper disable once MemberCanBePrivate.Global
-		protected Stream InitWrite(Stream writableStream, ITransportConfigurationValues settings, out MemoryStream buffer,
+		protected Stream InitWrite(Stream writableStream, ITransportConfiguration settings, out MemoryStream buffer,
 			out bool disableDirectStreaming)
 		{
 			buffer = null;
@@ -89,7 +89,7 @@ namespace Elastic.Transport
 		/// with <paramref name="buffer"/> after allocating <paramref name="buffer"/>.
 		/// <para>NOTE: <paramref name="buffer"/> is expected to be null when called and may be null when this method returns</para>
 		/// </summary>
-		protected void BufferIfNeeded(ITransportConfigurationValues settings, ref MemoryStream buffer,
+		protected void BufferIfNeeded(ITransportConfiguration settings, ref MemoryStream buffer,
 			ref Stream stream)
 		{
 			var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming;
@@ -103,7 +103,7 @@ namespace Elastic.Transport
 		/// Implementation of <see cref="Write"/> may call this to make sure <paramref name="buffer"/> makes it to <see cref="WrittenBytes"/>
 		/// if <see cref="DisableDirectStreaming"/> or <paramref name="settings"/> request to buffer the data.
 		/// </summary>
-		protected void FinishStream(Stream writableStream, MemoryStream buffer, ITransportConfigurationValues settings)
+		protected void FinishStream(Stream writableStream, MemoryStream buffer, ITransportConfiguration settings)
 		{
 			var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming;
 			if (buffer == null || !disableDirectStreaming) return;
@@ -123,7 +123,7 @@ namespace Elastic.Transport
 #else
 			Task
 #endif
-			FinishStreamAsync(Stream writableStream, MemoryStream buffer, ITransportConfigurationValues settings,
+			FinishStreamAsync(Stream writableStream, MemoryStream buffer, ITransportConfiguration settings,
 				CancellationToken ctx)
 		{
 			var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming;

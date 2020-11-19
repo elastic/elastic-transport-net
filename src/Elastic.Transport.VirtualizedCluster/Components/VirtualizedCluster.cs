@@ -15,8 +15,8 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 		private readonly TestableDateTimeProvider _dateTimeProvider;
 		private readonly TransportConfiguration _settings;
 
-		private Func<ITransport<ITransportConfigurationValues>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<ITransportResponse>> _asyncCall;
-		private Func<ITransport<ITransportConfigurationValues>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, ITransportResponse> _syncCall;
+		private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<ITransportResponse>> _asyncCall;
+		private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, ITransportResponse> _syncCall;
 
 		private class VirtualResponse : TransportResponseBase { }
 
@@ -28,7 +28,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 
 			_syncCall = (t, r) => t.Request<VirtualResponse>(
 				HttpMethod.GET, "/",
-				PostData.Serializable(new {}), new RequestParameters(HttpMethod.GET, supportsBody: false)
+				PostData.Serializable(new {}), new RequestParameters()
 			{
 					RequestConfiguration = r?.Invoke(new RequestConfigurationDescriptor(null))
 			});
@@ -39,7 +39,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 					HttpMethod.GET, "/",
 					CancellationToken.None,
 					PostData.Serializable(new { }),
-					new RequestParameters(HttpMethod.GET, supportsBody: false)
+					new RequestParameters()
 					{
 						RequestConfiguration = r?.Invoke(new RequestConfigurationDescriptor(null))
 					}
@@ -50,11 +50,11 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 
 		public VirtualClusterConnection Connection => Transport.Settings.Connection as VirtualClusterConnection;
 		public IConnectionPool ConnectionPool => Transport.Settings.ConnectionPool;
-		public ITransport<ITransportConfigurationValues> Transport => _exposingRequestPipeline?.Transport;
+		public ITransport<ITransportConfiguration> Transport => _exposingRequestPipeline?.Transport;
 
 		public VirtualizedCluster TransportProxiesTo(
-			Func<ITransport<ITransportConfigurationValues>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, ITransportResponse> sync,
-			Func<ITransport<ITransportConfigurationValues>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<ITransportResponse>> async
+			Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, ITransportResponse> sync,
+			Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<ITransportResponse>> async
 		)
 		{
 			_syncCall = sync;

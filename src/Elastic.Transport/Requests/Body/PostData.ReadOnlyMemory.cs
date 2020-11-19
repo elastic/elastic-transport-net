@@ -27,7 +27,7 @@ namespace Elastic.Transport
 				Type = PostType.ReadOnlyMemory;
 			}
 
-			public override void Write(Stream writableStream, ITransportConfigurationValues settings)
+			public override void Write(Stream writableStream, ITransportConfiguration settings)
 			{
 				if (_memoryOfBytes.IsEmpty) return;
 
@@ -43,7 +43,7 @@ namespace Elastic.Transport
 				FinishStream(writableStream, buffer, settings);
 			}
 
-			public override async Task WriteAsync(Stream writableStream, ITransportConfigurationValues settings,
+			public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
 				CancellationToken cancellationToken)
 			{
 				if (_memoryOfBytes.IsEmpty) return;

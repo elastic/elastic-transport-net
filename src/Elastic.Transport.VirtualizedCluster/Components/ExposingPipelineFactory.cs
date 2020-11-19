@@ -7,7 +7,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 	/// <summary>
 	/// An implementation that exposes all the components so that <see cref="VirtualCluster"/> can reference them directly.
 	/// </summary>
-	public class ExposingPipelineFactory<TConfiguration> : IRequestPipelineFactory<TConfiguration> where TConfiguration : class, ITransportConfigurationValues
+	public class ExposingPipelineFactory<TConfiguration> : IRequestPipelineFactory<TConfiguration> where TConfiguration : class, ITransportConfiguration
 	{
 		public ExposingPipelineFactory(TConfiguration connectionSettings, IDateTimeProvider dateTimeProvider)
 		{
@@ -15,7 +15,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 			MemoryStreamFactory = TransportConfiguration.DefaultMemoryStreamFactory;
 
 			Settings = connectionSettings;
-			Pipeline = Create(Settings, DateTimeProvider, MemoryStreamFactory, new RequestParameters(HttpMethod.GET, supportsBody: false));
+			Pipeline = Create(Settings, DateTimeProvider, MemoryStreamFactory, new RequestParameters());
 			Transport = new Transport<TConfiguration>(Settings, this, DateTimeProvider, MemoryStreamFactory);
 		}
 
@@ -25,12 +25,12 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 		private IDateTimeProvider DateTimeProvider { get; }
 		private IMemoryStreamFactory MemoryStreamFactory { get; }
 		private TConfiguration Settings { get; }
-		public ITransport<ITransportConfigurationValues> Transport { get; }
+		public ITransport<ITransportConfiguration> Transport { get; }
 
 
 		public IRequestPipeline Create(TConfiguration configurationValues, IDateTimeProvider dateTimeProvider,
 			IMemoryStreamFactory memoryStreamFactory, IRequestParameters requestParameters
 		) =>
-			new RequestPipeline<TConfiguration>(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters ?? new RequestParameters(HttpMethod.GET, supportsBody: false));
+			new RequestPipeline<TConfiguration>(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters ?? new RequestParameters());
 	}
 }

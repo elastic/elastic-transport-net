@@ -79,7 +79,7 @@ namespace Elastic.Transport
 		public Uri Uri { get; set; }
 
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
-		public ITransportConfigurationValues ConnectionConfiguration { get; set; }
+		public ITransportConfiguration ConnectionConfiguration { get; set; }
 
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		public override string ToString() =>

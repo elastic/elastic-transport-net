@@ -14,7 +14,7 @@ namespace Elastic.Transport
 {
 	/// <summary>
 	/// Where and how <see cref="IConnection.Request{TResponse}"/> should connect to.
-	/// <para>Represents the cumulative configuration from <see cref="ITransportConfigurationValues"/>
+	/// <para>Represents the cumulative configuration from <see cref="ITransportConfiguration"/>
 	/// and <see cref="IRequestConfiguration"/>.</para>
 	/// </summary>
 	public class RequestData
@@ -29,7 +29,7 @@ namespace Elastic.Transport
 		public RequestData(
 			HttpMethod method, string path,
 			PostData data,
-			ITransportConfigurationValues global,
+			ITransportConfiguration global,
 			IRequestParameters local,
 			IMemoryStreamFactory memoryStreamFactory
 		)
@@ -42,7 +42,7 @@ namespace Elastic.Transport
 
 		private RequestData(HttpMethod method,
 			PostData data,
-			ITransportConfigurationValues global,
+			ITransportConfiguration global,
 			IRequestConfiguration local,
 			IMemoryStreamFactory memoryStreamFactory
 		)
@@ -94,7 +94,7 @@ namespace Elastic.Transport
 			ProxyUsername = global.ProxyUsername;
 			ProxyPassword = global.ProxyPassword;
 			DisableAutomaticProxyDetection = global.DisableAutomaticProxyDetection;
-			AuthenticationHeader = local?.AuthenticationHeader ?? global.AuthenticationHeader;
+			AuthenticationHeader = local?.AuthenticationHeader ?? global.Authentication;
 			AllowedStatusCodes = local?.AllowedStatusCodes ?? EmptyReadOnly<int>.Collection;
 			ClientCertificates = local?.ClientCertificates ?? global.ClientCertificates;
 			UserAgent = global.UserAgent;
@@ -111,7 +111,7 @@ namespace Elastic.Transport
 		public IAuthenticationHeader AuthenticationHeader { get; }
 
 		public X509CertificateCollection ClientCertificates { get; }
-		public ITransportConfigurationValues ConnectionSettings { get; }
+		public ITransportConfiguration ConnectionSettings { get; }
 		public CustomResponseBuilderBase CustomResponseBuilder { get; }
 		public bool DisableAutomaticProxyDetection { get; }
 
@@ -152,7 +152,7 @@ namespace Elastic.Transport
 		public override string ToString() => $"{Method.GetStringValue()} {_path}";
 
 		// TODO This feels like its in the wrong place
-		private string CreatePathWithQueryStrings(string path, ITransportConfigurationValues global, IRequestParameters request)
+		private string CreatePathWithQueryStrings(string path, ITransportConfiguration global, IRequestParameters request)
 		{
 			path ??= string.Empty;
 			if (path.Contains("?"))
