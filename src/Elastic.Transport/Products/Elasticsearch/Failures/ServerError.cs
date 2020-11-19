@@ -15,6 +15,7 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 	[DataContract]
 	public class ServerError
 	{
+		/// <inheritdoc cref="ServerError"/>
 		public ServerError() { }
 
 		/// <inheritdoc cref="ServerError"/>
