@@ -49,8 +49,8 @@ namespace Elastic.Transport
 		}
 
 		/// <inheritdoc />
-		public string GetResolvedQueryStringValue(string n, ITransportConfiguration s) =>
-			CreateString(GetQueryStringValue<object>(n), s);
+		public string GetResolvedQueryStringValue(string name, ITransportConfiguration transportConfiguration) =>
+			CreateString(GetQueryStringValue<object>(name), transportConfiguration);
 
 		/// <inheritdoc />
 		public void SetQueryString(string name, object value)
