@@ -8,6 +8,6 @@ namespace Elastic.Transport
 	public interface IUrlParameter
 	{
 		/// <summary> Get the a string representation using <paramref name="settings"/> </summary>
-		string GetString(ITransportConfigurationValues settings);
+		string GetString(ITransportConfiguration settings);
 	}
 }

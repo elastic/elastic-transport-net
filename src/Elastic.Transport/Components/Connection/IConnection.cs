@@ -11,8 +11,8 @@ namespace Elastic.Transport
 	/// <summary>
 	/// This interface abstracts the actual IO <see cref="ITransport{TConnectionSettings}"/> performs.
 	/// <para><see cref="ITransport{TConnectionSettings}"/> holds a single instance of this class</para>
-	/// <para>The instance to be used is provided to the constructor of <see cref="ITransportConfigurationValues"/> implementations</para>
-	/// <para>Where its exposed under <see cref="ITransportConfigurationValues.Connection"/></para>
+	/// <para>The instance to be used is provided to the constructor of <see cref="ITransportConfiguration"/> implementations</para>
+	/// <para>Where its exposed under <see cref="ITransportConfiguration.Connection"/></para>
 	/// </summary>
 	public interface IConnection : IDisposable
 	{

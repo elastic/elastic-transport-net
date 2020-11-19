@@ -49,7 +49,7 @@ namespace Elastic.Transport
 		}
 
 		/// <summary>
-		/// Settings as returned by the server, can be used in various ways later on. E.g <see cref="ITransportConfigurationValues.NodePredicate"/> can use it
+		/// Settings as returned by the server, can be used in various ways later on. E.g <see cref="ITransportConfiguration.NodePredicate"/> can use it
 		/// to only select certain nodes with a setting
 		/// </summary>
 		public IReadOnlyDictionary<string, object> Settings { get; set; } = EmptyReadOnly<string, object>.Dictionary;

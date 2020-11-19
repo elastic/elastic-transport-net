@@ -42,7 +42,7 @@ namespace Elastic.Transport
 				Type = PostType.EnumerableOfObject;
 			}
 
-			public override void Write(Stream writableStream, ITransportConfigurationValues settings)
+			public override void Write(Stream writableStream, ITransportConfiguration settings)
 			{
 				if (Type != PostType.EnumerableOfObject && Type != PostType.EnumerableOfString)
 					throw new Exception(
@@ -95,7 +95,7 @@ namespace Elastic.Transport
 				FinishStream(writableStream, buffer, settings);
 			}
 
-			public override async Task WriteAsync(Stream writableStream, ITransportConfigurationValues settings,
+			public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
 				CancellationToken cancellationToken)
 			{
 				if (Type != PostType.EnumerableOfObject && Type != PostType.EnumerableOfString)

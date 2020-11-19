@@ -10,15 +10,15 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A formatter that can utilize <see cref="ITransportConfigurationValues" /> to resolve <see cref="IUrlParameter" />'s passed
+	/// A formatter that can utilize <see cref="ITransportConfiguration" /> to resolve <see cref="IUrlParameter" />'s passed
 	/// as format arguments. It also handles known string representations for e.g bool/Enums/IEnumerable.
 	/// </summary>
 	public class UrlFormatter : IFormatProvider, ICustomFormatter
 	{
-		private readonly ITransportConfigurationValues _settings;
+		private readonly ITransportConfiguration _settings;
 
 		/// <inheritdoc cref="UrlFormatter"/>
-		public UrlFormatter(ITransportConfigurationValues settings) => _settings = settings;
+		public UrlFormatter(ITransportConfiguration settings) => _settings = settings;
 
 		/// <inheritdoc cref="ICustomFormatter.Format"/>>
 		public string Format(string format, object arg, IFormatProvider formatProvider)
@@ -37,11 +37,11 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="IFormatProvider.GetFormat"/>
 		public object GetFormat(Type formatType) => formatType == typeof(ICustomFormatter) ? this : null;
 
-		/// <inheritdoc cref="CreateString(object, ITransportConfigurationValues)"/>
+		/// <inheritdoc cref="CreateString(object, ITransportConfiguration)"/>
 		public string CreateString(object value) => CreateString(value, _settings);
 
 		/// <summary> Creates a query string representation for <paramref name="value"/> </summary>
-		public static string CreateString(object value, ITransportConfigurationValues settings)
+		public static string CreateString(object value, ITransportConfiguration settings)
 		{
 			switch (value)
 			{
@@ -59,7 +59,7 @@ namespace Elastic.Transport
 			}
 		}
 
-		private static string ResolveUrlParameterOrDefault(object value, ITransportConfigurationValues settings) =>
+		private static string ResolveUrlParameterOrDefault(object value, ITransportConfiguration settings) =>
 			value is IUrlParameter urlParam ? urlParam.GetString(settings) : value.ToString();
 	}
 }

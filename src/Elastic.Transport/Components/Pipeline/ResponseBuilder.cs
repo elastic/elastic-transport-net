@@ -15,7 +15,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// A helper class that deals with handling how a <see cref="Stream"/> is transformed to the requested
 	/// <see cref="ITransportResponse"/> implementation. This includes handling optionally buffering based on
-	/// <see cref="ITransportConfigurationValues.DisableDirectStreaming"/>. And handling short circuiting special responses
+	/// <see cref="ITransportConfiguration.DisableDirectStreaming"/>. And handling short circuiting special responses
 	/// such as <see cref="StringResponse"/>, <see cref="BytesResponse"/> and <see cref="VoidResponse"/>
 	/// </summary>
 	public static class ResponseBuilder

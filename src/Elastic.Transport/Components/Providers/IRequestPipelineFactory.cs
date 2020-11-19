@@ -6,7 +6,7 @@ namespace Elastic.Transport
 {
 	/// <summary> A factory that creates instances of <see cref="IRequestPipeline"/>, this factory exists so that transport can be tested. </summary>
 	public interface IRequestPipelineFactory<TConfiguration>
-		where TConfiguration : class, ITransportConfigurationValues
+		where TConfiguration : class, ITransportConfiguration
 	{
 		/// <summary> Create an instance of <see cref="IRequestPipeline"/> </summary>
 		IRequestPipeline Create(TConfiguration configuration, IDateTimeProvider dateTimeProvider,
@@ -18,7 +18,7 @@ namespace Elastic.Transport
 	/// The default implementation for <see cref="IRequestPipeline"/> that returns <see cref="RequestPipeline{TConfiguration}"/>
 	/// </summary>
 	public class RequestPipelineFactory<TConfiguration> : IRequestPipelineFactory<TConfiguration>
-		where TConfiguration : class, ITransportConfigurationValues
+		where TConfiguration : class, ITransportConfiguration
 	{
 		/// <summary>
 		/// returns instances of <see cref="RequestPipeline{TConfiguration}"/>

@@ -54,14 +54,14 @@ namespace Elastic.Transport.Diagnostics.Auditing
 		/// <summary>
 		/// The call into <see cref="ITransport.Request{TResponse}"/> took too long.
 		/// This could mean the call was retried but retrying was to slow and cumulative this exceeded
-		/// <see cref="ITransportConfigurationValues.MaxRetryTimeout"/>
+		/// <see cref="ITransportConfiguration.MaxRetryTimeout"/>
 		/// </summary>
 		MaxTimeoutReached,
 
 		/// <summary>
 		/// The call into <see cref="ITransport.Request{TResponse}"/> was not able to complete
 		/// successfully and exceeded the available retries as configured on
-		/// <see cref="ITransportConfigurationValues.MaxRetries"/>.
+		/// <see cref="ITransportConfiguration.MaxRetries"/>.
 		/// </summary>
 		MaxRetriesReached,
 
@@ -72,7 +72,7 @@ namespace Elastic.Transport.Diagnostics.Auditing
 		BadRequest,
 
 		/// <summary>
-		/// Rare but if <see cref="ITransportConfigurationValues.NodePredicate"/> is too stringent and node nodes in
+		/// Rare but if <see cref="ITransportConfiguration.NodePredicate"/> is too stringent and node nodes in
 		/// the <see cref="IConnectionPool.Nodes"/> satisfies this predicate this will result in this failure.
 		/// </summary>
 		NoNodesAttempted,
@@ -83,7 +83,7 @@ namespace Elastic.Transport.Diagnostics.Auditing
 		CancellationRequested,
 
 		/// <summary>
-		/// The request failed within the allotted <see cref="ITransportConfigurationValues.MaxRetryTimeout"/> but failed
+		/// The request failed within the allotted <see cref="ITransportConfiguration.MaxRetryTimeout"/> but failed
 		/// on all the available <see cref="IConnectionPool.Nodes"/>
 		/// </summary>
 		FailedOverAllNodes,

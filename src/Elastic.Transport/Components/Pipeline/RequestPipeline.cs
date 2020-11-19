@@ -28,7 +28,7 @@ namespace Elastic.Transport
 
 	/// <inheritdoc cref="IRequestPipeline"/>
 	public class RequestPipeline<TConfiguration> : IRequestPipeline
-		where TConfiguration : class, ITransportConfigurationValues
+		where TConfiguration : class, ITransportConfiguration
 	{
 		private readonly IConnection _connection;
 		private readonly IConnectionPool _connectionPool;
@@ -62,7 +62,7 @@ namespace Elastic.Transport
 			{
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
-				AuthenticationHeader = _settings.AuthenticationHeader,
+				AuthenticationHeader = _settings.Authentication,
 				EnableHttpPipelining = RequestConfiguration?.EnableHttpPipelining ?? _settings.HttpPipeliningEnabled,
 				ForceNode = RequestConfiguration?.ForceNode
 			};

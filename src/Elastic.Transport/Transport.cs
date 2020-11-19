@@ -43,7 +43,7 @@ namespace Elastic.Transport
 
 	/// <inheritdoc cref="ITransport{TConfiguration}"/>
 	public class Transport<TConfiguration> : ITransport<TConfiguration>
-		where TConfiguration : class, ITransportConfigurationValues
+		where TConfiguration : class, ITransportConfiguration
 	{
 		private readonly IProductRegistration _productRegistration;
 
