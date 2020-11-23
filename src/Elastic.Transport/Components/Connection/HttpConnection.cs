@@ -90,7 +90,11 @@ namespace Elastic.Transport
 					if (requestData.ThreadPoolStats)
 						threadPoolStats = ThreadPoolStats.GetStats();
 
+#if NET5_0
+					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
+#else
 					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
+#endif
 					statusCode = (int)responseMessage.StatusCode;
 					d.EndState = statusCode;
 				}
@@ -102,7 +106,12 @@ namespace Elastic.Transport
 				if (responseMessage.Content != null)
 				{
 					receive = DiagnosticSource.Diagnose(DiagnosticSources.HttpConnection.ReceiveBody, requestData, statusCode);
+
+#if NET5_0
+					responseStream = responseMessage.Content.ReadAsStream();
+#else
 					responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+#endif
 				}
 			}
 			catch (TaskCanceledException e)
