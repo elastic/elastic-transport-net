@@ -100,11 +100,11 @@ namespace Elastic.Transport
 		{
 			if (requestData == null) throw new ArgumentNullException(nameof(requestData));
 
-			#if NETSTANDARD2_1
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
 			var entry = _activeHandlers.GetOrAdd(key, (k, r) => _entryFactory(k, r), requestData).Value;
-			#else
+#else
 			var entry = _activeHandlers.GetOrAdd(key, (k) => _entryFactory(k, requestData)).Value;
-			#endif
+#endif
 
 			StartHandlerEntryTimer(entry);
 

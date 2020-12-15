@@ -118,7 +118,7 @@ namespace Elastic.Transport
 		/// if <see cref="DisableDirectStreaming"/> or <paramref name="settings"/> request to buffer the data.
 		/// </summary>
 		protected async
-#if NETSTANDARD2_1
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
 			ValueTask
 #else
 			Task
