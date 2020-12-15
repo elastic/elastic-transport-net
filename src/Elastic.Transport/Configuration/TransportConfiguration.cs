@@ -109,7 +109,7 @@ namespace Elastic.Transport
 		/// Creates a new instance of <see cref="TransportConfiguration"/>
 		/// </summary>
 		/// <param name="uri">The root of the Elastic stack product node we want to connect to. Defaults to http://localhost:9200</param>
-		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration"/></param>
+		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		[SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
 		public TransportConfiguration(Uri uri = null, IProductRegistration productRegistration = null)
 			: this(new SingleNodeConnectionPool(uri ?? new Uri("http://localhost:9200")), productRegistration: productRegistration) { }
@@ -128,11 +128,11 @@ namespace Elastic.Transport
 		public TransportConfiguration(string cloudId, Base64ApiKey credentials, IProductRegistration productRegistration = null)
 			: this(new CloudConnectionPool(cloudId, credentials), productRegistration: productRegistration) { }
 
-		/// <summary> <inheritdoc cref="TransportConfiguration"/></summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool"/></param>
-		/// <param name="connection"><inheritdoc cref="IConnection"/></param>
-		/// <param name="serializer"><inheritdoc cref="ITransportSerializer"/></param>
-		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration"/></param>
+		/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
+		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool" path="/summary"/></param>
+		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
+		/// <param name="serializer"><inheritdoc cref="ITransportSerializer" path="/summary"/></param>
+		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		public TransportConfiguration(
 			IConnectionPool connectionPool,
 			IConnection connection = null,
@@ -196,10 +196,10 @@ namespace Elastic.Transport
 		/// <summary>
 		/// <inheritdoc cref="TransportConfiguration"/>
 		/// </summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool"/></param>
-		/// <param name="connection"><inheritdoc cref="IConnection"/></param>
-		/// <param name="requestResponseSerializer"><inheritdoc cref="ITransportSerializer"/></param>
-		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration"/></param>
+		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool" path="/summary"/></param>
+		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
+		/// <param name="requestResponseSerializer"><inheritdoc cref="ITransportSerializer" path="/summary"/></param>
+		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		protected TransportConfigurationBase(IConnectionPool connectionPool, IConnection connection, ITransportSerializer requestResponseSerializer, IProductRegistration productRegistration)
 		{
 			_connectionPool = connectionPool;
@@ -298,8 +298,8 @@ namespace Elastic.Transport
 		/// Sets the keep-alive option on a TCP connection.
 		/// <para>For Desktop CLR, sets ServicePointManager.SetTcpKeepAlive</para>
 		/// </summary>
-		/// <param name="keepAliveTime"><inheritdoc cref="ITransportConfiguration.KeepAliveTime"/></param>
-		/// <param name="keepAliveInterval"><inheritdoc cref="ITransportConfiguration.KeepAliveInterval"/></param>
+		/// <param name="keepAliveTime"><inheritdoc cref="ITransportConfiguration.KeepAliveTime" path="/summary"/></param>
+		/// <param name="keepAliveInterval"><inheritdoc cref="ITransportConfiguration.KeepAliveInterval" path="/summary"/></param>
 		public T EnableTcpKeepAlive(TimeSpan keepAliveTime, TimeSpan keepAliveInterval) =>
 			Assign(keepAliveTime, (a, v) => a._keepAliveTime = v)
 			.Assign(keepAliveInterval, (a, v) => a._keepAliveInterval = v);
@@ -308,7 +308,7 @@ namespace Elastic.Transport
 		public T MaximumRetries(int maxRetries) => Assign(maxRetries, (a, v) => a._maxRetries = v);
 
 		/// <summary>
-		/// <inheritdoc cref="ITransportConfiguration.ConnectionLimit"/>
+		/// <inheritdoc cref="ITransportConfiguration.ConnectionLimit" path="/summary"/>
 		/// </summary>
 		/// <param name="connectionLimit">The connection limit, a value lower then 0 will cause the connection limit not to be set at all</param>
 		public T ConnectionLimit(int connectionLimit) => Assign(connectionLimit, (a, v) => a._connectionLimit = v);
@@ -321,7 +321,7 @@ namespace Elastic.Transport
 		public T SniffOnStartup(bool sniffsOnStartup = true) => Assign(sniffsOnStartup, (a, v) => a._sniffOnStartup = v);
 
 		/// <summary>
-		/// <inheritdoc cref="ITransportConfiguration.SniffInformationLifeSpan"/>
+		/// <inheritdoc cref="ITransportConfiguration.SniffInformationLifeSpan" path="/summary"/>
 		/// </summary>
 		/// <param name="sniffLifeSpan">The duration a clusterstate is considered fresh, set to null to disable periodic sniffing</param>
 		public T SniffLifeSpan(TimeSpan? sniffLifeSpan) => Assign(sniffLifeSpan, (a, v) => a._sniffLifeSpan = v);

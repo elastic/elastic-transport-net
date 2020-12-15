@@ -9,6 +9,7 @@ namespace Elastic.Transport.VirtualizedCluster.Rules
 {
 	public interface ISniffRule : IRule
 	{
+		/// <summary> The new cluster state after the sniff returns </summary>
 		VirtualCluster NewClusterState { get; set; }
 	}
 

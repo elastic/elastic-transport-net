@@ -25,10 +25,10 @@ namespace Elastic.Transport
 		/// <summary> Deserialize <paramref name="stream"/> to an instance of <typeparamref name="T" /></summary>
 		T Deserialize<T>(Stream stream);
 
-		/// <inheritdoc cref="DeserializeAsync"/>
+		/// <inheritdoc cref="Deserialize"/>
 		Task<object> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default);
 
-		/// <inheritdoc cref="DeserializeAsync{T}"/>
+		/// <inheritdoc cref="Deserialize"/>
 		Task<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default);
 
 		/// <summary>

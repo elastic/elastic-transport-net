@@ -50,10 +50,10 @@ namespace Elastic.Transport
 		private static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.Serializer.SourceName);
 
 		/// <summary>
-		/// <inheritdoc cref="DiagnosticsSerializerProxy"/>
+		/// <inheritdoc cref="DiagnosticsSerializerProxy" path="/summary"/>
 		/// </summary>
 		/// <param name="serializer">The serializer we are proxying</param>
-		/// <param name="purpose"><inheritdoc cref="SerializerRegistrationInformation.Purpose"/></param>
+		/// <param name="purpose"><inheritdoc cref="SerializerRegistrationInformation.Purpose" path="/summary"/></param>
 		public DiagnosticsSerializerProxy(ITransportSerializer serializer, string purpose = "request/response")
 		{
 			_serializer = serializer;
