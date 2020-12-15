@@ -4,7 +4,7 @@
     <Title>Elastic.Transport.VirtualizedCluster - An in memory IConnection that can simulate large cluster</Title>
     <PackageTags>elasticsearch;elastic;search;lucene;nest</PackageTags>
     <Description>Provides a way to assert transport behaviour through a rule engine backed VirtualClusterConnection</Description>
-    <NoWarn>CS1591</NoWarn>
+    <NoWarn>CS1591;$(NoWarn);IDT001</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
