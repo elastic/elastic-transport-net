@@ -33,18 +33,15 @@
     </None>
   </ItemGroup>
 
+  <!-- netstandard2.0 has bad xml docs -->
+  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
+    <NoWarn>$(NoWarn);IDT001;IDT002</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
     <PackageReference Include="ConfigureAwaitChecker.Analyzer" Version="4.0.0" PrivateAssets="All" />
     <PackageReference Include="SauceControl.InheritDoc" Version="1.2.0" PrivateAssets="All" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <NoWarn>$(NoWarn);IDT001</NoWarn>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <PackageDownload Include="NETStandard.Library.Ref" Version="[2.1.0]" />
-    <InheritDocReference Include="$([MSBuild]::EnsureTrailingSlash('$(NugetPackageRoot)'))netstandard.library.ref\2.1.0\ref\netstandard2.1\netstandard.xml" />
-  </ItemGroup>
 </Project>

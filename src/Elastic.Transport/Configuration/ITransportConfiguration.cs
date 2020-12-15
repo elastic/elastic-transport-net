@@ -247,18 +247,9 @@ namespace Elastic.Transport
 		/// </summary>
 		bool TransferEncodingChunked { get; }
 
-#pragma warning disable 1587
-#pragma warning disable 1570
 		/// <summary>
 		/// DnsRefreshTimeout for the connections. Defaults to 5 minutes.
-		#if DOTNETCORE
-		/// <para>Will create new instances of <see cref="System.Net.Http.HttpClient"/> after this timeout to force DNS updates</para>
-		#else
-		/// <para>Will set <see cref="System.Net.ServicePointManager.ConnectionLeaseTimeout "/>
-#endif
 		/// </summary>
-#pragma warning restore 1570
-#pragma warning restore 1587
 		TimeSpan DnsRefreshTimeout { get; }
 
 		/// <summary>
