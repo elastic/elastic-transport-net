@@ -34,7 +34,7 @@ namespace Elastic.Transport
 			if (requestData.HttpCompression)
 				Headers.ContentEncoding.Add("gzip");
 
-			Task OnStreamAvailable(RequestData data, Stream stream, HttpContent content, TransportContext context)
+			static Task OnStreamAvailable(RequestData data, Stream stream, HttpContent content, TransportContext context)
 			{
 				if (data.HttpCompression)
 					stream = new GZipStream(stream, CompressionMode.Compress, false);
