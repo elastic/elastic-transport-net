@@ -25,7 +25,10 @@ namespace Elastic.Transport
 	internal class RequestDataContent : HttpContent
 	{
 		private readonly RequestData _requestData;
-		private readonly Func<RequestData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext, CancellationToken, Task> _onStreamAvailableAsync;
+
+		private readonly Func<RequestData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext, CancellationToken, Task>
+			_onStreamAvailableAsync;
+
 		private readonly Action<RequestData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext> _onStreamAvailable;
 		private readonly CancellationToken _token;
 
@@ -42,11 +45,11 @@ namespace Elastic.Transport
 				if (data.HttpCompression)
 					stream = new GZipStream(stream, CompressionMode.Compress, false);
 
-				using(stream)
+				using (stream)
 					data.PostData.Write(stream, data.ConnectionSettings);
 			}
 
-			_onStreamAvailable= OnStreamAvailable;
+			_onStreamAvailable = OnStreamAvailable;
 		}
 
 		public RequestDataContent(RequestData requestData, CancellationToken token)
@@ -57,7 +60,9 @@ namespace Elastic.Transport
 			if (requestData.HttpCompression)
 				Headers.ContentEncoding.Add("gzip");
 
-			async Task OnStreamAvailableAsync(RequestData data, Stream stream, HttpContent content, TransportContext context, CancellationToken ctx = default)
+			async Task OnStreamAvailableAsync(RequestData data, Stream stream, HttpContent content, TransportContext context,
+				CancellationToken ctx = default
+			)
 			{
 				if (data.HttpCompression)
 					stream = new GZipStream(stream, CompressionMode.Compress, false);
@@ -65,7 +70,7 @@ namespace Elastic.Transport
 #if NET5_COMPATIBLE
 				await
 #endif
-					using (stream)
+				using (stream)
 					await data.PostData.WriteAsync(stream, data.ConnectionSettings, ctx).ConfigureAwait(false);
 			}
 
@@ -93,8 +98,8 @@ namespace Elastic.Transport
 			var source = CancellationTokenSource.CreateLinkedTokenSource(_token, cancellationToken);
 			var serializeToStreamTask = new TaskCompletionSource<bool>();
 			var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
-            await _onStreamAvailableAsync(_requestData, wrappedStream, this, context, source.Token).ConfigureAwait(false);
-            await serializeToStreamTask.Task.ConfigureAwait(false);
+			await _onStreamAvailableAsync(_requestData, wrappedStream, this, context, source.Token).ConfigureAwait(false);
+			await serializeToStreamTask.Task.ConfigureAwait(false);
 		}
 
 #if NET5_COMPATIBLE
@@ -102,8 +107,8 @@ namespace Elastic.Transport
 		{
 			var serializeToStreamTask = new TaskCompletionSource<bool>();
 			using var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
-            _onStreamAvailable(_requestData, wrappedStream, this, context);
-            //await serializeToStreamTask.Task.ConfigureAwait(false);
+			_onStreamAvailable(_requestData, wrappedStream, this, context);
+			//await serializeToStreamTask.Task.ConfigureAwait(false);
 		}
 #endif
 
