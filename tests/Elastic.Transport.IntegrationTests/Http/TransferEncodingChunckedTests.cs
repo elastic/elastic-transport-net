@@ -18,12 +18,12 @@ namespace Elastic.Transport.IntegrationTests.Http
 	public class ChunkedController : ControllerBase
 	{
 		[HttpPost]
-		public async Task<JsonElement> Post([FromBody]JsonElement body) => await Task.FromResult(body);
+		public Task<JsonElement> Post([FromBody]JsonElement body) => Task.FromResult(body);
 	}
 
-	public class TransferEncodingChunckedTests : AssemblyServerTestsBase
+	public class TransferEncodingChunkedTests : AssemblyServerTestsBase
 	{
-		public TransferEncodingChunckedTests(TransportTestServer instance) : base(instance) { }
+		public TransferEncodingChunkedTests(TransportTestServer instance) : base(instance) { }
 
 
 		private static string BodyString = "{\"query\":{\"match_all\":{}}}";
