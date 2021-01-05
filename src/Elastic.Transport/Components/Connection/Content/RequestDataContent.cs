@@ -32,6 +32,7 @@ namespace Elastic.Transport
 		private readonly Action<RequestData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext> _onStreamAvailable;
 		private readonly CancellationToken _token;
 
+		/// <summary> Constructor used in synchronous paths. </summary>
 		public RequestDataContent(RequestData requestData)
 		{
 			_requestData = requestData;
@@ -40,18 +41,18 @@ namespace Elastic.Transport
 			if (requestData.HttpCompression)
 				Headers.ContentEncoding.Add("gzip");
 
-			static void OnStreamAvailable(RequestData data, Stream stream, HttpContent content, TransportContext context)
-			{
-				if (data.HttpCompression)
-					stream = new GZipStream(stream, CompressionMode.Compress, false);
-
-				using (stream)
-					data.PostData.Write(stream, data.ConnectionSettings);
-			}
-
 			_onStreamAvailable = OnStreamAvailable;
+			_onStreamAvailableAsync = OnStreamAvailableAsync;
 		}
 
+		private static void OnStreamAvailable(RequestData data, Stream stream, HttpContent content, TransportContext context)
+		{
+			if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
+
+			using (stream) data.PostData.Write(stream, data.ConnectionSettings);
+		}
+
+		/// <summary> Constructor used in asynchronous paths. </summary>
 		public RequestDataContent(RequestData requestData, CancellationToken token)
 		{
 			_requestData = requestData;
@@ -60,21 +61,19 @@ namespace Elastic.Transport
 			if (requestData.HttpCompression)
 				Headers.ContentEncoding.Add("gzip");
 
-			async Task OnStreamAvailableAsync(RequestData data, Stream stream, HttpContent content, TransportContext context,
-				CancellationToken ctx = default
-			)
-			{
-				if (data.HttpCompression)
-					stream = new GZipStream(stream, CompressionMode.Compress, false);
+			_onStreamAvailable = OnStreamAvailable;
+			_onStreamAvailableAsync = OnStreamAvailableAsync;
+		}
+
+		private static async Task OnStreamAvailableAsync(RequestData data, Stream stream, HttpContent content, TransportContext context, CancellationToken ctx = default)
+		{
+			if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
 #if NET5_COMPATIBLE
-				await
+			await
 #endif
 				using (stream)
-					await data.PostData.WriteAsync(stream, data.ConnectionSettings, ctx).ConfigureAwait(false);
-			}
-
-			_onStreamAvailableAsync = OnStreamAvailableAsync;
+				await data.PostData.WriteAsync(stream, data.ConnectionSettings, ctx).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -111,7 +110,6 @@ namespace Elastic.Transport
 			//await serializeToStreamTask.Task.ConfigureAwait(false);
 		}
 #endif
-
 
 		/// <summary>
 		/// Computes the length of the stream if possible.
