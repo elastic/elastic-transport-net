@@ -26,9 +26,9 @@ namespace Elastic.Transport.IntegrationTests.Http
 		public TransferEncodingChunkedTests(TransportTestServer instance) : base(instance) { }
 
 
-		private static string BodyString = "{\"query\":{\"match_all\":{}}}";
-		private static PostData Body = PostData.String(BodyString);
-		private static readonly string Path = "/chunked";
+		private const string BodyString = "{\"query\":{\"match_all\":{}}}";
+		private static readonly PostData Body = PostData.String(BodyString);
+		private const string Path = "/chunked";
 
 		private Transport Setup(
 			TestableHttpConnection connection,
