@@ -25,45 +25,55 @@ namespace Elastic.Transport
 	internal class RequestDataContent : HttpContent
 	{
 		private readonly RequestData _requestData;
-		private readonly Func<RequestData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext, Task> _onStreamAvailable;
 
+		private readonly Func<RequestData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext, CancellationToken, Task>
+			_onStreamAvailableAsync;
+
+		private readonly Action<RequestData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext> _onStreamAvailable;
+		private readonly CancellationToken _token;
+
+		/// <summary> Constructor used in synchronous paths. </summary>
 		public RequestDataContent(RequestData requestData)
 		{
 			_requestData = requestData;
+			_token = default;
 			Headers.ContentType = new MediaTypeHeaderValue(requestData.RequestMimeType);
 			if (requestData.HttpCompression)
 				Headers.ContentEncoding.Add("gzip");
 
-			Task OnStreamAvailable(RequestData data, Stream stream, HttpContent content, TransportContext context)
-			{
-				if (data.HttpCompression)
-					stream = new GZipStream(stream, CompressionMode.Compress, false);
-
-				using(stream)
-					data.PostData.Write(stream, data.ConnectionSettings);
-
-				return Task.CompletedTask;
-			}
-
 			_onStreamAvailable = OnStreamAvailable;
+			_onStreamAvailableAsync = OnStreamAvailableAsync;
 		}
+
+		private static void OnStreamAvailable(RequestData data, Stream stream, HttpContent content, TransportContext context)
+		{
+			if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
+
+			using (stream) data.PostData.Write(stream, data.ConnectionSettings);
+		}
+
+		/// <summary> Constructor used in asynchronous paths. </summary>
 		public RequestDataContent(RequestData requestData, CancellationToken token)
 		{
 			_requestData = requestData;
+			_token = token;
 			Headers.ContentType = new MediaTypeHeaderValue(requestData.RequestMimeType);
 			if (requestData.HttpCompression)
 				Headers.ContentEncoding.Add("gzip");
 
-			async Task OnStreamAvailable(RequestData data, Stream stream, HttpContent content, TransportContext context)
-			{
-				if (data.HttpCompression)
-					stream = new GZipStream(stream, CompressionMode.Compress, false);
-
-				using (stream)
-					await data.PostData.WriteAsync(stream, data.ConnectionSettings, token).ConfigureAwait(false);
-			}
-
 			_onStreamAvailable = OnStreamAvailable;
+			_onStreamAvailableAsync = OnStreamAvailableAsync;
+		}
+
+		private static async Task OnStreamAvailableAsync(RequestData data, Stream stream, HttpContent content, TransportContext context, CancellationToken ctx = default)
+		{
+			if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
+
+#if NET5_COMPATIBLE
+			await
+#endif
+				using (stream)
+				await data.PostData.WriteAsync(stream, data.ConnectionSettings, ctx).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -75,13 +85,31 @@ namespace Elastic.Transport
 		/// <param name="context">The associated <see cref="TransportContext"/>.</param>
 		/// <returns>A <see cref="Task"/> instance that is asynchronously serializing the object's content.</returns>
 		[SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Exception is passed as task result.")]
-		protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
+		protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+			SerializeToStreamAsync(stream, context, default);
+
+		protected
+#if NET5_COMPATIBLE
+			override
+#endif
+			async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
 		{
+			var source = CancellationTokenSource.CreateLinkedTokenSource(_token, cancellationToken);
 			var serializeToStreamTask = new TaskCompletionSource<bool>();
 			var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
-            await _onStreamAvailable(_requestData, wrappedStream, this, context).ConfigureAwait(false);
-            await serializeToStreamTask.Task.ConfigureAwait(false);
+			await _onStreamAvailableAsync(_requestData, wrappedStream, this, context, source.Token).ConfigureAwait(false);
+			await serializeToStreamTask.Task.ConfigureAwait(false);
 		}
+
+#if NET5_COMPATIBLE
+		protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken _)
+		{
+			var serializeToStreamTask = new TaskCompletionSource<bool>();
+			using var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
+			_onStreamAvailable(_requestData, wrappedStream, this, context);
+			//await serializeToStreamTask.Task.ConfigureAwait(false);
+		}
+#endif
 
 		/// <summary>
 		/// Computes the length of the stream if possible.
