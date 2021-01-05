@@ -26,9 +26,8 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 
 	public class TransportTestServer : TransportTestServer<DefaultStartup>
 	{
-		public static readonly ConcurrentQueue<int> PortNumbers = new(Enumerable.Range(3000, 100));
-		public static readonly bool RunningMitmProxy = Process.GetProcessesByName("mitmproxy").Any();
-		public static readonly bool RunningFiddler = Process.GetProcessesByName("fiddler").Any();
+		private static readonly bool RunningMitmProxy = Process.GetProcessesByName("mitmproxy").Any();
+		private static readonly bool RunningFiddler = Process.GetProcessesByName("fiddler").Any();
 		private static string Localhost => "localhost";
 		public static string LocalOrProxyHost => RunningFiddler || RunningMitmProxy ? "ipv4.fiddler" : Localhost;
 		public static TransportConfiguration RerouteToProxyIfNeeded(TransportConfiguration config)
@@ -44,14 +43,12 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 		where TStartup : class
 	{
 		private readonly IWebHost _host;
-		private readonly int _port;
-
+		private Uri _uri;
+		private Transport _defaultTransport;
 
 		public TransportTestServer()
 		{
-			_port = TransportTestServer.PortNumbers.TryDequeue(out var p) ? p : throw new Exception("Failed to locate a portnumber");
-			var url = $"http://{TransportTestServer.LocalOrProxyHost}:{_port}";
-			Uri = new Uri(url);
+			var url = $"http://{TransportTestServer.LocalOrProxyHost}:0";
 
 			var configuration =
 				new ConfigurationBuilder()
@@ -64,27 +61,34 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 					.UseConfiguration(configuration)
 					.UseStartup<TStartup>()
 					.Build();
-
-			DefaultTransport = CreateTransport(c => new Transport(c));
 		}
-		public Uri Uri { get; }
 
-		public Transport DefaultTransport { get; }
+		public Uri Uri
+		{
+			get => _uri ?? throw new Exception($"{nameof(Uri)} is not available until {nameof(StartAsync)} is called");
+			private set => _uri = value;
+		}
 
-		public Transport CreateTransport(Func<TransportConfiguration, Transport> create) =>
-			create(TransportTestServer.RerouteToProxyIfNeeded(new TransportConfiguration(Uri)));
+		public Transport DefaultTransport
+		{
+			get => _defaultTransport ?? throw new Exception($"{nameof(DefaultTransport)} is not available until {nameof(StartAsync)} is called");
+			private set => _defaultTransport = value;
+		}
 
 		public async Task<TransportTestServer<TStartup>> StartAsync(CancellationToken token = default)
 		{
 			await _host.StartAsync(token);
+			var port = _host.GetServerPort();
+			var url = $"http://{TransportTestServer.LocalOrProxyHost}:{port}";
+			Uri = new Uri(url);
+			DefaultTransport = CreateTransport(c => new Transport(c));
 			return this;
 		}
 
-		public void Dispose()
-		{
-			_host?.Dispose();
-			TransportTestServer.PortNumbers.Enqueue(_port);
-		}
+		public Transport CreateTransport(Func<TransportConfiguration, Transport> create) =>
+			create(TransportTestServer.RerouteToProxyIfNeeded(new TransportConfiguration(Uri)));
+
+		public void Dispose() => _host?.Dispose();
 
 		public Task InitializeAsync() => StartAsync();
 
