@@ -36,7 +36,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			app.UseEndpoints(endpoints =>
 			{
 				MapEndpoints(endpoints);
-				endpoints.MapControllerRoute("default", "{controller=Players}/{id?}");
+				endpoints.MapControllerRoute("default", "{controller=Default}/{id?}");
 			});
 		}
 
