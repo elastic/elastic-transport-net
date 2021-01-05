@@ -28,7 +28,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 	{
 		private static readonly bool RunningMitmProxy = Process.GetProcessesByName("mitmproxy").Any();
 		private static readonly bool RunningFiddler = Process.GetProcessesByName("fiddler").Any();
-		private static string Localhost => "localhost";
+		private static string Localhost => "127.0.0.1";
 		public static string LocalOrProxyHost => RunningFiddler || RunningMitmProxy ? "ipv4.fiddler" : Localhost;
 		public static TransportConfiguration RerouteToProxyIfNeeded(TransportConfiguration config)
 		{
