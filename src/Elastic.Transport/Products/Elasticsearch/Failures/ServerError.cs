@@ -44,7 +44,7 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 			try
 			{
 				serverError = Create(stream);
-				return true;
+				return serverError != null;
 			}
 			catch
 			{
