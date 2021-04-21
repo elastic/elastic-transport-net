@@ -5,12 +5,14 @@
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// The minimum interface your custom responses should implement when providing a response type
-	/// to the low level client
+	/// The minimum interface which custom responses should implement when providing a response type
+	/// to the low level client.
 	/// </summary>
 	public interface ITransportResponse
 	{
-		/// <summary> <see cref="ITransport{TConnectionSettings}"/> sets the <see cref="IApiCallDetails" /> diagnostic information about the request and response </summary>
+		/// <summary>
+		/// <see cref="ITransport{TConnectionSettings}"/> sets the <see cref="IApiCallDetails" /> diagnostic information about the request and response.
+		/// </summary>
 		IApiCallDetails ApiCall { get; set; }
 	}
 }

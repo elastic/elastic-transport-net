@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport
 {
-	/// <summary> Represents a transport you can call requests, it is recommended to implement <see cref="ITransport{TSettings}"/></summary>
+	/// <summary>
+	/// Represents a transport you can call requests, it is recommended to implement <see cref="ITransport{TSettings}"/>
+	/// </summary>
 	public interface ITransport
 	{
 		/// <summary>
@@ -28,9 +30,7 @@ namespace Elastic.Transport
 			CancellationToken ctx,
 			PostData data = null,
 			IRequestParameters requestParameters = null
-		)
-			where TResponse : class, ITransportResponse, new();
-
+		)	where TResponse : class, ITransportResponse, new();
 	}
 
 	/// <summary>
@@ -38,12 +38,10 @@ namespace Elastic.Transport
 	/// </summary>
 	public interface ITransport<out TConfiguration> : ITransport
 		where TConfiguration : ITransportConfiguration
-
 	{
 		/// <summary>
 		/// The <see cref="ITransportConfiguration"/> in use by this transport instance
 		/// </summary>
 		TConfiguration Settings { get; }
-
 	}
 }

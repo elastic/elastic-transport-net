@@ -40,7 +40,6 @@ namespace Elastic.Transport
 		}
 	}
 
-
 	/// <inheritdoc cref="ITransport{TConfiguration}"/>
 	public class Transport<TConfiguration> : ITransport<TConfiguration>
 		where TConfiguration : class, ITransportConfiguration
@@ -242,7 +241,6 @@ namespace Elastic.Transport
 			var callDetails = response?.ApiCall ?? seenExceptions.LastOrDefault(e => e.ApiCall != null)?.ApiCall;
 			return callDetails;
 		}
-
 
 		// ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
 		private void HandleTransportException(RequestData data, Exception clientException, ITransportResponse response)

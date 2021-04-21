@@ -12,24 +12,24 @@ using Elastic.Transport.Diagnostics.Auditing;
 
 namespace Elastic.Transport
 {
-	/// <summary> Details about the API call </summary>
+	/// <summary> Details about the API call.</summary>
 	public interface IApiCallDetails
 	{
 		//TODO: Get rid of setter
         /// <summary>
-        /// An audit trail of requests made to nodes within the cluster
+        /// An audit trail of requests made to nodes within the cluster.
         /// </summary>
         List<Audit> AuditTrail { get; set; }
 
 		// TODO: Get rid of setter.
 		/// <summary>
-		/// Thread pool thread statistics collected when making a request
+		/// Thread pool thread statistics collected when making a request.
 		/// </summary>
 		ReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; set; }
 
 		// TODO: Get rid of setter
 		/// <summary>
-		/// Active TCP connection statistics collected when making a request
+		/// Active TCP connection statistics collected when making a request.
 		/// </summary>
 		ReadOnlyDictionary<TcpState, int> TcpStats { get; set; }
 
@@ -39,22 +39,22 @@ namespace Elastic.Transport
         string DebugInformation { get; }
 
 		/// <summary>
-		/// Reference to the connection configuration that yielded this response
+		/// Reference to the connection configuration that yielded this response.
 		/// </summary>
 		ITransportConfiguration ConnectionConfiguration { get; }
 
 		/// <summary>
-		/// A collection of deprecation warnings returned from the product you are interfacing with.
-		/// <para>Used to signal that the request uses an API feature that is marked as deprecated</para>
+		/// A collection of deprecation warnings returned from the product being interfaced with.
+		/// <para>Used to signal that the request uses an API feature that is marked as deprecated.</para>
 		/// </summary>
 		IEnumerable<string> DeprecationWarnings { get; }
 
 		/// <summary>
-		/// The HTTP method used by the request
+		/// The HTTP method used by the request.
 		/// </summary>
 		HttpMethod HttpMethod { get; }
 
-		/// <summary> The HTTP status code </summary>
+		/// <summary> The HTTP status code of the response.</summary>
 		int? HttpStatusCode { get; }
 
 		/// <summary>
@@ -65,19 +65,19 @@ namespace Elastic.Transport
 
         /// <summary>
         /// The request body bytes.
-        /// <para>NOTE: Only set when disable direct streaming is set for the request</para>
+        /// <para>NOTE: Only set when disable direct streaming is set for the request.</para>
         /// </summary>
         [DebuggerDisplay("{RequestBodyInBytes != null ? System.Text.Encoding.UTF8.GetString(RequestBodyInBytes) : null,nq}")]
 		byte[] RequestBodyInBytes { get; }
 
         /// <summary>
         /// The response body bytes.
-        /// <para>NOTE: Only set when disable direct streaming is set for the request</para>
+        /// <para>NOTE: Only set when disable direct streaming is set for the request.</para>
         /// </summary>
         [DebuggerDisplay("{ResponseBodyInBytes != null ? System.Text.Encoding.UTF8.GetString(ResponseBodyInBytes) : null,nq}")]
 		byte[] ResponseBodyInBytes { get; }
 
-		/// <summary>The response MIME type </summary>
+		/// <summary>The MIME type of the response.</summary>
 		string ResponseMimeType { get; }
 
 		/// <summary>
@@ -87,12 +87,12 @@ namespace Elastic.Transport
 
 		/// <summary>
 		/// The response is successful or has a response code between 400-599, the call should not be retried.
-		/// Only on 502,503 and 504 will this return false;
+		/// Only for 502, 503 and 504 will this return false;
 		/// </summary>
 		bool SuccessOrKnownError { get; }
 
 		/// <summary>
-		/// The url as requested
+		/// The <see cref="Uri"/> from the request.
 		/// </summary>
 		Uri Uri { get; }
 	}
