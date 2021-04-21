@@ -260,7 +260,7 @@ namespace Elastic.Transport
 				}
 			}
 
-			exceptionMessage += $". Call: {resource}";
+			exceptionMessage += !exceptionMessage.EndsWith(".", StringComparison.Ordinal) ? $". Call: {resource}" : $" Call: {resource}";
 			if (response != null && _productRegistration.TryGetServerErrorReason(response, out var reason))
 				exceptionMessage += $". ServerError: {reason}";
 
