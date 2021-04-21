@@ -18,7 +18,7 @@ namespace Elastic.Transport
 	/// this exception. This is done to not lose valuable diagnostic information.
 	///
 	/// <para>
-	/// When <see cref="ITransportConfigurationValues.ThrowExceptions"/> is set these exceptions are rethrown and need
+	/// When <see cref="ITransportConfiguration.ThrowExceptions"/> is set these exceptions are rethrown and need
 	/// to be caught
 	/// </para>
 	/// </summary>

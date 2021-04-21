@@ -13,12 +13,6 @@ namespace Elastic.Transport
 	/// </summary>
 	public interface IRequestParameters
 	{
-		/// <summary> TODO THIS SHOULD NOT BE HERE </summary>
-		HttpMethod DefaultHttpMethod { get; }
-
-		/// <summary> TODO THIS SHOULD NOT BE HERE </summary>
-		bool SupportsBody { get; }
-
 		/// <summary> Allows you to completely circumvent the serializer to build the final response.</summary>
 		CustomResponseBuilderBase CustomResponseBuilder { get; set; }
 
@@ -50,7 +44,7 @@ namespace Elastic.Transport
 		/// <summary>
 		/// Gets the stringified representation of a query string value as it would be sent to Elasticsearch.
 		/// </summary>
-		string GetResolvedQueryStringValue(string n, ITransportConfigurationValues s);
+		string GetResolvedQueryStringValue(string name, ITransportConfiguration transportConfiguration);
 
 		/// <summary>
 		/// Gets the HTTP Accept Header value from the shortened name. If the shortened name is not recognized,

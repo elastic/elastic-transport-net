@@ -15,7 +15,8 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 	[DataContract]
 	public class ServerError
 	{
-		internal ServerError() { }
+		/// <inheritdoc cref="ServerError"/>
+		public ServerError() { }
 
 		/// <inheritdoc cref="ServerError"/>
 		public ServerError(Error error, int? statusCode)
@@ -43,7 +44,7 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 			try
 			{
 				serverError = Create(stream);
-				return true;
+				return serverError != null;
 			}
 			catch
 			{

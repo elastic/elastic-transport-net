@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <TargetFramework>net5.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Transport.VirtualizedCluster\Elastic.Transport.VirtualizedCluster.csproj" />
+    <ProjectReference Include="..\..\src\Elastic.Transport\Elastic.Transport.csproj" />
+  </ItemGroup>
+
+</Project>

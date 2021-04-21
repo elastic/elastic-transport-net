@@ -47,7 +47,7 @@ namespace Elastic.Transport.Products
 		}
 
 		/// <inheritdoc cref="IProductRegistration.CreateSniffRequestData"/>
-		public RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfigurationValues settings, IMemoryStreamFactory memoryStreamFactory) =>
+		public RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings, IMemoryStreamFactory memoryStreamFactory) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.SniffAsync"/>
@@ -59,7 +59,7 @@ namespace Elastic.Transport.Products
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.CreatePingRequestData"/>
-		public RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfigurationValues global, IMemoryStreamFactory memoryStreamFactory) =>
+		public RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, IMemoryStreamFactory memoryStreamFactory) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.PingAsync"/>

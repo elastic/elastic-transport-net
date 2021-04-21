@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-#if NETSTANDARD2_1
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
 using System;
 using System.IO;
 using System.Threading;
@@ -27,7 +27,7 @@ namespace Elastic.Transport
 				Type = PostType.ReadOnlyMemory;
 			}
 
-			public override void Write(Stream writableStream, ITransportConfigurationValues settings)
+			public override void Write(Stream writableStream, ITransportConfiguration settings)
 			{
 				if (_memoryOfBytes.IsEmpty) return;
 
@@ -43,7 +43,7 @@ namespace Elastic.Transport
 				FinishStream(writableStream, buffer, settings);
 			}
 
-			public override async Task WriteAsync(Stream writableStream, ITransportConfigurationValues settings,
+			public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
 				CancellationToken cancellationToken)
 			{
 				if (_memoryOfBytes.IsEmpty) return;

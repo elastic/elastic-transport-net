@@ -90,7 +90,11 @@ namespace Elastic.Transport
 					if (requestData.ThreadPoolStats)
 						threadPoolStats = ThreadPoolStats.GetStats();
 
+#if NET5_0
+					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
+#else
 					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
+#endif
 					statusCode = (int)responseMessage.StatusCode;
 					d.EndState = statusCode;
 				}
@@ -102,7 +106,12 @@ namespace Elastic.Transport
 				if (responseMessage.Content != null)
 				{
 					receive = DiagnosticSource.Diagnose(DiagnosticSources.HttpConnection.ReceiveBody, requestData, statusCode);
+
+#if NET5_0
+					responseStream = responseMessage.Content.ReadAsStream();
+#else
 					responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+#endif
 				}
 			}
 			catch (TaskCanceledException e)
@@ -207,7 +216,7 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
 		/// <exception cref="Exception">
-		/// Can throw if <see cref="ITransportConfigurationValues.ConnectionLimit"/> is set but the platform does
+		/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit"/> is set but the platform does
 		/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer"/>
 		/// </exception>
 		protected virtual HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
@@ -263,7 +272,7 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
 		/// <exception cref="Exception">
-		/// Can throw if <see cref="ITransportConfigurationValues.ConnectionLimit"/> is set but the platform does
+		/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit"/> is set but the platform does
 		/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer"/>
 		/// </exception>
 		protected virtual HttpRequestMessage CreateHttpRequestMessage(RequestData requestData)

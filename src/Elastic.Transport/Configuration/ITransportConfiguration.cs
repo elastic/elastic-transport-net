@@ -17,10 +17,10 @@ namespace Elastic.Transport
 	/// All the transport configuration that you as the user can use to steer the behavior of the <see cref="ITransport{TConnectionSettings}"/> and all the components such
 	/// as <see cref="IConnection"/> <see cref="IConnectionPool"/> and <see cref="ITransportSerializer"/>.
 	/// </summary>
-	public interface ITransportConfigurationValues : IDisposable
+	public interface ITransportConfiguration : IDisposable
 	{
 		/// <inheritdoc cref="IAuthenticationHeader"/>
-		IAuthenticationHeader AuthenticationHeader { get; }
+		IAuthenticationHeader Authentication { get; }
 
 		/// <summary> Provides a semaphoreslim to transport implementations that need to limit access to a resource</summary>
 		SemaphoreSlim BootstrapLock { get; }
@@ -219,7 +219,7 @@ namespace Elastic.Transport
 		bool ThrowExceptions { get; }
 
 		/// <summary>
-		/// Access to <see cref="UrlFormatter"/> instance that is aware of this <see cref="ITransportConfigurationValues"/> instance
+		/// Access to <see cref="UrlFormatter"/> instance that is aware of this <see cref="ITransportConfiguration"/> instance
 		/// </summary>
 		UrlFormatter UrlFormatter { get; }
 
@@ -247,18 +247,9 @@ namespace Elastic.Transport
 		/// </summary>
 		bool TransferEncodingChunked { get; }
 
-#pragma warning disable 1587
-#pragma warning disable 1570
 		/// <summary>
 		/// DnsRefreshTimeout for the connections. Defaults to 5 minutes.
-		#if DOTNETCORE
-		/// <para>Will create new instances of <see cref="System.Net.Http.HttpClient"/> after this timeout to force DNS updates</para>
-		#else
-		/// <para>Will set <see cref="System.Net.ServicePointManager.ConnectionLeaseTimeout "/>
-#endif
 		/// </summary>
-#pragma warning restore 1570
-#pragma warning restore 1587
 		TimeSpan DnsRefreshTimeout { get; }
 
 		/// <summary>

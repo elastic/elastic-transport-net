@@ -67,11 +67,11 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 		/// <inheritdoc cref="IProductRegistration.CreateSniffRequestData"/>
 		public RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration,
-			ITransportConfigurationValues settings,
+			ITransportConfiguration settings,
 			IMemoryStreamFactory memoryStreamFactory
 		)
 		{
-			var requestParameters = new RequestParameters(HttpMethod.GET, supportsBody: false)
+			var requestParameters = new RequestParameters
 			{
 				QueryString = {{"timeout", requestConfiguration.PingTimeout}, {"flat_settings", true},}
 			};
@@ -104,11 +104,11 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 		/// <inheritdoc cref="IProductRegistration.CreatePingRequestData"/>
 		public RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration,
-			ITransportConfigurationValues global,
+			ITransportConfiguration global,
 			IMemoryStreamFactory memoryStreamFactory
 		)
 		{
-			IRequestParameters requestParameters = new RequestParameters(HttpMethod.HEAD, supportsBody: false);
+			IRequestParameters requestParameters = new RequestParameters();
 			requestParameters.RequestConfiguration = requestConfiguration;
 
 			var data = new RequestData(HttpMethod.HEAD, string.Empty, null, global, requestParameters,

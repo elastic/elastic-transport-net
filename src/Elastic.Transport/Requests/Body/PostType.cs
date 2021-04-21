@@ -1,4 +1,4 @@
-#if NETSTANDARD2_1
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
 using System;
 #endif
 
@@ -14,7 +14,7 @@ namespace Elastic.Transport
 		/// <para>Instantiate using <see cref="PostData.Bytes"/></para>
 		/// </summary>
 		ByteArray,
-#if NETSTANDARD2_1
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
 		/// <summary>
 		/// An instance of <see cref="ReadOnlyMemory{T}"/> where T is byte
 		/// <para>Instantiate using <see cref="PostData.ReadOnlyMemory"/></para>

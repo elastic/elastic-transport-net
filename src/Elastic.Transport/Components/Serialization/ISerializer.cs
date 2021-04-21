@@ -11,7 +11,7 @@ namespace Elastic.Transport
 {
 	/// <summary>
 	/// When the <see cref="ITransport{TConnectionSettings}"/> needs to (de)serialize anything it will call into the
-	/// <see cref="ITransportConfigurationValues.RequestResponseSerializer"/>  implementation of this interface.
+	/// <see cref="ITransportConfiguration.RequestResponseSerializer"/>  implementation of this interface.
 	///
 	/// <para>e.g: Whenever the <see cref="ITransport{TConnectionSettings}"/> receives <see cref="PostData.Serializable{T}"/>
 	/// to serialize that data.</para>
@@ -25,10 +25,10 @@ namespace Elastic.Transport
 		/// <summary> Deserialize <paramref name="stream"/> to an instance of <typeparamref name="T" /></summary>
 		T Deserialize<T>(Stream stream);
 
-		/// <inheritdoc cref="DeserializeAsync"/>
+		/// <inheritdoc cref="Deserialize"/>
 		Task<object> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default);
 
-		/// <inheritdoc cref="DeserializeAsync{T}"/>
+		/// <inheritdoc cref="Deserialize"/>
 		Task<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default);
 
 		/// <summary>

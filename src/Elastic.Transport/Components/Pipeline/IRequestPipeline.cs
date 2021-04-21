@@ -21,7 +21,7 @@ namespace Elastic.Transport
 		List<Audit> AuditTrail { get; }
 
 		/// <summary> Should the workflow attempt the initial sniff as requested by
-		/// <see cref="ITransportConfigurationValues.SniffsOnStartup"/>
+		/// <see cref="ITransportConfiguration.SniffsOnStartup"/>
 		/// </summary>
 		bool FirstPoolUsageNeedsSniffing { get; }
 

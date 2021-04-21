@@ -44,7 +44,7 @@ namespace Elastic.Transport.Products
 		/// Create an instance of <see cref="RequestData"/> that describes where and how to ping see <paramref name="node" />
 		/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
 		/// </summary>
-		RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfigurationValues global, IMemoryStreamFactory memoryStreamFactory);
+		RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, IMemoryStreamFactory memoryStreamFactory);
 
 		/// <summary>
 		/// Provide an implementation that performs the ping directly using <see cref="IConnection.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
@@ -62,7 +62,7 @@ namespace Elastic.Transport.Products
 		/// Create an instance of <see cref="RequestData"/> that describes where and how to sniff the cluster using <paramref name="node" />
 		/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
 		/// </summary>
-		RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfigurationValues settings,
+		RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings,
 			IMemoryStreamFactory memoryStreamFactory
 		);
 

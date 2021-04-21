@@ -66,7 +66,7 @@ namespace Elastic.Transport
 		//public static IMemoryStreamFactory Default { get; } = RecyclableMemoryStreamFactory.Default;
 		// ReSharper disable once RedundantNameQualifier
 		/// <summary>
-		/// The default memory stream factory if none is configured on <see cref="ITransportConfigurationValues.MemoryStreamFactory"/>
+		/// The default memory stream factory if none is configured on <see cref="ITransportConfiguration.MemoryStreamFactory"/>
 		/// </summary>
 		public static IMemoryStreamFactory DefaultMemoryStreamFactory { get; } = Elastic.Transport.MemoryStreamFactory.Default;
 
@@ -109,7 +109,7 @@ namespace Elastic.Transport
 		/// Creates a new instance of <see cref="TransportConfiguration"/>
 		/// </summary>
 		/// <param name="uri">The root of the Elastic stack product node we want to connect to. Defaults to http://localhost:9200</param>
-		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration"/></param>
+		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		[SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
 		public TransportConfiguration(Uri uri = null, IProductRegistration productRegistration = null)
 			: this(new SingleNodeConnectionPool(uri ?? new Uri("http://localhost:9200")), productRegistration: productRegistration) { }
@@ -128,11 +128,11 @@ namespace Elastic.Transport
 		public TransportConfiguration(string cloudId, Base64ApiKey credentials, IProductRegistration productRegistration = null)
 			: this(new CloudConnectionPool(cloudId, credentials), productRegistration: productRegistration) { }
 
-		/// <summary> <inheritdoc cref="TransportConfiguration"/></summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool"/></param>
-		/// <param name="connection"><inheritdoc cref="IConnection"/></param>
-		/// <param name="serializer"><inheritdoc cref="ITransportSerializer"/></param>
-		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration"/></param>
+		/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
+		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool" path="/summary"/></param>
+		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
+		/// <param name="serializer"><inheritdoc cref="ITransportSerializer" path="/summary"/></param>
+		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		public TransportConfiguration(
 			IConnectionPool connectionPool,
 			IConnection connection = null,
@@ -145,7 +145,7 @@ namespace Elastic.Transport
 	/// <inheritdoc cref="TransportConfiguration"/>>
 	[Browsable(false)]
 	[EditorBrowsable(EditorBrowsableState.Never)]
-	public abstract class TransportConfigurationBase<T> : ITransportConfigurationValues
+	public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 		where T : TransportConfigurationBase<T>
 	{
 		private readonly IConnection _connection;
@@ -196,10 +196,10 @@ namespace Elastic.Transport
 		/// <summary>
 		/// <inheritdoc cref="TransportConfiguration"/>
 		/// </summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool"/></param>
-		/// <param name="connection"><inheritdoc cref="IConnection"/></param>
-		/// <param name="requestResponseSerializer"><inheritdoc cref="ITransportSerializer"/></param>
-		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration"/></param>
+		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool" path="/summary"/></param>
+		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
+		/// <param name="requestResponseSerializer"><inheritdoc cref="ITransportSerializer" path="/summary"/></param>
+		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		protected TransportConfigurationBase(IConnectionPool connectionPool, IConnection connection, ITransportSerializer requestResponseSerializer, IProductRegistration productRegistration)
 		{
 			_connectionPool = connectionPool;
@@ -236,53 +236,53 @@ namespace Elastic.Transport
 		// ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
 		protected ITransportSerializer UseThisRequestResponseSerializer { get; set; }
 
-		IAuthenticationHeader ITransportConfigurationValues.AuthenticationHeader => _authenticationHeader;
-		SemaphoreSlim ITransportConfigurationValues.BootstrapLock => _semaphore;
-		X509CertificateCollection ITransportConfigurationValues.ClientCertificates => _clientCertificates;
-		IConnection ITransportConfigurationValues.Connection => _connection;
-		IProductRegistration ITransportConfigurationValues.ProductRegistration => _productRegistration;
-		int ITransportConfigurationValues.ConnectionLimit => _connectionLimit;
-		IConnectionPool ITransportConfigurationValues.ConnectionPool => _connectionPool;
-		TimeSpan? ITransportConfigurationValues.DeadTimeout => _deadTimeout;
-		bool ITransportConfigurationValues.DisableAutomaticProxyDetection => _disableAutomaticProxyDetection;
-		bool ITransportConfigurationValues.DisableDirectStreaming => _disableDirectStreaming;
-		bool ITransportConfigurationValues.DisablePings => _disablePings;
-		bool ITransportConfigurationValues.EnableHttpCompression => _enableHttpCompression;
-		NameValueCollection ITransportConfigurationValues.Headers => _headers;
-		bool ITransportConfigurationValues.HttpPipeliningEnabled => _enableHttpPipelining;
-		TimeSpan? ITransportConfigurationValues.KeepAliveInterval => _keepAliveInterval;
-		TimeSpan? ITransportConfigurationValues.KeepAliveTime => _keepAliveTime;
-		TimeSpan? ITransportConfigurationValues.MaxDeadTimeout => _maxDeadTimeout;
-		int? ITransportConfigurationValues.MaxRetries => _maxRetries;
-		TimeSpan? ITransportConfigurationValues.MaxRetryTimeout => _maxRetryTimeout;
-		IMemoryStreamFactory ITransportConfigurationValues.MemoryStreamFactory => _memoryStreamFactory;
+		IAuthenticationHeader ITransportConfiguration.Authentication => _authenticationHeader;
+		SemaphoreSlim ITransportConfiguration.BootstrapLock => _semaphore;
+		X509CertificateCollection ITransportConfiguration.ClientCertificates => _clientCertificates;
+		IConnection ITransportConfiguration.Connection => _connection;
+		IProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
+		int ITransportConfiguration.ConnectionLimit => _connectionLimit;
+		IConnectionPool ITransportConfiguration.ConnectionPool => _connectionPool;
+		TimeSpan? ITransportConfiguration.DeadTimeout => _deadTimeout;
+		bool ITransportConfiguration.DisableAutomaticProxyDetection => _disableAutomaticProxyDetection;
+		bool ITransportConfiguration.DisableDirectStreaming => _disableDirectStreaming;
+		bool ITransportConfiguration.DisablePings => _disablePings;
+		bool ITransportConfiguration.EnableHttpCompression => _enableHttpCompression;
+		NameValueCollection ITransportConfiguration.Headers => _headers;
+		bool ITransportConfiguration.HttpPipeliningEnabled => _enableHttpPipelining;
+		TimeSpan? ITransportConfiguration.KeepAliveInterval => _keepAliveInterval;
+		TimeSpan? ITransportConfiguration.KeepAliveTime => _keepAliveTime;
+		TimeSpan? ITransportConfiguration.MaxDeadTimeout => _maxDeadTimeout;
+		int? ITransportConfiguration.MaxRetries => _maxRetries;
+		TimeSpan? ITransportConfiguration.MaxRetryTimeout => _maxRetryTimeout;
+		IMemoryStreamFactory ITransportConfiguration.MemoryStreamFactory => _memoryStreamFactory;
 
-		Func<Node, bool> ITransportConfigurationValues.NodePredicate => _nodePredicate;
-		Action<IApiCallDetails> ITransportConfigurationValues.OnRequestCompleted => _completedRequestHandler;
-		Action<RequestData> ITransportConfigurationValues.OnRequestDataCreated => _onRequestDataCreated;
-		TimeSpan? ITransportConfigurationValues.PingTimeout => _pingTimeout;
-		string ITransportConfigurationValues.ProxyAddress => _proxyAddress;
-		SecureString ITransportConfigurationValues.ProxyPassword => _proxyPassword;
-		string ITransportConfigurationValues.ProxyUsername => _proxyUsername;
-		NameValueCollection ITransportConfigurationValues.QueryStringParameters => _queryString;
-		ITransportSerializer ITransportConfigurationValues.RequestResponseSerializer => UseThisRequestResponseSerializer;
-		TimeSpan ITransportConfigurationValues.RequestTimeout => _requestTimeout;
-		TimeSpan ITransportConfigurationValues.DnsRefreshTimeout => _dnsRefreshTimeout;
+		Func<Node, bool> ITransportConfiguration.NodePredicate => _nodePredicate;
+		Action<IApiCallDetails> ITransportConfiguration.OnRequestCompleted => _completedRequestHandler;
+		Action<RequestData> ITransportConfiguration.OnRequestDataCreated => _onRequestDataCreated;
+		TimeSpan? ITransportConfiguration.PingTimeout => _pingTimeout;
+		string ITransportConfiguration.ProxyAddress => _proxyAddress;
+		SecureString ITransportConfiguration.ProxyPassword => _proxyPassword;
+		string ITransportConfiguration.ProxyUsername => _proxyUsername;
+		NameValueCollection ITransportConfiguration.QueryStringParameters => _queryString;
+		ITransportSerializer ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
+		TimeSpan ITransportConfiguration.RequestTimeout => _requestTimeout;
+		TimeSpan ITransportConfiguration.DnsRefreshTimeout => _dnsRefreshTimeout;
 
-		Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> ITransportConfigurationValues.ServerCertificateValidationCallback =>
+		Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> ITransportConfiguration.ServerCertificateValidationCallback =>
 			_serverCertificateValidationCallback;
 
-		IReadOnlyCollection<int> ITransportConfigurationValues.SkipDeserializationForStatusCodes => _skipDeserializationForStatusCodes;
-		TimeSpan? ITransportConfigurationValues.SniffInformationLifeSpan => _sniffLifeSpan;
-		bool ITransportConfigurationValues.SniffsOnConnectionFault => _sniffOnConnectionFault;
-		bool ITransportConfigurationValues.SniffsOnStartup => _sniffOnStartup;
-		bool ITransportConfigurationValues.ThrowExceptions => _throwExceptions;
-		UrlFormatter ITransportConfigurationValues.UrlFormatter => _urlFormatter;
-		UserAgent ITransportConfigurationValues.UserAgent => _userAgent;
-		Func<HttpMethod, int, bool> ITransportConfigurationValues.StatusCodeToResponseSuccess => _statusCodeToResponseSuccess;
-		bool ITransportConfigurationValues.TransferEncodingChunked => _transferEncodingChunked;
-		bool ITransportConfigurationValues.EnableTcpStats => _enableTcpStats;
-		bool ITransportConfigurationValues.EnableThreadPoolStats => _enableThreadPoolStats;
+		IReadOnlyCollection<int> ITransportConfiguration.SkipDeserializationForStatusCodes => _skipDeserializationForStatusCodes;
+		TimeSpan? ITransportConfiguration.SniffInformationLifeSpan => _sniffLifeSpan;
+		bool ITransportConfiguration.SniffsOnConnectionFault => _sniffOnConnectionFault;
+		bool ITransportConfiguration.SniffsOnStartup => _sniffOnStartup;
+		bool ITransportConfiguration.ThrowExceptions => _throwExceptions;
+		UrlFormatter ITransportConfiguration.UrlFormatter => _urlFormatter;
+		UserAgent ITransportConfiguration.UserAgent => _userAgent;
+		Func<HttpMethod, int, bool> ITransportConfiguration.StatusCodeToResponseSuccess => _statusCodeToResponseSuccess;
+		bool ITransportConfiguration.TransferEncodingChunked => _transferEncodingChunked;
+		bool ITransportConfiguration.EnableTcpStats => _enableTcpStats;
+		bool ITransportConfiguration.EnableThreadPoolStats => _enableThreadPoolStats;
 
 		void IDisposable.Dispose() => DisposeManagedResources();
 
@@ -298,69 +298,69 @@ namespace Elastic.Transport
 		/// Sets the keep-alive option on a TCP connection.
 		/// <para>For Desktop CLR, sets ServicePointManager.SetTcpKeepAlive</para>
 		/// </summary>
-		/// <param name="keepAliveTime"><inheritdoc cref="ITransportConfigurationValues.KeepAliveTime"/></param>
-		/// <param name="keepAliveInterval"><inheritdoc cref="ITransportConfigurationValues.KeepAliveInterval"/></param>
+		/// <param name="keepAliveTime"><inheritdoc cref="ITransportConfiguration.KeepAliveTime" path="/summary"/></param>
+		/// <param name="keepAliveInterval"><inheritdoc cref="ITransportConfiguration.KeepAliveInterval" path="/summary"/></param>
 		public T EnableTcpKeepAlive(TimeSpan keepAliveTime, TimeSpan keepAliveInterval) =>
 			Assign(keepAliveTime, (a, v) => a._keepAliveTime = v)
 			.Assign(keepAliveInterval, (a, v) => a._keepAliveInterval = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.MaxRetries"/>
+		/// <inheritdoc cref="ITransportConfiguration.MaxRetries"/>
 		public T MaximumRetries(int maxRetries) => Assign(maxRetries, (a, v) => a._maxRetries = v);
 
 		/// <summary>
-		/// <inheritdoc cref="ITransportConfigurationValues.ConnectionLimit"/>
+		/// <inheritdoc cref="ITransportConfiguration.ConnectionLimit" path="/summary"/>
 		/// </summary>
 		/// <param name="connectionLimit">The connection limit, a value lower then 0 will cause the connection limit not to be set at all</param>
 		public T ConnectionLimit(int connectionLimit) => Assign(connectionLimit, (a, v) => a._connectionLimit = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.SniffsOnConnectionFault"/>
+		/// <inheritdoc cref="ITransportConfiguration.SniffsOnConnectionFault"/>
 		public T SniffOnConnectionFault(bool sniffsOnConnectionFault = true) =>
 			Assign(sniffsOnConnectionFault, (a, v) => a._sniffOnConnectionFault = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.SniffsOnStartup"/>
+		/// <inheritdoc cref="ITransportConfiguration.SniffsOnStartup"/>
 		public T SniffOnStartup(bool sniffsOnStartup = true) => Assign(sniffsOnStartup, (a, v) => a._sniffOnStartup = v);
 
 		/// <summary>
-		/// <inheritdoc cref="ITransportConfigurationValues.SniffInformationLifeSpan"/>
+		/// <inheritdoc cref="ITransportConfiguration.SniffInformationLifeSpan" path="/summary"/>
 		/// </summary>
 		/// <param name="sniffLifeSpan">The duration a clusterstate is considered fresh, set to null to disable periodic sniffing</param>
 		public T SniffLifeSpan(TimeSpan? sniffLifeSpan) => Assign(sniffLifeSpan, (a, v) => a._sniffLifeSpan = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.EnableHttpCompression"/>
+		/// <inheritdoc cref="ITransportConfiguration.EnableHttpCompression"/>
 		public T EnableHttpCompression(bool enabled = true) => Assign(enabled, (a, v) => a._enableHttpCompression = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.DisableAutomaticProxyDetection"/>
+		/// <inheritdoc cref="ITransportConfiguration.DisableAutomaticProxyDetection"/>
 		public T DisableAutomaticProxyDetection(bool disable = true) => Assign(disable, (a, v) => a._disableAutomaticProxyDetection = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.ThrowExceptions"/>
+		/// <inheritdoc cref="ITransportConfiguration.ThrowExceptions"/>
 		public T ThrowExceptions(bool alwaysThrow = true) => Assign(alwaysThrow, (a, v) => a._throwExceptions = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.DisablePings"/>
+		/// <inheritdoc cref="ITransportConfiguration.DisablePings"/>
 		public T DisablePing(bool disable = true) => Assign(disable, (a, v) => a._disablePings = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.QueryStringParameters"/>
+		/// <inheritdoc cref="ITransportConfiguration.QueryStringParameters"/>
 		// ReSharper disable once MemberCanBePrivate.Global
 		public T GlobalQueryStringParameters(NameValueCollection queryStringParameters) => Assign(queryStringParameters, (a, v) => a._queryString.Add(v));
 
-		/// <inheritdoc cref="ITransportConfigurationValues.Headers"/>
+		/// <inheritdoc cref="ITransportConfiguration.Headers"/>
 		public T GlobalHeaders(NameValueCollection headers) => Assign(headers, (a, v) => a._headers.Add(v));
 
-		/// <inheritdoc cref="ITransportConfigurationValues.RequestTimeout"/>
+		/// <inheritdoc cref="ITransportConfiguration.RequestTimeout"/>
 		public T RequestTimeout(TimeSpan timeout) => Assign(timeout, (a, v) => a._requestTimeout = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.PingTimeout"/>
+		/// <inheritdoc cref="ITransportConfiguration.PingTimeout"/>
 		public T PingTimeout(TimeSpan timeout) => Assign(timeout, (a, v) => a._pingTimeout = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.DeadTimeout"/>
+		/// <inheritdoc cref="ITransportConfiguration.DeadTimeout"/>
 		public T DeadTimeout(TimeSpan timeout) => Assign(timeout, (a, v) => a._deadTimeout = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.MaxDeadTimeout"/>
+		/// <inheritdoc cref="ITransportConfiguration.MaxDeadTimeout"/>
 		public T MaxDeadTimeout(TimeSpan timeout) => Assign(timeout, (a, v) => a._maxDeadTimeout = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.MaxRetryTimeout"/>
+		/// <inheritdoc cref="ITransportConfiguration.MaxRetryTimeout"/>
 		public T MaxRetryTimeout(TimeSpan maxRetryTimeout) => Assign(maxRetryTimeout, (a, v) => a._maxRetryTimeout = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.DnsRefreshTimeout"/>
+		/// <inheritdoc cref="ITransportConfiguration.DnsRefreshTimeout"/>
 		public T DnsRefreshTimeout(TimeSpan timeout) => Assign(timeout, (a, v) => a._dnsRefreshTimeout = v);
 
 		/// <summary>
@@ -377,26 +377,26 @@ namespace Elastic.Transport
 				.Assign(username, (a, v) => a._proxyUsername = v)
 				.Assign(password, (a, v) => a._proxyPassword = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.DisableDirectStreaming"/>
+		/// <inheritdoc cref="ITransportConfiguration.DisableDirectStreaming"/>
 		// ReSharper disable once MemberCanBePrivate.Global
 		public T DisableDirectStreaming(bool b = true) => Assign(b, (a, v) => a._disableDirectStreaming = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.OnRequestCompleted"/>
+		/// <inheritdoc cref="ITransportConfiguration.OnRequestCompleted"/>
 		public T OnRequestCompleted(Action<IApiCallDetails> handler) =>
 			Assign(handler, (a, v) => a._completedRequestHandler += v ?? DefaultCompletedRequestHandler);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.OnRequestDataCreated"/>
+		/// <inheritdoc cref="ITransportConfiguration.OnRequestDataCreated"/>
 		public T OnRequestDataCreated(Action<RequestData> handler) =>
 			Assign(handler, (a, v) => a._onRequestDataCreated += v ?? DefaultRequestDataCreated);
 
 		/// <inheritdoc cref="IAuthenticationHeader"/>
 		public T Authentication(IAuthenticationHeader header) => Assign(header, (a, v) => a._authenticationHeader = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.HttpPipeliningEnabled"/>
+		/// <inheritdoc cref="ITransportConfiguration.HttpPipeliningEnabled"/>
 		public T EnableHttpPipelining(bool enabled = true) => Assign(enabled, (a, v) => a._enableHttpPipelining = v);
 
 		/// <summary>
-		/// <inheritdoc cref="ITransportConfigurationValues.NodePredicate"/>
+		/// <inheritdoc cref="ITransportConfiguration.NodePredicate"/>
 		/// </summary>
 		/// <param name="predicate">Return true if you want the node to be used for API calls</param>
 		public T NodePredicate(Func<Node, bool> predicate) => Assign(predicate, (a, v) => a._nodePredicate = v);
@@ -421,46 +421,46 @@ namespace Elastic.Transport
 					_completedRequestHandler += v ?? (d => Debug.WriteLine(d.DebugInformation)));
 
 		private bool _prettyJson;
-		bool ITransportConfigurationValues.PrettyJson => _prettyJson;
+		bool ITransportConfiguration.PrettyJson => _prettyJson;
 
-		/// <inheritdoc cref="ITransportConfigurationValues.PrettyJson"/>
+		/// <inheritdoc cref="ITransportConfiguration.PrettyJson"/>
 		// ReSharper disable once VirtualMemberNeverOverridden.Global
 		// ReSharper disable once MemberCanBeProtected.Global
 		public virtual T PrettyJson(bool b = true) => Assign(b, (a, v) => a._prettyJson = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.ServerCertificateValidationCallback"/>
+		/// <inheritdoc cref="ITransportConfiguration.ServerCertificateValidationCallback"/>
 		public T ServerCertificateValidationCallback(Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> callback) =>
 			Assign(callback, (a, v) => a._serverCertificateValidationCallback = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.ClientCertificates"/>
+		/// <inheritdoc cref="ITransportConfiguration.ClientCertificates"/>
 		public T ClientCertificates(X509CertificateCollection certificates) =>
 			Assign(certificates, (a, v) => a._clientCertificates = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.ClientCertificates"/>
+		/// <inheritdoc cref="ITransportConfiguration.ClientCertificates"/>
 		public T ClientCertificate(X509Certificate certificate) =>
 			Assign(new X509Certificate2Collection { certificate }, (a, v) => a._clientCertificates = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.ClientCertificates"/>
+		/// <inheritdoc cref="ITransportConfiguration.ClientCertificates"/>
 		public T ClientCertificate(string certificatePath) =>
 			Assign(new X509Certificate2Collection { new X509Certificate(certificatePath) }, (a, v) => a._clientCertificates = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.SkipDeserializationForStatusCodes"/>
+		/// <inheritdoc cref="ITransportConfiguration.SkipDeserializationForStatusCodes"/>
 		public T SkipDeserializationForStatusCodes(params int[] statusCodes) =>
 			Assign(new ReadOnlyCollection<int>(statusCodes), (a, v) => a._skipDeserializationForStatusCodes = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.UserAgent"/>
+		/// <inheritdoc cref="ITransportConfiguration.UserAgent"/>
 		public T UserAgent(UserAgent userAgent) => Assign(userAgent, (a, v) => a._userAgent = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.TransferEncodingChunked"/>
+		/// <inheritdoc cref="ITransportConfiguration.TransferEncodingChunked"/>
 		public T TransferEncodingChunked(bool transferEncodingChunked = true) => Assign(transferEncodingChunked, (a, v) => a._transferEncodingChunked = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.MemoryStreamFactory"/>
+		/// <inheritdoc cref="ITransportConfiguration.MemoryStreamFactory"/>
 		public T MemoryStreamFactory(IMemoryStreamFactory memoryStreamFactory) => Assign(memoryStreamFactory, (a, v) => a._memoryStreamFactory = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.EnableTcpStats"/>>
+		/// <inheritdoc cref="ITransportConfiguration.EnableTcpStats"/>>
 		public T EnableTcpStats(bool enableTcpStats = true) => Assign(enableTcpStats, (a, v) => a._enableTcpStats = v);
 
-		/// <inheritdoc cref="ITransportConfigurationValues.EnableThreadPoolStats"/>>
+		/// <inheritdoc cref="ITransportConfiguration.EnableThreadPoolStats"/>>
 		public T EnableThreadPoolStats(bool enableThreadPoolStats = true) => Assign(enableThreadPoolStats, (a, v) => a._enableThreadPoolStats = v);
 
 		// ReSharper disable once VirtualMemberNeverOverridden.Global

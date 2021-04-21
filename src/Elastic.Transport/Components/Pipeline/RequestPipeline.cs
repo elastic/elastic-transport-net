@@ -28,7 +28,7 @@ namespace Elastic.Transport
 
 	/// <inheritdoc cref="IRequestPipeline"/>
 	public class RequestPipeline<TConfiguration> : IRequestPipeline
-		where TConfiguration : class, ITransportConfigurationValues
+		where TConfiguration : class, ITransportConfiguration
 	{
 		private readonly IConnection _connection;
 		private readonly IConnectionPool _connectionPool;
@@ -62,7 +62,7 @@ namespace Elastic.Transport
 			{
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
-				AuthenticationHeader = _settings.AuthenticationHeader,
+				AuthenticationHeader = _settings.Authentication,
 				EnableHttpPipelining = RequestConfiguration?.EnableHttpPipelining ?? _settings.HttpPipeliningEnabled,
 				ForceNode = RequestConfiguration?.ForceNode
 			};
@@ -260,7 +260,7 @@ namespace Elastic.Transport
 				}
 			}
 
-			exceptionMessage += $". Call: {resource}";
+			exceptionMessage += !exceptionMessage.EndsWith(".", StringComparison.Ordinal) ? $". Call: {resource}" : $" Call: {resource}";
 			if (response != null && _productRegistration.TryGetServerErrorReason(response, out var reason))
 				exceptionMessage += $". ServerError: {reason}";
 

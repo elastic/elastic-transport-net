@@ -46,7 +46,7 @@ namespace Elastic.Transport
 		public void WriteMetric(long v) { }
 	}
 #endif
-#if !NETSTANDARD2_1
+#if NETSTANDARD2_0 || NETFRAMEWORK
 	internal class PollingCounter : IDisposable
 	{
 		// ReSharper disable UnusedParameter.Local
@@ -73,7 +73,7 @@ namespace Elastic.Transport
 					new PollingCounter(name, EventsWriter, poll)
 					// ReSharper disable once RedundantEmptyObjectOrCollectionInitializer
 					{
-#if NETSTANDARD2_1
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
 						DisplayName = description
 #endif
 					};
