@@ -381,10 +381,10 @@ namespace Elastic.Transport
 			{
 				if (DepletedRetries) yield break;
 
-				foreach (var node in _connectionPool
-					.CreateView(LazyAuditable)
-					.TakeWhile(node => !DepletedRetries))
+				foreach (var node in _connectionPool.CreateView(LazyAuditable))
 				{
+					if (DepletedRetries) break;
+
 					if (!_nodePredicate(node)) continue;
 
 					yield return node;
