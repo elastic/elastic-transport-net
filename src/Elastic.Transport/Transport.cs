@@ -16,44 +16,46 @@ using System.Net;
 
 namespace Elastic.Transport
 {
-	/// <inheritdoc cref="ITransport{TConnectionSettings}"/>
+	/// <inheritdoc cref="ITransport{TConnectionSettings}" />
 	public class Transport : Transport<TransportConfiguration>
 	{
 		/// <summary>
-		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different nodes
+		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different
+		/// nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
-		public Transport(TransportConfiguration configurationValues) : base(configurationValues)
-		{
-		}
+		public Transport(TransportConfiguration configurationValues) : base(configurationValues) { }
 
 		/// <summary>
-		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different nodes
+		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different
+		/// nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
 		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-		public Transport(TransportConfiguration configurationValues, IRequestPipelineFactory<TransportConfiguration> pipelineProvider = null, IDateTimeProvider dateTimeProvider = null, IMemoryStreamFactory memoryStreamFactory = null)
-			: base(configurationValues, pipelineProvider, dateTimeProvider, memoryStreamFactory)
-		{
-		}
+		public Transport(TransportConfiguration configurationValues, IRequestPipelineFactory<TransportConfiguration> pipelineProvider = null,
+			IDateTimeProvider dateTimeProvider = null, IMemoryStreamFactory memoryStreamFactory = null
+		)
+			: base(configurationValues, pipelineProvider, dateTimeProvider, memoryStreamFactory) { }
 	}
 
-	/// <inheritdoc cref="ITransport{TConfiguration}"/>
+	/// <inheritdoc cref="ITransport{TConfiguration}" />
 	public class Transport<TConfiguration> : ITransport<TConfiguration>
 		where TConfiguration : class, ITransportConfiguration
 	{
 		private readonly IProductRegistration _productRegistration;
 
 		/// <summary>
-		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different nodes
+		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different
+		/// nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
 		public Transport(TConfiguration configurationValues) : this(configurationValues, null, null, null) { }
 
 		/// <summary>
-		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different nodes
+		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different
+		/// nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
 		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
@@ -78,26 +80,51 @@ namespace Elastic.Transport
 			MemoryStreamFactory = memoryStreamFactory ?? configurationValues.MemoryStreamFactory;
 		}
 
-		/// <inheritdoc cref="ITransport{TConnectionSettings}.Settings"/>
+		/// <inheritdoc cref="ITransport{TConnectionSettings}.Settings" />
 		public TConfiguration Settings { get; }
 
 		private IDateTimeProvider DateTimeProvider { get; }
 		private IMemoryStreamFactory MemoryStreamFactory { get; }
 		private IRequestPipelineFactory<TConfiguration> PipelineProvider { get; }
 
-		/// <inheritdoc cref="ITransport.Request{TResponse}"/>
+		/// <inheritdoc cref="ITransport.Request{TResponse}" />
 		public TResponse Request<TResponse>(HttpMethod method, string path, PostData data = null, IRequestParameters requestParameters = null)
 			where TResponse : class, ITransportResponse, new()
 		{
-			using (var pipeline = PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters))
+			using var pipeline = PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
+
+			pipeline.FirstPoolUsage(Settings.BootstrapLock);
+
+			var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory);
+			Settings.OnRequestDataCreated?.Invoke(requestData);
+			TResponse response = null;
+
+			var seenExceptions = new List<PipelineException>();
+
+			if (pipeline.TryGetSingleNode(out var singleNode))
 			{
-				pipeline.FirstPoolUsage(Settings.BootstrapLock);
+				// No value in marking a single node as dead. We have no other options!
 
-				var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory);
-				Settings.OnRequestDataCreated?.Invoke(requestData);
-				TResponse response = null;
+				requestData.Node = singleNode;
 
-				var seenExceptions = new List<PipelineException>();
+				try
+				{
+					response = pipeline.CallProductEndpoint<TResponse>(requestData);
+				}
+				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
+				{
+					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				}
+				catch (PipelineException pipelineException)
+				{
+					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				}
+				catch (Exception killerException)
+				{
+					ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
+				}
+			}
+			else
 				foreach (var node in pipeline.NextNode())
 				{
 					requestData.Node = node;
@@ -124,37 +151,58 @@ namespace Elastic.Transport
 					}
 					catch (Exception killerException)
 					{
-						throw new UnexpectedTransportException(killerException, seenExceptions)
-						{
-							Request = requestData,
-							Response = response?.ApiCall,
-							AuditTrail = pipeline.AuditTrail
-						};
+						ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
 					}
-					if (response == null || !response.ApiCall.SuccessOrKnownError) continue;
+
+					if (response == null || !response.ApiCall.SuccessOrKnownError) continue; // try the next node
 
 					pipeline.MarkAlive(node);
 					break;
 				}
-				return FinalizeResponse(requestData, pipeline, seenExceptions, response);
-			}
+
+			return FinalizeResponse(requestData, pipeline, seenExceptions, response);
 		}
 
-		/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>
+		/// <inheritdoc cref="ITransport.RequestAsync{TResponse}" />
 		public async Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path, CancellationToken cancellationToken,
 			PostData data = null, IRequestParameters requestParameters = null
 		)
 			where TResponse : class, ITransportResponse, new()
 		{
-			using (var pipeline = PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters))
+			using var pipeline = PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
+
+			await pipeline.FirstPoolUsageAsync(Settings.BootstrapLock, cancellationToken).ConfigureAwait(false);
+
+			var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory);
+			Settings.OnRequestDataCreated?.Invoke(requestData);
+			TResponse response = null;
+
+			var seenExceptions = new List<PipelineException>();
+
+			if (pipeline.TryGetSingleNode(out var singleNode))
 			{
-				await pipeline.FirstPoolUsageAsync(Settings.BootstrapLock, cancellationToken).ConfigureAwait(false);
+				// No value in marking a single node as dead. We have no other options!
 
-				var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory);
-				Settings.OnRequestDataCreated?.Invoke(requestData);
-				TResponse response = null;
+				requestData.Node = singleNode;
 
-				var seenExceptions = new List<PipelineException>();
+				try
+				{
+					response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
+				}
+				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
+				{
+					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				}
+				catch (PipelineException pipelineException)
+				{
+					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				}
+				catch (Exception killerException)
+				{
+					ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
+				}
+			}
+			else
 				foreach (var node in pipeline.NextNode())
 				{
 					requestData.Node = node;
@@ -189,9 +237,7 @@ namespace Elastic.Transport
 
 						throw new UnexpectedTransportException(killerException, seenExceptions)
 						{
-							Request = requestData,
-							Response = response?.ApiCall,
-							AuditTrail = pipeline.AuditTrail
+							Request = requestData, Response = response?.ApiCall, AuditTrail = pipeline.AuditTrail
 						};
 					}
 					if (cancellationToken.IsCancellationRequested)
@@ -204,16 +250,25 @@ namespace Elastic.Transport
 					pipeline.MarkAlive(node);
 					break;
 				}
-				return FinalizeResponse(requestData, pipeline, seenExceptions, response);
-			}
+
+			return FinalizeResponse(requestData, pipeline, seenExceptions, response);
 		}
+
+		private static void ThrowUnexpectedTransportException<TResponse>(Exception killerException, List<PipelineException> seenExceptions,
+			RequestData requestData,
+			TResponse response, IRequestPipeline pipeline
+		) where TResponse : class, ITransportResponse, new() =>
+			throw new UnexpectedTransportException(killerException, seenExceptions)
+			{
+				Request = requestData, Response = response?.ApiCall, AuditTrail = pipeline.AuditTrail
+			};
 
 		private static void HandlePipelineException<TResponse>(
 			ref TResponse response, PipelineException ex, IRequestPipeline pipeline, Node node, ICollection<PipelineException> seenExceptions
 		)
 			where TResponse : class, ITransportResponse, new()
 		{
-			if (response == null) response = ex.Response as TResponse;
+			response ??= ex.Response as TResponse;
 			pipeline.MarkDead(node);
 			seenExceptions.Add(ex);
 		}
@@ -262,7 +317,7 @@ namespace Elastic.Transport
 			}
 
 			Settings.OnRequestCompleted?.Invoke(response.ApiCall);
-			if (data != null && (clientException != null && data.ThrowExceptions)) throw clientException;
+			if (data != null && clientException != null && data.ThrowExceptions) throw clientException;
 		}
 
 		private void Ping(IRequestPipeline pipeline, Node node)

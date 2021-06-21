@@ -26,7 +26,7 @@ namespace Elastic.Transport
 	}
 
 
-	/// <inheritdoc cref="IRequestPipeline"/>
+	/// <inheritdoc cref="IRequestPipeline" />
 	public class RequestPipeline<TConfiguration> : IRequestPipeline
 		where TConfiguration : class, ITransportConfiguration
 	{
@@ -34,13 +34,11 @@ namespace Elastic.Transport
 		private readonly IConnectionPool _connectionPool;
 		private readonly IDateTimeProvider _dateTimeProvider;
 		private readonly IMemoryStreamFactory _memoryStreamFactory;
+		private readonly Func<Node, bool> _nodePredicate;
 		private readonly IProductRegistration _productRegistration;
 		private readonly TConfiguration _settings;
-		private readonly Func<Node, bool> _nodePredicate;
 
-		private RequestConfiguration PingRequestConfiguration { get; }
-
-		/// <inheritdoc cref="IRequestPipeline"/>
+		/// <inheritdoc cref="IRequestPipeline" />
 		public RequestPipeline(
 			TConfiguration configurationValues,
 			IDateTimeProvider dateTimeProvider,
@@ -69,8 +67,10 @@ namespace Elastic.Transport
 			StartedOn = dateTimeProvider.Now();
 		}
 
-		/// <inheritdoc cref="IRequestPipeline.AuditTrail"/>
+		/// <inheritdoc cref="IRequestPipeline.AuditTrail" />
 		public List<Audit> AuditTrail { get; } = new List<Audit>();
+
+		private RequestConfiguration PingRequestConfiguration { get; }
 
 //TODO xmldocs
 #pragma warning disable 1591
@@ -171,7 +171,8 @@ namespace Elastic.Transport
 			where TResponse : class, ITransportResponse, new()
 		{
 			using (var audit = Audit(HealthyResponse, requestData.Node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(
+				DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
 			{
 				audit.Path = requestData.PathAndQuery;
 				try
@@ -196,7 +197,8 @@ namespace Elastic.Transport
 			where TResponse : class, ITransportResponse, new()
 		{
 			using (var audit = Audit(HealthyResponse, requestData.Node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(
+				DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
 			{
 				audit.Path = requestData.PathAndQuery;
 				try
@@ -266,9 +268,7 @@ namespace Elastic.Transport
 
 			var clientException = new TransportException(pipelineFailure, exceptionMessage, innerException)
 			{
-				Request = data,
-				Response = callDetails,
-				AuditTrail = AuditTrail
+				Request = data, Response = callDetails, AuditTrail = AuditTrail
 			};
 
 			return clientException;
@@ -349,6 +349,21 @@ namespace Elastic.Transport
 			Retried++;
 		}
 
+		/// <inheritdoc />
+		public bool TryGetSingleNode(out Node node)
+		{
+			if (_connectionPool.Nodes.Count <= 1 && _connectionPool.MaxRetries <= _connectionPool.Nodes.Count &&
+				!_connectionPool.SupportsPinging && !_connectionPool.SupportsReseeding)
+			{
+				node = _connectionPool.Nodes.FirstOrDefault();
+
+				if (node is not null && _nodePredicate(node)) return true;
+			}
+
+			node = null;
+			return false;
+		}
+
 		public IEnumerable<Node> NextNode()
 		{
 			if (RequestConfiguration?.ForceNode != null)
@@ -393,7 +408,8 @@ namespace Elastic.Transport
 
 			var pingData = _productRegistration.CreatePingRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
 			using (var audit = Audit(PingSuccess, node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping, pingData))
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping,
+				pingData))
 			{
 				audit.Path = pingData.PathAndQuery;
 				try
@@ -422,7 +438,8 @@ namespace Elastic.Transport
 
 			var pingData = _productRegistration.CreatePingRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
 			using (var audit = Audit(PingSuccess, node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping, pingData))
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping,
+				pingData))
 			{
 				audit.Path = pingData.PathAndQuery;
 				try
@@ -453,9 +470,9 @@ namespace Elastic.Transport
 			{
 				var requestData = _productRegistration.CreateSniffRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
 				using (var audit = Audit(SniffSuccess, node))
-				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff, requestData))
-				using(RequestPipelineStatics.DiagnosticSource.Diagnose(DiagnosticSources.RequestPipeline.Sniff, requestData))
-				{
+				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff,
+					requestData))
+				using (RequestPipelineStatics.DiagnosticSource.Diagnose(DiagnosticSources.RequestPipeline.Sniff, requestData))
 					try
 					{
 						audit.Path = requestData.PathAndQuery;
@@ -477,7 +494,6 @@ namespace Elastic.Transport
 						audit.Exception = e;
 						exceptions.Add(e);
 					}
-				}
 			}
 
 			throw new PipelineException(PipelineFailure.SniffFailure, exceptions.AsAggregateOrFirst());
@@ -492,12 +508,14 @@ namespace Elastic.Transport
 			{
 				var requestData = _productRegistration.CreateSniffRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
 				using (var audit = Audit(SniffSuccess, node))
-				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff, requestData))
-				{
+				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff,
+					requestData))
 					try
 					{
 						audit.Path = requestData.PathAndQuery;
-						var (response, nodes) = await _productRegistration.SniffAsync(_connection, _connectionPool.UsingSsl, requestData, cancellationToken).ConfigureAwait(false);
+						var (response, nodes) = await _productRegistration
+							.SniffAsync(_connection, _connectionPool.UsingSsl, requestData, cancellationToken)
+							.ConfigureAwait(false);
 						d.EndState = response;
 
 						ThrowBadAuthPipelineExceptionWhenNeeded(response);
@@ -515,7 +533,6 @@ namespace Elastic.Transport
 						audit.Exception = e;
 						exceptions.Add(e);
 					}
-				}
 			}
 
 			throw new PipelineException(PipelineFailure.SniffFailure, exceptions.AsAggregateOrFirst());
@@ -561,13 +578,10 @@ namespace Elastic.Transport
 
 		public void ThrowNoNodesAttempted(RequestData requestData, List<PipelineException> seenExceptions)
 		{
-			var clientException = new TransportException(PipelineFailure.NoNodesAttempted, RequestPipelineStatics.NoNodesAttemptedMessage, (Exception)null);
+			var clientException = new TransportException(PipelineFailure.NoNodesAttempted, RequestPipelineStatics.NoNodesAttemptedMessage,
+				(Exception)null);
 			using (Audit(NoNodesAttempted))
-				throw new UnexpectedTransportException(clientException, seenExceptions)
-				{
-					Request = requestData,
-					AuditTrail = AuditTrail
-				};
+				throw new UnexpectedTransportException(clientException, seenExceptions) { Request = requestData, AuditTrail = AuditTrail };
 		}
 
 		private bool PingDisabled(Node node) =>
@@ -579,11 +593,7 @@ namespace Elastic.Transport
 		private static void ThrowBadAuthPipelineExceptionWhenNeeded(IApiCallDetails details, ITransportResponse response = null)
 		{
 			if (details?.HttpStatusCode == 401)
-				throw new PipelineException(PipelineFailure.BadAuthentication, details.OriginalException)
-				{
-					Response = response,
-					ApiCall = details
-				};
+				throw new PipelineException(PipelineFailure.BadAuthentication, details.OriginalException) { Response = response, ApiCall = details };
 		}
 
 		private void LazyAuditable(AuditEvent e, Node n)
