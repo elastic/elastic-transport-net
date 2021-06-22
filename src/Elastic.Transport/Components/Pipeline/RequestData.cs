@@ -13,9 +13,11 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// Where and how <see cref="IConnection.Request{TResponse}"/> should connect to.
-	/// <para>Represents the cumulative configuration from <see cref="ITransportConfiguration"/>
-	/// and <see cref="IRequestConfiguration"/>.</para>
+	/// Where and how <see cref="IConnection.Request{TResponse}" /> should connect to.
+	/// <para>
+	/// Represents the cumulative configuration from <see cref="ITransportConfiguration" />
+	/// and <see cref="IRequestConfiguration" />.
+	/// </para>
 	/// </summary>
 	public class RequestData
 	{
@@ -25,6 +27,8 @@ namespace Elastic.Transport
 		public const string MimeTypeTextPlain = "text/plain";
 		public const string OpaqueIdHeader = "X-Opaque-Id";
 		public const string RunAsSecurityHeader = "es-security-runas-user";
+
+		private Uri _requestUri;
 
 		public RequestData(
 			HttpMethod method, string path,
@@ -134,7 +138,9 @@ namespace Elastic.Transport
 		public PostData PostData { get; }
 		public string ProxyAddress { get; }
 		public SecureString ProxyPassword { get; }
+
 		public string ProxyUsername { get; }
+
 		// TODO: rename to ContentType in 8.0.0
 		public string RequestMimeType { get; }
 		public TimeSpan RequestTimeout { get; }
@@ -146,7 +152,20 @@ namespace Elastic.Transport
 		public bool TcpStats { get; }
 		public bool ThreadPoolStats { get; }
 
-		public Uri Uri => Node != null ? new Uri(Node.Uri, PathAndQuery) : null;
+		/// <summary>
+		/// The <see cref="Uri" /> for the request.
+		/// </summary>
+		public Uri Uri
+		{
+			get
+			{
+				if (_requestUri is not null) return _requestUri;
+
+				_requestUri = Node is not null ? new Uri(Node.Uri, PathAndQuery) : null;
+				return _requestUri;
+			}
+		}
+
 		public TimeSpan DnsRefreshTimeout { get; }
 
 		public override string ToString() => $"{Method.GetStringValue()} {_path}";
