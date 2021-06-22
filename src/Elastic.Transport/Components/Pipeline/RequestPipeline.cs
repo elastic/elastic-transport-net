@@ -38,6 +38,8 @@ namespace Elastic.Transport
 		private readonly IProductRegistration _productRegistration;
 		private readonly TConfiguration _settings;
 
+		private RequestConfiguration _pingAndSniffRequestConfiguration;
+
 		/// <inheritdoc cref="IRequestPipeline" />
 		public RequestPipeline(
 			TConfiguration configurationValues,
@@ -52,27 +54,37 @@ namespace Elastic.Transport
 			_dateTimeProvider = dateTimeProvider;
 			_memoryStreamFactory = memoryStreamFactory;
 			_productRegistration = configurationValues.ProductRegistration;
-
 			_nodePredicate = _settings.NodePredicate ?? _productRegistration.NodePredicate;
 
 			RequestConfiguration = requestParameters?.RequestConfiguration;
-			PingRequestConfiguration = new RequestConfiguration
-			{
-				PingTimeout = PingTimeout,
-				RequestTimeout = PingTimeout,
-				AuthenticationHeader = _settings.Authentication,
-				EnableHttpPipelining = RequestConfiguration?.EnableHttpPipelining ?? _settings.HttpPipeliningEnabled,
-				ForceNode = RequestConfiguration?.ForceNode
-			};
 			StartedOn = dateTimeProvider.Now();
 		}
 
 		/// <inheritdoc cref="IRequestPipeline.AuditTrail" />
-		public List<Audit> AuditTrail { get; } = new List<Audit>();
+		public List<Audit> AuditTrail { get; } = new();
 
-		private RequestConfiguration PingRequestConfiguration { get; }
+		private RequestConfiguration PingAndSniffRequestConfiguration
+		{
+			// Lazily loaded when first required, since not all connection pools and configurations support pinging and sniffing.
+			// This avoids allocating 192B per request for those which do not need to ping or sniff.
+			get
+			{
+				if (_pingAndSniffRequestConfiguration is not null) return _pingAndSniffRequestConfiguration;
 
-//TODO xmldocs
+				_pingAndSniffRequestConfiguration = new RequestConfiguration
+				{
+					PingTimeout = PingTimeout,
+					RequestTimeout = PingTimeout,
+					AuthenticationHeader = _settings.Authentication,
+					EnableHttpPipelining = RequestConfiguration?.EnableHttpPipelining ?? _settings.HttpPipeliningEnabled,
+					ForceNode = RequestConfiguration?.ForceNode
+				};
+
+				return _pingAndSniffRequestConfiguration;
+			}
+		}
+
+		//TODO xmldocs
 #pragma warning disable 1591
 		public bool DepletedRetries => Retried >= MaxRetries + 1 || IsTakingTooLong;
 
@@ -406,7 +418,7 @@ namespace Elastic.Transport
 			if (!_productRegistration.SupportsPing) return;
 			if (PingDisabled(node)) return;
 
-			var pingData = _productRegistration.CreatePingRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
+			var pingData = _productRegistration.CreatePingRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
 			using (var audit = Audit(PingSuccess, node))
 			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping,
 				pingData))
@@ -436,7 +448,7 @@ namespace Elastic.Transport
 			if (!_productRegistration.SupportsPing) return;
 			if (PingDisabled(node)) return;
 
-			var pingData = _productRegistration.CreatePingRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
+			var pingData = _productRegistration.CreatePingRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
 			using (var audit = Audit(PingSuccess, node))
 			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping,
 				pingData))
@@ -468,7 +480,8 @@ namespace Elastic.Transport
 			var exceptions = new List<Exception>();
 			foreach (var node in SniffNodes)
 			{
-				var requestData = _productRegistration.CreateSniffRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
+				var requestData =
+					_productRegistration.CreateSniffRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
 				using (var audit = Audit(SniffSuccess, node))
 				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff,
 					requestData))
@@ -506,7 +519,8 @@ namespace Elastic.Transport
 			var exceptions = new List<Exception>();
 			foreach (var node in SniffNodes)
 			{
-				var requestData = _productRegistration.CreateSniffRequestData(node, PingRequestConfiguration, _settings, _memoryStreamFactory);
+				var requestData =
+					_productRegistration.CreateSniffRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
 				using (var audit = Audit(SniffSuccess, node))
 				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff,
 					requestData))
