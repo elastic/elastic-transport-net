@@ -20,8 +20,9 @@ namespace Elastic.Transport
 		/// </summary>
 		List<Audit> AuditTrail { get; }
 
-		/// <summary> Should the workflow attempt the initial sniff as requested by
-		/// <see cref="ITransportConfiguration.SniffsOnStartup"/>
+		/// <summary>
+		/// Should the workflow attempt the initial sniff as requested by
+		/// <see cref="ITransportConfiguration.SniffsOnStartup" />
 		/// </summary>
 		bool FirstPoolUsageNeedsSniffing { get; }
 
@@ -50,6 +51,16 @@ namespace Elastic.Transport
 		void MarkAlive(Node node);
 
 		void MarkDead(Node node);
+
+		/// <summary>
+		/// Attempt to get a single node when the underlying connection pool contains only one node.
+		/// <para>
+		/// This provides an optimised path for single node pools by avoiding an Enumerator on each call.
+		/// </para>
+		/// </summary>
+		/// <param name="node"></param>
+		/// <returns><c>true</c> when a single node exists which has been set on the <paramref name="node" />.</returns>
+		bool TryGetSingleNode(out Node node);
 
 		IEnumerable<Node> NextNode();
 

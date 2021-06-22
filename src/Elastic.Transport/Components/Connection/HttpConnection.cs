@@ -14,7 +14,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -36,30 +35,29 @@ namespace Elastic.Transport
 		public bool IsBypassed(Uri host) => host.IsLoopback;
 	}
 
-
 	/// <summary> The default IConnection implementation. Uses <see cref="HttpClient" />.</summary>
 	public class HttpConnection : IConnection
 	{
-		private static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.HttpConnection.SourceName);
-
 		private static readonly string MissingConnectionLimitMethodError =
 			$"Your target platform does not support {nameof(TransportConfiguration.ConnectionLimit)}"
 			+ $" please set {nameof(TransportConfiguration.ConnectionLimit)} to -1 on your connection configuration/settings."
 			+ $" this will cause the {nameof(HttpClientHandler.MaxConnectionsPerServer)} not to be set on {nameof(HttpClientHandler)}";
 
-		private RequestDataHttpClientFactory HttpClientFactory { get; }
-
-		/// <inheritdoc cref="RequestDataHttpClientFactory.InUseHandlers"/>
-		public int InUseHandlers => HttpClientFactory.InUseHandlers;
-
-		/// <inheritdoc cref="RequestDataHttpClientFactory.RemovedHandlers"/>
-		public int RemovedHandlers => HttpClientFactory.RemovedHandlers;
-
-		/// <inheritdoc cref="HttpConnection"/>
+		/// <inheritdoc cref="HttpConnection" />
 		public HttpConnection() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
 
+		/// <inheritdoc cref="RequestDataHttpClientFactory.InUseHandlers" />
+		public int InUseHandlers => HttpClientFactory.InUseHandlers;
 
-		/// <inheritdoc cref="IConnection.Request{TResponse}"/>
+		/// <inheritdoc cref="RequestDataHttpClientFactory.RemovedHandlers" />
+		public int RemovedHandlers => HttpClientFactory.RemovedHandlers;
+
+		private static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.HttpConnection.SourceName);
+
+		private RequestDataHttpClientFactory HttpClientFactory { get; }
+
+
+		/// <inheritdoc cref="IConnection.Request{TResponse}" />
 		public virtual TResponse Request<TResponse>(RequestData requestData)
 			where TResponse : class, ITransportResponse, new()
 		{
@@ -81,7 +79,7 @@ namespace Elastic.Transport
 				if (requestData.PostData != null)
 					SetContent(requestMessage, requestData);
 
-				using(requestMessage?.Content ?? (IDisposable)Stream.Null)
+				using (requestMessage?.Content ?? (IDisposable)Stream.Null)
 				using (var d = DiagnosticSource.Diagnose<RequestData, int?>(DiagnosticSources.HttpConnection.SendAndReceiveHeaders, requestData))
 				{
 					if (requestData.TcpStats)
@@ -122,7 +120,7 @@ namespace Elastic.Transport
 			{
 				ex = e;
 			}
-			using(receive)
+			using (receive)
 			using (responseStream ??= Stream.Null)
 			{
 				var response = ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, warnings, responseStream, mimeType);
@@ -136,7 +134,7 @@ namespace Elastic.Transport
 			}
 		}
 
-		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}"/>
+		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}" />
 		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : class, ITransportResponse, new()
 		{
@@ -158,7 +156,7 @@ namespace Elastic.Transport
 				if (requestData.PostData != null)
 					await SetContentAsync(requestMessage, requestData, cancellationToken).ConfigureAwait(false);
 
-				using(requestMessage?.Content ?? (IDisposable)Stream.Null)
+				using (requestMessage?.Content ?? (IDisposable)Stream.Null)
 				using (var d = DiagnosticSource.Diagnose<RequestData, int?>(DiagnosticSources.HttpConnection.SendAndReceiveHeaders, requestData))
 				{
 					if (requestData.TcpStats)
@@ -167,7 +165,8 @@ namespace Elastic.Transport
 					if (requestData.ThreadPoolStats)
 						threadPoolStats = ThreadPoolStats.GetStats();
 
-					responseMessage = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+					responseMessage = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+						.ConfigureAwait(false);
 					statusCode = (int)responseMessage.StatusCode;
 					d.EndState = statusCode;
 				}
@@ -211,13 +210,13 @@ namespace Elastic.Transport
 		private HttpClient GetClient(RequestData requestData) => HttpClientFactory.CreateClient(requestData);
 
 		/// <summary>
-		/// Creates an instance of <see cref="HttpMessageHandler"/> using the <paramref name="requestData"/>.
-		/// This method is virtual so subclasses of <see cref="HttpConnection"/> can modify the instance if needed.
+		/// Creates an instance of <see cref="HttpMessageHandler" /> using the <paramref name="requestData" />.
+		/// This method is virtual so subclasses of <see cref="HttpConnection" /> can modify the instance if needed.
 		/// </summary>
-		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
+		/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
 		/// <exception cref="Exception">
-		/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit"/> is set but the platform does
-		/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer"/>
+		/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
+		/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 		/// </exception>
 		protected virtual HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
 		{
@@ -225,7 +224,6 @@ namespace Elastic.Transport
 
 			// same limit as desktop clr
 			if (requestData.ConnectionSettings.ConnectionLimit > 0)
-			{
 				try
 				{
 					handler.MaxConnectionsPerServer = requestData.ConnectionSettings.ConnectionLimit;
@@ -238,7 +236,6 @@ namespace Elastic.Transport
 				{
 					throw new Exception(MissingConnectionLimitMethodError, e);
 				}
-			}
 
 			if (!requestData.ProxyAddress.IsNullOrEmpty())
 			{
@@ -267,13 +264,13 @@ namespace Elastic.Transport
 		}
 
 		/// <summary>
-		/// Creates an instance of <see cref="HttpRequestMessage"/> using the <paramref name="requestData"/>.
-		/// This method is virtual so subclasses of <see cref="HttpConnection"/> can modify the instance if needed.
+		/// Creates an instance of <see cref="HttpRequestMessage" /> using the <paramref name="requestData" />.
+		/// This method is virtual so subclasses of <see cref="HttpConnection" /> can modify the instance if needed.
 		/// </summary>
-		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
+		/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
 		/// <exception cref="Exception">
-		/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit"/> is set but the platform does
-		/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer"/>
+		/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
+		/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 		/// </exception>
 		protected virtual HttpRequestMessage CreateHttpRequestMessage(RequestData requestData)
 		{
@@ -282,8 +279,8 @@ namespace Elastic.Transport
 			return request;
 		}
 
-		/// <summary> Isolated hook for subclasses to set authentication on <paramref name="requestMessage"/> </summary>
-		/// <param name="requestMessage">The instance of <see cref="HttpRequestMessage"/> that needs authentication details</param>
+		/// <summary> Isolated hook for subclasses to set authentication on <paramref name="requestMessage" /> </summary>
+		/// <param name="requestMessage">The instance of <see cref="HttpRequestMessage" /> that needs authentication details</param>
 		/// <param name="requestData">An object describing where and how we want to call out to</param>
 		protected virtual void SetAuthenticationIfNeeded(HttpRequestMessage requestMessage, RequestData requestData)
 		{
@@ -319,6 +316,7 @@ namespace Elastic.Transport
 			}
 
 			if (value.IsNullOrEmpty()) return;
+
 			requestMessage.Headers.Authorization = new AuthenticationHeaderValue(key, value);
 		}
 
@@ -328,10 +326,8 @@ namespace Elastic.Transport
 			var requestMessage = new HttpRequestMessage(method, requestData.Uri);
 
 			if (requestData.Headers != null)
-			{
 				foreach (string key in requestData.Headers)
 					requestMessage.Headers.TryAddWithoutValidation(key, requestData.Headers.GetValues(key));
-			}
 
 			requestMessage.Headers.Connection.Clear();
 			requestMessage.Headers.ConnectionClose = false;
@@ -407,7 +403,7 @@ namespace Elastic.Transport
 						await stream.DisposeAsync().ConfigureAwait(false);
 
 #else
-						stream.Dispose();
+					stream.Dispose();
 #endif
 				}
 				else
