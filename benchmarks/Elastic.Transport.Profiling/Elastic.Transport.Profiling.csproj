@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Transport\Elastic.Transport.csproj" />
     <ProjectReference Include="..\src\Elastic.Transport\Elastic.Transport.csproj" />
   </ItemGroup>
 
