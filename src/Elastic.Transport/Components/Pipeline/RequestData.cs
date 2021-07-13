@@ -29,6 +29,7 @@ namespace Elastic.Transport
 		public const string RunAsSecurityHeader = "es-security-runas-user";
 
 		private Uri _requestUri;
+		private Node _node;
 
 		public RequestData(
 			HttpMethod method, string path,
@@ -128,7 +129,20 @@ namespace Elastic.Transport
 
 		public HttpMethod Method { get; }
 
-		public Node Node { get; set; }
+		public Node Node 
+		{
+			get
+			{
+				return _node; 
+			}
+			set
+			{
+				// We want the Uri to regenerate when the node changes
+				_requestUri = null;
+				_node = value;
+			}
+		}
+
 		public AuditEvent OnFailureAuditEvent => MadeItToResponse ? AuditEvent.BadResponse : AuditEvent.BadRequest;
 		public PipelineFailure OnFailurePipelineFailure => MadeItToResponse ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
 		public string PathAndQuery { get; }
