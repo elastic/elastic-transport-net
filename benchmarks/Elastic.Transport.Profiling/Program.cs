@@ -14,8 +14,6 @@ namespace Elastic.Transport.Profiling
 		private static async Task Main()
 		{
 			MemoryProfiler.CollectAllocations(true);
-
-			//MeasureProfiler.StartCollectingData();
 			MemoryProfiler.GetSnapshot("start");
 
 			var config = new TransportConfiguration(new Uri("http://localhost:9200"), new ElasticsearchProductRegistration());
