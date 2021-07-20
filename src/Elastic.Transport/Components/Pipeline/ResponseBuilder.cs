@@ -1,7 +1,3 @@
-// Licensed to Elasticsearch B.V under one or more agreements.
-// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
-// See the LICENSE file in the project root for more information
-
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,20 +10,28 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A helper class that deals with handling how a <see cref="Stream"/> is transformed to the requested
-	/// <see cref="ITransportResponse"/> implementation. This includes handling optionally buffering based on
-	/// <see cref="ITransportConfiguration.DisableDirectStreaming"/>. And handling short circuiting special responses
-	/// such as <see cref="StringResponse"/>, <see cref="BytesResponse"/> and <see cref="VoidResponse"/>
+	///     A helper class that deals with handling how a <see cref="Stream" /> is transformed to the requested
+	///     <see cref="ITransportResponse" /> implementation. This includes handling optionally buffering based on
+	///     <see cref="ITransportConfiguration.DisableDirectStreaming" />. And handling short circuiting special responses
+	///     such as <see cref="StringResponse" />, <see cref="BytesResponse" /> and <see cref="VoidResponse" />
 	/// </summary>
 	public static class ResponseBuilder
 	{
 		private const int BufferSize = 81920;
 
 		private static readonly Type[] SpecialTypes =
-			{ typeof(StringResponse), typeof(BytesResponse), typeof(VoidResponse), typeof(DynamicResponse) };
+		{
+			typeof(StringResponse), typeof(BytesResponse), typeof(VoidResponse), typeof(DynamicResponse)
+		};
 
 		/// <summary>
-		/// Create an instance of <typeparamref name="TResponse"/> from <paramref name="responseStream"/>
+		///     A helper which returns true if the response could potentially have a body.
+		/// </summary>
+		private static bool MayHaveBody(int? statusCode, HttpMethod httpMethod) =>
+			!statusCode.HasValue || statusCode.Value != 204 && httpMethod != HttpMethod.HEAD;
+
+		/// <summary>
+		///     Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
 		/// </summary>
 		public static TResponse ToResponse<TResponse>(
 			RequestData requestData,
@@ -40,17 +44,23 @@ namespace Elastic.Transport
 			where TResponse : class, ITransportResponse, new()
 		{
 			responseStream.ThrowIfNull(nameof(responseStream));
+			var details = Initialize(requestData, ex, statusCode, warnings, mimeType);
 
-			var details = Initialize(requestData, ex, statusCode, headers, mimeType);
-			//TODO take ex and (responseStream == Stream.Null) into account might not need to flow to SetBody in that case
-			var response = SetBody<TResponse>(details, requestData, responseStream, mimeType) ?? new TResponse();
+			TResponse response = null;
+			// Only attempt to set the body if the response may have content
+			if (MayHaveBody(statusCode, requestData.Method))
+				response = SetBody<TResponse>(details, requestData, responseStream, mimeType);
+			else
+				responseStream.Dispose();
+
+			response ??= new TResponse();
 
 			response.ApiCall = details;
 			return response;
 		}
 
 		/// <summary>
-		/// Create an instance of <typeparamref name="TResponse"/> from <paramref name="responseStream"/>
+		///     Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
 		/// </summary>
 		public static async Task<TResponse> ToResponseAsync<TResponse>(
 			RequestData requestData,
@@ -64,10 +74,19 @@ namespace Elastic.Transport
 			where TResponse : class, ITransportResponse, new()
 		{
 			responseStream.ThrowIfNull(nameof(responseStream));
-			
-			var details = Initialize(requestData, ex, statusCode, headers, mimeType);
-			var response = await SetBodyAsync<TResponse>(details, requestData, responseStream, mimeType, cancellationToken).ConfigureAwait(false)
-				?? new TResponse();
+
+			var details = Initialize(requestData, ex, statusCode, warnings, mimeType);
+
+			TResponse response = null;
+
+			// Only attempt to set the body if the response may have content
+			if (MayHaveBody(statusCode, requestData.Method))
+				response = await SetBodyAsync<TResponse>(details, requestData, responseStream, mimeType,
+					cancellationToken).ConfigureAwait(false);
+			else
+				responseStream.Dispose();
+
+			response ??= new TResponse();
 
 			response.ApiCall = details;
 			return response;
@@ -87,6 +106,7 @@ namespace Elastic.Transport
 					success = requestData.ConnectionSettings
 						.StatusCodeToResponseSuccess(requestData.Method, statusCode.Value);
 			}
+
 			//mimeType can include charset information on .NET full framework
 			if (!string.IsNullOrEmpty(mimeType) && !mimeType.StartsWith(requestData.Accept))
 				success = false;
@@ -110,11 +130,13 @@ namespace Elastic.Transport
 			return details;
 		}
 
-		private static TResponse SetBody<TResponse>(ApiCallDetails details, RequestData requestData, Stream responseStream, string mimeType)
+		private static TResponse SetBody<TResponse>(ApiCallDetails details, RequestData requestData,
+			Stream responseStream, string mimeType)
 			where TResponse : class, ITransportResponse, new()
 		{
 			byte[] bytes = null;
-			var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ?? requestData.ConnectionSettings.DisableDirectStreaming;
+			var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ??
+			                             requestData.ConnectionSettings.DisableDirectStreaming;
 			if (disableDirectStreaming || NeedsToEagerReadStream<TResponse>())
 			{
 				var inMemoryStream = requestData.MemoryStreamFactory.Create();
@@ -128,12 +150,14 @@ namespace Elastic.Transport
 				if (SetSpecialTypes<TResponse>(mimeType, bytes, requestData.MemoryStreamFactory, out var r))
 					return r;
 
-				if (details.HttpStatusCode.HasValue && requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
+				if (details.HttpStatusCode.HasValue &&
+				    requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
 					return null;
 
 				var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
 				if (requestData.CustomResponseBuilder != null)
-					return requestData.CustomResponseBuilder.DeserializeResponse(serializer, details, responseStream) as TResponse;
+					return requestData.CustomResponseBuilder.DeserializeResponse(serializer, details, responseStream) as
+						TResponse;
 
 				return mimeType == null || !mimeType.StartsWith(requestData.Accept, StringComparison.Ordinal)
 					? null
@@ -142,12 +166,14 @@ namespace Elastic.Transport
 		}
 
 		private static async Task<TResponse> SetBodyAsync<TResponse>(
-			ApiCallDetails details, RequestData requestData, Stream responseStream, string mimeType, CancellationToken cancellationToken
+			ApiCallDetails details, RequestData requestData, Stream responseStream, string mimeType,
+			CancellationToken cancellationToken
 		)
 			where TResponse : class, ITransportResponse, new()
 		{
 			byte[] bytes = null;
-			var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ?? requestData.ConnectionSettings.DisableDirectStreaming;
+			var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ??
+			                             requestData.ConnectionSettings.DisableDirectStreaming;
 			if (disableDirectStreaming || NeedsToEagerReadStream<TResponse>())
 			{
 				var inMemoryStream = requestData.MemoryStreamFactory.Create();
@@ -160,12 +186,15 @@ namespace Elastic.Transport
 			{
 				if (SetSpecialTypes<TResponse>(mimeType, bytes, requestData.MemoryStreamFactory, out var r)) return r;
 
-				if (details.HttpStatusCode.HasValue && requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
+				if (details.HttpStatusCode.HasValue &&
+				    requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
 					return null;
 
 				var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
 				if (requestData.CustomResponseBuilder != null)
-					return await requestData.CustomResponseBuilder.DeserializeResponseAsync(serializer, details, responseStream, cancellationToken).ConfigureAwait(false) as TResponse;
+					return await requestData.CustomResponseBuilder
+						.DeserializeResponseAsync(serializer, details, responseStream, cancellationToken)
+						.ConfigureAwait(false) as TResponse;
 
 				return mimeType == null || !mimeType.StartsWith(requestData.Accept, StringComparison.Ordinal)
 					? null
@@ -175,7 +204,8 @@ namespace Elastic.Transport
 			}
 		}
 
-		private static bool SetSpecialTypes<TResponse>(string mimeType, byte[] bytes, IMemoryStreamFactory memoryStreamFactory, out TResponse cs)
+		private static bool SetSpecialTypes<TResponse>(string mimeType, byte[] bytes,
+			IMemoryStreamFactory memoryStreamFactory, out TResponse cs)
 			where TResponse : class, ITransportResponse, new()
 		{
 			cs = null;
@@ -206,6 +236,7 @@ namespace Elastic.Transport
 					cs = new DynamicResponse(body) as TResponse;
 				}
 			}
+
 			return cs != null;
 		}
 
