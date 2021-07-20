@@ -1,7 +1,3 @@
-// Licensed to Elasticsearch B.V under one or more agreements.
-// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
-// See the LICENSE file in the project root for more information
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,24 +16,31 @@ namespace Elastic.Transport
 	public class Transport : Transport<TransportConfiguration>
 	{
 		/// <summary>
-		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different
-		/// nodes
+		///     Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on
+		///     different
+		///     nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
-		public Transport(TransportConfiguration configurationValues) : base(configurationValues) { }
+		public Transport(TransportConfiguration configurationValues) : base(configurationValues)
+		{
+		}
 
 		/// <summary>
-		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different
-		/// nodes
+		///     Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on
+		///     different
+		///     nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
 		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-		public Transport(TransportConfiguration configurationValues, IRequestPipelineFactory<TransportConfiguration> pipelineProvider = null,
+		public Transport(TransportConfiguration configurationValues,
+			IRequestPipelineFactory<TransportConfiguration> pipelineProvider = null,
 			IDateTimeProvider dateTimeProvider = null, IMemoryStreamFactory memoryStreamFactory = null
 		)
-			: base(configurationValues, pipelineProvider, dateTimeProvider, memoryStreamFactory) { }
+			: base(configurationValues, pipelineProvider, dateTimeProvider, memoryStreamFactory)
+		{
+		}
 	}
 
 	/// <inheritdoc cref="ITransport{TConfiguration}" />
@@ -47,15 +50,19 @@ namespace Elastic.Transport
 		private readonly IProductRegistration _productRegistration;
 
 		/// <summary>
-		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different
-		/// nodes
+		///     Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on
+		///     different
+		///     nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
-		public Transport(TConfiguration configurationValues) : this(configurationValues, null, null, null) { }
+		public Transport(TConfiguration configurationValues) : this(configurationValues, null, null, null)
+		{
+		}
 
 		/// <summary>
-		/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on different
-		/// nodes
+		///     Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on
+		///     different
+		///     nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
 		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
@@ -71,7 +78,8 @@ namespace Elastic.Transport
 			configurationValues.ThrowIfNull(nameof(configurationValues));
 			configurationValues.ConnectionPool.ThrowIfNull(nameof(configurationValues.ConnectionPool));
 			configurationValues.Connection.ThrowIfNull(nameof(configurationValues.Connection));
-			configurationValues.RequestResponseSerializer.ThrowIfNull(nameof(configurationValues.RequestResponseSerializer));
+			configurationValues.RequestResponseSerializer.ThrowIfNull(nameof(configurationValues
+				.RequestResponseSerializer));
 
 			_productRegistration = configurationValues.ProductRegistration;
 			Settings = configurationValues;
@@ -80,18 +88,20 @@ namespace Elastic.Transport
 			MemoryStreamFactory = memoryStreamFactory ?? configurationValues.MemoryStreamFactory;
 		}
 
-		/// <inheritdoc cref="ITransport{TConnectionSettings}.Settings" />
-		public TConfiguration Settings { get; }
-
 		private IDateTimeProvider DateTimeProvider { get; }
 		private IMemoryStreamFactory MemoryStreamFactory { get; }
 		private IRequestPipelineFactory<TConfiguration> PipelineProvider { get; }
 
+		/// <inheritdoc cref="ITransport{TConnectionSettings}.Settings" />
+		public TConfiguration Settings { get; }
+
 		/// <inheritdoc cref="ITransport.Request{TResponse}" />
-		public TResponse Request<TResponse>(HttpMethod method, string path, PostData data = null, IRequestParameters requestParameters = null)
+		public TResponse Request<TResponse>(HttpMethod method, string path, PostData data = null,
+			IRequestParameters requestParameters = null)
 			where TResponse : class, ITransportResponse, new()
 		{
-			using var pipeline = PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
+			using var pipeline =
+				PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
 
 			pipeline.FirstPoolUsage(Settings.BootstrapLock);
 
@@ -151,7 +161,8 @@ namespace Elastic.Transport
 					}
 					catch (Exception killerException)
 					{
-						ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
+						ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response,
+							pipeline);
 					}
 
 					if (response == null || !response.ApiCall.SuccessOrKnownError) continue; // try the next node
@@ -164,12 +175,14 @@ namespace Elastic.Transport
 		}
 
 		/// <inheritdoc cref="ITransport.RequestAsync{TResponse}" />
-		public async Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path, CancellationToken cancellationToken,
-			PostData data = null, IRequestParameters requestParameters = null
+		public async Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path,
+			PostData data = null, IRequestParameters requestParameters = null,
+			CancellationToken cancellationToken = default
 		)
 			where TResponse : class, ITransportResponse, new()
 		{
-			using var pipeline = PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
+			using var pipeline =
+				PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
 
 			await pipeline.FirstPoolUsageAsync(Settings.BootstrapLock, cancellationToken).ConfigureAwait(false);
 
@@ -187,7 +200,8 @@ namespace Elastic.Transport
 
 				try
 				{
-					response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
+					response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
+						.ConfigureAwait(false);
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 				{
@@ -213,7 +227,8 @@ namespace Elastic.Transport
 						if (_productRegistration.SupportsPing)
 							await PingAsync(pipeline, node, cancellationToken).ConfigureAwait(false);
 
-						response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
+						response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
+							.ConfigureAwait(false);
 						if (!response.ApiCall.SuccessOrKnownError)
 						{
 							pipeline.MarkDead(node);
@@ -240,11 +255,13 @@ namespace Elastic.Transport
 							Request = requestData, Response = response?.ApiCall, AuditTrail = pipeline.AuditTrail
 						};
 					}
+
 					if (cancellationToken.IsCancellationRequested)
 					{
 						pipeline.AuditCancellationRequested();
 						break;
 					}
+
 					if (response == null || !response.ApiCall.SuccessOrKnownError) continue;
 
 					pipeline.MarkAlive(node);
@@ -254,7 +271,8 @@ namespace Elastic.Transport
 			return FinalizeResponse(requestData, pipeline, seenExceptions, response);
 		}
 
-		private static void ThrowUnexpectedTransportException<TResponse>(Exception killerException, List<PipelineException> seenExceptions,
+		private static void ThrowUnexpectedTransportException<TResponse>(Exception killerException,
+			List<PipelineException> seenExceptions,
 			RequestData requestData,
 			TResponse response, IRequestPipeline pipeline
 		) where TResponse : class, ITransportResponse, new() =>
@@ -264,7 +282,8 @@ namespace Elastic.Transport
 			};
 
 		private static void HandlePipelineException<TResponse>(
-			ref TResponse response, PipelineException ex, IRequestPipeline pipeline, Node node, ICollection<PipelineException> seenExceptions
+			ref TResponse response, PipelineException ex, IRequestPipeline pipeline, Node node,
+			ICollection<PipelineException> seenExceptions
 		)
 			where TResponse : class, ITransportResponse, new()
 		{
@@ -273,7 +292,8 @@ namespace Elastic.Transport
 			seenExceptions.Add(ex);
 		}
 
-		private TResponse FinalizeResponse<TResponse>(RequestData requestData, IRequestPipeline pipeline, List<PipelineException> seenExceptions,
+		private TResponse FinalizeResponse<TResponse>(RequestData requestData, IRequestPipeline pipeline,
+			List<PipelineException> seenExceptions,
 			TResponse response
 		) where TResponse : class, ITransportResponse, new()
 		{
@@ -290,7 +310,8 @@ namespace Elastic.Transport
 			return response;
 		}
 
-		private static IApiCallDetails GetMostRecentCallDetails<TResponse>(TResponse response, IEnumerable<PipelineException> seenExceptions)
+		private static IApiCallDetails GetMostRecentCallDetails<TResponse>(TResponse response,
+			IEnumerable<PipelineException> seenExceptions)
 			where TResponse : class, ITransportResponse, new()
 		{
 			var callDetails = response?.ApiCall ?? seenExceptions.LastOrDefault(e => e.ApiCall != null)?.ApiCall;
