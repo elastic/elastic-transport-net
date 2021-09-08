@@ -5,7 +5,7 @@
 namespace Elastic.Transport.Extensions
 {
 	/// <summary>
-	/// A set of handy extension methods for <see cref="ITransportSerializer"/>
+	/// A set of handy extension methods for <see cref="Serializer"/>
 	/// </summary>
 	public static class TransportSerializerExtensions
 	{
@@ -13,7 +13,7 @@ namespace Elastic.Transport.Extensions
 		/// Extension method that serializes an instance of <typeparamref name="T"/> to a byte array.
 		/// </summary>
 		public static byte[] SerializeToBytes<T>(
-			this ITransportSerializer serializer,
+			this Serializer serializer,
 			T data,
 			SerializationFormatting formatting = SerializationFormatting.None) =>
 			SerializeToBytes(serializer, data, TransportConfiguration.DefaultMemoryStreamFactory, formatting);
@@ -26,10 +26,10 @@ namespace Elastic.Transport.Extensions
 		/// A factory yielding MemoryStream instances, defaults to <see cref="RecyclableMemoryStreamFactory"/>
 		/// that yields memory streams backed by pooled byte arrays.
 		/// </param>
-		/// <param name="serializer"><inheritdoc cref="ITransportSerializer" path="/summary"/></param>
+		/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 		/// <param name="formatting"><inheritdoc cref="SerializationFormatting" path="/summary"/></param>
 		public static byte[] SerializeToBytes<T>(
-			this ITransportSerializer serializer,
+			this Serializer serializer,
 			T data,
 			IMemoryStreamFactory memoryStreamFactory,
 			SerializationFormatting formatting = SerializationFormatting.None
@@ -47,7 +47,7 @@ namespace Elastic.Transport.Extensions
 		/// Extension method that serializes an instance of <typeparamref name="T"/> to a string.
 		/// </summary>
 		public static string SerializeToString<T>(
-			this ITransportSerializer serializer,
+			this Serializer serializer,
 			T data,
 			SerializationFormatting formatting = SerializationFormatting.None) =>
 			SerializeToString(serializer, data, TransportConfiguration.DefaultMemoryStreamFactory, formatting);
@@ -60,10 +60,10 @@ namespace Elastic.Transport.Extensions
 		/// A factory yielding MemoryStream instances, defaults to <see cref="RecyclableMemoryStreamFactory"/>
 		/// that yields memory streams backed by pooled byte arrays.
 		/// </param>
-		/// <param name="serializer"><inheritdoc cref="ITransportSerializer" path="/summary"/></param>
+		/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 		/// <param name="formatting"><inheritdoc cref="SerializationFormatting" path="/summary"/></param>
 		public static string SerializeToString<T>(
-			this ITransportSerializer serializer,
+			this Serializer serializer,
 			T data,
 			IMemoryStreamFactory memoryStreamFactory,
 			SerializationFormatting formatting = SerializationFormatting.None

@@ -15,7 +15,7 @@ namespace Elastic.Transport
 {
 	/// <summary>
 	/// All the transport configuration that you as the user can use to steer the behavior of the <see cref="ITransport{TConnectionSettings}"/> and all the components such
-	/// as <see cref="IConnection"/> <see cref="IConnectionPool"/> and <see cref="ITransportSerializer"/>.
+	/// as <see cref="IConnection"/> <see cref="IConnectionPool"/> and <see cref="Serializer"/>.
 	/// </summary>
 	public interface ITransportConfiguration : IDisposable
 	{
@@ -182,7 +182,7 @@ namespace Elastic.Transport
 		NameValueCollection QueryStringParameters { get; }
 
 		/// <summary>The serializer to use to serialize requests and deserialize responses</summary>
-		ITransportSerializer RequestResponseSerializer { get; }
+		Serializer RequestResponseSerializer { get; }
 
 		/// <summary>
 		/// The timeout in milliseconds for each request to Elasticsearch

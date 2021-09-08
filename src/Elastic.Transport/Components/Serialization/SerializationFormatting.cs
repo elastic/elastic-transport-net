@@ -5,19 +5,19 @@
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A hint to <see cref="ITransportSerializer"/> how to format the json.
-	/// Implementation of <see cref="ITransportSerializer"/> might choose to ignore this hint though.
+	/// A hint to <see cref="Serializer"/> how to format the json.
+	/// Implementation of <see cref="Serializer"/> might choose to ignore this hint though.
 	/// </summary>
 	public enum SerializationFormatting
 	{
 		/// <summary>
-		/// Serializer should not render the json with whitespace and line endings. <see cref="ITransportSerializer"/>
+		/// Serializer should not render the json with whitespace and line endings. <see cref="Serializer"/>
 		/// implementation HAVE to be able to adhere this value as for instance nd-json relies on this
 		/// </summary>
 		None,
 
 		/// <summary>
-		/// A hint that the user prefers readable data being written. <see cref="ITransportSerializer"/> implementations
+		/// A hint that the user prefers readable data being written. <see cref="Serializer"/> implementations
 		/// should try to adhere to this but won't break anything if they don't.
 		/// </summary>
 		Indented
