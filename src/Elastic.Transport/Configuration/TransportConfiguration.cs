@@ -190,6 +190,7 @@ namespace Elastic.Transport
 		private bool _enableTcpStats;
 		private bool _enableThreadPoolStats;
 		private UserAgent _userAgent;
+		private string _certificateFingerprint;
 
 
 		private readonly Func<HttpMethod, int, bool> _statusCodeToResponseSuccess;
@@ -270,6 +271,7 @@ namespace Elastic.Transport
 		ITransportSerializer ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
 		TimeSpan ITransportConfiguration.RequestTimeout => _requestTimeout;
 		TimeSpan ITransportConfiguration.DnsRefreshTimeout => _dnsRefreshTimeout;
+		string ITransportConfiguration.CertificateFingerprint => _certificateFingerprint;
 
 		Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> ITransportConfiguration.ServerCertificateValidationCallback =>
 			_serverCertificateValidationCallback;
@@ -364,6 +366,9 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="ITransportConfiguration.DnsRefreshTimeout"/>
 		public T DnsRefreshTimeout(TimeSpan timeout) => Assign(timeout, (a, v) => a._dnsRefreshTimeout = v);
+
+		/// <inheritdoc cref="ITransportConfiguration.CertificateFingerprint"/>
+		public T CertificateFingerprint(string fingerprint) => Assign(fingerprint, (a, v) => a._certificateFingerprint = v);
 
 		/// <summary>
 		/// If your connection has to go through proxy, use this method to specify the proxy url

@@ -6,7 +6,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -43,6 +42,8 @@ namespace Elastic.Transport
 			$"Your target platform does not support {nameof(TransportConfiguration.ConnectionLimit)}"
 			+ $" please set {nameof(TransportConfiguration.ConnectionLimit)} to -1 on your connection configuration/settings."
 			+ $" this will cause the {nameof(HttpClientHandler.MaxConnectionsPerServer)} not to be set on {nameof(HttpClientHandler)}";
+
+		private string _expectedCertificateFingerprint;
 
 		/// <inheritdoc cref="HttpConnection" />
 		public HttpConnection() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
@@ -277,9 +278,35 @@ namespace Elastic.Transport
 			}
 			else if (requestData.DisableAutomaticProxyDetection) handler.UseProxy = false;
 
+			// Configure certificate validation
 			var callback = requestData.ConnectionSettings?.ServerCertificateValidationCallback;
 			if (callback != null && handler.ServerCertificateCustomValidationCallback == null)
+			{
 				handler.ServerCertificateCustomValidationCallback = callback;
+			}
+			else if (!string.IsNullOrEmpty(requestData.ConnectionSettings.CertificateFingerprint))
+			{
+				handler.ServerCertificateCustomValidationCallback = (request, certificate, chain, policyErrors) =>
+				{
+					if (certificate is null && chain is null) return false;
+
+					// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
+					_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
+
+					// If there is a chain, check each certificate up to the root
+					if (chain is not null)
+					{
+						foreach (var element in chain.ChainElements)
+						{
+							if (CertificateHelpers.ValidateCertificateFingerprint(element.Certificate, _expectedCertificateFingerprint))
+								return true;
+						}
+					}
+
+					// Otherwise, check the certificate
+					return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
+				};
+			}
 
 			if (requestData.ClientCertificates != null)
 			{
@@ -428,7 +455,6 @@ namespace Elastic.Transport
 					message.Content = new ByteArrayContent(requestData.PostData.WrittenBytes);
 #if DOTNETCORE_2_1_OR_HIGHER
 						await stream.DisposeAsync().ConfigureAwait(false);
-
 #else
 					stream.Dispose();
 #endif
