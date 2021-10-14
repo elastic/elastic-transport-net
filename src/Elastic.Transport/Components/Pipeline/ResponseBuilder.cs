@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -32,16 +33,18 @@ namespace Elastic.Transport
 			RequestData requestData,
 			Exception ex,
 			int? statusCode,
-			IEnumerable<string> warnings,
+			Dictionary<string, IEnumerable<string>> headers,
 			Stream responseStream,
 			string mimeType = RequestData.MimeType
 		)
 			where TResponse : class, ITransportResponse, new()
 		{
 			responseStream.ThrowIfNull(nameof(responseStream));
-			var details = Initialize(requestData, ex, statusCode, warnings, mimeType);
+
+			var details = Initialize(requestData, ex, statusCode, headers, mimeType);
 			//TODO take ex and (responseStream == Stream.Null) into account might not need to flow to SetBody in that case
 			var response = SetBody<TResponse>(details, requestData, responseStream, mimeType) ?? new TResponse();
+
 			response.ApiCall = details;
 			return response;
 		}
@@ -53,7 +56,7 @@ namespace Elastic.Transport
 			RequestData requestData,
 			Exception ex,
 			int? statusCode,
-			IEnumerable<string> warnings,
+			Dictionary<string, IEnumerable<string>> headers,
 			Stream responseStream,
 			string mimeType = RequestData.MimeType,
 			CancellationToken cancellationToken = default
@@ -61,15 +64,17 @@ namespace Elastic.Transport
 			where TResponse : class, ITransportResponse, new()
 		{
 			responseStream.ThrowIfNull(nameof(responseStream));
-			var details = Initialize(requestData, ex, statusCode, warnings, mimeType);
+			
+			var details = Initialize(requestData, ex, statusCode, headers, mimeType);
 			var response = await SetBodyAsync<TResponse>(details, requestData, responseStream, mimeType, cancellationToken).ConfigureAwait(false)
 				?? new TResponse();
+
 			response.ApiCall = details;
 			return response;
 		}
 
 		private static ApiCallDetails Initialize(
-			RequestData requestData, Exception exception, int? statusCode, IEnumerable<string> warnings, string mimeType
+			RequestData requestData, Exception exception, int? statusCode, Dictionary<string, IEnumerable<string>> headers, string mimeType
 		)
 		{
 			var success = false;
@@ -94,10 +99,14 @@ namespace Elastic.Transport
 				RequestBodyInBytes = requestData.PostData?.WrittenBytes,
 				Uri = requestData.Uri,
 				HttpMethod = requestData.Method,
-				DeprecationWarnings = warnings ?? Enumerable.Empty<string>(),
+				//DeprecationWarnings = warnings ?? Enumerable.Empty<string>(),
 				ResponseMimeType = mimeType,
 				ConnectionConfiguration = requestData.ConnectionSettings
 			};
+
+			if (headers is not null)
+				details.ParsedHeaders = new ReadOnlyDictionary<string, IEnumerable<string>>(headers);
+
 			return details;
 		}
 
@@ -184,8 +193,10 @@ namespace Elastic.Transport
 				//if not json store the result under "body"
 				if (mimeType == null || !mimeType.StartsWith(RequestData.MimeType))
 				{
-					var dictionary = new DynamicDictionary();
-					dictionary["body"] = new DynamicValue(bytes.Utf8String());
+					var dictionary = new DynamicDictionary
+					{
+						["body"] = new DynamicValue(bytes.Utf8String())
+					};
 					cs = new DynamicResponse(dictionary) as TResponse;
 				}
 				else

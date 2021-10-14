@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
 using Elastic.Transport.Diagnostics;
@@ -63,11 +64,18 @@ namespace Elastic.Transport
 		/// </summary>
 		Exception OriginalException { get; }
 
-        /// <summary>
-        /// The request body bytes.
-        /// <para>NOTE: Only set when disable direct streaming is set for the request.</para>
-        /// </summary>
-        [DebuggerDisplay("{RequestBodyInBytes != null ? System.Text.Encoding.UTF8.GetString(RequestBodyInBytes) : null,nq}")]
+		/// <summary>
+		/// A dictionary of the headers parsed from the HTTP response.
+		/// When no headers have been configured for parsing, or no matching headers were found,
+		/// this will be null.
+		/// </summary>
+		ReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; }
+
+		/// <summary>
+		/// The request body bytes.
+		/// <para>NOTE: Only set when disable direct streaming is set for the request.</para>
+		/// </summary>
+		[DebuggerDisplay("{RequestBodyInBytes != null ? System.Text.Encoding.UTF8.GetString(RequestBodyInBytes) : null,nq}")]
 		byte[] RequestBodyInBytes { get; }
 
         /// <summary>

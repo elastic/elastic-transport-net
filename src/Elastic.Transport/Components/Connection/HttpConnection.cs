@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -64,13 +65,13 @@ namespace Elastic.Transport
 			var client = GetClient(requestData);
 			HttpResponseMessage responseMessage;
 			int? statusCode = null;
-			IEnumerable<string> warnings = null;
 			Stream responseStream = null;
 			Exception ex = null;
 			string mimeType = null;
 			IDisposable receive = DiagnosticSources.SingletonDisposable;
 			ReadOnlyDictionary<TcpState, int> tcpStats = null;
 			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
+			Dictionary<string, IEnumerable<string>> responseHeaders = null;
 
 			try
 			{
@@ -98,7 +99,8 @@ namespace Elastic.Transport
 				}
 
 				requestData.MadeItToResponse = true;
-				responseMessage.Headers.TryGetValues("Warning", out warnings);
+				responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
+
 				mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
 
 				if (responseMessage.Content != null)
@@ -123,7 +125,7 @@ namespace Elastic.Transport
 			using (receive)
 			using (responseStream ??= Stream.Null)
 			{
-				var response = ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, warnings, responseStream, mimeType);
+				var response = ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType);
 
 				// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
 				// gathering stats, they are still exposed on the call details. Ideally these would be set inside ResponseBuilder.ToResponse,
@@ -133,7 +135,7 @@ namespace Elastic.Transport
 				return response;
 			}
 		}
-
+		
 		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}" />
 		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : class, ITransportResponse, new()
@@ -141,13 +143,13 @@ namespace Elastic.Transport
 			var client = GetClient(requestData);
 			HttpResponseMessage responseMessage;
 			int? statusCode = null;
-			IEnumerable<string> warnings = null;
 			Stream responseStream = null;
 			Exception ex = null;
 			string mimeType = null;
 			IDisposable receive = DiagnosticSources.SingletonDisposable;
 			ReadOnlyDictionary<TcpState, int> tcpStats = null;
 			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
+			Dictionary<string, IEnumerable<string>> responseHeaders = null;
 
 			try
 			{
@@ -173,7 +175,7 @@ namespace Elastic.Transport
 
 				requestData.MadeItToResponse = true;
 				mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
-				responseMessage.Headers.TryGetValues("Warning", out warnings);
+				responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 
 				if (responseMessage.Content != null)
 				{
@@ -193,7 +195,7 @@ namespace Elastic.Transport
 			using (responseStream = responseStream ?? Stream.Null)
 			{
 				var response = await ResponseBuilder.ToResponseAsync<TResponse>
-						(requestData, ex, statusCode, warnings, responseStream, mimeType, cancellationToken)
+						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, cancellationToken)
 					.ConfigureAwait(false);
 
 				// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
@@ -203,6 +205,31 @@ namespace Elastic.Transport
 				response.ApiCall.ThreadPoolStats = threadPoolStats;
 				return response;
 			}
+		}
+
+		private static Dictionary<string, IEnumerable<string>> ParseHeaders(RequestData requestData, HttpResponseMessage responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
+		{
+			if (requestData.ParseAllHeaders)
+			{
+				foreach (var header in responseMessage.Headers)
+				{
+					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+					responseHeaders.Add(header.Key, header.Value);
+				}
+			}
+			else if (requestData.ResponseHeadersToParse.Count > 0)
+			{
+				foreach (var headerToParse in requestData.ResponseHeadersToParse)
+				{
+					if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
+					{
+						responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+						responseHeaders.Add(headerToParse, values);
+					}
+				}
+			}
+
+			return responseHeaders;
 		}
 
 		void IDisposable.Dispose() => DisposeManagedResources();

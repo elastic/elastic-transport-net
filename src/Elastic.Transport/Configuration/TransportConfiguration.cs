@@ -32,7 +32,7 @@ namespace Elastic.Transport
 		/// As the old curl based handler is known to bleed TCP connections:
 		/// <para>https://github.com/dotnet/runtime/issues/22366</para>
 		/// </summary>
-        private static bool UsingCurlHandler
+		private static bool UsingCurlHandler
 		{
 			get
 			{
@@ -191,7 +191,8 @@ namespace Elastic.Transport
 		private bool _enableThreadPoolStats;
 		private UserAgent _userAgent;
 
-		private Func<HttpMethod, int, bool> _statusCodeToResponseSuccess;
+
+		private readonly Func<HttpMethod, int, bool> _statusCodeToResponseSuccess;
 
 		/// <summary>
 		/// <inheritdoc cref="TransportConfiguration"/>
@@ -226,6 +227,7 @@ namespace Elastic.Transport
 				_enableHttpCompression = true;
 			}
 
+			_headersToParse = _productRegistration.ResponseHeadersToParse;
 		}
 
 		/// <summary>
@@ -427,6 +429,22 @@ namespace Elastic.Transport
 		// ReSharper disable once VirtualMemberNeverOverridden.Global
 		// ReSharper disable once MemberCanBeProtected.Global
 		public virtual T PrettyJson(bool b = true) => Assign(b, (a, v) => a._prettyJson = v);
+
+		private bool? _parseAllHeaders;
+		bool? ITransportConfiguration.ParseAllHeaders => _parseAllHeaders;
+
+		/// <inheritdoc cref="ITransportConfiguration.ParseAllHeaders"/>
+		public virtual T ParseAllHeaders(bool b = true) => Assign(b, (a, v) => a._parseAllHeaders = v);
+
+		private HeadersList _headersToParse;
+		HeadersList ITransportConfiguration.ResponseHeadersToParse => _headersToParse;
+
+		/// <inheritdoc cref="ITransportConfiguration.ResponseHeadersToParse"/>
+		public virtual T ResponseHeadersToParse(HeadersList headersToParse)
+		{
+			_headersToParse.UnionWith(headersToParse);
+			return (T)this;
+		}
 
 		/// <inheritdoc cref="ITransportConfiguration.ServerCertificateValidationCallback"/>
 		public T ServerCertificateValidationCallback(Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> callback) =>

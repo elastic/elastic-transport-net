@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Net.NetworkInformation;
 using System.Text.Json.Serialization;
 using Elastic.Transport.Diagnostics;
@@ -27,11 +28,9 @@ namespace Elastic.Transport
 	/// </summary>
 	public abstract class TransportResponseBase : IApiCallDetails, ITransportResponse
 	{
-
 		/// <inheritdoc />
 		[JsonIgnore]
 		public IApiCallDetails ApiCall { get; set; }
-
 
 		/// <inheritdoc cref="IApiCallDetails.TcpStats"/>
 		[JsonIgnore]
@@ -97,6 +96,10 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="IApiCallDetails.RequestBodyInBytes"/>
 		[JsonIgnore]
 		public byte[] RequestBodyInBytes => ApiCall.RequestBodyInBytes;
+
+		/// <inheritdoc cref="IApiCallDetails.ParsedHeaders"/>
+		[JsonIgnore]
+		public ReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders => ApiCall.ParsedHeaders;
 
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		public override string ToString() => ApiCall.ToString();
