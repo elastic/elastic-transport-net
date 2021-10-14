@@ -44,12 +44,6 @@ namespace Elastic.Transport
 		ITransportConfiguration ConnectionConfiguration { get; }
 
 		/// <summary>
-		/// A collection of deprecation warnings returned from the product being interfaced with.
-		/// <para>Used to signal that the request uses an API feature that is marked as deprecated.</para>
-		/// </summary>
-		IEnumerable<string> DeprecationWarnings { get; }
-
-		/// <summary>
 		/// The HTTP method used by the request.
 		/// </summary>
 		HttpMethod HttpMethod { get; }
@@ -63,11 +57,18 @@ namespace Elastic.Transport
 		/// </summary>
 		Exception OriginalException { get; }
 
-        /// <summary>
-        /// The request body bytes.
-        /// <para>NOTE: Only set when disable direct streaming is set for the request.</para>
-        /// </summary>
-        [DebuggerDisplay("{RequestBodyInBytes != null ? System.Text.Encoding.UTF8.GetString(RequestBodyInBytes) : null,nq}")]
+		/// <summary>
+		/// A dictionary of the headers parsed from the HTTP response.
+		/// When no headers have been configured for parsing, or no matching headers were found,
+		/// this will be null.
+		/// </summary>
+		ReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; }
+
+		/// <summary>
+		/// The request body bytes.
+		/// <para>NOTE: Only set when disable direct streaming is set for the request.</para>
+		/// </summary>
+		[DebuggerDisplay("{RequestBodyInBytes != null ? System.Text.Encoding.UTF8.GetString(RequestBodyInBytes) : null,nq}")]
 		byte[] RequestBodyInBytes { get; }
 
         /// <summary>

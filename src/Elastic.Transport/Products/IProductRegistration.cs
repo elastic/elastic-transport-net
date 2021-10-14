@@ -41,6 +41,11 @@ namespace Elastic.Transport.Products
 		bool SupportsSniff { get; }
 
 		/// <summary>
+		/// The set of headers to parse from all requests by default. These can be added to any consumer specific requirements.
+		/// </summary>
+		HeadersList ResponseHeadersToParse { get; }
+
+		/// <summary>
 		/// Create an instance of <see cref="RequestData"/> that describes where and how to ping see <paramref name="node" />
 		/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
 		/// </summary>
