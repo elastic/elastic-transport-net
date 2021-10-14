@@ -15,6 +15,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -277,9 +278,32 @@ namespace Elastic.Transport
 			}
 			else if (requestData.DisableAutomaticProxyDetection) handler.UseProxy = false;
 
+			// Configure certificate validation
 			var callback = requestData.ConnectionSettings?.ServerCertificateValidationCallback;
 			if (callback != null && handler.ServerCertificateCustomValidationCallback == null)
+			{
 				handler.ServerCertificateCustomValidationCallback = callback;
+			}
+			else if (!string.IsNullOrEmpty(requestData.ConnectionSettings.CertificateFingerprint))
+			{
+				handler.ServerCertificateCustomValidationCallback = (request, cert, chain, policyErrors) =>
+				{
+#if !NETSTANDARD2_0
+					var sha256Fingerprint = cert.GetCertHashString(HashAlgorithmName.SHA256);
+#else
+					using var alg = SHA256.Create();
+					var sha256FingerprintBytes = alg.ComputeHash(cert.RawData);
+					var sha256Fingerprint = BitConverter.ToString(sha256FingerprintBytes);
+#endif
+					if (sha256Fingerprint.Equals(requestData.ConnectionSettings.CertificateFingerprint, StringComparison.OrdinalIgnoreCase))
+						return true;
+
+					var expectedThumbprint = ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
+					var actualThumbprint = ComparableFingerprint(sha256Fingerprint);
+
+					return expectedThumbprint.Equals(actualThumbprint, StringComparison.OrdinalIgnoreCase);
+				};
+			}
 
 			if (requestData.ClientCertificates != null)
 			{
@@ -288,6 +312,16 @@ namespace Elastic.Transport
 			}
 
 			return handler;
+		}
+
+		private string ComparableFingerprint(string fingerprint)
+		{
+			var finalFingerprint = fingerprint;
+
+			if (fingerprint.Contains(':'))
+				finalFingerprint = fingerprint.Replace(":", string.Empty);
+
+			return finalFingerprint;
 		}
 
 		/// <summary>
