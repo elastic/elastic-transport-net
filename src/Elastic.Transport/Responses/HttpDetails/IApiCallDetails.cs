@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
 using Elastic.Transport.Diagnostics;
@@ -43,12 +42,6 @@ namespace Elastic.Transport
 		/// Reference to the connection configuration that yielded this response.
 		/// </summary>
 		ITransportConfiguration ConnectionConfiguration { get; }
-
-		/// <summary>
-		/// A collection of deprecation warnings returned from the product being interfaced with.
-		/// <para>Used to signal that the request uses an API feature that is marked as deprecated.</para>
-		/// </summary>
-		IEnumerable<string> DeprecationWarnings { get; }
 
 		/// <summary>
 		/// The HTTP method used by the request.
