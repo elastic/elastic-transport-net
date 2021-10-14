@@ -15,6 +15,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -287,25 +288,22 @@ namespace Elastic.Transport
 			}
 			else if (!string.IsNullOrEmpty(requestData.ConnectionSettings.CertificateFingerprint))
 			{
-				handler.ServerCertificateCustomValidationCallback = (request, certificate, chain, policyErrors) =>
+				handler.ServerCertificateCustomValidationCallback = (request, cert, chain, policyErrors) =>
 				{
-					if (certificate is null && chain is null) return false;
+#if !NETSTANDARD2_0
+					var sha256Fingerprint = cert.GetCertHashString(HashAlgorithmName.SHA256);
+#else
+					using var alg = SHA256.Create();
+					var sha256FingerprintBytes = alg.ComputeHash(cert.RawData);
+					var sha256Fingerprint = BitConverter.ToString(sha256FingerprintBytes);
+#endif
+					if (sha256Fingerprint.Equals(requestData.ConnectionSettings.CertificateFingerprint, StringComparison.OrdinalIgnoreCase))
+						return true;
 
-					// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
-					_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
+					var expectedThumbprint = ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
+					var actualThumbprint = ComparableFingerprint(sha256Fingerprint);
 
-					// If there is a chain, check each certificate up to the root
-					if (chain is not null)
-					{
-						foreach (var element in chain.ChainElements)
-						{
-							if (CertificateHelpers.ValidateCertificateFingerprint(element.Certificate, _expectedCertificateFingerprint))
-								return true;
-						}
-					}
-
-					// Otherwise, check the certificate
-					return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
+					return expectedThumbprint.Equals(actualThumbprint, StringComparison.OrdinalIgnoreCase);
 				};
 			}
 
@@ -316,6 +314,16 @@ namespace Elastic.Transport
 			}
 
 			return handler;
+		}
+
+		private string ComparableFingerprint(string fingerprint)
+		{
+			var finalFingerprint = fingerprint;
+
+			if (fingerprint.Contains(':'))
+				finalFingerprint = fingerprint.Replace(":", string.Empty);
+
+			return finalFingerprint;
 		}
 
 		/// <summary>
