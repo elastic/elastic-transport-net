@@ -27,12 +27,6 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="ResponseStatics"/>
 		public static string DebugInformationBuilder(IApiCallDetails r, StringBuilder sb)
 		{
-			if (r.DeprecationWarnings.HasAny(out var warnings))
-			{
-				sb.AppendLine($"# Server indicated deprecations:");
-				foreach (var deprecation in warnings)
-					sb.AppendLine($"- {deprecation}");
-			}
 			sb.AppendLine($"# Audit trail of this API call:");
 			var auditTrail = (r.AuditTrail ?? Enumerable.Empty<Audit>()).ToList();
 			DebugAuditTrail(auditTrail, sb);

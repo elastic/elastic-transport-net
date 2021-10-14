@@ -60,11 +60,8 @@ namespace Elastic.Transport
 		{
 			get => ApiCall.ThreadPoolStats;
 			set => ApiCall.ThreadPoolStats = value;
-		}
+		}		
 
-		/// <inheritdoc cref="IApiCallDetails.DeprecationWarnings"/>
-		[JsonIgnore]
-		public IEnumerable<string> DeprecationWarnings => ApiCall.DeprecationWarnings;
 		/// <inheritdoc cref="IApiCallDetails.SuccessOrKnownError"/>
 		[JsonIgnore]
 		public bool SuccessOrKnownError => ApiCall.SuccessOrKnownError;

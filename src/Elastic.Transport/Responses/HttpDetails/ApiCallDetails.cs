@@ -44,9 +44,6 @@ namespace Elastic.Transport
 			}
 		}
 
-		/// <inheritdoc cref="IApiCallDetails.DeprecationWarnings"/>
-		public IEnumerable<string> DeprecationWarnings { get; set; }
-
 		/// <inheritdoc cref="IApiCallDetails.HttpMethod"/>
 		public HttpMethod HttpMethod { get; set; }
 
