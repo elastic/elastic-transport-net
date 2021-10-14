@@ -11,19 +11,12 @@ namespace Elastic.Transport.Tests.Configuration
 	public class HeadersListTests
 	{
 		[Fact]
-		public void SupportsEnumerationWhenEmpty()
+		public void TryAdd_SkipsDuplicates()
 		{
-			var sut = new HeadersList();
+			var sut = new HeadersList(new[] { "header-one", "header-two" });
 
-			foreach (var header in sut)
-			{
-			}
-		}
-
-		[Fact]
-		public void Ctor_SkipsDuplicates_FromSingleEnumerable()
-		{
-			var sut = new HeadersList(new[] { "header-one", "header-two", "header-TWO" });
+			sut.TryAdd("header-one");
+			sut.TryAdd("header-TWO");
 
 			sut.Count.Should().Be(2);
 			sut.First().Should().Be("header-one");
@@ -31,19 +24,34 @@ namespace Elastic.Transport.Tests.Configuration
 		}
 
 		[Fact]
-		public void Ctor_SkipsDuplicates_FromSingleEnumerable_AndSingleHeader()
+		public void TryAdd_RemovesExpectedHeader()
 		{
-			var sut = new HeadersList(new[] { "header-one", "header-two" }, "header-TWO");
+			var sut = new HeadersList(new[] { "header-one", "header-two" });
 
-			sut.Count.Should().Be(2);
-			sut.First().Should().Be("header-one");
-			sut.Last().Should().Be("header-two");
+			sut.Remove("header-one");
+
+			sut.Count.Should().Be(1);
+			sut.Single().Should().Be("header-two");
 		}
 
 		[Fact]
-		public void Ctor_SkipsDuplicates_FromTwoEnumerables()
+		public void TryAdd_RemovesAreCaseInsensitive()
 		{
-			var sut = new HeadersList(new[] { "header-ONE", "header-two" }, new[] { "header-one", "header-THREE", "HEADER-TWO" });
+			var sut = new HeadersList(new[] { "header-one", "header-two" });
+
+			sut.Remove("header-ONE");
+
+			sut.Count.Should().Be(1);
+			sut.Single().Should().Be("header-two");
+		}
+
+		[Fact]
+		public void TryAdd_UnionWithSkipsDuplicates()
+		{
+			var headers = new HeadersList(new[] { "header-ONE", "header-THREE" });
+
+			var sut = new HeadersList(new[] { "header-one", "header-two" });
+			sut.UnionWith(headers);
 
 			sut.Count.Should().Be(3);
 
@@ -55,7 +63,7 @@ namespace Elastic.Transport.Tests.Configuration
 				switch (count)
 				{
 					case 1:
-						header.Should().Be("header-ONE");
+						header.Should().Be("header-one");
 						break;
 					case 2:
 						header.Should().Be("header-two");

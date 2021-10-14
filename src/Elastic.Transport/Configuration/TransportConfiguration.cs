@@ -447,7 +447,7 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="ITransportConfiguration.ResponseHeadersToParse"/>
 		public virtual T ResponseHeadersToParse(HeadersList headersToParse)
 		{
-			_headersToParse = new HeadersList(_headersToParse, headersToParse);
+			_headersToParse.UnionWith(headersToParse);
 			return (T)this;
 		}
 

@@ -110,7 +110,8 @@ namespace Elastic.Transport
 
 			if (local is not null)
 			{
-				ResponseHeadersToParse = new HeadersList(local.ResponseHeadersToParse, global.ResponseHeadersToParse);
+				ResponseHeadersToParse = local.ResponseHeadersToParse;
+				ResponseHeadersToParse.UnionWith(global.ResponseHeadersToParse);
 			}
 			else
 			{

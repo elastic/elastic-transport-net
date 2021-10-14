@@ -44,7 +44,8 @@ namespace Elastic.Transport
 			where TResponse : class, ITransportResponse, new()
 		{
 			responseStream.ThrowIfNull(nameof(responseStream));
-			var details = Initialize(requestData, ex, statusCode, warnings, mimeType);
+
+			var details = Initialize(requestData, ex, statusCode, headers, mimeType);
 
 			TResponse response = null;
 			// Only attempt to set the body if the response may have content
@@ -75,7 +76,7 @@ namespace Elastic.Transport
 		{
 			responseStream.ThrowIfNull(nameof(responseStream));
 
-			var details = Initialize(requestData, ex, statusCode, warnings, mimeType);
+			var details = Initialize(requestData, ex, statusCode, headers, mimeType);
 
 			TResponse response = null;
 

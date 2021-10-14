@@ -24,7 +24,11 @@ namespace Elastic.Transport.Products.Elasticsearch
 		/// <summary>
 		/// Create a new instance of the Elasticsearch product registration.
 		/// </summary>
-		public ElasticsearchProductRegistration() => _headers = new HeadersList("warning");
+		public ElasticsearchProductRegistration()
+		{
+			_headers = new HeadersList();
+			_headers.TryAdd("warning");
+		}
 
 		/// <summary> A static instance of <see cref="ElasticsearchProductRegistration"/> to promote reuse </summary>
 		public static IProductRegistration Default { get; } = new ElasticsearchProductRegistration();
