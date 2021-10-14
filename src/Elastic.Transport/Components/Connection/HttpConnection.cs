@@ -290,7 +290,7 @@ namespace Elastic.Transport
 				{
 					if (certificate is null && chain is null) return false;
 
-					// The cleaned, expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
+					// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
 					_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
 
 					// If there is a chain, check each certificate up to the root
