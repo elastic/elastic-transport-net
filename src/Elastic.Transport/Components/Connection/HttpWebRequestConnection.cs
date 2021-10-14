@@ -11,6 +11,8 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Security;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -238,6 +240,20 @@ namespace Elastic.Transport
 				request.ClientCertificates.AddRange(requestData.ClientCertificates);
 		}
 
+		private string ComparableFingerprint(string fingerprint)
+		{
+			var finalFingerprint = fingerprint;
+			if (fingerprint.Contains(':'))
+			{
+				finalFingerprint = fingerprint.Replace(":", string.Empty);
+			}
+			else if (fingerprint.Contains('-'))
+			{
+				finalFingerprint = fingerprint.Replace("-", string.Empty);
+			}
+			return finalFingerprint;
+		}
+
 		/// <summary> Hook for subclasses override the certificate validation on <paramref name="request"/> </summary>
 		protected virtual void SetServerCertificateValidationCallBackIfNeeded(HttpWebRequest request, RequestData requestData)
 		{
@@ -246,10 +262,27 @@ namespace Elastic.Transport
 			//Only assign if one is defined on connection settings and a subclass has not already set one
 			if (callback != null && request.ServerCertificateValidationCallback == null)
 				request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(callback);
+			else if (!string.IsNullOrEmpty(requestData.ConnectionSettings.CertificateFingerprint))
+			{
+				request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((request, cert, chain, policyErrors) =>
+				{
+					using var alg = SHA256.Create();
+					var sha256FingerprintBytes = alg.ComputeHash(cert.GetRawCertData());
+					var sha256Fingerprint = BitConverter.ToString(sha256FingerprintBytes);
+
+					if (sha256Fingerprint.Equals(requestData.ConnectionSettings.CertificateFingerprint, StringComparison.OrdinalIgnoreCase))
+						return true;
+
+					var expectedThumbprint = ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
+					var actualThumbprint = ComparableFingerprint(sha256Fingerprint);
+
+					return expectedThumbprint.Equals(actualThumbprint, StringComparison.OrdinalIgnoreCase);
+				});
+			}
 #else
-				if (callback != null)
-					throw new Exception("Mono misses ServerCertificateValidationCallback on HttpWebRequest");
-			#endif
+			if (callback != null)
+				throw new Exception("Mono misses ServerCertificateValidationCallback on HttpWebRequest");
+#endif
 		}
 
 		private static HttpWebRequest CreateWebRequest(RequestData requestData)

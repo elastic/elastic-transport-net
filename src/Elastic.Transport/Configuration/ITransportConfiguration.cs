@@ -201,6 +201,12 @@ namespace Elastic.Transport
 		Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> ServerCertificateValidationCallback { get; }
 
 		/// <summary>
+		/// During development, the server certificate fingerprint may be provided. When present, it is used to validate the
+		/// certificate sent by the server. The fingerprint is expected to be the hex string representing the SHA256 public key fingerprint.
+		/// </summary>
+		string CertificateFingerprint { get; }
+
+		/// <summary>
 		/// Configure the client to skip deserialization of certain status codes e.g: you run Elasticsearch behind a proxy that returns an unexpected
 		/// json format
 		/// </summary>
