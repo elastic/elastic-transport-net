@@ -35,6 +35,8 @@ namespace Elastic.Transport
 #endif
 	public class HttpWebRequestConnection : IConnection
 	{
+		private string _expectedCertificateFingerprint;
+
 		static HttpWebRequestConnection()
 		{
 			//Not available under mono
@@ -261,22 +263,30 @@ namespace Elastic.Transport
 #if !__MonoCS__
 			//Only assign if one is defined on connection settings and a subclass has not already set one
 			if (callback != null && request.ServerCertificateValidationCallback == null)
+			{
 				request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(callback);
+			}
 			else if (!string.IsNullOrEmpty(requestData.ConnectionSettings.CertificateFingerprint))
 			{
-				request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((request, cert, chain, policyErrors) =>
+				request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((request, certificate, chain, policyErrors) =>
 				{
-					using var alg = SHA256.Create();
-					var sha256FingerprintBytes = alg.ComputeHash(cert.GetRawCertData());
-					var sha256Fingerprint = BitConverter.ToString(sha256FingerprintBytes);
+					if (certificate is null && chain is null) return false;
 
-					if (sha256Fingerprint.Equals(requestData.ConnectionSettings.CertificateFingerprint, StringComparison.OrdinalIgnoreCase))
-						return true;
+					// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
+					_expectedCertificateFingerprint  ??= CertificateHelpers.ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
 
-					var expectedThumbprint = ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
-					var actualThumbprint = ComparableFingerprint(sha256Fingerprint);
+					// If there is a chain, check each certificate up to the root
+					if (chain is not null)
+					{
+						foreach (var element in chain.ChainElements)
+						{
+							if (CertificateHelpers.ValidateCertificateFingerprint(element.Certificate, _expectedCertificateFingerprint))
+								return true;
+						}
+					}
 
-					return expectedThumbprint.Equals(actualThumbprint, StringComparison.OrdinalIgnoreCase);
+					// Otherwise, check the certificate
+					return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
 				});
 			}
 #else
