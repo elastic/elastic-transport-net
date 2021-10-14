@@ -19,6 +19,17 @@ namespace Elastic.Transport.Products.Elasticsearch
 	/// </summary>
 	public class ElasticsearchProductRegistration : IProductRegistration
 	{
+		private readonly HeadersList _headers;
+
+		/// <summary>
+		/// Create a new instance of the Elasticsearch product registration.
+		/// </summary>
+		public ElasticsearchProductRegistration()
+		{
+			_headers = new HeadersList();
+			_headers.TryAdd("warning");
+		}
+
 		/// <summary> A static instance of <see cref="ElasticsearchProductRegistration"/> to promote reuse </summary>
 		public static IProductRegistration Default { get; } = new ElasticsearchProductRegistration();
 
@@ -30,6 +41,9 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 		/// <inheritdoc cref="IProductRegistration.SupportsSniff"/>
 		public bool SupportsSniff { get; } = true;
+
+		/// <inheritdoc cref="IProductRegistration.ResponseHeadersToParse"/>
+		public HeadersList ResponseHeadersToParse => _headers;
 
 		/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 		public const string SniffPath = "_nodes/http,settings";

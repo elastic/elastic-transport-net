@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Net.NetworkInformation;
 using System.Text;
 using Elastic.Transport.Diagnostics;
@@ -80,6 +81,9 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		public ITransportConfiguration ConnectionConfiguration { get; set; }
+
+		/// <inheritdoc cref="IApiCallDetails.ParsedHeaders"/>
+		public ReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; set; }
 
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		public override string ToString() =>

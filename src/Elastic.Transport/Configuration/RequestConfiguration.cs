@@ -79,6 +79,9 @@ namespace Elastic.Transport
 		/// </summary>
 		string OpaqueId { get; set; }
 
+		/// <inheritdoc cref="ITransportConfiguration.ParseAllHeaders"/>
+		bool? ParseAllHeaders { get; set; }
+
 		/// <summary>
 		/// The ping timeout for this specific request
 		/// </summary>
@@ -88,6 +91,9 @@ namespace Elastic.Transport
 		/// The timeout for this specific request, takes precedence over the global timeout settings
 		/// </summary>
 		TimeSpan? RequestTimeout { get; set; }
+
+		/// <inheritdoc cref="ITransportConfiguration.ResponseHeadersToParse"/>
+		HeadersList ResponseHeadersToParse { get; set; }
 
 		/// <summary>
 		/// Submit the request on behalf in the context of a different shield user
@@ -162,6 +168,10 @@ namespace Elastic.Transport
 		public bool? EnableTcpStats { get; set; }
 		/// <inheritdoc />
 		public bool? EnableThreadPoolStats { get; set; }
+		/// <inheritdoc />
+		public HeadersList ResponseHeadersToParse { get; set; }
+		/// <inheritdoc />
+		public bool? ParseAllHeaders { get; set; }
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration"/>
@@ -190,6 +200,10 @@ namespace Elastic.Transport
 			Self.Headers = config?.Headers;
 			Self.EnableTcpStats = config?.EnableTcpStats;
 			Self.EnableThreadPoolStats = config?.EnableThreadPoolStats;
+			Self.ParseAllHeaders = config?.ParseAllHeaders;
+
+			if (config?.ResponseHeadersToParse is not null)
+				Self.ResponseHeadersToParse = config.ResponseHeadersToParse;
 		}
 
 		string IRequestConfiguration.Accept { get; set; }
@@ -213,6 +227,8 @@ namespace Elastic.Transport
 		NameValueCollection IRequestConfiguration.Headers { get; set; }
 		bool? IRequestConfiguration.EnableTcpStats { get; set; }
 		bool? IRequestConfiguration.EnableThreadPoolStats { get; set; }
+		HeadersList IRequestConfiguration.ResponseHeadersToParse { get; set; }
+		bool? IRequestConfiguration.ParseAllHeaders { get; set; }
 
 		/// <inheritdoc cref="IRequestConfiguration.RunAs"/>
 		public RequestConfigurationDescriptor RunAs(string username)
@@ -366,6 +382,20 @@ namespace Elastic.Transport
 		public RequestConfigurationDescriptor EnableThreadPoolStats(bool? enableThreadPoolStats = true)
 		{
 			Self.EnableThreadPoolStats = enableThreadPoolStats;
+			return this;
+		}
+
+		/// <inheritdoc cref="IRequestConfiguration.ParseAllHeaders"/>
+		public RequestConfigurationDescriptor ParseAllHeaders(bool? enable = true)
+		{
+			Self.ParseAllHeaders = enable;
+			return this;
+		}
+
+		/// <inheritdoc cref="IRequestConfiguration.ResponseHeadersToParse"/>
+		public RequestConfigurationDescriptor ResponseHeadersToParse(IEnumerable<string> headers)
+		{
+			Self.ResponseHeadersToParse = new HeadersList(headers);
 			return this;
 		}
 	}

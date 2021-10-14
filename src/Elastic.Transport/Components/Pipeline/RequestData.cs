@@ -106,35 +106,41 @@ namespace Elastic.Transport
 			TransferEncodingChunked = local?.TransferEncodingChunked ?? global.TransferEncodingChunked;
 			TcpStats = local?.EnableTcpStats ?? global.EnableTcpStats;
 			ThreadPoolStats = local?.EnableThreadPoolStats ?? global.EnableThreadPoolStats;
+			ParseAllHeaders = local?.ParseAllHeaders ?? global.ParseAllHeaders ?? false;
+
+			if (local is not null)
+			{
+				ResponseHeadersToParse = local.ResponseHeadersToParse;
+				ResponseHeadersToParse.UnionWith(global.ResponseHeadersToParse);
+			}
+			else
+			{
+				ResponseHeadersToParse = global.ResponseHeadersToParse;
+			}
 		}
 
 		private readonly string _path;
 
 		public string Accept { get; }
 		public IReadOnlyCollection<int> AllowedStatusCodes { get; }
-
 		public IAuthenticationHeader AuthenticationHeader { get; }
-
 		public X509CertificateCollection ClientCertificates { get; }
 		public ITransportConfiguration ConnectionSettings { get; }
 		public CustomResponseBuilderBase CustomResponseBuilder { get; }
 		public bool DisableAutomaticProxyDetection { get; }
-
+		public HeadersList ResponseHeadersToParse { get; }
+		public bool ParseAllHeaders { get; }
 		public NameValueCollection Headers { get; }
 		public bool HttpCompression { get; }
 		public int KeepAliveInterval { get; }
 		public int KeepAliveTime { get; }
 		public bool MadeItToResponse { get; set; }
 		public IMemoryStreamFactory MemoryStreamFactory { get; }
-
 		public HttpMethod Method { get; }
 
-		public Node Node 
+		public Node Node
 		{
-			get
-			{
-				return _node; 
-			}
+			get => _node;
 			set
 			{
 				// We want the Uri to regenerate when the node changes
@@ -147,14 +153,11 @@ namespace Elastic.Transport
 		public PipelineFailure OnFailurePipelineFailure => MadeItToResponse ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
 		public string PathAndQuery { get; }
 		public TimeSpan PingTimeout { get; }
-
 		public bool Pipelined { get; }
 		public PostData PostData { get; }
 		public string ProxyAddress { get; }
 		public SecureString ProxyPassword { get; }
-
 		public string ProxyUsername { get; }
-
 		// TODO: rename to ContentType in 8.0.0
 		public string RequestMimeType { get; }
 		public TimeSpan RequestTimeout { get; }

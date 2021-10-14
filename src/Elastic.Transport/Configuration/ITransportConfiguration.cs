@@ -152,6 +152,11 @@ namespace Elastic.Transport
 		Action<RequestData> OnRequestDataCreated { get; }
 
 		/// <summary>
+		/// When enabled, all headers from the HTTP response will be included in the <see cref="IApiCallDetails"/>.
+		/// </summary>
+		bool? ParseAllHeaders { get; }
+
+		/// <summary>
 		/// The timeout in milliseconds to use for ping requests, which are issued to determine whether a node is alive
 		/// </summary>
 		TimeSpan? PingTimeout { get; }
@@ -183,6 +188,12 @@ namespace Elastic.Transport
 		/// The timeout in milliseconds for each request to Elasticsearch
 		/// </summary>
 		TimeSpan RequestTimeout { get; }
+
+		/// <summary>
+		/// A <see cref="HeadersList"/> containing the names of all HTTP response headers to attempt to parse and
+		/// included on the <see cref="IApiCallDetails"/>.
+		/// </summary>
+		HeadersList ResponseHeadersToParse { get; }
 
 		/// <summary>
 		/// Register a ServerCertificateValidationCallback per request
