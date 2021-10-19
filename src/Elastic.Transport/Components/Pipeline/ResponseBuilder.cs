@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Extensions;
@@ -197,11 +198,20 @@ namespace Elastic.Transport
 						.DeserializeResponseAsync(serializer, details, responseStream, cancellationToken)
 						.ConfigureAwait(false) as TResponse;
 
-				return mimeType == null || !mimeType.StartsWith(requestData.Accept, StringComparison.Ordinal)
-					? null
-					: await serializer
-						.DeserializeAsync<TResponse>(responseStream, cancellationToken)
-						.ConfigureAwait(false);
+				// TODO: Handle empty data in a nicer way as throwing exceptions has a cost we'd like to avoid!
+				// ie. check content-length (add to ApiCallDetails)?
+				try
+				{
+					return mimeType == null || !mimeType.StartsWith(requestData.Accept, StringComparison.Ordinal)
+						? null
+						: await serializer
+							.DeserializeAsync<TResponse>(responseStream, cancellationToken)
+							.ConfigureAwait(false);
+				}
+				catch (JsonException ex) when (ex.Message.Contains("The input does not contain any JSON tokens"))
+				{
+					return default;
+				}
 			}
 		}
 

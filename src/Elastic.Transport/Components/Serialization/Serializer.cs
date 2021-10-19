@@ -19,6 +19,8 @@ namespace Elastic.Transport
 	/// </summary>
 	public abstract class Serializer
 	{
+		// TODO: Overloads taking a Memory<T>/Span<T>??
+
 		/// <summary> Deserialize <paramref name="stream"/> to an instance of <paramref name="type"/> </summary>
 		public abstract object Deserialize(Type type, Stream stream);
 
