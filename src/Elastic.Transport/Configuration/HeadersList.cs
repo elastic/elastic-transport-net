@@ -10,11 +10,11 @@ using System.Linq;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// Represents a unique, case-insensitive collection of header names.
+	/// Represents a unique, case-insensitive, immutable collection of header names.
 	/// </summary>
 	public struct HeadersList : IEnumerable<string>
 	{
-		private List<string> _headers;
+		private readonly List<string> _headers;
 
 		/// <summary>
 		/// Create a new <see cref="HeadersList"/> from an existing enumerable of header names.
@@ -26,7 +26,61 @@ namespace Elastic.Transport
 			_headers = new List<string>();
 
 			foreach (var header in headers)
-				TryAdd(header);
+			{
+				if (!_headers.Contains(header, StringComparer.OrdinalIgnoreCase))
+				{
+					_headers.Add(header);
+				}
+			}
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="headers"></param>
+		/// <param name="additionalHeader"></param>
+		public HeadersList(IEnumerable<string> headers, string additionalHeader)
+		{
+			_headers = new List<string>();
+
+			foreach (var header in headers)
+			{
+				if (!_headers.Contains(header, StringComparer.OrdinalIgnoreCase))
+				{
+					_headers.Add(header);
+				}
+			}
+
+			if (!_headers.Contains(additionalHeader, StringComparer.OrdinalIgnoreCase))
+			{
+				_headers.Add(additionalHeader);
+			}
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="headers"></param>
+		/// <param name="otherHeaders"></param>
+		public HeadersList(IEnumerable<string> headers, IEnumerable<string> otherHeaders)
+		{
+			_headers = new List<string>();
+
+			foreach (var header in headers)
+			{
+				if (!_headers.Contains(header, StringComparer.OrdinalIgnoreCase))
+				{
+					_headers.Add(header);
+				}
+			}
+
+			foreach (var header in otherHeaders)
+			{
+				if (!_headers.Contains(header, StringComparer.OrdinalIgnoreCase))
+				{
+					_headers.Add(header);
+				}
+			}
 		}
 
 		/// <summary>
@@ -40,55 +94,24 @@ namespace Elastic.Transport
 		/// </summary>
 		public int Count => _headers is null ? 0 : _headers.Count;
 
-		/// <summary>
-		/// Attempt to add a header to the <see cref="HeadersList"/>.
-		/// Duplicate names, including those which only differ by case, will be ignored.
-		/// </summary>
-		/// <param name="header">The header name to add to the <see cref="HeadersList"/>.</param>
-		/// <returns></returns>
-		public bool TryAdd(string header)
-		{
-			if (_headers is null)
-			{
-				_headers = new List<string>()
-				{
-					header
-				};
-				return true;
-			}
-
-			if (!_headers.Contains(header, StringComparer.OrdinalIgnoreCase))
-			{
-				_headers.Add(header);
-				return true;
-			}
-
-			return false;
-		}
-
-		/// <summary>
-		/// Attempt to remove a header from the list if it is present.
-		/// </summary>
-		/// <param name="header">The header name to remove from the <see cref="HeadersList"/>.</param>
-		public void Remove(string header)
-		{
-			if (_headers is null) return;
-			_headers.RemoveAll(s => s.Equals(header, StringComparison.OrdinalIgnoreCase));
-		}
-
-		/// <summary>
-		/// Modifies the current <see cref="HeadersList"/> to contain all elements that are present in itself, the specified collection, or both.
-		/// </summary>
-		/// <param name="other">The collection to compare to the current <see cref="HeadersList"/> object.</param>
-		public void UnionWith(IEnumerable<string> other)
-		{
-			foreach (var header in other)
-				TryAdd(header);
-		}
-
 		/// <inheritdoc />
-		public IEnumerator<string> GetEnumerator() => _headers?.GetEnumerator() ?? (IEnumerator<string>)Array.Empty<string>().GetEnumerator();
+		public IEnumerator<string> GetEnumerator() => _headers?.GetEnumerator() ?? (IEnumerator<string>)new EmptyEnumerator<string>();
 
 		IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+		internal struct EmptyEnumerator<T> : IEnumerator<T>
+		{
+			public T Current => default;
+			object IEnumerator.Current => Current;
+			public bool MoveNext() => false;
+
+			public void Reset()
+			{
+			}
+
+			public void Dispose()
+			{
+			}
+		}
 	}
 }
