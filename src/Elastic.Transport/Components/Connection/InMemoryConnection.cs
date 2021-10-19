@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -21,6 +22,7 @@ namespace Elastic.Transport
 		private readonly Exception _exception;
 		private readonly byte[] _responseBody;
 		private readonly int _statusCode;
+		private readonly Dictionary<string, IEnumerable<string>> _headers;
 
 		/// <summary>
 		/// Every request will succeed with this overload, note that it won't actually return mocked responses
@@ -29,12 +31,13 @@ namespace Elastic.Transport
 		public InMemoryConnection() => _statusCode = 200;
 
 		/// <inheritdoc cref="InMemoryConnection"/>
-		public InMemoryConnection(byte[] responseBody, int statusCode = 200, Exception exception = null, string contentType = RequestData.MimeType)
+		public InMemoryConnection(byte[] responseBody, int statusCode = 200, Exception exception = null, string contentType = RequestData.MimeType, Dictionary<string, IEnumerable<string>> headers = null)
 		{
 			_responseBody = responseBody;
 			_statusCode = statusCode;
 			_exception = exception;
 			_contentType = contentType;
+			_headers = headers;
 		}
 
 		/// <inheritdoc cref="IConnection.Request{TResponse}"/>>
@@ -82,7 +85,7 @@ namespace Elastic.Transport
 
 			var sc = statusCode ?? _statusCode;
 			Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
-			return ResponseBuilder.ToResponse<TResponse>(requestData, _exception, sc, null, s, contentType ?? _contentType ?? RequestData.MimeType);
+			return ResponseBuilder.ToResponse<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.MimeType);
 		}
 
 		/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
@@ -112,7 +115,7 @@ namespace Elastic.Transport
 			var sc = statusCode ?? _statusCode;
 			Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
 			return await ResponseBuilder
-				.ToResponseAsync<TResponse>(requestData, _exception, sc, null, s, contentType ?? _contentType, cancellationToken)
+				.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, cancellationToken)
 				.ConfigureAwait(false);
 		}
 
