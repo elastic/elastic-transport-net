@@ -24,11 +24,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 		/// <summary>
 		/// Create a new instance of the Elasticsearch product registration.
 		/// </summary>
-		public ElasticsearchProductRegistration()
-		{
-			_headers = new HeadersList();
-			_headers.TryAdd("warning");
-		}
+		public ElasticsearchProductRegistration() => _headers = new HeadersList("warning");
 
 		/// <summary> A static instance of <see cref="ElasticsearchProductRegistration"/> to promote reuse </summary>
 		public static IProductRegistration Default { get; } = new ElasticsearchProductRegistration();
@@ -122,8 +118,10 @@ namespace Elastic.Transport.Products.Elasticsearch
 			IMemoryStreamFactory memoryStreamFactory
 		)
 		{
-			IRequestParameters requestParameters = new RequestParameters();
-			requestParameters.RequestConfiguration = requestConfiguration;
+			IRequestParameters requestParameters = new RequestParameters
+			{
+				RequestConfiguration = requestConfiguration
+			};
 
 			var data = new RequestData(HttpMethod.HEAD, string.Empty, null, global, requestParameters,
 				memoryStreamFactory) {Node = node};
