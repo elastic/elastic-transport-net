@@ -37,7 +37,9 @@ namespace Elastic.Transport
 			get
 			{
 #if !DOTNETCORE
+#pragma warning disable IDE0025 // Use expression body for properties
 				return false;
+#pragma warning restore IDE0025 // Use expression body for properties
 #else
 				var curlHandlerExists = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.CurlHandler") != null;
 				if (!curlHandlerExists) return false;
@@ -131,12 +133,12 @@ namespace Elastic.Transport
 		/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
 		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool" path="/summary"/></param>
 		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
-		/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
+		/// <param name="serializer"><inheritdoc cref="SerializerBase" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		public TransportConfiguration(
 			IConnectionPool connectionPool,
 			IConnection connection = null,
-			Serializer serializer = null,
+			SerializerBase serializer = null,
 			IProductRegistration productRegistration = null)
 			: base(connectionPool, connection, serializer, productRegistration) { }
 
@@ -200,9 +202,9 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool" path="/summary"/></param>
 		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
-		/// <param name="requestResponseSerializer"><inheritdoc cref="Serializer" path="/summary"/></param>
+		/// <param name="requestResponseSerializer"><inheritdoc cref="SerializerBase" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		protected TransportConfigurationBase(IConnectionPool connectionPool, IConnection connection, Serializer requestResponseSerializer, IProductRegistration productRegistration)
+		protected TransportConfigurationBase(IConnectionPool connectionPool, IConnection connection, SerializerBase requestResponseSerializer, IProductRegistration productRegistration)
 		{
 			_connectionPool = connectionPool;
 			_connection = connection ?? new HttpConnection();
@@ -237,7 +239,7 @@ namespace Elastic.Transport
 		/// </summary>
 		// ReSharper disable once MemberCanBePrivate.Global
 		// ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
-		protected Serializer UseThisRequestResponseSerializer { get; set; }
+		protected SerializerBase UseThisRequestResponseSerializer { get; set; }
 
 		IAuthenticationHeader ITransportConfiguration.Authentication => _authenticationHeader;
 		SemaphoreSlim ITransportConfiguration.BootstrapLock => _semaphore;
@@ -268,7 +270,7 @@ namespace Elastic.Transport
 		SecureString ITransportConfiguration.ProxyPassword => _proxyPassword;
 		string ITransportConfiguration.ProxyUsername => _proxyUsername;
 		NameValueCollection ITransportConfiguration.QueryStringParameters => _queryString;
-		Serializer ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
+		SerializerBase ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
 		TimeSpan ITransportConfiguration.RequestTimeout => _requestTimeout;
 		TimeSpan ITransportConfiguration.DnsRefreshTimeout => _dnsRefreshTimeout;
 		string ITransportConfiguration.CertificateFingerprint => _certificateFingerprint;

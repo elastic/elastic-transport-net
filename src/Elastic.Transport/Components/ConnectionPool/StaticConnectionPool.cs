@@ -73,7 +73,7 @@ namespace Elastic.Transport
 			}
 
 			InternalNodes = SortNodes(nodesProvided)
-				.DistinctBy(n => n.Uri)
+				.DistinctByCustom(n => n.Uri)
 				.ToList();
 			LastUpdate = DateTimeProvider.Now();
 		}

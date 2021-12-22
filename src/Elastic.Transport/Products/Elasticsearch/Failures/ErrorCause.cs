@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Elastic.Transport.Products.Elasticsearch.Failures
 {
@@ -75,6 +76,8 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 
 		public IReadOnlyCollection<string> ScriptStack { get; set; } = DefaultCollection;
 
+		// TODO: This attribute is supported from 5.8 onward. At the moment Transport depends on that version but is that safe?
+		[JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
 		public int? Shard { get; set; }
 #pragma warning restore 1591
 

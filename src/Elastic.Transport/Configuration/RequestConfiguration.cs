@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using Elastic.Transport.Extensions;
 

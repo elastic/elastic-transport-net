@@ -15,8 +15,110 @@ using Elastic.Transport.Extensions;
 using Elastic.Transport.Products;
 using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
 
+//#if NETSTANDARD2_0 || NETSTANDARD2_1
+//using System.Threading.Tasks.Extensions;
+//#endif
+
 namespace Elastic.Transport
 {
+	internal abstract class PipelineBase
+	{
+		// Introduce a concept of "middleware" that can run before or after a request/response
+		// Product clients can then register this in configuration for sniffing, pinging etc.
+
+		public abstract void Initialize();
+
+		public abstract ValueTask InitializeAsync();
+
+		public abstract TResponse CallProductEndpoint<TResponse>(RequestData requestData)
+			where TResponse : class, ITransportResponse, new();
+
+		public abstract Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+			where TResponse : class, ITransportResponse, new();
+	}
+
+	internal class TransportPipeline<TConfiguration> : PipelineBase where TConfiguration : class, ITransportConfiguration
+	{
+		private bool isInitialized = false;
+
+		private readonly IConnection _connection;
+		private readonly IConnectionPool _connectionPool;
+		private readonly IDateTimeProvider _dateTimeProvider;
+		private readonly IMemoryStreamFactory _memoryStreamFactory;
+		private readonly Func<Node, bool> _nodePredicate;
+		private readonly IProductRegistration _productRegistration;
+		private readonly TConfiguration _settings;
+
+		public TransportPipeline(
+			TConfiguration configurationValues,
+			IDateTimeProvider dateTimeProvider
+		)
+		{
+			_settings = configurationValues;
+			_connectionPool = _settings.ConnectionPool;
+			_connection = _settings.Connection;
+			_dateTimeProvider = dateTimeProvider;
+			_memoryStreamFactory = _settings.MemoryStreamFactory;
+			_productRegistration = configurationValues.ProductRegistration;
+			_nodePredicate = _settings.NodePredicate ?? _productRegistration.NodePredicate;
+		}
+
+		public override void Initialize()
+		{
+			if (!isInitialized)
+			{
+				isInitialized = true;
+			}
+		}
+
+		public override ValueTask InitializeAsync()
+		{
+			if (!isInitialized)
+			{
+				isInitialized = true;
+			}
+
+			return new(Task.CompletedTask);
+		}
+
+		public override TResponse CallProductEndpoint<TResponse>(RequestData requestData)
+		{
+			var response = _connection.Request<TResponse>(requestData);
+
+			return response;
+		}
+
+		public override Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) => throw new NotImplementedException();
+	}
+
+	internal class RequestDataV2
+	{
+		private readonly List<Audit> _auditTrail;
+
+		public RequestDataV2(
+			HttpMethod method,
+			string path,
+			PostData data,
+			ITransportConfiguration global,
+			IRequestParameters local)
+		{
+			// TODO: Configuration to control audit trail
+			_auditTrail = new List<Audit>();
+
+			PostData = data;
+		}
+
+		public void AddAuditTrailEntry(Audit audit) => _auditTrail.Add(audit);
+
+		public IReadOnlyCollection<Audit> AuditTrail => _auditTrail;
+
+		public PostData PostData { get; }
+
+		// TODO - Track retry state on request
+	}
+
+
+
 	internal static class RequestPipelineStatics
 	{
 		public static readonly string NoNodesAttemptedMessage =
