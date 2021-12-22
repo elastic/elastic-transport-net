@@ -65,7 +65,7 @@ namespace Elastic.Transport
 			{
 				_readerWriter.EnterWriteLock();
 				var sortedNodes = SortNodes(nodesArray)
-					.DistinctBy(n => n.Uri)
+					.DistinctByCustom(n => n.Uri)
 					.ToList();
 
 				InternalNodes = sortedNodes;

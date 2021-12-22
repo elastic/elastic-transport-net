@@ -8,6 +8,17 @@ using static Elastic.Transport.UrlFormatter;
 // ReSharper disable once CheckNamespace
 namespace Elastic.Transport
 {
+	/// <summary>
+	/// 
+	/// </summary>
+	public interface IStringable
+	{
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <returns></returns>
+		string GetString();
+	}
 
 	/// <inheritdoc cref="IRequestParameters"/>
 	public class RequestParameters : RequestParameters<RequestParameters>
@@ -64,6 +75,9 @@ namespace Elastic.Transport
 
 		/// <summary> Shortcut to <see cref="SetQueryString"/> for generated code </summary>
 		protected void Q(string name, object value) => SetQueryString(name, value);
+
+		/// <summary> Shortcut to <see cref="SetQueryString"/> for generated code </summary>
+		protected void Q(string name, IStringable value) => SetQueryString(name, value.GetString());
 
 		private void RemoveQueryString(string name)
 		{

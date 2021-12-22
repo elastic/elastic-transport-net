@@ -17,12 +17,10 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 			new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0));
 
 		/// <summary> Additional headers from the request that pertain to the error</summary>
-		[DataMember(Name = "headers")]
 		[JsonPropertyName("headers")]
 		public IReadOnlyDictionary<string, string> Headers { get; set; } = DefaultHeaders;
 
 		/// <summary> The root cause exception </summary>
-		[DataMember(Name = "root_cause")]
 		[JsonPropertyName("root_cause")]
 		public IReadOnlyCollection<ErrorCause> RootCause { get; set; }
 

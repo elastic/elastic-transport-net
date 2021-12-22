@@ -32,7 +32,7 @@ namespace Elastic.Transport
 		LiteralString,
 
 		/// <summary>
-		/// An instance of a user provided value to be serialized by <see cref="Serializer"/>
+		/// An instance of a user provided value to be serialized by <see cref="SerializerBase"/>
 		/// <para>Instantiate using <see cref="PostData.Serializable{T}"/></para>
 		/// </summary>
 		Serializable,

@@ -17,7 +17,7 @@ namespace Elastic.Transport
 	/// to serialize that data.</para>
 	/// <para>Or when <see cref="ResponseBuilder.ToResponse{TResponse}"/> determines the response needs to be deserialized.</para>
 	/// </summary>
-	public abstract class Serializer
+	public abstract class SerializerBase
 	{
 		// TODO: Overloads taking a Memory<T>/Span<T>??
 
@@ -39,7 +39,7 @@ namespace Elastic.Transport
 		/// <param name="data">The instance of <typeparamref name="T"/> that we want to serialize.</param>
 		/// <param name="stream">The stream to serialize to.</param>
 		/// <param name="formatting">
-		/// Formatting hint. Note that not all implementations of <see cref="Serializer"/> are able to
+		/// Formatting hint. Note that not all implementations of <see cref="SerializerBase"/> are able to
 		/// satisfy this hint, including the default serializer that is shipped with 8.0.
 		/// </param>
 		public abstract void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None);
