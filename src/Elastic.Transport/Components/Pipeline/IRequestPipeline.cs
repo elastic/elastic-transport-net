@@ -48,6 +48,10 @@ namespace Elastic.Transport
 		Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : class, ITransportResponse, new();
 
+		//Task<TResponse> CallProductEndpointAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken)
+		//	where TResponse : class, ITransportResponse, new()
+		//	where TError : class, IErrorResponse, new();
+
 		void MarkAlive(Node node);
 
 		void MarkDead(Node node);

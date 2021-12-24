@@ -96,5 +96,10 @@ namespace Elastic.Transport
 		/// The <see cref="Uri"/> from the request.
 		/// </summary>
 		Uri Uri { get; }
+
+		/// <summary>
+		/// 
+		/// </summary>
+		IErrorResponse ErrorResponse { get; }
 	}
 }

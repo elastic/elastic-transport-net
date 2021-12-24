@@ -193,7 +193,7 @@ namespace Elastic.Transport
 		private bool _enableThreadPoolStats;
 		private UserAgent _userAgent;
 		private string _certificateFingerprint;
-
+		private Type _errorType;
 
 		private readonly Func<HttpMethod, int, bool> _statusCodeToResponseSuccess;
 
@@ -446,6 +446,8 @@ namespace Elastic.Transport
 		private HeadersList _headersToParse;
 		HeadersList ITransportConfiguration.ResponseHeadersToParse => _headersToParse;
 
+		Type ITransportConfiguration.ErrorType => _errorType;
+
 		/// <inheritdoc cref="ITransportConfiguration.ResponseHeadersToParse"/>
 		public virtual T ResponseHeadersToParse(HeadersList headersToParse)
 		{
@@ -472,6 +474,10 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="ITransportConfiguration.SkipDeserializationForStatusCodes"/>
 		public T SkipDeserializationForStatusCodes(params int[] statusCodes) =>
 			Assign(new ReadOnlyCollection<int>(statusCodes), (a, v) => a._skipDeserializationForStatusCodes = v);
+
+		/// <inheritdoc cref="ITransportConfiguration.ErrorType"/>
+		public T ErrorType(Type errorType) =>
+			Assign(errorType, (a, v) => a._errorType = v);
 
 		/// <inheritdoc cref="ITransportConfiguration.UserAgent"/>
 		public T UserAgent(UserAgent userAgent) => Assign(userAgent, (a, v) => a._userAgent = v);

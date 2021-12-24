@@ -97,6 +97,11 @@ namespace Elastic.Transport
 		[JsonIgnore]
 		public ReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders => ApiCall.ParsedHeaders;
 
+		/// <summary>
+		/// 
+		/// </summary>
+		public IErrorResponse ErrorResponse => ApiCall.ErrorResponse;
+
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		public override string ToString() => ApiCall.ToString();
 	}

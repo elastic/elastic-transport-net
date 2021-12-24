@@ -13,7 +13,7 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 {
 	/// <summary> Represents the error response as returned by Elasticsearch. </summary>
 	[DataContract]
-	public class ServerError
+	public class ServerError : IErrorResponse
 	{
 		/// <inheritdoc cref="ServerError"/>
 		public ServerError() { }
@@ -64,6 +64,12 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 		/// <inheritdoc cref="Create"/>
 		public static Task<ServerError> CreateAsync(Stream stream, CancellationToken token = default) =>
 			LowLevelRequestResponseSerializer.Instance.DeserializeAsync<ServerError>(stream, token);
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <returns></returns>
+		public bool ContainsError() => Error is not null && Status > 0;
 
 		/// <summary> A human readable string representation of the server error returned by Elasticsearch </summary>
 		public override string ToString()

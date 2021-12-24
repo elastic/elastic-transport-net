@@ -11,6 +11,23 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
+	/// 
+	/// </summary>
+	public interface IErrorResponse
+	{
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <returns></returns>
+		bool ContainsError();
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
+	public interface IErrorResponse<T> : IErrorResponse { }
+
+	/// <summary>
 	///     A helper class that deals with handling how a <see cref="Stream" /> is transformed to the requested
 	///     <see cref="ITransportResponse" /> implementation. This includes handling optionally buffering based on
 	///     <see cref="ITransportConfiguration.DisableDirectStreaming" />. And handling short circuiting special responses
@@ -176,7 +193,10 @@ namespace Elastic.Transport
 			byte[] bytes = null;
 			var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ??
 			                             requestData.ConnectionSettings.DisableDirectStreaming;
-			if (disableDirectStreaming || NeedsToEagerReadStream<TResponse>())
+
+			var canHandleErrors = details.HttpStatusCode > 399 && requestData.ErrorType is not null;
+
+			if (disableDirectStreaming || NeedsToEagerReadStream<TResponse>() || canHandleErrors)
 			{
 				var inMemoryStream = requestData.MemoryStreamFactory.Create();
 				await responseStream.CopyToAsync(inMemoryStream, BufferSize, cancellationToken).ConfigureAwait(false);
@@ -191,6 +211,26 @@ namespace Elastic.Transport
 				if (details.HttpStatusCode.HasValue &&
 				    requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
 					return null;
+
+				// TEMP PROTOTYPE FOR ERROR HANDLING
+
+				if (canHandleErrors)
+				{
+					var error = await requestData.ConnectionSettings.RequestResponseSerializer.DeserializeAsync(requestData.ErrorType, responseStream, cancellationToken)
+						.ConfigureAwait(false);
+
+					if (error is IErrorResponse e && e.ContainsError())
+					{
+						var response = new TResponse();
+						details.ErrorResponse = e;
+						// response.ApiCall = details; set later in code
+						return response;
+					}
+
+					responseStream.Position = 0;
+				}
+
+				// END 
 
 				var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
 				if (requestData.CustomResponseBuilder != null)
@@ -264,6 +304,13 @@ namespace Elastic.Transport
 			responseStream = ms;
 			responseStream.Position = 0;
 			return bytes;
+		}
+
+		private static void SwapStreamsWithoutBytes(ref Stream responseStream, ref MemoryStream ms)
+		{
+			responseStream.Dispose();
+			responseStream = ms;
+			responseStream.Position = 0;
 		}
 	}
 }

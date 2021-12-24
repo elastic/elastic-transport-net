@@ -27,6 +27,17 @@ namespace Elastic.Transport
 			IRequestParameters requestParameters = null,
 			CancellationToken cancellationToken = default
 		) where TResponse : class, ITransportResponse, new();
+
+		/// <inheritdoc cref="Request{TResponse}" />
+		Task<TResponse> RequestAsync<TResponse, TError>(
+			HttpMethod method,
+			string path,
+			PostData data = null,
+			IRequestParameters requestParameters = null,
+			CancellationToken cancellationToken = default
+		)
+			where TResponse : class, ITransportResponse, new()
+			where TError : class, IErrorResponse, new();
 	}
 
 	/// <summary>

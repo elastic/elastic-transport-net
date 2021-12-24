@@ -83,6 +83,8 @@ namespace Elastic.Transport.Products
 		/// </summary>
 		Tuple<IApiCallDetails, IReadOnlyCollection<Node>> Sniff(IConnection connection, bool forceSsl, RequestData requestData);
 
+		
+
 		/// <summary> Allows certain nodes to be queried first to obtain sniffing information </summary>
 		int SniffOrder(Node node);
 

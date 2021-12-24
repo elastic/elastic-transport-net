@@ -86,6 +86,11 @@ namespace Elastic.Transport
 		bool EnableHttpCompression { get; }
 
 		/// <summary>
+		/// 
+		/// </summary>
+		Type ErrorType { get; }
+
+		/// <summary>
 		/// Try to send these headers for every request
 		/// </summary>
 		NameValueCollection Headers { get; }

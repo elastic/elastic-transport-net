@@ -45,7 +45,18 @@ namespace Elastic.Transport
 			PathAndQuery = CreatePathWithQueryStrings(path, ConnectionSettings, local);
 		}
 
-		private RequestData(HttpMethod method,
+		public RequestData(
+			HttpMethod method, string path,
+			PostData data,
+			ITransportConfiguration global,
+			IRequestParameters local,
+			IMemoryStreamFactory memoryStreamFactory,
+			Type errorType
+		)
+			: this(method, path, data, global, local, memoryStreamFactory) => ErrorType = errorType;
+
+		private RequestData(
+			HttpMethod method,
 			PostData data,
 			ITransportConfiguration global,
 			IRequestConfiguration local,
@@ -119,6 +130,8 @@ namespace Elastic.Transport
 		}
 
 		private readonly string _path;
+
+		public Type ErrorType { get; }
 
 		public string Accept { get; }
 		public IReadOnlyCollection<int> AllowedStatusCodes { get; }
