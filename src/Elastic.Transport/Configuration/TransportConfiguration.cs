@@ -32,38 +32,7 @@ namespace Elastic.Transport
 		/// As the old curl based handler is known to bleed TCP connections:
 		/// <para>https://github.com/dotnet/runtime/issues/22366</para>
 		/// </summary>
-		private static bool UsingCurlHandler
-		{
-			get
-			{
-#if !DOTNETCORE
-#pragma warning disable IDE0025 // Use expression body for properties
-				return false;
-#pragma warning restore IDE0025 // Use expression body for properties
-#else
-				var curlHandlerExists = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.CurlHandler") != null;
-				if (!curlHandlerExists) return false;
-
-				var socketsHandlerExists = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.SocketsHttpHandler") != null;
-				// running on a .NET core version with CurlHandler, before the existence of SocketsHttpHandler.
-				// Must be using CurlHandler.
-				if (!socketsHandlerExists) return true;
-
-				if (AppContext.TryGetSwitch("System.Net.Http.UseSocketsHttpHandler", out var isEnabled))
-					return !isEnabled;
-
-				var environmentVariable =
-					Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER");
-
-				// SocketsHandler exists and no environment variable exists to disable it.
-				// Must be using SocketsHandler and not CurlHandler
-				if (environmentVariable == null) return false;
-
-				return environmentVariable.Equals("false", StringComparison.OrdinalIgnoreCase) ||
-					environmentVariable.Equals("0");
-#endif
-			}
-		}
+		private static bool UsingCurlHandler => ConnectionInfo.UsingCurlHandler;
 
 		//public static IMemoryStreamFactory Default { get; } = RecyclableMemoryStreamFactory.Default;
 		// ReSharper disable once RedundantNameQualifier
@@ -193,7 +162,8 @@ namespace Elastic.Transport
 		private bool _enableThreadPoolStats;
 		private UserAgent _userAgent;
 		private string _certificateFingerprint;
-
+		private bool _disableMetaHeader;
+		private readonly MetaHeaderProviderBase _metaHeaderProvider;
 
 		private readonly Func<HttpMethod, int, bool> _statusCodeToResponseSuccess;
 
@@ -219,6 +189,8 @@ namespace Elastic.Transport
 			_sniffOnConnectionFault = true;
 			_sniffOnStartup = true;
 			_sniffLifeSpan = TimeSpan.FromHours(1);
+
+			_metaHeaderProvider = productRegistration?.MetaHeaderProvider;
 
 			_urlFormatter = new UrlFormatter(this);
 			_statusCodeToResponseSuccess = (m, i) => _productRegistration.HttpStatusCodeClassifier(m, i);
@@ -446,6 +418,10 @@ namespace Elastic.Transport
 		private HeadersList _headersToParse;
 		HeadersList ITransportConfiguration.ResponseHeadersToParse => _headersToParse;
 
+		MetaHeaderProviderBase ITransportConfiguration.MetaHeaderProvider => _metaHeaderProvider;
+
+		bool ITransportConfiguration.DisableMetaHeader => _disableMetaHeader;
+
 		/// <inheritdoc cref="ITransportConfiguration.ResponseHeadersToParse"/>
 		public virtual T ResponseHeadersToParse(HeadersList headersToParse)
 		{
@@ -487,6 +463,9 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="ITransportConfiguration.EnableThreadPoolStats"/>>
 		public T EnableThreadPoolStats(bool enableThreadPoolStats = true) => Assign(enableThreadPoolStats, (a, v) => a._enableThreadPoolStats = v);
+
+		/// <inheritdoc cref="ITransportConfiguration.DisableMetaHeader"/>>
+		public T DisableMetaHeader(bool disable = true) => Assign(disable, (a, v) => a._disableMetaHeader = v);
 
 		// ReSharper disable once VirtualMemberNeverOverridden.Global
 		/// <summary> Allows subclasses to hook into the parents dispose </summary>

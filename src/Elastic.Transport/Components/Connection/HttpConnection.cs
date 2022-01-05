@@ -152,6 +152,7 @@ namespace Elastic.Transport
 			ReadOnlyDictionary<TcpState, int> tcpStats = null;
 			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 			Dictionary<string, IEnumerable<string>> responseHeaders = null;
+			requestData.IsAsync = true;
 
 			try
 			{
@@ -407,6 +408,14 @@ namespace Elastic.Transport
 
 			if (!requestData.RunAs.IsNullOrEmpty())
 				requestMessage.Headers.Add(RequestData.RunAsSecurityHeader, requestData.RunAs);
+
+			if (requestData.MetaHeaderProvider is not null)
+			{
+				var value = requestData.MetaHeaderProvider.ProduceHeaderValue(requestData);
+
+				if (!string.IsNullOrEmpty(value))
+					requestMessage.Headers.TryAddWithoutValidation(requestData.MetaHeaderProvider.HeaderName, value);
+			}
 
 			return requestMessage;
 		}

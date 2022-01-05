@@ -99,5 +99,10 @@ namespace Elastic.Transport.Products
 
 		/// <summary> Try to obtain a server error from the response, this is used for debugging and exception messages </summary>
 		bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason) where TResponse : ITransportResponse;
+
+		/// <summary>
+		/// TODO
+		/// </summary>
+		MetaHeaderProviderBase MetaHeaderProvider { get; }
 	}
 }

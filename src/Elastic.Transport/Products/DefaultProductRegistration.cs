@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport.Products
 {
-
 	/// <summary>
 	/// A default non-descriptive product registration that does not support sniffing and pinging.
 	/// Can be used to connect to unknown services before they develop their own <see cref="IProductRegistration"/>
@@ -18,6 +17,12 @@ namespace Elastic.Transport.Products
 	public class ProductRegistration : IProductRegistration
 	{
 		private readonly HeadersList _headers = new();
+		private readonly MetaHeaderProviderBase _metaHeaderProvider;
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public ProductRegistration() => _metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(ITransport), "et");
 
 		/// <summary> A static instance of <see cref="ProductRegistration"/> to promote reuse </summary>
 		public static ProductRegistration Default { get; } = new ProductRegistration();
@@ -39,6 +44,9 @@ namespace Elastic.Transport.Products
 
 		/// <inheritdoc cref="IProductRegistration.ResponseHeadersToParse"/>
 		public HeadersList ResponseHeadersToParse => _headers;
+
+		/// <inheritdoc cref="IProductRegistration.MetaHeaderProvider"/>
+		public MetaHeaderProviderBase MetaHeaderProvider => _metaHeaderProvider;
 
 		/// <inheritdoc cref="IProductRegistration.HttpStatusCodeClassifier"/>
 		public bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>

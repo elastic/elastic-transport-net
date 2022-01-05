@@ -285,5 +285,15 @@ namespace Elastic.Transport
 		/// </summary>
 		bool PrettyJson { get; }
 
+		/// <summary>
+		/// Produces the client meta header for a request.
+		/// </summary>
+		MetaHeaderProviderBase MetaHeaderProvider { get; }
+
+		/// <summary>
+		/// Disables the meta header which is included on all requests by default. This header contains lightweight information 
+		/// about the client and runtime.
+		/// </summary>
+		bool DisableMetaHeader { get; }
 	}
 }

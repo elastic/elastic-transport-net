@@ -20,6 +20,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 	public class ElasticsearchProductRegistration : IProductRegistration
 	{
 		private readonly HeadersList _headers;
+		private readonly MetaHeaderProviderBase _metaHeaderProvider;
 
 		/// <summary>
 		/// Create a new instance of the Elasticsearch product registration.
@@ -29,6 +30,12 @@ namespace Elastic.Transport.Products.Elasticsearch
 			_headers = new HeadersList();
 			_headers.TryAdd("warning");
 		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="markerType"></param>
+		public ElasticsearchProductRegistration(Type markerType) : this() => _metaHeaderProvider = new DefaultMetaHeaderProvider(markerType, "es");
 
 		/// <summary> A static instance of <see cref="ElasticsearchProductRegistration"/> to promote reuse </summary>
 		public static IProductRegistration Default { get; } = new ElasticsearchProductRegistration();
@@ -44,6 +51,9 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 		/// <inheritdoc cref="IProductRegistration.ResponseHeadersToParse"/>
 		public HeadersList ResponseHeadersToParse => _headers;
+
+		/// <inheritdoc cref="IProductRegistration.MetaHeaderProvider"/>
+		public MetaHeaderProviderBase MetaHeaderProvider => _metaHeaderProvider;
 
 		/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 		public const string SniffPath = "_nodes/http,settings";

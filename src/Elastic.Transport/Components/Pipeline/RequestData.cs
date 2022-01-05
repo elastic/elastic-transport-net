@@ -95,6 +95,9 @@ namespace Elastic.Transport
 			KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
 			DnsRefreshTimeout = global.DnsRefreshTimeout;
 
+			MetaHeaderProvider = global.MetaHeaderProvider;
+			RequestMetaData = local?.RequestMetaData?.Items ?? EmptyReadOnly<string, string>.Dictionary;
+
 			ProxyAddress = global.ProxyAddress;
 			ProxyUsername = global.ProxyUsername;
 			ProxyPassword = global.ProxyPassword;
@@ -184,6 +187,12 @@ namespace Elastic.Transport
 		}
 
 		public TimeSpan DnsRefreshTimeout { get; }
+
+		public MetaHeaderProviderBase MetaHeaderProvider { get; }
+
+		public IReadOnlyDictionary<string, string> RequestMetaData { get; }
+
+		public bool IsAsync { get; internal set; }
 
 		public override string ToString() => $"{Method.GetStringValue()} {_path}";
 

@@ -121,6 +121,7 @@ namespace Elastic.Transport
 			ReadOnlyDictionary<TcpState, int> tcpStats = null;
 			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 			Dictionary<string, IEnumerable<string>> responseHeaders = null;
+			requestData.IsAsync = true;
 
 			try
 			{
@@ -325,12 +326,20 @@ namespace Elastic.Transport
 			if (requestData.Headers != null && requestData.Headers.HasKeys())
 				request.Headers.Add(requestData.Headers);
 
+			if (requestData.MetaHeaderProvider is object)
+			{
+				var value = requestData.MetaHeaderProvider.ProduceHeaderValue(requestData);
+
+				if (!string.IsNullOrEmpty(value))
+					request.Headers.Add(requestData.MetaHeaderProvider.HeaderName, requestData.MetaHeaderProvider.ProduceHeaderValue(requestData));
+			}
+
 			var timeout = (int)requestData.RequestTimeout.TotalMilliseconds;
 			request.Timeout = timeout;
 			request.ReadWriteTimeout = timeout;
 
 			//WebRequest won't send Content-Length: 0 for empty bodies
-			//which goes against RFC's and might break i.e IIS hen used as a proxy.
+			//which goes against RFC's and might break i.e IIS when used as a proxy.
 			//see: https://github.com/elastic/elasticsearch-net/issues/562
 			var m = requestData.Method.GetStringValue();
 			request.Method = m;
