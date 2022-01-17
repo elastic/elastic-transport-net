@@ -7,6 +7,7 @@
       Client connectivity bits, exposes a potentially cluster aware request pipeline that can be resilient to nodes dropping out of rotation.
       This package is heavily optimized for the Elastic (elastic.co) product suite and Elastic Cloud (cloud.elastic.co) SAAS offering. 
     </Description>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>

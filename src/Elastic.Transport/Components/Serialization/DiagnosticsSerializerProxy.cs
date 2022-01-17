@@ -60,6 +60,11 @@ namespace Elastic.Transport
 			_state = new SerializerRegistrationInformation(serializer.GetType(), purpose);
 		}
 
+		/// <summary>
+		/// Access to the inner <see cref="SerializerBase"/> wrapped by this proxy.
+		/// </summary>
+		public SerializerBase InnerSerializer => _serializer;
+
 		/// <inheritdoc cref="SerializerBase.Deserialize"/>>
 		public override object Deserialize(Type type, Stream stream)
 		{

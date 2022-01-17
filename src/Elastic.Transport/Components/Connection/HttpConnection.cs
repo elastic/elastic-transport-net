@@ -91,7 +91,7 @@ namespace Elastic.Transport
 					if (requestData.ThreadPoolStats)
 						threadPoolStats = ThreadPoolStats.GetStats();
 
-#if NET5_0
+#if NET5_0_OR_GREATER
 					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
 #else
 					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
@@ -109,7 +109,7 @@ namespace Elastic.Transport
 				{
 					receive = DiagnosticSource.Diagnose(DiagnosticSources.HttpConnection.ReceiveBody, requestData, statusCode);
 
-#if NET5_0
+#if NET5_0_OR_GREATER
 					responseStream = responseMessage.Content.ReadAsStream();
 #else
 					responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
@@ -137,7 +137,88 @@ namespace Elastic.Transport
 				return response;
 			}
 		}
-		
+
+		/// <inheritdoc cref="IConnection.Request{TResponse}" />
+		public virtual TResponse Request<TResponse, TError>(RequestData requestData)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new ()
+		{
+			// TODO - Remove as much code duplication as possible between the two request implementations
+
+			var client = GetClient(requestData);
+			HttpResponseMessage responseMessage;
+			int? statusCode = null;
+			Stream responseStream = null;
+			Exception ex = null;
+			string mimeType = null;
+			IDisposable receive = DiagnosticSources.SingletonDisposable;
+			ReadOnlyDictionary<TcpState, int> tcpStats = null;
+			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
+			Dictionary<string, IEnumerable<string>> responseHeaders = null;
+
+			try
+			{
+				var requestMessage = CreateHttpRequestMessage(requestData);
+
+				if (requestData.PostData != null)
+					SetContent(requestMessage, requestData);
+
+				using (requestMessage?.Content ?? (IDisposable)Stream.Null)
+				using (var d = DiagnosticSource.Diagnose<RequestData, int?>(DiagnosticSources.HttpConnection.SendAndReceiveHeaders, requestData))
+				{
+					if (requestData.TcpStats)
+						tcpStats = TcpStats.GetStates();
+
+					if (requestData.ThreadPoolStats)
+						threadPoolStats = ThreadPoolStats.GetStats();
+
+#if NET5_0_OR_GREATER
+					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
+#else
+					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
+#endif
+					statusCode = (int)responseMessage.StatusCode;
+					d.EndState = statusCode;
+				}
+
+				requestData.MadeItToResponse = true;
+				responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
+
+				mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
+
+				if (responseMessage.Content != null)
+				{
+					receive = DiagnosticSource.Diagnose(DiagnosticSources.HttpConnection.ReceiveBody, requestData, statusCode);
+
+#if NET5_0_OR_GREATER
+					responseStream = responseMessage.Content.ReadAsStream();
+#else
+					responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+#endif
+				}
+			}
+			catch (TaskCanceledException e)
+			{
+				ex = e;
+			}
+			catch (HttpRequestException e)
+			{
+				ex = e;
+			}
+			using (receive)
+			using (responseStream ??= Stream.Null)
+			{
+				var response = ResponseBuilder.ToResponse<TResponse, TError>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType);
+
+				// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
+				// gathering stats, they are still exposed on the call details. Ideally these would be set inside ResponseBuilder.ToResponse,
+				// but doing so would be a breaking change in 7.x
+				response.ApiCall.TcpStats = tcpStats;
+				response.ApiCall.ThreadPoolStats = threadPoolStats;
+				return response;
+			}
+		}
+
 		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}" />
 		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : class, ITransportResponse, new()
@@ -198,6 +279,79 @@ namespace Elastic.Transport
 			using (responseStream = responseStream ?? Stream.Null)
 			{
 				var response = await ResponseBuilder.ToResponseAsync<TResponse>
+						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, cancellationToken)
+					.ConfigureAwait(false);
+
+				// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
+				// gathering stats, they are still exposed on the call details. Ideally these would be set inside ResponseBuilder.ToResponse,
+				// but doing so would be a breaking change in 7.x
+				response.ApiCall.TcpStats = tcpStats;
+				response.ApiCall.ThreadPoolStats = threadPoolStats;
+				return response;
+			}
+		}
+
+		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}" />
+		public virtual async Task<TResponse> RequestAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			var client = GetClient(requestData);
+			HttpResponseMessage responseMessage;
+			int? statusCode = null;
+			Stream responseStream = null;
+			Exception ex = null;
+			string mimeType = null;
+			IDisposable receive = DiagnosticSources.SingletonDisposable;
+			ReadOnlyDictionary<TcpState, int> tcpStats = null;
+			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
+			Dictionary<string, IEnumerable<string>> responseHeaders = null;
+			requestData.IsAsync = true;
+
+			try
+			{
+				var requestMessage = CreateHttpRequestMessage(requestData);
+
+				if (requestData.PostData != null)
+					await SetContentAsync(requestMessage, requestData, cancellationToken).ConfigureAwait(false);
+
+				using (requestMessage?.Content ?? (IDisposable)Stream.Null)
+				using (var d = DiagnosticSource.Diagnose<RequestData, int?>(DiagnosticSources.HttpConnection.SendAndReceiveHeaders, requestData))
+				{
+					if (requestData.TcpStats)
+						tcpStats = TcpStats.GetStates();
+
+					if (requestData.ThreadPoolStats)
+						threadPoolStats = ThreadPoolStats.GetStats();
+
+					responseMessage = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+						.ConfigureAwait(false);
+					statusCode = (int)responseMessage.StatusCode;
+					d.EndState = statusCode;
+				}
+
+				requestData.MadeItToResponse = true;
+				mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
+				responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
+
+				if (responseMessage.Content != null)
+				{
+					receive = DiagnosticSource.Diagnose(DiagnosticSources.HttpConnection.ReceiveBody, requestData, statusCode);
+					responseStream = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
+				}
+			}
+			catch (TaskCanceledException e)
+			{
+				ex = e;
+			}
+			catch (HttpRequestException e)
+			{
+				ex = e;
+			}
+			using (receive)
+			using (responseStream = responseStream ?? Stream.Null)
+			{
+				var response = await ResponseBuilder.ToResponseAsync<TResponse, TError>
 						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, cancellationToken)
 					.ConfigureAwait(false);
 

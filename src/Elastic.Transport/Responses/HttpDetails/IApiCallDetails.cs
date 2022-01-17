@@ -97,4 +97,16 @@ namespace Elastic.Transport
 		/// </summary>
 		Uri Uri { get; }
 	}
+
+	///// <summary>
+	///// 
+	///// </summary>
+	///// <typeparam name="TError"></typeparam>
+	//public interface IApiCallDetails<TError> : IApiCallDetails where TError : class, IErrorResponse, new()
+	//{
+	//	/// <summary>
+	//	/// 
+	//	/// </summary>
+	//	TError ServerError { get; }
+	//}
 }

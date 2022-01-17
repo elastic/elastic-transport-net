@@ -34,6 +34,11 @@ namespace Elastic.Transport
 		Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : class, ITransportResponse, new();
 
+		/// <inheritdoc cref="Request{TResponse}"/>
+		Task<TResponse> RequestAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new();
+
 		/// <summary>
 		/// Perform a request to the endpoint described by <paramref name="requestData"/> using its associated configuration.
 		/// </summary>
@@ -50,5 +55,10 @@ namespace Elastic.Transport
 		/// </returns>
 		TResponse Request<TResponse>(RequestData requestData)
 			where TResponse : class, ITransportResponse, new();
+
+		/// <inheritdoc cref="Request{TResponse}"/>
+		TResponse Request<TResponse, TError>(RequestData requestData)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new();
 	}
 }

@@ -454,5 +454,8 @@ namespace Elastic.Transport
 
 		/// <summary> Allows subclasses to hook into the parents dispose </summary>
 		protected virtual void DisposeManagedResources() { }
+
+		Task<TResponse> IConnection.RequestAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken) => throw new NotImplementedException();
+		TResponse IConnection.Request<TResponse, TError>(RequestData requestData) => throw new NotImplementedException();
 	}
 }

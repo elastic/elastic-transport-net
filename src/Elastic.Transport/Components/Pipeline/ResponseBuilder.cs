@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -16,7 +17,7 @@ namespace Elastic.Transport
 	///     <see cref="ITransportConfiguration.DisableDirectStreaming" />. And handling short circuiting special responses
 	///     such as <see cref="StringResponse" />, <see cref="BytesResponse" /> and <see cref="VoidResponse" />
 	/// </summary>
-	public static class ResponseBuilder
+	internal static class ResponseBuilder
 	{
 		private const int BufferSize = 81920;
 
@@ -64,6 +65,37 @@ namespace Elastic.Transport
 		/// <summary>
 		///     Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
 		/// </summary>
+		public static TResponse ToResponse<TResponse, TError>(
+			RequestData requestData,
+			Exception ex,
+			int? statusCode,
+			Dictionary<string, IEnumerable<string>> headers,
+			Stream responseStream,
+			string mimeType = RequestData.MimeType
+		)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			responseStream.ThrowIfNull(nameof(responseStream));
+
+			var details = Initialize(requestData, ex, statusCode, headers, mimeType);
+
+			TResponse response = null;
+			// Only attempt to set the body if the response may have content
+			if (MayHaveBody(statusCode, requestData.Method))
+				response = SetBody<TResponse, TError>(details, requestData, responseStream, mimeType);
+			else
+				responseStream.Dispose();
+
+			response ??= new TResponse();
+
+			response.ApiCall = details;
+			return response;
+		}
+
+		/// <summary>
+		///     Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
+		/// </summary>
 		public static async Task<TResponse> ToResponseAsync<TResponse>(
 			RequestData requestData,
 			Exception ex,
@@ -84,6 +116,40 @@ namespace Elastic.Transport
 			// Only attempt to set the body if the response may have content
 			if (MayHaveBody(statusCode, requestData.Method))
 				response = await SetBodyAsync<TResponse>(details, requestData, responseStream, mimeType,
+					cancellationToken).ConfigureAwait(false);
+			else
+				responseStream.Dispose();
+
+			response ??= new TResponse();
+
+			response.ApiCall = details;
+			return response;
+		}
+
+		/// <summary>
+		///     Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
+		/// </summary>
+		public static async Task<TResponse> ToResponseAsync<TResponse, TError>(
+			RequestData requestData,
+			Exception ex,
+			int? statusCode,
+			Dictionary<string, IEnumerable<string>> headers,
+			Stream responseStream,
+			string mimeType = RequestData.MimeType,
+			CancellationToken cancellationToken = default
+		)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			responseStream.ThrowIfNull(nameof(responseStream));
+
+			var details = Initialize(requestData, ex, statusCode, headers, mimeType);
+
+			TResponse response = null;
+
+			// Only attempt to set the body if the response may have content
+			if (MayHaveBody(statusCode, requestData.Method))
+				response = await SetBodyAsync<TResponse, TError>(details, requestData, responseStream, mimeType,
 					cancellationToken).ConfigureAwait(false);
 			else
 				responseStream.Dispose();
@@ -139,6 +205,7 @@ namespace Elastic.Transport
 			byte[] bytes = null;
 			var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ??
 			                             requestData.ConnectionSettings.DisableDirectStreaming;
+
 			if (disableDirectStreaming || NeedsToEagerReadStream<TResponse>())
 			{
 				var inMemoryStream = requestData.MemoryStreamFactory.Create();
@@ -157,6 +224,73 @@ namespace Elastic.Transport
 					return null;
 
 				var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
+
+				if (requestData.CustomResponseBuilder != null)
+					return requestData.CustomResponseBuilder.DeserializeResponse(serializer, details, responseStream) as
+						TResponse;
+
+				return mimeType == null || !mimeType.StartsWith(requestData.Accept, StringComparison.Ordinal)
+					? null
+					: serializer.Deserialize<TResponse>(responseStream);
+			}
+		}
+
+		private static TResponse SetBody<TResponse, TError>(ApiCallDetails details, RequestData requestData,
+			Stream responseStream, string mimeType)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			byte[] bytes = null;
+			var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ??
+										 requestData.ConnectionSettings.DisableDirectStreaming;
+
+			// TODO - Add config to disable this behavior
+			var handleErrors = details.HttpStatusCode > 399 && typeof(TError) != typeof(EmptyError);
+
+			if (disableDirectStreaming || NeedsToEagerReadStream<TResponse>() || handleErrors)
+			{
+				var inMemoryStream = requestData.MemoryStreamFactory.Create();
+				responseStream.CopyTo(inMemoryStream, BufferSize);
+				bytes = SwapStreams(ref responseStream, ref inMemoryStream);
+				details.ResponseBodyInBytes = bytes;
+			}
+
+			using (responseStream)
+			{
+				if (SetSpecialTypes<TResponse>(mimeType, bytes, requestData.MemoryStreamFactory, out var r))
+					return r;
+
+				if (details.HttpStatusCode.HasValue &&
+					requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
+					return null;
+
+				var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
+
+				if (handleErrors)
+				{
+					Debug.Assert(responseStream.CanSeek);
+
+					try
+					{
+						var error = serializer.Deserialize<TError>(responseStream);
+						if (error is not null && error.HasError())
+						{
+							return new TResponse()
+							{
+								ServerError = error
+							};
+						}
+					}
+					catch (JsonException)
+					{
+						// Empty catch as we'll try the original response type if the error serialization fails
+					}
+					finally
+					{
+						responseStream.Position = 0;
+					}
+				}
+
 				if (requestData.CustomResponseBuilder != null)
 					return requestData.CustomResponseBuilder.DeserializeResponse(serializer, details, responseStream) as
 						TResponse;
@@ -176,6 +310,7 @@ namespace Elastic.Transport
 			byte[] bytes = null;
 			var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ??
 			                             requestData.ConnectionSettings.DisableDirectStreaming;
+
 			if (disableDirectStreaming || NeedsToEagerReadStream<TResponse>())
 			{
 				var inMemoryStream = requestData.MemoryStreamFactory.Create();
@@ -193,6 +328,86 @@ namespace Elastic.Transport
 					return null;
 
 				var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
+
+				if (requestData.CustomResponseBuilder != null)
+					return await requestData.CustomResponseBuilder
+						.DeserializeResponseAsync(serializer, details, responseStream, cancellationToken)
+						.ConfigureAwait(false) as TResponse;
+
+				// TODO: Handle empty data in a nicer way as throwing exceptions has a cost we'd like to avoid!
+				// ie. check content-length (add to ApiCallDetails)?
+				try
+				{
+					return mimeType == null || !mimeType.StartsWith(requestData.Accept, StringComparison.Ordinal)
+						? null
+						: await serializer
+							.DeserializeAsync<TResponse>(responseStream, cancellationToken)
+							.ConfigureAwait(false);
+				}
+				catch (JsonException ex) when (ex.Message.Contains("The input does not contain any JSON tokens"))
+				{
+					return default;
+				}
+			}
+		}
+
+		private static async Task<TResponse> SetBodyAsync<TResponse, TError>(
+			ApiCallDetails details, RequestData requestData, Stream responseStream, string mimeType,
+			CancellationToken cancellationToken
+		)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			byte[] bytes = null;
+			var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ??
+										 requestData.ConnectionSettings.DisableDirectStreaming;
+
+			// TODO - Add config to disable this behavior
+			var handleErrors = details.HttpStatusCode > 399 && typeof(TError) != typeof(EmptyError);
+
+			if (disableDirectStreaming || NeedsToEagerReadStream<TResponse>() || handleErrors)
+			{
+				var inMemoryStream = requestData.MemoryStreamFactory.Create();
+				await responseStream.CopyToAsync(inMemoryStream, BufferSize, cancellationToken).ConfigureAwait(false);
+				bytes = SwapStreams(ref responseStream, ref inMemoryStream);
+				details.ResponseBodyInBytes = bytes;
+			}
+
+			using (responseStream)
+			{
+				if (SetSpecialTypes<TResponse>(mimeType, bytes, requestData.MemoryStreamFactory, out var r)) return r;
+
+				if (details.HttpStatusCode.HasValue &&
+					requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
+					return null;
+
+				var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
+
+				if (handleErrors)
+				{
+					Debug.Assert(responseStream.CanSeek);
+
+					try
+					{
+						var error = await serializer.DeserializeAsync<TError>(responseStream, cancellationToken).ConfigureAwait(false);
+						if (error is not null && error.HasError())
+						{
+							return new TResponse()
+							{
+								ServerError = error
+							};
+						}
+					}
+					catch (JsonException)
+					{
+						// Empty catch as we'll try the original response type if the error serialization fails
+					}
+					finally
+					{
+						responseStream.Position = 0;
+					}
+				}
+
 				if (requestData.CustomResponseBuilder != null)
 					return await requestData.CustomResponseBuilder
 						.DeserializeResponseAsync(serializer, details, responseStream, cancellationToken)

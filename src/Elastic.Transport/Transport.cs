@@ -174,6 +174,86 @@ namespace Elastic.Transport
 			return FinalizeResponse(requestData, pipeline, seenExceptions, response);
 		}
 
+		/// <inheritdoc cref="ITransport.Request{TResponse, TError}" />
+		public TResponse Request<TResponse, TError>(HttpMethod method, string path, PostData data = null,
+			IRequestParameters requestParameters = null)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			using var pipeline =
+				PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
+
+			pipeline.FirstPoolUsage(Settings.BootstrapLock);
+
+			var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory);
+			Settings.OnRequestDataCreated?.Invoke(requestData);
+			TResponse response = null;
+
+			var seenExceptions = new List<PipelineException>();
+
+			if (pipeline.TryGetSingleNode(out var singleNode))
+			{
+				// No value in marking a single node as dead. We have no other options!
+
+				requestData.Node = singleNode;
+
+				try
+				{
+					response = pipeline.CallProductEndpoint<TResponse, TError>(requestData);
+				}
+				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
+				{
+					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				}
+				catch (PipelineException pipelineException)
+				{
+					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				}
+				catch (Exception killerException)
+				{
+					ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
+				}
+			}
+			else
+				foreach (var node in pipeline.NextNode())
+				{
+					requestData.Node = node;
+					try
+					{
+						if (_productRegistration.SupportsSniff) pipeline.SniffOnStaleCluster();
+						if (_productRegistration.SupportsPing) Ping(pipeline, node);
+
+						response = pipeline.CallProductEndpoint<TResponse, TError>(requestData);
+						if (!response.ApiCall.SuccessOrKnownError)
+						{
+							pipeline.MarkDead(node);
+							if (_productRegistration.SupportsSniff) pipeline.SniffOnConnectionFailure();
+						}
+					}
+					catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
+					{
+						HandlePipelineException(ref response, pipelineException, pipeline, node, seenExceptions);
+						break;
+					}
+					catch (PipelineException pipelineException)
+					{
+						HandlePipelineException(ref response, pipelineException, pipeline, node, seenExceptions);
+					}
+					catch (Exception killerException)
+					{
+						ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response,
+							pipeline);
+					}
+
+					if (response == null || !response.ApiCall.SuccessOrKnownError) continue; // try the next node
+
+					pipeline.MarkAlive(node);
+					break;
+				}
+
+			return FinalizeResponse(requestData, pipeline, seenExceptions, response);
+		}
+
 		/// <inheritdoc cref="ITransport.RequestAsync{TResponse}" />
 		public async Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path,
 			PostData data = null, IRequestParameters requestParameters = null,
@@ -253,6 +333,106 @@ namespace Elastic.Transport
 						throw new UnexpectedTransportException(killerException, seenExceptions)
 						{
 							Request = requestData, Response = response?.ApiCall, AuditTrail = pipeline.AuditTrail
+						};
+					}
+
+					if (cancellationToken.IsCancellationRequested)
+					{
+						pipeline.AuditCancellationRequested();
+						break;
+					}
+
+					if (response == null || !response.ApiCall.SuccessOrKnownError) continue;
+
+					pipeline.MarkAlive(node);
+					break;
+				}
+
+			return FinalizeResponse(requestData, pipeline, seenExceptions, response);
+		}
+
+		/// <inheritdoc cref="ITransport.RequestAsync{TResponse, TError}" />
+		public async Task<TResponse> RequestAsync<TResponse, TError>(HttpMethod method, string path,
+			PostData data = null, IRequestParameters requestParameters = null,
+			CancellationToken cancellationToken = default
+		)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			using var pipeline =
+				PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
+
+			await pipeline.FirstPoolUsageAsync(Settings.BootstrapLock, cancellationToken).ConfigureAwait(false);
+
+			var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory);
+			Settings.OnRequestDataCreated?.Invoke(requestData);
+			TResponse response = null;
+
+			var seenExceptions = new List<PipelineException>();
+
+			if (pipeline.TryGetSingleNode(out var singleNode))
+			{
+				// No value in marking a single node as dead. We have no other options!
+
+				requestData.Node = singleNode;
+
+				try
+				{
+					response = await pipeline.CallProductEndpointAsync<TResponse, TError>(requestData, cancellationToken)
+						.ConfigureAwait(false);
+				}
+				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
+				{
+					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				}
+				catch (PipelineException pipelineException)
+				{
+					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				}
+				catch (Exception killerException)
+				{
+					ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
+				}
+			}
+			else
+				foreach (var node in pipeline.NextNode())
+				{
+					requestData.Node = node;
+					try
+					{
+						if (_productRegistration.SupportsSniff)
+							await pipeline.SniffOnStaleClusterAsync(cancellationToken).ConfigureAwait(false);
+						if (_productRegistration.SupportsPing)
+							await PingAsync(pipeline, node, cancellationToken).ConfigureAwait(false);
+
+						response = await pipeline.CallProductEndpointAsync<TResponse, TError>(requestData, cancellationToken)
+							.ConfigureAwait(false);
+						if (!response.ApiCall.SuccessOrKnownError)
+						{
+							pipeline.MarkDead(node);
+							if (_productRegistration.SupportsSniff)
+								await pipeline.SniffOnConnectionFailureAsync(cancellationToken).ConfigureAwait(false);
+						}
+					}
+					catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
+					{
+						HandlePipelineException(ref response, pipelineException, pipeline, node, seenExceptions);
+						break;
+					}
+					catch (PipelineException pipelineException)
+					{
+						HandlePipelineException(ref response, pipelineException, pipeline, node, seenExceptions);
+					}
+					catch (Exception killerException)
+					{
+						if (killerException is OperationCanceledException && cancellationToken.IsCancellationRequested)
+							pipeline.AuditCancellationRequested();
+
+						throw new UnexpectedTransportException(killerException, seenExceptions)
+						{
+							Request = requestData,
+							Response = response?.ApiCall,
+							AuditTrail = pipeline.AuditTrail
 						};
 					}
 

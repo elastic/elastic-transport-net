@@ -307,6 +307,33 @@ namespace Elastic.Transport
 			}
 		}
 
+		public TResponse CallProductEndpoint<TResponse, TError>(RequestData requestData)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			using (var audit = Audit(HealthyResponse, requestData.Node))
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(
+				DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
+			{
+				audit.Path = requestData.PathAndQuery;
+				try
+				{
+					var response = _connection.Request<TResponse, TError>(requestData);
+					d.EndState = response.ApiCall;
+					response.ApiCall.AuditTrail = AuditTrail;
+					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
+					if (!response.ApiCall.Success) audit.Event = requestData.OnFailureAuditEvent;
+					return response;
+				}
+				catch (Exception e)
+				{
+					audit.Event = requestData.OnFailureAuditEvent;
+					audit.Exception = e;
+					throw;
+				}
+			}
+		}
+
 		public async Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : class, ITransportResponse, new()
 		{
@@ -332,6 +359,34 @@ namespace Elastic.Transport
 				}
 			}
 		}
+
+		public async Task<TResponse> CallProductEndpointAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			using (var audit = Audit(HealthyResponse, requestData.Node))
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(
+				DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
+			{
+				audit.Path = requestData.PathAndQuery;
+				try
+				{
+					var response = await _connection.RequestAsync<TResponse, TError>(requestData, cancellationToken).ConfigureAwait(false);
+					d.EndState = response.ApiCall;
+					response.ApiCall.AuditTrail = AuditTrail;
+					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
+					if (!response.ApiCall.Success) audit.Event = requestData.OnFailureAuditEvent;
+					return response;
+				}
+				catch (Exception e)
+				{
+					audit.Event = requestData.OnFailureAuditEvent;
+					audit.Exception = e;
+					throw;
+				}
+			}
+		}
+
 
 		public TransportException CreateClientException<TResponse>(
 			TResponse response, IApiCallDetails callDetails, RequestData data, List<PipelineException> pipelineExceptions
