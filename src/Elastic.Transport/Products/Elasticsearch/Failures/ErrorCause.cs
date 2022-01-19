@@ -11,16 +11,17 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 {
 	/// <summary> Represents an Elasticsearch server exception. </summary>
 	[DataContract]
+	[JsonConverter(typeof(ErrorCauseConverter))]
 	public class ErrorCause
 	{
-		private static readonly IReadOnlyCollection<string> DefaultCollection =
-			new ReadOnlyCollection<string>(new string[0]);
+		//private static readonly IReadOnlyCollection<string> DefaultCollection =
+		//	new ReadOnlyCollection<string>(new string[0]);
 
 		private static readonly IReadOnlyDictionary<string, object> DefaultDictionary =
 			new ReadOnlyDictionary<string, object>(new Dictionary<string, object>());
 
-		private static readonly IReadOnlyCollection<ShardFailure> DefaultFailedShards =
-			new ReadOnlyCollection<ShardFailure>(new ShardFailure[0]);
+		//private static readonly IReadOnlyCollection<ShardFailure> DefaultFailedShards =
+		//	new ReadOnlyCollection<ShardFailure>(new ShardFailure[0]);
 
 		/// <summary>
 		/// Additional properties related to the error cause. Contains properties that
@@ -34,6 +35,7 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 		/// <summary>
 		/// If stacktrace was requested this holds the java stack trace as it occurred on the server
 		/// </summary>
+		[JsonPropertyName("stack_trace")]
 		public string StackTrace { get; set; }
 
 		/// <summary>
@@ -44,41 +46,41 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 // The following are all very specific to individual failures
 // Seeking to clean this up within Elasticsearch itself: https://github.com/elastic/elasticsearch/issues/27672
 #pragma warning disable 1591
-		public long? BytesLimit { get; set; }
+		//public long? BytesLimit { get; set; }
 
-		public long? BytesWanted { get; set; }
+		//public long? BytesWanted { get; set; }
 
 		public ErrorCause CausedBy { get; set; }
 
-		public int? Column { get; set; }
+		//public int? Column { get; set; }
 
-		public IReadOnlyCollection<ShardFailure> FailedShards { get; set; } = DefaultFailedShards;
+		//public IReadOnlyCollection<ShardFailure> FailedShards { get; set; } = DefaultFailedShards;
 
-		public bool? Grouped { get; set; }
+		//public bool? Grouped { get; set; }
 
 		public string Index { get; set; }
 
 		public string IndexUUID { get; set; }
 
-		public string Language { get; set; }
+		//public string Language { get; set; }
 
-		public string LicensedExpiredFeature { get; set; }
+		//public string LicensedExpiredFeature { get; set; }
 
-		public int? Line { get; set; }
+		//public int? Line { get; set; }
 
-		public string Phase { get; set; }
+		//public string Phase { get; set; }
 
-		public IReadOnlyCollection<string> ResourceId { get; set; } = DefaultCollection;
+		//public IReadOnlyCollection<string> ResourceId { get; set; } = DefaultCollection;
 
-		public string ResourceType { get; set; }
+		//public string ResourceType { get; set; }
 
-		public string Script { get; set; }
+		//public string Script { get; set; }
 
-		public IReadOnlyCollection<string> ScriptStack { get; set; } = DefaultCollection;
+		//public IReadOnlyCollection<string> ScriptStack { get; set; } = DefaultCollection;
 
 		// TODO: This attribute is supported from 5.8 onward. At the moment Transport depends on that version but is that safe?
-		[JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
-		public int? Shard { get; set; }
+		//[JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+		//public int? Shard { get; set; }
 #pragma warning restore 1591
 
 		/// <summary> A human readable string representation of the exception returned by Elasticsearch </summary>

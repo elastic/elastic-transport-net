@@ -65,61 +65,60 @@ namespace Elastic.Transport
 				var propertyName = reader.GetString();
 				switch (propertyName)
 				{
-					case "bytes_limit":
-						ReadAssign<int?>(ref reader, (e, v) => e.BytesLimit = v);
-						break;
-					case "bytes_wanted":
-						ReadAssign<int?>(ref reader, (e, v) => e.BytesWanted = v);
-						break;
+					//case "bytes_limit":
+					//	ReadAssign<int?>(ref reader, (e, v) => e.BytesLimit = v);
+					//	break;
+					//case "bytes_wanted":
+					//	ReadAssign<int?>(ref reader, (e, v) => e.BytesWanted = v);
+					//	break;
 					case "caused_by":
 						ReadAssign<ErrorCause>(ref reader, (e, v) => e.CausedBy = v);
 						break;
-					case "col":
-						ReadAssign<int?>(ref reader, (e, v) => e.Column = v);
-						break;
-					case "failed_shards":
-						ReadAssign<IReadOnlyCollection<ShardFailure>>(ref reader, (e, v) => e.FailedShards = v);
-						break;
-					case "grouped":
-						ReadAssign<bool?>(ref reader, (e, v) => e.Grouped = v);
-						break;
+					//case "col":
+					//	ReadAssign<int?>(ref reader, (e, v) => e.Column = v);
+					//	break;
+					//case "failed_shards":
+					//	ReadAssign<IReadOnlyCollection<ShardFailure>>(ref reader, (e, v) => e.FailedShards = v);
+					//	break;
+					//case "grouped":
+					//	ReadAssign<bool?>(ref reader, (e, v) => e.Grouped = v);
+					//	break;
 					case "index":
 						ReadAssign<string>(ref reader, (e, v) => e.Index = v);
 						break;
 					case "index_uuid":
 						ReadAssign<string>(ref reader, (e, v) => e.IndexUUID = v);
 						break;
-					case "lang":
-						ReadAssign<string>(ref reader, (e, v) => e.Language = v);
-						break;
-
-					case "license.expired.feature":
-						ReadAssign<string>(ref reader, (e, v) => e.LicensedExpiredFeature = v);
-						break;
-					case "line":
-						ReadAssign<int?>(ref reader, (e, v) => e.Line = v);
-						break;
-					case "phase":
-						ReadAssign<string>(ref reader, (e, v) => e.Phase = v);
-						break;
+					//case "lang":
+					//	ReadAssign<string>(ref reader, (e, v) => e.Language = v);
+					//	break;
+					//case "license.expired.feature":
+					//	ReadAssign<string>(ref reader, (e, v) => e.LicensedExpiredFeature = v);
+					//	break;
+					//case "line":
+					//	ReadAssign<int?>(ref reader, (e, v) => e.Line = v);
+					//	break;
+					//case "phase":
+					//	ReadAssign<string>(ref reader, (e, v) => e.Phase = v);
+					//	break;
 					case "reason":
 						ReadAssign<string>(ref reader, (e, v) => e.Reason = v);
 						break;
-					case "resource.id":
-						errorCause.ResourceId = ReadSingleOrCollection(ref reader, options);
-						break;
-					case "resource.type":
-						ReadAssign<string>(ref reader, (e, v) => e.ResourceType = v);
-						break;
-					case "script":
-						ReadAssign<string>(ref reader, (e, v) => e.Script = v);
-						break;
-					case "script_stack":
-						errorCause.ScriptStack = ReadSingleOrCollection(ref reader, options);
-						break;
-					case "shard":
-						errorCause.Shard = ReadIntFromString(ref reader, options);
-						break;
+					//case "resource.id":
+					//	errorCause.ResourceId = ReadSingleOrCollection(ref reader, options);
+					//	break;
+					//case "resource.type":
+					//	ReadAssign<string>(ref reader, (e, v) => e.ResourceType = v);
+					//	break;
+					//case "script":
+					//	ReadAssign<string>(ref reader, (e, v) => e.Script = v);
+					//	break;
+					//case "script_stack":
+					//	errorCause.ScriptStack = ReadSingleOrCollection(ref reader, options);
+					//	break;
+					//case "shard":
+					//	errorCause.Shard = ReadIntFromString(ref reader, options);
+					//	break;
 					case "stack_trace":
 						ReadAssign<string>(ref reader, (e, v) => e.StackTrace = v);
 						break;
@@ -192,24 +191,24 @@ namespace Elastic.Transport
 				JsonSerializer.Serialize(writer, value, options);
 			}
 
-			Serialize(writer, options, "bytes_limit", value.BytesLimit);
-			Serialize(writer, options, "bytes_wanted", value.BytesWanted);
+			//Serialize(writer, options, "bytes_limit", value.BytesLimit);
+			//Serialize(writer, options, "bytes_wanted", value.BytesWanted);
 			Serialize(writer, options, "caused_by", value.CausedBy);
-			Serialize(writer, options, "col", value.Column);
-			Serialize(writer, options, "failed_shards", value.FailedShards);
-			Serialize(writer, options, "grouped", value.Grouped);
+			//Serialize(writer, options, "col", value.Column);
+			//Serialize(writer, options, "failed_shards", value.FailedShards);
+			//Serialize(writer, options, "grouped", value.Grouped);
 			Serialize(writer, options, "index", value.Index);
 			Serialize(writer, options, "index_uuid", value.IndexUUID);
-			Serialize(writer, options, "lang", value.Language);
-			Serialize(writer, options, "license.expired.feature", value.LicensedExpiredFeature);
-			Serialize(writer, options, "line", value.Line);
-			Serialize(writer, options, "phase", value.Phase);
-			Serialize(writer, options, "reason", value.Reason);
-			Serialize(writer, options, "resource.id", value.ResourceId);
-			Serialize(writer, options, "resource.type", value.ResourceType);
-			Serialize(writer, options, "script", value.Script);
-			Serialize(writer, options, "script_stack", value.ScriptStack);
-			Serialize(writer, options, "shard", value.Shard);
+			//Serialize(writer, options, "lang", value.Language);
+			//Serialize(writer, options, "license.expired.feature", value.LicensedExpiredFeature);
+			//Serialize(writer, options, "line", value.Line);
+			//Serialize(writer, options, "phase", value.Phase);
+			//Serialize(writer, options, "reason", value.Reason);
+			//Serialize(writer, options, "resource.id", value.ResourceId);
+			//Serialize(writer, options, "resource.type", value.ResourceType);
+			//Serialize(writer, options, "script", value.Script);
+			//Serialize(writer, options, "script_stack", value.ScriptStack);
+			//Serialize(writer, options, "shard", value.Shard);
 			Serialize(writer, options, "stack_trace", value.StackTrace);
 			Serialize(writer, options, "type", value.Type);
 
