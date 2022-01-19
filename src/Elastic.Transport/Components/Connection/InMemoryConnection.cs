@@ -60,10 +60,8 @@ namespace Elastic.Transport
 		/// <param name="responseBody">The bytes intended to be used as return</param>
 		/// <param name="statusCode">The status code that the responses <see cref="ITransportResponse.ApiCall"/> should return</param>
 		/// <param name="contentType">The content type to be passed to <see cref="ResponseBuilder.ToResponse{TResponse}"/></param>
-		// ReSharper disable once MemberCanBePrivate.Global
 		protected TResponse ReturnConnectionStatus<TResponse>(RequestData requestData, byte[] responseBody = null, int? statusCode = null,
-			string contentType = null
-		)
+			string contentType = null)
 			where TResponse : class, ITransportResponse, new()
 		{
 			var body = responseBody ?? _responseBody;
@@ -89,10 +87,37 @@ namespace Elastic.Transport
 		}
 
 		/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
-		// ReSharper disable once MemberCanBePrivate.Global
+		protected TResponse ReturnConnectionStatus<TResponse, TError>(RequestData requestData, byte[] responseBody = null, int? statusCode = null,
+			string contentType = null)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			var body = responseBody ?? _responseBody;
+			var data = requestData.PostData;
+			if (data != null)
+			{
+				using (var stream = requestData.MemoryStreamFactory.Create())
+				{
+					if (requestData.HttpCompression)
+					{
+						using var zipStream = new GZipStream(stream, CompressionMode.Compress);
+						data.Write(zipStream, requestData.ConnectionSettings);
+					}
+					else
+						data.Write(stream, requestData.ConnectionSettings);
+				}
+			}
+			requestData.MadeItToResponse = true;
+
+			var sc = statusCode ?? _statusCode;
+			Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
+			return ResponseBuilder.ToResponse<TResponse, TError>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.MimeType);
+		}
+
+
+		/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
 		protected async Task<TResponse> ReturnConnectionStatusAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken,
-			byte[] responseBody = null, int? statusCode = null, string contentType = null
-		)
+			byte[] responseBody = null, int? statusCode = null, string contentType = null)
 			where TResponse : class, ITransportResponse, new()
 		{
 			var body = responseBody ?? _responseBody;
@@ -119,10 +144,43 @@ namespace Elastic.Transport
 				.ConfigureAwait(false);
 		}
 
+		/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
+		protected async Task<TResponse> ReturnConnectionStatusAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken,
+			byte[] responseBody = null, int? statusCode = null, string contentType = null)
+			where TResponse : class, ITransportResponse<TError>, new()
+			where TError : class, IErrorResponse, new()
+		{
+			var body = responseBody ?? _responseBody;
+			var data = requestData.PostData;
+			if (data != null)
+			{
+				using (var stream = requestData.MemoryStreamFactory.Create())
+				{
+					if (requestData.HttpCompression)
+					{
+						using var zipStream = new GZipStream(stream, CompressionMode.Compress);
+						await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+					}
+					else
+						await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				}
+			}
+			requestData.MadeItToResponse = true;
+
+			var sc = statusCode ?? _statusCode;
+			Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
+			return await ResponseBuilder
+				.ToResponseAsync<TResponse, TError>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, cancellationToken)
+				.ConfigureAwait(false);
+		}
+
 		/// <summary> Allows subclasses to hook into the parents dispose </summary>
 		protected virtual void DisposeManagedResources() { }
 
-		Task<TResponse> IConnection.RequestAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken) => throw new NotImplementedException();
-		TResponse IConnection.Request<TResponse, TError>(RequestData requestData) => throw new NotImplementedException();
+		Task<TResponse> IConnection.RequestAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken) =>
+			ReturnConnectionStatusAsync<TResponse, TError>(requestData, cancellationToken);
+
+		TResponse IConnection.Request<TResponse, TError>(RequestData requestData) =>
+			ReturnConnectionStatus<TResponse, TError>(requestData);
 	}
 }
