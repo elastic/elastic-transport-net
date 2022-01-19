@@ -136,18 +136,18 @@ namespace Elastic.Transport
 			return Uri == other.Uri;
 		}
 
-		/// <inheritdoc cref="Equals(Elastic.Transport.Node)"/>
+		/// <inheritdoc cref="Equals(Node)"/>
 		public static bool operator ==(Node left, Node right) =>
 			// ReSharper disable once MergeConditionalExpression
 			ReferenceEquals(left, null) ? ReferenceEquals(right, null) : left.Equals(right);
 
-		/// <inheritdoc cref="Equals(Elastic.Transport.Node)"/>
+		/// <inheritdoc cref="Equals(Node)"/>
 		public static bool operator !=(Node left, Node right) => !(left == right);
 
-		/// <inheritdoc cref="Equals(Elastic.Transport.Node)"/>
+		/// <inheritdoc cref="Equals(Node)"/>
 		public static implicit operator Node(Uri uri) => new Node(uri);
 
-		/// <inheritdoc cref="Equals(Elastic.Transport.Node)"/>
+		/// <inheritdoc cref="Equals(Node)"/>
 		public override bool Equals(object obj)
 		{
 			if (ReferenceEquals(null, obj)) return false;
