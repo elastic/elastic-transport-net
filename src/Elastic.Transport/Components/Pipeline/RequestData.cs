@@ -89,7 +89,7 @@ namespace Elastic.Transport
 			PingTimeout =
 				local?.PingTimeout
 				?? global.PingTimeout
-				?? (global.ConnectionPool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
+				?? (global.NodePool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
 
 			KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
 			KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);

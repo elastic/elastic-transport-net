@@ -15,20 +15,20 @@ namespace Elastic.Transport
 	/// A connection pool that enables <see cref="SupportsReseeding"/> which in turn allows the <see cref="ITransport{TConnectionSettings}"/> to enable sniffing to
 	/// discover the current cluster's list of active nodes.
 	/// </summary>
-	public class SniffingConnectionPool : StaticConnectionPool
+	public class SniffingNodePool : StaticNodePool
 	{
 		private readonly ReaderWriterLockSlim _readerWriter = new ReaderWriterLockSlim();
 
-		/// <inheritdoc cref="SniffingConnectionPool"/>>
-		public SniffingConnectionPool(IEnumerable<Uri> uris, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="SniffingNodePool"/>>
+		public SniffingNodePool(IEnumerable<Uri> uris, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
 			: base(uris, randomize, dateTimeProvider) { }
 
-		/// <inheritdoc cref="SniffingConnectionPool"/>>
-		public SniffingConnectionPool(IEnumerable<Node> nodes, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="SniffingNodePool"/>>
+		public SniffingNodePool(IEnumerable<Node> nodes, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
 			: base(nodes, randomize, dateTimeProvider) { }
 
-		/// <inheritdoc cref="SniffingConnectionPool"/>>
-		public SniffingConnectionPool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="SniffingNodePool"/>>
+		public SniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
 			: base(nodes, nodeScorer, dateTimeProvider) { }
 
 		/// <inheritdoc />

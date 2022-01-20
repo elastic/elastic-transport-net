@@ -15,7 +15,7 @@ namespace Elastic.Transport
 {
 	/// <summary>
 	/// All the transport configuration that you as the user can use to steer the behavior of the <see cref="ITransport{TConnectionSettings}"/> and all the components such
-	/// as <see cref="IConnection"/> <see cref="IConnectionPool"/> and <see cref="SerializerBase"/>.
+	/// as <see cref="IConnection"/> <see cref="INodePool"/> and <see cref="SerializerBase"/>.
 	/// </summary>
 	public interface ITransportConfiguration : IDisposable
 	{
@@ -49,7 +49,7 @@ namespace Elastic.Transport
 		int ConnectionLimit { get; }
 
 		/// <summary> The connection pool to use when talking with Elasticsearch </summary>
-		IConnectionPool ConnectionPool { get; }
+		INodePool NodePool { get; }
 
 		/// <summary>
 		/// Returns information about the current product making use of the transport.
@@ -133,7 +133,7 @@ namespace Elastic.Transport
 		/// <summary>
 		/// Register a predicate to select which nodes that you want to execute API calls on. Note that sniffing requests omit this predicate and
 		/// always execute on all nodes.
-		/// When using an <see cref="IConnectionPool" /> implementation that supports reseeding of nodes, this will default to omitting master only
+		/// When using an <see cref="INodePool" /> implementation that supports reseeding of nodes, this will default to omitting master only
 		/// node from regular API calls.
 		/// When using static or single node connection pooling it is assumed the list of node you instantiate the client with should be taken
 		/// verbatim.

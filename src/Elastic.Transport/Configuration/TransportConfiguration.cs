@@ -83,33 +83,33 @@ namespace Elastic.Transport
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		[SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
 		public TransportConfiguration(Uri uri = null, IProductRegistration productRegistration = null)
-			: this(new SingleNodeConnectionPool(uri ?? new Uri("http://localhost:9200")), productRegistration: productRegistration) { }
+			: this(new SingleNodePool(uri ?? new Uri("http://localhost:9200")), productRegistration: productRegistration) { }
 
 		/// <summary>
 		/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
-		/// <para><see cref="CloudConnectionPool"/> documentation for more information on how to obtain your Cloud Id</para>
+		/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
 		/// </summary>
 		public TransportConfiguration(string cloudId, BasicAuthentication credentials, IProductRegistration productRegistration = null)
-			: this(new CloudConnectionPool(cloudId, credentials), productRegistration: productRegistration) { }
+			: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
 
 		/// <summary>
 		/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
-		/// <para><see cref="CloudConnectionPool"/> documentation for more information on how to obtain your Cloud Id</para>
+		/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
 		/// </summary>
 		public TransportConfiguration(string cloudId, Base64ApiKey credentials, IProductRegistration productRegistration = null)
-			: this(new CloudConnectionPool(cloudId, credentials), productRegistration: productRegistration) { }
+			: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
 
 		/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool" path="/summary"/></param>
+		/// <param name="nodePool"><inheritdoc cref="INodePool" path="/summary"/></param>
 		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
 		/// <param name="serializer"><inheritdoc cref="SerializerBase" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		public TransportConfiguration(
-			IConnectionPool connectionPool,
+			INodePool nodePool,
 			IConnection connection = null,
 			SerializerBase serializer = null,
 			IProductRegistration productRegistration = null)
-			: base(connectionPool, connection, serializer, productRegistration) { }
+			: base(nodePool, connection, serializer, productRegistration) { }
 
 	}
 
@@ -120,7 +120,7 @@ namespace Elastic.Transport
 		where T : TransportConfigurationBase<T>
 	{
 		private readonly IConnection _connection;
-		private readonly IConnectionPool _connectionPool;
+		private readonly INodePool _nodePool;
 		private readonly IProductRegistration _productRegistration;
 		private readonly NameValueCollection _headers = new NameValueCollection();
 		private readonly NameValueCollection _queryString = new NameValueCollection();
@@ -170,13 +170,13 @@ namespace Elastic.Transport
 		/// <summary>
 		/// <inheritdoc cref="TransportConfiguration"/>
 		/// </summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool" path="/summary"/></param>
+		/// <param name="nodePool"><inheritdoc cref="INodePool" path="/summary"/></param>
 		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
 		/// <param name="requestResponseSerializer"><inheritdoc cref="SerializerBase" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		protected TransportConfigurationBase(IConnectionPool connectionPool, IConnection connection, SerializerBase requestResponseSerializer, IProductRegistration productRegistration)
+		protected TransportConfigurationBase(INodePool nodePool, IConnection connection, SerializerBase requestResponseSerializer, IProductRegistration productRegistration)
 		{
-			_connectionPool = connectionPool;
+			_nodePool = nodePool;
 			_connection = connection ?? new HttpConnection();
 			_productRegistration = productRegistration ?? ProductRegistration.Default;
 			var serializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
@@ -196,7 +196,7 @@ namespace Elastic.Transport
 			_statusCodeToResponseSuccess = (m, i) => _productRegistration.HttpStatusCodeClassifier(m, i);
 			_userAgent = Elastic.Transport.UserAgent.Create(_productRegistration.Name, _productRegistration.GetType());
 
-			if (connectionPool is CloudConnectionPool cloudPool)
+			if (nodePool is CloudNodePool cloudPool)
 			{
 				_authenticationHeader = cloudPool.AuthenticationHeader;
 				_enableHttpCompression = true;
@@ -219,7 +219,7 @@ namespace Elastic.Transport
 		IConnection ITransportConfiguration.Connection => _connection;
 		IProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
 		int ITransportConfiguration.ConnectionLimit => _connectionLimit;
-		IConnectionPool ITransportConfiguration.ConnectionPool => _connectionPool;
+		INodePool ITransportConfiguration.NodePool => _nodePool;
 		TimeSpan? ITransportConfiguration.DeadTimeout => _deadTimeout;
 		bool ITransportConfiguration.DisableAutomaticProxyDetection => _disableAutomaticProxyDetection;
 		bool ITransportConfiguration.DisableDirectStreaming => _disableDirectStreaming;
@@ -471,7 +471,7 @@ namespace Elastic.Transport
 		/// <summary> Allows subclasses to hook into the parents dispose </summary>
 		protected virtual void DisposeManagedResources()
 		{
-			_connectionPool?.Dispose();
+			_nodePool?.Dispose();
 			_connection?.Dispose();
 			_semaphore?.Dispose();
 			_proxyPassword?.Dispose();

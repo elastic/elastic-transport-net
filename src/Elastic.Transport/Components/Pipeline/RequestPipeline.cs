@@ -42,7 +42,7 @@ namespace Elastic.Transport
 		private bool isInitialized = false;
 
 		private readonly IConnection _connection;
-		private readonly IConnectionPool _connectionPool;
+		private readonly INodePool _nodePool;
 		private readonly IDateTimeProvider _dateTimeProvider;
 		private readonly IMemoryStreamFactory _memoryStreamFactory;
 		private readonly Func<Node, bool> _nodePredicate;
@@ -55,7 +55,7 @@ namespace Elastic.Transport
 		)
 		{
 			_settings = configurationValues;
-			_connectionPool = _settings.ConnectionPool;
+			_nodePool = _settings.NodePool;
 			_connection = _settings.Connection;
 			_dateTimeProvider = dateTimeProvider;
 			_memoryStreamFactory = _settings.MemoryStreamFactory;
@@ -127,13 +127,12 @@ namespace Elastic.Transport
 		public static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.RequestPipeline.SourceName);
 	}
 
-
 	/// <inheritdoc cref="IRequestPipeline" />
 	public class RequestPipeline<TConfiguration> : IRequestPipeline
 		where TConfiguration : class, ITransportConfiguration
 	{
 		private readonly IConnection _connection;
-		private readonly IConnectionPool _connectionPool;
+		private readonly INodePool _nodePool;
 		private readonly IDateTimeProvider _dateTimeProvider;
 		private readonly IMemoryStreamFactory _memoryStreamFactory;
 		private readonly Func<Node, bool> _nodePredicate;
@@ -151,7 +150,7 @@ namespace Elastic.Transport
 		)
 		{
 			_settings = configurationValues;
-			_connectionPool = _settings.ConnectionPool;
+			_nodePool = _settings.NodePool;
 			_connection = _settings.Connection;
 			_dateTimeProvider = dateTimeProvider;
 			_memoryStreamFactory = memoryStreamFactory;
@@ -192,7 +191,7 @@ namespace Elastic.Transport
 
 		public bool FirstPoolUsageNeedsSniffing =>
 			!RequestDisabledSniff
-			&& _connectionPool.SupportsReseeding && _settings.SniffsOnStartup && !_connectionPool.SniffedOnStartup;
+			&& _nodePool.SupportsReseeding && _settings.SniffsOnStartup && !_nodePool.SniffedOnStartup;
 
 		public bool IsTakingTooLong
 		{
@@ -213,23 +212,23 @@ namespace Elastic.Transport
 		public int MaxRetries =>
 			RequestConfiguration?.ForceNode != null
 				? 0
-				: Math.Min(RequestConfiguration?.MaxRetries ?? _settings.MaxRetries.GetValueOrDefault(int.MaxValue), _connectionPool.MaxRetries);
+				: Math.Min(RequestConfiguration?.MaxRetries ?? _settings.MaxRetries.GetValueOrDefault(int.MaxValue), _nodePool.MaxRetries);
 
 		public bool Refresh { get; private set; }
 		public int Retried { get; private set; }
 
-		public IEnumerable<Node> SniffNodes => _connectionPool
+		public IEnumerable<Node> SniffNodes => _nodePool
 			.CreateView(LazyAuditable)
 			.ToList()
 			.OrderBy(n => _productRegistration.SniffOrder(n));
 
 		public bool SniffsOnConnectionFailure =>
 			!RequestDisabledSniff
-			&& _connectionPool.SupportsReseeding && _settings.SniffsOnConnectionFault;
+			&& _nodePool.SupportsReseeding && _settings.SniffsOnConnectionFault;
 
 		public bool SniffsOnStaleCluster =>
 			!RequestDisabledSniff
-			&& _connectionPool.SupportsReseeding && _settings.SniffInformationLifeSpan.HasValue;
+			&& _nodePool.SupportsReseeding && _settings.SniffInformationLifeSpan.HasValue;
 
 		public bool StaleClusterState
 		{
@@ -242,7 +241,7 @@ namespace Elastic.Transport
 				var sniffLifeSpan = _settings.SniffInformationLifeSpan.Value;
 
 				var now = _dateTimeProvider.Now();
-				var lastSniff = _connectionPool.LastUpdate;
+				var lastSniff = _nodePool.LastUpdate;
 
 				return sniffLifeSpan < now - lastSniff;
 			}
@@ -253,7 +252,7 @@ namespace Elastic.Transport
 		private TimeSpan PingTimeout =>
 			RequestConfiguration?.PingTimeout
 			?? _settings.PingTimeout
-			?? (_connectionPool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
+			?? (_nodePool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
 
 		private IRequestConfiguration RequestConfiguration { get; }
 
@@ -423,7 +422,7 @@ namespace Elastic.Transport
 				exceptionMessage = "Maximum number of retries reached";
 
 				var now = _dateTimeProvider.Now();
-				var activeNodes = _connectionPool.Nodes.Count(n => n.IsAlive || n.DeadUntil <= now);
+				var activeNodes = _nodePool.Nodes.Count(n => n.IsAlive || n.DeadUntil <= now);
 				if (Retried >= activeNodes)
 				{
 					Audit(FailedOverAllNodes);
@@ -466,7 +465,7 @@ namespace Elastic.Transport
 				using (Audit(SniffOnStartup))
 				{
 					Sniff();
-					_connectionPool.SniffedOnStartup = true;
+					_nodePool.SniffedOnStartup = true;
 				}
 			}
 			finally
@@ -500,7 +499,7 @@ namespace Elastic.Transport
 				using (Audit(SniffOnStartup))
 				{
 					await SniffAsync(cancellationToken).ConfigureAwait(false);
-					_connectionPool.SniffedOnStartup = true;
+					_nodePool.SniffedOnStartup = true;
 				}
 			}
 			finally
@@ -521,10 +520,10 @@ namespace Elastic.Transport
 		/// <inheritdoc />
 		public bool TryGetSingleNode(out Node node)
 		{
-			if (_connectionPool.Nodes.Count <= 1 && _connectionPool.MaxRetries <= _connectionPool.Nodes.Count &&
-				!_connectionPool.SupportsPinging && !_connectionPool.SupportsReseeding)
+			if (_nodePool.Nodes.Count <= 1 && _nodePool.MaxRetries <= _nodePool.Nodes.Count &&
+				!_nodePool.SupportsPinging && !_nodePool.SupportsReseeding)
 			{
-				node = _connectionPool.Nodes.FirstOrDefault();
+				node = _nodePool.Nodes.FirstOrDefault();
 
 				if (node is not null && _nodePredicate(node)) return true;
 			}
@@ -550,7 +549,7 @@ namespace Elastic.Transport
 			{
 				if (DepletedRetries) yield break;
 
-				foreach (var node in _connectionPool.CreateView(LazyAuditable))
+				foreach (var node in _nodePool.CreateView(LazyAuditable))
 				{
 					if (DepletedRetries) break;
 
@@ -646,7 +645,7 @@ namespace Elastic.Transport
 					try
 					{
 						audit.Path = requestData.PathAndQuery;
-						var (response, nodes) = _productRegistration.Sniff(_connection, _connectionPool.UsingSsl, requestData);
+						var (response, nodes) = _productRegistration.Sniff(_connection, _nodePool.UsingSsl, requestData);
 						d.EndState = response;
 
 						ThrowBadAuthPipelineExceptionWhenNeeded(response);
@@ -654,7 +653,7 @@ namespace Elastic.Transport
 						if (!response.Success)
 							throw new PipelineException(requestData.OnFailurePipelineFailure, response.OriginalException) { ApiCall = response };
 
-						_connectionPool.Reseed(nodes);
+						_nodePool.Reseed(nodes);
 						Refresh = true;
 						return;
 					}
@@ -685,7 +684,7 @@ namespace Elastic.Transport
 					{
 						audit.Path = requestData.PathAndQuery;
 						var (response, nodes) = await _productRegistration
-							.SniffAsync(_connection, _connectionPool.UsingSsl, requestData, cancellationToken)
+							.SniffAsync(_connection, _nodePool.UsingSsl, requestData, cancellationToken)
 							.ConfigureAwait(false);
 						d.EndState = response;
 
@@ -694,7 +693,7 @@ namespace Elastic.Transport
 						if (!response.Success)
 							throw new PipelineException(requestData.OnFailurePipelineFailure, response.OriginalException) { ApiCall = response };
 
-						_connectionPool.Reseed(nodes);
+						_nodePool.Reseed(nodes);
 						Refresh = true;
 						return;
 					}
@@ -732,7 +731,7 @@ namespace Elastic.Transport
 			using (Audit(AuditEvent.SniffOnStaleCluster))
 			{
 				Sniff();
-				_connectionPool.SniffedOnStartup = true;
+				_nodePool.SniffedOnStartup = true;
 			}
 		}
 
@@ -743,7 +742,7 @@ namespace Elastic.Transport
 			using (Audit(AuditEvent.SniffOnStaleCluster))
 			{
 				await SniffAsync(cancellationToken).ConfigureAwait(false);
-				_connectionPool.SniffedOnStartup = true;
+				_nodePool.SniffedOnStartup = true;
 			}
 		}
 
@@ -757,7 +756,7 @@ namespace Elastic.Transport
 
 		private bool PingDisabled(Node node) =>
 			(RequestConfiguration?.DisablePing).GetValueOrDefault(false)
-			|| _settings.DisablePings || !_connectionPool.SupportsPinging || !node.IsResurrected;
+			|| _settings.DisablePings || !_nodePool.SupportsPinging || !node.IsResurrected;
 
 		private Auditable Audit(AuditEvent type, Node node = null) => new Auditable(type, AuditTrail, _dateTimeProvider, node);
 

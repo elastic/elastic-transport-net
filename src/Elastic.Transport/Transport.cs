@@ -76,7 +76,7 @@ namespace Elastic.Transport
 		)
 		{
 			configurationValues.ThrowIfNull(nameof(configurationValues));
-			configurationValues.ConnectionPool.ThrowIfNull(nameof(configurationValues.ConnectionPool));
+			configurationValues.NodePool.ThrowIfNull(nameof(configurationValues.NodePool));
 			configurationValues.Connection.ThrowIfNull(nameof(configurationValues.Connection));
 			configurationValues.RequestResponseSerializer.ThrowIfNull(nameof(configurationValues
 				.RequestResponseSerializer));

@@ -9,10 +9,10 @@ using Elastic.Transport.Diagnostics.Auditing;
 namespace Elastic.Transport
 {
 	/// <summary> A connection pool to a single node or endpoint </summary>
-	public class SingleNodeConnectionPool : IConnectionPool
+	public class SingleNodePool : INodePool
 	{
-		/// <inheritdoc cref="SingleNodeConnectionPool"/>
-		public SingleNodeConnectionPool(Uri uri, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="SingleNodePool"/>
+		public SingleNodePool(Uri uri, IDateTimeProvider dateTimeProvider = null)
 		{
 			var node = new Node(uri);
 			UsingSsl = node.Uri.Scheme == "https";

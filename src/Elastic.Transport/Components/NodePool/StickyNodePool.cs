@@ -13,17 +13,17 @@ namespace Elastic.Transport
 	/// A connection pool implementation that does not support reseeding and stays on the first <see cref="Node"/> reporting true for <see cref="Node.IsAlive"/>.
 	/// This is great if for instance you have multiple proxies that you can fallback on allowing you to seed the proxies in order of preference.
 	/// </summary>
-	public class StickyConnectionPool : StaticConnectionPool
+	public class StickyNodePool : StaticNodePool
 	{
-		/// <inheritdoc cref="StickyConnectionPool"/>
-		public StickyConnectionPool(IEnumerable<Uri> uris, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="StickyNodePool"/>
+		public StickyNodePool(IEnumerable<Uri> uris, IDateTimeProvider dateTimeProvider = null)
 			: base(uris, false, dateTimeProvider) { }
 
-		/// <inheritdoc cref="StickyConnectionPool"/>
-		public StickyConnectionPool(IEnumerable<Node> nodes, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="StickyNodePool"/>
+		public StickyNodePool(IEnumerable<Node> nodes, IDateTimeProvider dateTimeProvider = null)
 			: base(nodes, false, dateTimeProvider) { }
 
-		/// <inheritdoc cref="StaticConnectionPool.CreateView"/>
+		/// <inheritdoc cref="StaticNodePool.CreateView"/>
 		public override IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null)
 		{
 			var nodes = AliveNodes;
@@ -48,7 +48,7 @@ namespace Elastic.Transport
 				yield return aliveNode;
 		}
 
-		/// <inheritdoc cref="StaticConnectionPool.Reseed"/>
+		/// <inheritdoc cref="StaticNodePool.Reseed"/>
 		public override void Reseed(IEnumerable<Node> nodes) { }
 	}
 }

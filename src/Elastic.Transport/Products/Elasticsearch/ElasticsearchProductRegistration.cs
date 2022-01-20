@@ -60,7 +60,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 		/// <summary>
 		/// Implements an ordering that prefers master eligible nodes when attempting to sniff the
-		/// <see cref="IConnectionPool.Nodes"/>
+		/// <see cref="INodePool.Nodes"/>
 		/// </summary>
 		public int SniffOrder(Node node) =>
 			node.HasFeature(ElasticsearchNodeFeatures.MasterEligible) ? node.Uri.Port : int.MaxValue;

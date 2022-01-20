@@ -16,7 +16,7 @@ namespace Elastic.Transport
 	/// discover the current cluster's list of active nodes.
 	/// <para>Therefore the nodes you supply are the list of known nodes throughout its lifetime, hence static</para>
 	/// </summary>
-	public class StaticConnectionPool : IConnectionPool
+	public class StaticNodePool : INodePool
 	{
 		/// <summary>
 		/// Everytime <see cref="CreateView"/> is called it picks the initial starting point from this cursor.
@@ -27,16 +27,16 @@ namespace Elastic.Transport
 
 		private readonly Func<Node, float> _nodeScorer;
 
-		/// <inheritdoc cref="StaticConnectionPool"/>
-		public StaticConnectionPool(IEnumerable<Uri> uris, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="StaticNodePool"/>
+		public StaticNodePool(IEnumerable<Uri> uris, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
 			: this(uris.Select(uri => new Node(uri)), randomize, null, dateTimeProvider) { }
 
-		/// <inheritdoc cref="StaticConnectionPool"/>
-		public StaticConnectionPool(IEnumerable<Node> nodes, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="StaticNodePool"/>
+		public StaticNodePool(IEnumerable<Node> nodes, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
 			: this(nodes, randomize, null, dateTimeProvider) { }
 
-		/// <inheritdoc cref="StaticConnectionPool"/>
-		protected StaticConnectionPool(IEnumerable<Node> nodes, bool randomize, int? randomizeSeed = null, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="StaticNodePool"/>
+		protected StaticNodePool(IEnumerable<Node> nodes, bool randomize, int? randomizeSeed = null, IDateTimeProvider dateTimeProvider = null)
 		{
 			Randomize = randomize;
 			Random = !randomize || !randomizeSeed.HasValue
@@ -47,8 +47,8 @@ namespace Elastic.Transport
 		}
 
 		//this constructor is protected because nodeScorer only makes sense on subclasses that support reseeding otherwise just manually sort `nodes` before instantiating.
-		/// <inheritdoc cref="StaticConnectionPool"/>
-		protected StaticConnectionPool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer = null, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="StaticNodePool"/>
+		protected StaticNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer = null, IDateTimeProvider dateTimeProvider = null)
 		{
 			_nodeScorer = nodeScorer;
 			Initialize(nodes, dateTimeProvider);

@@ -16,7 +16,7 @@ namespace Elastic.Transport
 	/// </para>
 	/// <para>This interface signals the current connection strategy to <see cref="ITransport{TConnectionSettings}"/>.</para>
 	/// </summary>
-	public interface IConnectionPool : IDisposable
+	public interface INodePool : IDisposable
 	{
 		/// <summary>
 		/// The last time that this instance was updated.
@@ -32,7 +32,7 @@ namespace Elastic.Transport
 
 		/// <summary>
 		/// Returns a read only view of all the nodes in the cluster, which might involve creating copies of nodes e.g
-		/// if you are using <see cref="SniffingConnectionPool" />.
+		/// if you are using <see cref="SniffingNodePool" />.
 		/// If you do not need an isolated copy of the nodes, please read <see cref="CreateView" /> to completion.
 		/// </summary>
 		IReadOnlyCollection<Node> Nodes { get; }
