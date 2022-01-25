@@ -26,11 +26,11 @@ namespace Elastic.Transport.VirtualizedCluster.Audit
 			StartedUp = true;
 		}
 
-		public Action<IConnectionPool> AssertPoolAfterCall { get; set; }
-		public Action<IConnectionPool> AssertPoolAfterStartup { get; set; }
+		public Action<NodePool> AssertPoolAfterCall { get; set; }
+		public Action<NodePool> AssertPoolAfterStartup { get; set; }
 
-		public Action<IConnectionPool> AssertPoolBeforeCall { get; set; }
-		public Action<IConnectionPool> AssertPoolBeforeStartup { get; set; }
+		public Action<NodePool> AssertPoolBeforeCall { get; set; }
+		public Action<NodePool> AssertPoolBeforeStartup { get; set; }
 
 		public IReadOnlyCollection<Elastic.Transport.Diagnostics.Auditing.Audit> AsyncAuditTrail { get; set; }
 		public IReadOnlyCollection<Elastic.Transport.Diagnostics.Auditing.Audit> AuditTrail { get; set; }

@@ -37,19 +37,19 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 				var res = await t.RequestAsync<VirtualResponse>
 				(
 					HttpMethod.GET, "/",
-					CancellationToken.None,
 					PostData.Serializable(new { }),
 					new RequestParameters()
 					{
 						RequestConfiguration = r?.Invoke(new RequestConfigurationDescriptor(null))
-					}
+					},
+					CancellationToken.None
 				).ConfigureAwait(false);
 				return (ITransportResponse)res;
 			};
 		}
 
 		public VirtualClusterConnection Connection => Transport.Settings.Connection as VirtualClusterConnection;
-		public IConnectionPool ConnectionPool => Transport.Settings.ConnectionPool;
+		public NodePool ConnectionPool => Transport.Settings.NodePool;
 		public ITransport<ITransportConfiguration> Transport => _exposingRequestPipeline?.Transport;
 
 		public VirtualizedCluster TransportProxiesTo(

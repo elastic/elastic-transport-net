@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Elastic.Transport.Diagnostics
 {
-	/// <summary> Provides a typed listener to the events that <see cref="HttpConnection"/> emits </summary>
+	/// <summary> Provides a typed listener to the events that <see cref="HttpTransportClient"/> emits </summary>
 	public class HttpConnectionDiagnosticObserver : TypedDiagnosticObserverBase<RequestData, int?>
 	{
 		/// <inheritdoc cref="HttpConnectionDiagnosticObserver"/>>

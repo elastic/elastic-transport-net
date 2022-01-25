@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport.IntegrationTests.Plumbing.Stubs
 {
-	public class TestableHttpConnection : HttpConnection
+	public class TestableHttpConnection : HttpTransportClient
 	{
 		private readonly Action<HttpResponseMessage> _response;
 		private TestableClientHandler _handler;

@@ -14,23 +14,23 @@ namespace Elastic.Transport
 	/// A connection pool implementation that supports reseeding but stays on the first <see cref="Node"/> reporting true for <see cref="Node.IsAlive"/>.
 	/// This is great if for instance you have multiple proxies that you can fallback on allowing you to seed the proxies in order of preference.
 	/// </summary>
-	public class StickySniffingConnectionPool : SniffingConnectionPool
+	public class StickySniffingNodePool : SniffingNodePool
 	{
-		/// <inheritdoc cref="StickySniffingConnectionPool"/>
-		public StickySniffingConnectionPool(IEnumerable<Uri> uris, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="StickySniffingNodePool"/>
+		public StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
 			: base(uris.Select(uri => new Node(uri)), nodeScorer ?? DefaultNodeScore, dateTimeProvider) { }
 
-		/// <inheritdoc cref="StickySniffingConnectionPool"/>
-		public StickySniffingConnectionPool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="StickySniffingNodePool"/>
+		public StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
 			: base(nodes, nodeScorer ?? DefaultNodeScore, dateTimeProvider) { }
 
-		/// <inheritdoc cref="IConnectionPool.SupportsPinging"/>
+		/// <inheritdoc cref="NodePool.SupportsPinging"/>
 		public override bool SupportsPinging => true;
 
-		/// <inheritdoc cref="IConnectionPool.SupportsReseeding"/>
+		/// <inheritdoc cref="NodePool.SupportsReseeding"/>
 		public override bool SupportsReseeding => true;
 
-		/// <inheritdoc cref="IConnectionPool.CreateView"/>
+		/// <inheritdoc cref="NodePool.CreateView"/>
 		public override IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null)
 		{
 			var nodes = AliveNodes;

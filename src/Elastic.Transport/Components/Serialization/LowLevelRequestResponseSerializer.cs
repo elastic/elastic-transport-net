@@ -17,9 +17,9 @@ using static Elastic.Transport.SerializationFormatting;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// Default implementation for <see cref="ITransportSerializer"/>. This uses <see cref="JsonSerializer"/> from <code>System.Text.Json</code>.
+	/// Default implementation for <see cref="Serializer"/>. This uses <see cref="JsonSerializer"/> from <code>System.Text.Json</code>.
 	/// </summary>
-	public class LowLevelRequestResponseSerializer : ITransportSerializer
+	public class LowLevelRequestResponseSerializer : Serializer
 	{
 		//TODO explore removing this or make internal, this provides a path that circumvents the configured ITransportSerializer
 		/// <summary> Provides a static reusable reference to an instance of <see cref="LowLevelRequestResponseSerializer"/> to promote reuse </summary>
@@ -62,7 +62,7 @@ namespace Elastic.Transport
 		{
 			var options = new JsonSerializerOptions
 			{
-				IgnoreNullValues = true,
+				DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
 				WriteIndented = formatting == Indented,
 			};
 			foreach (var converter in BakedInConverters)
@@ -102,8 +102,8 @@ namespace Elastic.Transport
 
 		private JsonSerializerOptions GetFormatting(SerializationFormatting formatting) => formatting == None ? _none.Value : _indented.Value;
 
-		/// <inheritdoc cref="ITransportSerializer.Deserialize"/>>
-		public object Deserialize(Type type, Stream stream)
+		/// <inheritdoc cref="Serializer.Deserialize"/>>
+		public override object Deserialize(Type type, Stream stream)
 		{
 			if (TryReturnDefault(stream, out object deserialize)) return deserialize;
 
@@ -111,8 +111,8 @@ namespace Elastic.Transport
 			return JsonSerializer.Deserialize(buffered, type, _none.Value);
 		}
 
-		/// <inheritdoc cref="ITransportSerializer.Deserialize{T}"/>>
-		public T Deserialize<T>(Stream stream)
+		/// <inheritdoc cref="Serializer.Deserialize{T}"/>>
+		public override T Deserialize<T>(Stream stream)
 		{
 			if (TryReturnDefault(stream, out T deserialize)) return deserialize;
 
@@ -120,8 +120,8 @@ namespace Elastic.Transport
 			return JsonSerializer.Deserialize<T>(buffered, _none.Value);
 		}
 
-		/// <inheritdoc cref="ITransportSerializer.Serialize{T}"/>>
-		public void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = None)
+		/// <inheritdoc cref="Serializer.Serialize{T}"/>>
+		public override void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = None)
 		{
 			using var writer = new Utf8JsonWriter(stream);
 			if (data == null)
@@ -131,8 +131,8 @@ namespace Elastic.Transport
 				JsonSerializer.Serialize(writer, data, data.GetType(), GetFormatting(formatting));
 		}
 
-		/// <inheritdoc cref="ITransportSerializer.SerializeAsync{T}"/>>
-		public async Task SerializeAsync<T>(T data, Stream stream, SerializationFormatting formatting = None,
+		/// <inheritdoc cref="Serializer.SerializeAsync{T}"/>>
+		public override async Task SerializeAsync<T>(T data, Stream stream, SerializationFormatting formatting = None,
 			CancellationToken cancellationToken = default
 		)
 		{
@@ -143,16 +143,16 @@ namespace Elastic.Transport
 		}
 
 		//TODO return ValueTask, breaking change? probably 8.0
-		/// <inheritdoc cref="ITransportSerializer.DeserializeAsync"/>>
-		public Task<object> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
+		/// <inheritdoc cref="Serializer.DeserializeAsync"/>>
+		public override Task<object> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
 		{
 			if (TryReturnDefault(stream, out object deserialize)) return Task.FromResult(deserialize);
 
 			return JsonSerializer.DeserializeAsync(stream, type, _none.Value, cancellationToken).AsTask();
 		}
 
-		/// <inheritdoc cref="ITransportSerializer.DeserializeAsync{T}"/>>
-		public Task<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
+		/// <inheritdoc cref="Serializer.DeserializeAsync{T}"/>>
+		public override Task<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
 		{
 			if (TryReturnDefault(stream, out T deserialize)) return Task.FromResult(deserialize);
 

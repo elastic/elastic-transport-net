@@ -11,16 +11,16 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 	/// <summary>
 	/// A continuation of <see cref="VirtualCluster"/>'s builder methods that creates
 	/// an instance of <see cref="TransportConfiguration"/> for the cluster after which the components such as
-	/// <see cref="IConnection"/> and <see cref="IConnectionPool"/> can no longer be updated.
+	/// <see cref="ITransportClient"/> and <see cref="NodePool"/> can no longer be updated.
 	/// </summary>
 	public class SealedVirtualCluster
 	{
-		private readonly IConnection _connection;
-		private readonly IConnectionPool _connectionPool;
+		private readonly ITransportClient _connection;
+		private readonly NodePool _connectionPool;
 		private readonly TestableDateTimeProvider _dateTimeProvider;
 		private readonly IMockProductRegistration _productRegistration;
 
-		internal SealedVirtualCluster(VirtualCluster cluster, IConnectionPool pool, TestableDateTimeProvider dateTimeProvider, IMockProductRegistration productRegistration)
+		internal SealedVirtualCluster(VirtualCluster cluster, NodePool pool, TestableDateTimeProvider dateTimeProvider, IMockProductRegistration productRegistration)
 		{
 			_connectionPool = pool;
 			_connection = new VirtualClusterConnection(cluster, dateTimeProvider);

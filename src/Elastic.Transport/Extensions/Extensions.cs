@@ -22,7 +22,7 @@ namespace Elastic.Transport.Extensions
 			return enumerated != null && enumerated.Length > 0;
 		}
 
-		internal static IEnumerable<T> DistinctBy<T, TKey>(this IEnumerable<T> items, Func<T, TKey> property) =>
+		internal static IEnumerable<T> DistinctByCustom<T, TKey>(this IEnumerable<T> items, Func<T, TKey> property) =>
 			items.GroupBy(property).Select(x => x.First());
 
 		internal static void ThrowIfEmpty<T>(this IEnumerable<T> @object, string parameterName)

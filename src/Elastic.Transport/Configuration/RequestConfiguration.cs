@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using Elastic.Transport.Extensions;
 
@@ -123,6 +122,11 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="ITransportConfiguration.EnableThreadPoolStats"/>
 		bool? EnableThreadPoolStats { get; set; }
+
+		/// <summary>
+		/// Holds additional meta data about the request.
+		/// </summary>
+		RequestMetaData RequestMetaData { get; set; }
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration"/>
@@ -172,6 +176,9 @@ namespace Elastic.Transport
 		public HeadersList ResponseHeadersToParse { get; set; }
 		/// <inheritdoc />
 		public bool? ParseAllHeaders { get; set; }
+
+		/// <inheritdoc />
+		public RequestMetaData RequestMetaData { get; set; }
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration"/>
@@ -229,6 +236,8 @@ namespace Elastic.Transport
 		bool? IRequestConfiguration.EnableThreadPoolStats { get; set; }
 		HeadersList IRequestConfiguration.ResponseHeadersToParse { get; set; }
 		bool? IRequestConfiguration.ParseAllHeaders { get; set; }
+		RequestMetaData IRequestConfiguration.RequestMetaData { get; set; }
+
 
 		/// <inheritdoc cref="IRequestConfiguration.RunAs"/>
 		public RequestConfigurationDescriptor RunAs(string username)
@@ -396,6 +405,13 @@ namespace Elastic.Transport
 		public RequestConfigurationDescriptor ResponseHeadersToParse(IEnumerable<string> headers)
 		{
 			Self.ResponseHeadersToParse = new HeadersList(headers);
+			return this;
+		}
+
+		/// <inheritdoc cref="IRequestConfiguration.RequestMetaData" />
+		public RequestConfigurationDescriptor RequestMetaData(RequestMetaData metaData)
+		{
+			Self.RequestMetaData = metaData;
 			return this;
 		}
 	}

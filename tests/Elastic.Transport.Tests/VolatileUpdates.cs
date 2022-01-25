@@ -24,7 +24,7 @@ namespace Elastic.Transport.Tests
 		[Fact] public void SniffingPoolWithstandsConcurrentReadAndWrites()
 		{
 			var uris = Enumerable.Range(9200, _numberOfNodes).Select(p => new Uri("http://localhost:" + p));
-			var sniffingPool = new SniffingConnectionPool(uris, false);
+			var sniffingPool = new SniffingNodePool(uris, false);
 
 			Action callSniffing = () => AssertCreateView(sniffingPool);
 
@@ -34,14 +34,14 @@ namespace Elastic.Transport.Tests
 		[Fact] public void StaticPoolWithstandsConcurrentReadAndWrites()
 		{
 			var uris = Enumerable.Range(9200, _numberOfNodes).Select(p => new Uri("http://localhost:" + p));
-			var staticPool = new StaticConnectionPool(uris, false);
+			var staticPool = new StaticNodePool(uris, false);
 
 			Action callStatic = () => AssertCreateView(staticPool);
 
 			callStatic.Should().NotThrow();
 		}
 
-		private void AssertCreateView(IConnectionPool pool)
+		private void AssertCreateView(NodePool pool)
 		{
 			var threads = Enumerable.Range(0, 50)
 				.Select(i => CreateReadAndUpdateThread(pool))
@@ -51,7 +51,7 @@ namespace Elastic.Transport.Tests
 			foreach (var t in threads) t.Join();
 		}
 
-		private Thread CreateReadAndUpdateThread(IConnectionPool pool) => new Thread(() =>
+		private Thread CreateReadAndUpdateThread(NodePool pool) => new Thread(() =>
 		{
 			for (var i = 0; i < 1000; i++)
 			{
@@ -63,7 +63,7 @@ namespace Elastic.Transport.Tests
 			}
 		});
 
-		private IEnumerable<int> CallGetNext(IConnectionPool pool)
+		private IEnumerable<int> CallGetNext(NodePool pool)
 		{
 			foreach (var n in pool.CreateView()) yield return n.Uri.Port;
 		}

@@ -15,6 +15,10 @@ using Elastic.Transport.Extensions;
 using Elastic.Transport.Products;
 using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
 
+//#if NETSTANDARD2_0 || NETSTANDARD2_1
+//using System.Threading.Tasks.Extensions;
+//#endif
+
 namespace Elastic.Transport
 {
 	internal static class RequestPipelineStatics
@@ -25,18 +29,18 @@ namespace Elastic.Transport
 		public static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.RequestPipeline.SourceName);
 	}
 
-
 	/// <inheritdoc cref="IRequestPipeline" />
 	public class RequestPipeline<TConfiguration> : IRequestPipeline
 		where TConfiguration : class, ITransportConfiguration
 	{
-		private readonly IConnection _connection;
-		private readonly IConnectionPool _connectionPool;
+		private readonly ITransportClient _transportClient;
+		private readonly NodePool _nodePool;
 		private readonly IDateTimeProvider _dateTimeProvider;
 		private readonly IMemoryStreamFactory _memoryStreamFactory;
 		private readonly Func<Node, bool> _nodePredicate;
 		private readonly IProductRegistration _productRegistration;
 		private readonly TConfiguration _settings;
+		private readonly ResponseBuilder _responseBuilder;
 
 		private RequestConfiguration _pingAndSniffRequestConfiguration;
 
@@ -49,11 +53,12 @@ namespace Elastic.Transport
 		)
 		{
 			_settings = configurationValues;
-			_connectionPool = _settings.ConnectionPool;
-			_connection = _settings.Connection;
+			_nodePool = _settings.NodePool;
+			_transportClient = _settings.Connection;
 			_dateTimeProvider = dateTimeProvider;
 			_memoryStreamFactory = memoryStreamFactory;
 			_productRegistration = configurationValues.ProductRegistration;
+			_responseBuilder = _productRegistration.ResponseBuilder;
 			_nodePredicate = _settings.NodePredicate ?? _productRegistration.NodePredicate;
 
 			RequestConfiguration = requestParameters?.RequestConfiguration;
@@ -65,7 +70,7 @@ namespace Elastic.Transport
 
 		private RequestConfiguration PingAndSniffRequestConfiguration
 		{
-			// Lazily loaded when first required, since not all connection pools and configurations support pinging and sniffing.
+			// Lazily loaded when first required, since not all node pools and configurations support pinging and sniffing.
 			// This avoids allocating 192B per request for those which do not need to ping or sniff.
 			get
 			{
@@ -90,7 +95,7 @@ namespace Elastic.Transport
 
 		public bool FirstPoolUsageNeedsSniffing =>
 			!RequestDisabledSniff
-			&& _connectionPool.SupportsReseeding && _settings.SniffsOnStartup && !_connectionPool.SniffedOnStartup;
+			&& _nodePool.SupportsReseeding && _settings.SniffsOnStartup && !_nodePool.SniffedOnStartup;
 
 		public bool IsTakingTooLong
 		{
@@ -111,23 +116,23 @@ namespace Elastic.Transport
 		public int MaxRetries =>
 			RequestConfiguration?.ForceNode != null
 				? 0
-				: Math.Min(RequestConfiguration?.MaxRetries ?? _settings.MaxRetries.GetValueOrDefault(int.MaxValue), _connectionPool.MaxRetries);
+				: Math.Min(RequestConfiguration?.MaxRetries ?? _settings.MaxRetries.GetValueOrDefault(int.MaxValue), _nodePool.MaxRetries);
 
 		public bool Refresh { get; private set; }
 		public int Retried { get; private set; }
 
-		public IEnumerable<Node> SniffNodes => _connectionPool
+		public IEnumerable<Node> SniffNodes => _nodePool
 			.CreateView(LazyAuditable)
 			.ToList()
 			.OrderBy(n => _productRegistration.SniffOrder(n));
 
 		public bool SniffsOnConnectionFailure =>
 			!RequestDisabledSniff
-			&& _connectionPool.SupportsReseeding && _settings.SniffsOnConnectionFault;
+			&& _nodePool.SupportsReseeding && _settings.SniffsOnConnectionFault;
 
 		public bool SniffsOnStaleCluster =>
 			!RequestDisabledSniff
-			&& _connectionPool.SupportsReseeding && _settings.SniffInformationLifeSpan.HasValue;
+			&& _nodePool.SupportsReseeding && _settings.SniffInformationLifeSpan.HasValue;
 
 		public bool StaleClusterState
 		{
@@ -140,7 +145,7 @@ namespace Elastic.Transport
 				var sniffLifeSpan = _settings.SniffInformationLifeSpan.Value;
 
 				var now = _dateTimeProvider.Now();
-				var lastSniff = _connectionPool.LastUpdate;
+				var lastSniff = _nodePool.LastUpdate;
 
 				return sniffLifeSpan < now - lastSniff;
 			}
@@ -151,7 +156,7 @@ namespace Elastic.Transport
 		private TimeSpan PingTimeout =>
 			RequestConfiguration?.PingTimeout
 			?? _settings.PingTimeout
-			?? (_connectionPool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
+			?? (_nodePool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
 
 		private IRequestConfiguration RequestConfiguration { get; }
 
@@ -173,7 +178,7 @@ namespace Elastic.Transport
 				//make sure we copy over the error body in case we disabled direct streaming.
 				var s = callDetails?.ResponseBodyInBytes == null ? Stream.Null : _memoryStreamFactory.Create(callDetails.ResponseBodyInBytes);
 				var m = callDetails?.ResponseMimeType ?? RequestData.MimeType;
-				response = ResponseBuilder.ToResponse<TResponse>(data, exception, callDetails?.HttpStatusCode, null, s, m);
+				response = _responseBuilder.ToResponse<TResponse>(data, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1);
 			}
 
 			response.ApiCall.AuditTrail = AuditTrail;
@@ -189,7 +194,7 @@ namespace Elastic.Transport
 				audit.Path = requestData.PathAndQuery;
 				try
 				{
-					var response = _connection.Request<TResponse>(requestData);
+					var response = _transportClient.Request<TResponse>(requestData);
 					d.EndState = response.ApiCall;
 					response.ApiCall.AuditTrail = AuditTrail;
 					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
@@ -215,7 +220,7 @@ namespace Elastic.Transport
 				audit.Path = requestData.PathAndQuery;
 				try
 				{
-					var response = await _connection.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
+					var response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
 					d.EndState = response.ApiCall;
 					response.ApiCall.AuditTrail = AuditTrail;
 					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
@@ -266,7 +271,7 @@ namespace Elastic.Transport
 				exceptionMessage = "Maximum number of retries reached";
 
 				var now = _dateTimeProvider.Now();
-				var activeNodes = _connectionPool.Nodes.Count(n => n.IsAlive || n.DeadUntil <= now);
+				var activeNodes = _nodePool.Nodes.Count(n => n.IsAlive || n.DeadUntil <= now);
 				if (Retried >= activeNodes)
 				{
 					Audit(FailedOverAllNodes);
@@ -309,7 +314,7 @@ namespace Elastic.Transport
 				using (Audit(SniffOnStartup))
 				{
 					Sniff();
-					_connectionPool.SniffedOnStartup = true;
+					_nodePool.MarkAsSniffed();
 				}
 			}
 			finally
@@ -343,7 +348,7 @@ namespace Elastic.Transport
 				using (Audit(SniffOnStartup))
 				{
 					await SniffAsync(cancellationToken).ConfigureAwait(false);
-					_connectionPool.SniffedOnStartup = true;
+					_nodePool.MarkAsSniffed();
 				}
 			}
 			finally
@@ -364,10 +369,10 @@ namespace Elastic.Transport
 		/// <inheritdoc />
 		public bool TryGetSingleNode(out Node node)
 		{
-			if (_connectionPool.Nodes.Count <= 1 && _connectionPool.MaxRetries <= _connectionPool.Nodes.Count &&
-				!_connectionPool.SupportsPinging && !_connectionPool.SupportsReseeding)
+			if (_nodePool.Nodes.Count <= 1 && _nodePool.MaxRetries <= _nodePool.Nodes.Count &&
+				!_nodePool.SupportsPinging && !_nodePool.SupportsReseeding)
 			{
-				node = _connectionPool.Nodes.FirstOrDefault();
+				node = _nodePool.Nodes.FirstOrDefault();
 
 				if (node is not null && _nodePredicate(node)) return true;
 			}
@@ -386,14 +391,14 @@ namespace Elastic.Transport
 			}
 
 			//This for loop allows to break out of the view state machine if we need to
-			//force a refresh (after reseeding connectionpool). We have a hardcoded limit of only
+			//force a refresh (after reseeding node pool). We have a hardcoded limit of only
 			//allowing 100 of these refreshes per call
 			var refreshed = false;
 			for (var i = 0; i < 100; i++)
 			{
 				if (DepletedRetries) yield break;
 
-				foreach (var node in _connectionPool.CreateView(LazyAuditable))
+				foreach (var node in _nodePool.CreateView(LazyAuditable))
 				{
 					if (DepletedRetries) break;
 
@@ -426,7 +431,7 @@ namespace Elastic.Transport
 				audit.Path = pingData.PathAndQuery;
 				try
 				{
-					var response = _productRegistration.Ping(_connection, pingData);
+					var response = _productRegistration.Ping(_transportClient, pingData);
 					d.EndState = response;
 					ThrowBadAuthPipelineExceptionWhenNeeded(response);
 					//ping should not silently accept bad but valid http responses
@@ -456,12 +461,12 @@ namespace Elastic.Transport
 				audit.Path = pingData.PathAndQuery;
 				try
 				{
-					var response = await _productRegistration.PingAsync(_connection, pingData, cancellationToken).ConfigureAwait(false);
-					d.EndState = response;
-					ThrowBadAuthPipelineExceptionWhenNeeded(response);
+					var apiCallDetails = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
+					d.EndState = apiCallDetails;
+					ThrowBadAuthPipelineExceptionWhenNeeded(apiCallDetails);
 					//ping should not silently accept bad but valid http responses
-					if (!response.Success)
-						throw new PipelineException(pingData.OnFailurePipelineFailure, response.OriginalException) { ApiCall = response };
+					if (!apiCallDetails.Success)
+						throw new PipelineException(pingData.OnFailurePipelineFailure, apiCallDetails.OriginalException) { ApiCall = apiCallDetails };
 				}
 				catch (Exception e)
 				{
@@ -489,7 +494,7 @@ namespace Elastic.Transport
 					try
 					{
 						audit.Path = requestData.PathAndQuery;
-						var (response, nodes) = _productRegistration.Sniff(_connection, _connectionPool.UsingSsl, requestData);
+						var (response, nodes) = _productRegistration.Sniff(_transportClient, _nodePool.UsingSsl, requestData);
 						d.EndState = response;
 
 						ThrowBadAuthPipelineExceptionWhenNeeded(response);
@@ -497,7 +502,7 @@ namespace Elastic.Transport
 						if (!response.Success)
 							throw new PipelineException(requestData.OnFailurePipelineFailure, response.OriginalException) { ApiCall = response };
 
-						_connectionPool.Reseed(nodes);
+						_nodePool.Reseed(nodes);
 						Refresh = true;
 						return;
 					}
@@ -528,7 +533,7 @@ namespace Elastic.Transport
 					{
 						audit.Path = requestData.PathAndQuery;
 						var (response, nodes) = await _productRegistration
-							.SniffAsync(_connection, _connectionPool.UsingSsl, requestData, cancellationToken)
+							.SniffAsync(_transportClient, _nodePool.UsingSsl, requestData, cancellationToken)
 							.ConfigureAwait(false);
 						d.EndState = response;
 
@@ -537,7 +542,7 @@ namespace Elastic.Transport
 						if (!response.Success)
 							throw new PipelineException(requestData.OnFailurePipelineFailure, response.OriginalException) { ApiCall = response };
 
-						_connectionPool.Reseed(nodes);
+						_nodePool.Reseed(nodes);
 						Refresh = true;
 						return;
 					}
@@ -575,7 +580,7 @@ namespace Elastic.Transport
 			using (Audit(AuditEvent.SniffOnStaleCluster))
 			{
 				Sniff();
-				_connectionPool.SniffedOnStartup = true;
+				_nodePool.MarkAsSniffed();
 			}
 		}
 
@@ -586,7 +591,7 @@ namespace Elastic.Transport
 			using (Audit(AuditEvent.SniffOnStaleCluster))
 			{
 				await SniffAsync(cancellationToken).ConfigureAwait(false);
-				_connectionPool.SniffedOnStartup = true;
+				_nodePool.MarkAsSniffed();
 			}
 		}
 
@@ -600,7 +605,7 @@ namespace Elastic.Transport
 
 		private bool PingDisabled(Node node) =>
 			(RequestConfiguration?.DisablePing).GetValueOrDefault(false)
-			|| _settings.DisablePings || !_connectionPool.SupportsPinging || !node.IsResurrected;
+			|| _settings.DisablePings || !_nodePool.SupportsPinging || !node.IsResurrected;
 
 		private Auditable Audit(AuditEvent type, Node node = null) => new Auditable(type, AuditTrail, _dateTimeProvider, node);
 

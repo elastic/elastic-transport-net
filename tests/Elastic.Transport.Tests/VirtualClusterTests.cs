@@ -19,7 +19,7 @@ namespace Elastic.Transport.Tests
 		{
 			var audit = new Auditor(() => Virtual.Elasticsearch
 				.Bootstrap(1)
-				.StaticConnectionPool()
+				.StaticNodePool()
 				.Settings(s => s.DisablePing().EnableDebugMode())
 			);
 			var e = await Assert.ThrowsAsync<UnexpectedTransportException>(
@@ -33,7 +33,7 @@ namespace Elastic.Transport.Tests
 			var audit = new Auditor(() => Virtual.Elasticsearch
 				.Bootstrap(1)
 				.ClientCalls(r => r.Succeeds(TimesHelper.Once).ReturnResponse(new { x = 1 }))
-				.StaticConnectionPool()
+				.StaticNodePool()
 				.Settings(s => s.DisablePing().EnableDebugMode())
 			);
 			audit = await audit.TraceCalls(
@@ -58,7 +58,7 @@ namespace Elastic.Transport.Tests
 			var audit = new Auditor(() => Virtual.Elasticsearch
 				.Bootstrap(1)
 				.ClientCalls(c=>c.SucceedAlways())
-				.StaticConnectionPool()
+				.StaticNodePool()
 				.Settings(s => s.DisablePing())
 			);
 
@@ -78,7 +78,7 @@ namespace Elastic.Transport.Tests
 				.ClientCalls(r => r.Fails(TimesHelper.Once, 500).ReturnResponse(new { x = 2 }))
 				.ClientCalls(r => r.Fails(TimesHelper.Twice, 400).ReturnResponse(new { x = 3 }))
 				.ClientCalls(r => r.Succeeds(TimesHelper.Once).ReturnResponse(new { x = 4 }))
-				.StaticConnectionPool()
+				.StaticNodePool()
 				.Settings(s => s.DisablePing().EnableDebugMode())
 			);
 			_ = await audit.TraceCalls(

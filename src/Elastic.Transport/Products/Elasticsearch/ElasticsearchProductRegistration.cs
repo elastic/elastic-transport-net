@@ -5,9 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Elastic.Transport.Products.Elasticsearch.Failures;
 using Elastic.Transport.Products.Elasticsearch.Sniff;
 
 namespace Elastic.Transport.Products.Elasticsearch
@@ -20,11 +24,18 @@ namespace Elastic.Transport.Products.Elasticsearch
 	public class ElasticsearchProductRegistration : IProductRegistration
 	{
 		private readonly HeadersList _headers;
+		private readonly MetaHeaderProvider _metaHeaderProvider;
 
 		/// <summary>
 		/// Create a new instance of the Elasticsearch product registration.
 		/// </summary>
 		public ElasticsearchProductRegistration() => _headers = new HeadersList("warning");
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="markerType"></param>
+		public ElasticsearchProductRegistration(Type markerType) : this() => _metaHeaderProvider = new DefaultMetaHeaderProvider(markerType, "es");
 
 		/// <summary> A static instance of <see cref="ElasticsearchProductRegistration"/> to promote reuse </summary>
 		public static IProductRegistration Default { get; } = new ElasticsearchProductRegistration();
@@ -41,12 +52,18 @@ namespace Elastic.Transport.Products.Elasticsearch
 		/// <inheritdoc cref="IProductRegistration.ResponseHeadersToParse"/>
 		public HeadersList ResponseHeadersToParse => _headers;
 
+		/// <inheritdoc cref="IProductRegistration.MetaHeaderProvider"/>
+		public MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
+
+		/// <inheritdoc cref="IProductRegistration.ResponseBuilder"/>
+		public ResponseBuilder ResponseBuilder => new ElasticsearchResponseBuilder();
+
 		/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 		public const string SniffPath = "_nodes/http,settings";
 
 		/// <summary>
 		/// Implements an ordering that prefers master eligible nodes when attempting to sniff the
-		/// <see cref="IConnectionPool.Nodes"/>
+		/// <see cref="NodePool.Nodes"/>
 		/// </summary>
 		public int SniffOrder(Node node) =>
 			node.HasFeature(ElasticsearchNodeFeatures.MasterEligible) ? node.Uri.Port : int.MaxValue;
@@ -92,10 +109,10 @@ namespace Elastic.Transport.Products.Elasticsearch
 		}
 
 		/// <inheritdoc cref="IProductRegistration.SniffAsync"/>
-		public async Task<Tuple<IApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(IConnection connection,
+		public async Task<Tuple<IApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(ITransportClient transportClient,
 			bool forceSsl, RequestData requestData, CancellationToken cancellationToken)
 		{
-			var response = await connection.RequestAsync<SniffResponse>(requestData, cancellationToken)
+			var response = await transportClient.RequestAsync<SniffResponse>(requestData, cancellationToken)
 				.ConfigureAwait(false);
 			var nodes = response.ToNodes(forceSsl);
 			return Tuple.Create<IApiCallDetails, IReadOnlyCollection<Node>>(response,
@@ -103,10 +120,10 @@ namespace Elastic.Transport.Products.Elasticsearch
 		}
 
 		/// <inheritdoc cref="IProductRegistration.Sniff"/>
-		public Tuple<IApiCallDetails, IReadOnlyCollection<Node>> Sniff(IConnection connection, bool forceSsl,
+		public Tuple<IApiCallDetails, IReadOnlyCollection<Node>> Sniff(ITransportClient transportClient, bool forceSsl,
 			RequestData requestData)
 		{
-			var response = connection.Request<SniffResponse>(requestData);
+			var response = transportClient.Request<SniffResponse>(requestData);
 			var nodes = response.ToNodes(forceSsl);
 			return Tuple.Create<IApiCallDetails, IReadOnlyCollection<Node>>(response,
 				new ReadOnlyCollection<Node>(nodes.ToArray()));
@@ -129,12 +146,12 @@ namespace Elastic.Transport.Products.Elasticsearch
 		}
 
 		/// <inheritdoc cref="IProductRegistration.PingAsync"/>
-		public async Task<IApiCallDetails> PingAsync(IConnection connection, RequestData pingData,
+		public async Task<IApiCallDetails> PingAsync(ITransportClient transportClient, RequestData pingData,
 			CancellationToken cancellationToken) =>
-			await connection.RequestAsync<VoidResponse>(pingData, cancellationToken).ConfigureAwait(false);
+			await transportClient.RequestAsync<VoidResponse>(pingData, cancellationToken).ConfigureAwait(false);
 
 		/// <inheritdoc cref="IProductRegistration.Ping"/>
-		public IApiCallDetails Ping(IConnection connection, RequestData pingData) =>
+		public IApiCallDetails Ping(ITransportClient connection, RequestData pingData) =>
 			connection.Request<VoidResponse>(pingData);
 	}
 }

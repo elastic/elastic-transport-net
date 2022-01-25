@@ -15,12 +15,12 @@ namespace Elastic.Transport
 		public static MemoryStreamFactory Default { get; } = new MemoryStreamFactory();
 
 		/// <inheritdoc />
-		public MemoryStream Create() => new MemoryStream();
+		public MemoryStream Create() => new();
 
 		/// <inheritdoc />
-		public MemoryStream Create(byte[] bytes) => new MemoryStream(bytes);
+		public MemoryStream Create(byte[] bytes) => new(bytes);
 
 		/// <inheritdoc />
-		public MemoryStream Create(byte[] bytes, int index, int count) => new MemoryStream(bytes, index, count);
+		public MemoryStream Create(byte[] bytes, int index, int count) => new(bytes, index, count);
 	}
 }

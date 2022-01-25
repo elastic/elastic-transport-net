@@ -14,6 +14,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -35,8 +36,8 @@ namespace Elastic.Transport
 		public bool IsBypassed(Uri host) => host.IsLoopback;
 	}
 
-	/// <summary> The default IConnection implementation. Uses <see cref="HttpClient" />.</summary>
-	public class HttpConnection : IConnection
+	/// <summary> The default ITransportClient implementation. Uses <see cref="HttpClient" />.</summary>
+	public class HttpTransportClient : ITransportClient
 	{
 		private static readonly string MissingConnectionLimitMethodError =
 			$"Your target platform does not support {nameof(TransportConfiguration.ConnectionLimit)}"
@@ -45,8 +46,8 @@ namespace Elastic.Transport
 
 		private string _expectedCertificateFingerprint;
 
-		/// <inheritdoc cref="HttpConnection" />
-		public HttpConnection() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
+		/// <inheritdoc cref="HttpTransportClient" />
+		public HttpTransportClient() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
 
 		/// <inheritdoc cref="RequestDataHttpClientFactory.InUseHandlers" />
 		public int InUseHandlers => HttpClientFactory.InUseHandlers;
@@ -58,8 +59,7 @@ namespace Elastic.Transport
 
 		private RequestDataHttpClientFactory HttpClientFactory { get; }
 
-
-		/// <inheritdoc cref="IConnection.Request{TResponse}" />
+		/// <inheritdoc cref="ITransportClient.Request{TResponse}" />
 		public virtual TResponse Request<TResponse>(RequestData requestData)
 			where TResponse : class, ITransportResponse, new()
 		{
@@ -69,6 +69,7 @@ namespace Elastic.Transport
 			Stream responseStream = null;
 			Exception ex = null;
 			string mimeType = null;
+			long contentLength = -1;
 			IDisposable receive = DiagnosticSources.SingletonDisposable;
 			ReadOnlyDictionary<TcpState, int> tcpStats = null;
 			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
@@ -90,7 +91,7 @@ namespace Elastic.Transport
 					if (requestData.ThreadPoolStats)
 						threadPoolStats = ThreadPoolStats.GetStats();
 
-#if NET5_0
+#if NET5_0_OR_GREATER
 					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
 #else
 					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
@@ -101,14 +102,14 @@ namespace Elastic.Transport
 
 				requestData.MadeItToResponse = true;
 				responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
-
+				contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 				mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
 
 				if (responseMessage.Content != null)
 				{
 					receive = DiagnosticSource.Diagnose(DiagnosticSources.HttpConnection.ReceiveBody, requestData, statusCode);
 
-#if NET5_0
+#if NET5_0_OR_GREATER
 					responseStream = responseMessage.Content.ReadAsStream();
 #else
 					responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
@@ -126,7 +127,7 @@ namespace Elastic.Transport
 			using (receive)
 			using (responseStream ??= Stream.Null)
 			{
-				var response = ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType);
+				var response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength);
 
 				// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
 				// gathering stats, they are still exposed on the call details. Ideally these would be set inside ResponseBuilder.ToResponse,
@@ -136,8 +137,8 @@ namespace Elastic.Transport
 				return response;
 			}
 		}
-		
-		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}" />
+
+		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}" />
 		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : class, ITransportResponse, new()
 		{
@@ -147,10 +148,12 @@ namespace Elastic.Transport
 			Stream responseStream = null;
 			Exception ex = null;
 			string mimeType = null;
+			long contentLength = -1;
 			IDisposable receive = DiagnosticSources.SingletonDisposable;
 			ReadOnlyDictionary<TcpState, int> tcpStats = null;
 			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 			Dictionary<string, IEnumerable<string>> responseHeaders = null;
+			requestData.IsAsync = true;
 
 			try
 			{
@@ -176,6 +179,7 @@ namespace Elastic.Transport
 
 				requestData.MadeItToResponse = true;
 				mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
+				contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 				responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 
 				if (responseMessage.Content != null)
@@ -193,10 +197,10 @@ namespace Elastic.Transport
 				ex = e;
 			}
 			using (receive)
-			using (responseStream = responseStream ?? Stream.Null)
+			using (responseStream ??= Stream.Null)
 			{
-				var response = await ResponseBuilder.ToResponseAsync<TResponse>
-						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, cancellationToken)
+				var response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, cancellationToken)
 					.ConfigureAwait(false);
 
 				// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
@@ -239,7 +243,7 @@ namespace Elastic.Transport
 
 		/// <summary>
 		/// Creates an instance of <see cref="HttpMessageHandler" /> using the <paramref name="requestData" />.
-		/// This method is virtual so subclasses of <see cref="HttpConnection" /> can modify the instance if needed.
+		/// This method is virtual so subclasses of <see cref="HttpTransportClient" /> can modify the instance if needed.
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
 		/// <exception cref="Exception">
@@ -317,9 +321,19 @@ namespace Elastic.Transport
 			return handler;
 		}
 
+		private string ComparableFingerprint(string fingerprint)
+		{
+			var finalFingerprint = fingerprint;
+
+			if (fingerprint.Contains(':'))
+				finalFingerprint = fingerprint.Replace(":", string.Empty);
+
+			return finalFingerprint;
+		}
+
 		/// <summary>
 		/// Creates an instance of <see cref="HttpRequestMessage" /> using the <paramref name="requestData" />.
-		/// This method is virtual so subclasses of <see cref="HttpConnection" /> can modify the instance if needed.
+		/// This method is virtual so subclasses of <see cref="HttpTransportClient" /> can modify the instance if needed.
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
 		/// <exception cref="Exception">
@@ -354,7 +368,7 @@ namespace Elastic.Transport
 			// Basic auth credentials take the following precedence (highest -> lowest):
 			// 1 - Specified with the URI (highest precedence)
 			// 2 - Specified on the request
-			// 3 - Specified at the global IConnectionSettings level (lowest precedence)
+			// 3 - Specified at the global ITransportClientSettings level (lowest precedence)
 
 			string value = null;
 			string key = null;
@@ -396,6 +410,14 @@ namespace Elastic.Transport
 
 			if (!requestData.RunAs.IsNullOrEmpty())
 				requestMessage.Headers.Add(RequestData.RunAsSecurityHeader, requestData.RunAs);
+
+			if (requestData.MetaHeaderProvider is not null)
+			{
+				var value = requestData.MetaHeaderProvider.ProduceHeaderValue(requestData);
+
+				if (!string.IsNullOrEmpty(value))
+					requestMessage.Headers.TryAddWithoutValidation(requestData.MetaHeaderProvider.HeaderName, value);
+			}
 
 			return requestMessage;
 		}
