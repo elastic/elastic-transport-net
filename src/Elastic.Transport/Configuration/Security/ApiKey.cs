@@ -21,7 +21,7 @@ namespace Elastic.Transport
 		private SecureString Value { get; }
 
 		/// <inheritdoc cref="IAuthenticationHeader.Header"/>
-		public virtual string Header { get; } = "Bearer";
+		public virtual string Header { get; } = "ApiKey";
 
 		/// <inheritdoc cref="IAuthenticationHeader.TryGetHeader"/>
 		public bool TryGetHeader(out string value)

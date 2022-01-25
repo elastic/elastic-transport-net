@@ -7,7 +7,7 @@ using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
-namespace Elastic.Transport.Products.Elasticsearch.Failures
+namespace Elastic.Transport.Products.Elasticsearch
 {
 	/// <summary> Represents an Elasticsearch server exception. </summary>
 	[DataContract]

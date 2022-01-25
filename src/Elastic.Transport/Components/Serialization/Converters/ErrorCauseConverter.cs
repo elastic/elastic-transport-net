@@ -8,7 +8,7 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Transport.Extensions;
-using Elastic.Transport.Products.Elasticsearch.Failures;
+using Elastic.Transport.Products.Elasticsearch;
 
 namespace Elastic.Transport
 {

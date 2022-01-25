@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 using Elastic.Transport.Extensions;
 using static Elastic.Transport.Products.Elasticsearch.ElasticsearchNodeFeatures;
 
-namespace Elastic.Transport.Products.Elasticsearch.Sniff
+namespace Elastic.Transport.Products.Elasticsearch
 {
 	/// <summary>
 	/// Elasticsearch returns addresses in the form of

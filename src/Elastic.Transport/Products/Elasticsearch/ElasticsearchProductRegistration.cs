@@ -5,14 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Elastic.Transport.Products.Elasticsearch.Failures;
-using Elastic.Transport.Products.Elasticsearch.Sniff;
 
 namespace Elastic.Transport.Products.Elasticsearch
 {

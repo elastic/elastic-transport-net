@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Elastic.Transport.Products.Elasticsearch.Failures
+namespace Elastic.Transport.Products.Elasticsearch
 {
 	/// <summary> Represents the error response as returned by Elasticsearch. </summary>
 	[DataContract]
