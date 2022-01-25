@@ -73,7 +73,7 @@ namespace Elastic.Transport
 		{
 			if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
-#if NET5_COMPATIBLE
+#if NET5_0_OR_GREATER
 			await
 #endif
 				using (stream)
@@ -93,7 +93,7 @@ namespace Elastic.Transport
 			SerializeToStreamAsync(stream, context, default);
 
 		protected
-#if NET5_COMPATIBLE
+#if NET5_0_OR_GREATER
 			override
 #endif
 			async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
@@ -105,7 +105,7 @@ namespace Elastic.Transport
 			await serializeToStreamTask.Task.ConfigureAwait(false);
 		}
 
-#if NET5_COMPATIBLE
+#if NET5_0_OR_GREATER
 		protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken _)
 		{
 			var serializeToStreamTask = new TaskCompletionSource<bool>();
