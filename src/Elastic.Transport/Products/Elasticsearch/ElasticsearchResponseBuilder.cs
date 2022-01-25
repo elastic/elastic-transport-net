@@ -30,7 +30,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 			try
 			{
 				error = serializer.Deserialize<ServerError>(responseStream);
-				return true;
+				return error is not null;
 			}
 			catch (JsonException)
 			{

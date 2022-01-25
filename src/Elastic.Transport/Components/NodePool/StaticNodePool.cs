@@ -16,7 +16,7 @@ namespace Elastic.Transport
 	/// discover the current cluster's list of active nodes.
 	/// <para>Therefore the nodes you supply are the list of known nodes throughout its lifetime, hence static</para>
 	/// </summary>
-	public class StaticNodePool : INodePool
+	public class StaticNodePool : NodePool
 	{
 		/// <summary>
 		/// Everytime <see cref="CreateView"/> is called it picks the initial starting point from this cursor.
@@ -79,25 +79,22 @@ namespace Elastic.Transport
 		}
 
 		/// <inheritdoc />
-		public DateTime LastUpdate { get; protected set; }
+		public override DateTime LastUpdate { get; protected set; }
 
 		/// <inheritdoc />
-		public int MaxRetries => InternalNodes.Count - 1;
+		public override int MaxRetries => InternalNodes.Count - 1;
 
 		/// <inheritdoc />
-		public virtual IReadOnlyCollection<Node> Nodes => InternalNodes;
+		public override IReadOnlyCollection<Node> Nodes => InternalNodes;
 
 		/// <inheritdoc />
-		public bool SniffedOnStartup { get; set; }
+		public override bool SupportsPinging => true;
 
 		/// <inheritdoc />
-		public virtual bool SupportsPinging => true;
+		public override bool SupportsReseeding => false;
 
 		/// <inheritdoc />
-		public virtual bool SupportsReseeding => false;
-
-		/// <inheritdoc />
-		public bool UsingSsl { get; private set; }
+		public override bool UsingSsl { get; protected set; }
 
 		/// <summary>
 		/// A window into <see cref="InternalNodes"/> that only selects the nodes considered alive at the time of calling
@@ -139,7 +136,7 @@ namespace Elastic.Transport
 		/// e.g Thread A might get 1,2,3,4,5 and thread B will get 2,3,4,5,1.
 		/// if there are no live nodes yields a different dead node to try once
 		/// </summary>
-		public virtual IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null)
+		public override IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null)
 		{
 			var nodes = AliveNodes;
 
@@ -158,7 +155,7 @@ namespace Elastic.Transport
 		}
 
 		/// <inheritdoc />
-		public virtual void Reseed(IEnumerable<Node> nodes) { } //ignored
+		public override void Reseed(IEnumerable<Node> nodes) { } //ignored
 
 
 		/// <summary>
@@ -211,9 +208,7 @@ namespace Elastic.Transport
 				? nodes.OrderByDescending(_nodeScorer)
 				: nodes.OrderBy(n => Randomize ? Random.Next() : 1);
 
-		void IDisposable.Dispose() => DisposeManagedResources();
-
-		/// <summary> Allows subclasses to hook into the parents dispose </summary>
-		protected virtual void DisposeManagedResources() { }
+		/// <inheritdoc />
+		protected override void Dispose(bool disposing) => base.Dispose(disposing);
 	}
 }

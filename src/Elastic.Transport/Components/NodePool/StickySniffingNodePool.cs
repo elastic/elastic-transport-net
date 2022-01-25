@@ -24,13 +24,13 @@ namespace Elastic.Transport
 		public StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
 			: base(nodes, nodeScorer ?? DefaultNodeScore, dateTimeProvider) { }
 
-		/// <inheritdoc cref="INodePool.SupportsPinging"/>
+		/// <inheritdoc cref="NodePool.SupportsPinging"/>
 		public override bool SupportsPinging => true;
 
-		/// <inheritdoc cref="INodePool.SupportsReseeding"/>
+		/// <inheritdoc cref="NodePool.SupportsReseeding"/>
 		public override bool SupportsReseeding => true;
 
-		/// <inheritdoc cref="INodePool.CreateView"/>
+		/// <inheritdoc cref="NodePool.CreateView"/>
 		public override IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null)
 		{
 			var nodes = AliveNodes;

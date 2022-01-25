@@ -112,8 +112,8 @@ namespace Elastic.Transport
 		public Uri CreatePath(string path) => new Uri(Uri, path);
 
 		/// <summary>
-		/// Create a clone of the current node. This is used by <see cref="INodePool"/> implementations that supports reseeding the
-		/// list of nodes through <see cref="INodePool.Reseed"/>
+		/// Create a clone of the current node. This is used by <see cref="NodePool"/> implementations that supports reseeding the
+		/// list of nodes through <see cref="NodePool.Reseed"/>
 		/// </summary>
 		public Node Clone() =>
 			new Node(Uri, Features)

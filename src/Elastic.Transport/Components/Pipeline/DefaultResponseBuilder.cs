@@ -215,7 +215,8 @@ namespace Elastic.Transport
 			}
 
 			error = EmptyError.Instance as TError;
-			return true;
+
+			return error is not null;
 		}
 
 		/// <summary>

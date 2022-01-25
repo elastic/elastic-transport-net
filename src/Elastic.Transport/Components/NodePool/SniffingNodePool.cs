@@ -17,7 +17,9 @@ namespace Elastic.Transport
 	/// </summary>
 	public class SniffingNodePool : StaticNodePool
 	{
-		private readonly ReaderWriterLockSlim _readerWriter = new ReaderWriterLockSlim();
+		private bool _disposed;
+
+		private readonly ReaderWriterLockSlim _readerWriter = new();
 
 		/// <inheritdoc cref="SniffingNodePool"/>>
 		public SniffingNodePool(IEnumerable<Uri> uris, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
@@ -92,11 +94,20 @@ namespace Elastic.Transport
 			}
 		}
 
-		/// <summary> Allows subclasses to hook into the parents dispose </summary>
-		protected override void DisposeManagedResources()
+		/// <inheritdoc />
+		protected override void Dispose(bool disposing)
 		{
-			_readerWriter?.Dispose();
-			base.DisposeManagedResources();
+			if (!_disposed)
+			{
+				if (disposing)
+				{
+					_readerWriter?.Dispose();
+				}
+
+				_disposed = true;
+			}
+
+			base.Dispose(disposing);
 		}
 	}
 }

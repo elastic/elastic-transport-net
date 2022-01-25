@@ -9,7 +9,7 @@ using Elastic.Transport.Diagnostics.Auditing;
 namespace Elastic.Transport
 {
 	/// <summary> A pool to a single node or endpoint.</summary>
-	public class SingleNodePool : INodePool
+	public class SingleNodePool : NodePool
 	{
 		/// <inheritdoc cref="SingleNodePool"/>
 		public SingleNodePool(Uri uri, IDateTimeProvider dateTimeProvider = null)
@@ -21,39 +21,30 @@ namespace Elastic.Transport
 		}
 
 		/// <inheritdoc />
-		public DateTime LastUpdate { get; }
+		public override DateTime LastUpdate { get; protected set; }
 
 		/// <inheritdoc />
-		public int MaxRetries => 0;
+		public override int MaxRetries => 0;
 
 		/// <inheritdoc />
-		public IReadOnlyCollection<Node> Nodes { get; }
+		public override IReadOnlyCollection<Node> Nodes { get; }
 
 		/// <inheritdoc />
-		public bool SniffedOnStartup
-		{
-			get => true;
-			set { }
-		}
+		public override bool SupportsPinging => false;
 
 		/// <inheritdoc />
-		public bool SupportsPinging => false;
+		public override bool SupportsReseeding => false;
 
 		/// <inheritdoc />
-		public bool SupportsReseeding => false;
+		public override bool UsingSsl { get; protected set; }
 
 		/// <inheritdoc />
-		public bool UsingSsl { get; }
+		public override IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null) => Nodes;
 
 		/// <inheritdoc />
-		public IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null) => Nodes;
+		public override void Reseed(IEnumerable<Node> nodes) { } //ignored
 
 		/// <inheritdoc />
-		public void Reseed(IEnumerable<Node> nodes) { } //ignored
-
-		void IDisposable.Dispose() => DisposeManagedResources();
-
-		/// <summary> Allows subclasses to hook into the parents dispose </summary>
-		protected virtual void DisposeManagedResources() { }
+		protected override void Dispose(bool disposing) => base.Dispose(disposing);
 	}
 }

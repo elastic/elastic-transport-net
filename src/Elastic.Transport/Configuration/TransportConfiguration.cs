@@ -99,12 +99,12 @@ namespace Elastic.Transport
 			: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
 
 		/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
-		/// <param name="nodePool"><inheritdoc cref="INodePool" path="/summary"/></param>
+		/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
 		/// <param name="connection"><inheritdoc cref="ITransportClient" path="/summary"/></param>
 		/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		public TransportConfiguration(
-			INodePool nodePool,
+			NodePool nodePool,
 			ITransportClient connection = null,
 			Serializer serializer = null,
 			IProductRegistration productRegistration = null)
@@ -119,7 +119,7 @@ namespace Elastic.Transport
 		where T : TransportConfigurationBase<T>
 	{
 		private readonly ITransportClient _transportClient;
-		private readonly INodePool _nodePool;
+		private readonly NodePool _nodePool;
 		private readonly IProductRegistration _productRegistration;
 		private readonly NameValueCollection _headers = new NameValueCollection();
 		private readonly NameValueCollection _queryString = new NameValueCollection();
@@ -169,11 +169,11 @@ namespace Elastic.Transport
 		/// <summary>
 		/// <inheritdoc cref="TransportConfiguration"/>
 		/// </summary>
-		/// <param name="nodePool"><inheritdoc cref="INodePool" path="/summary"/></param>
+		/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
 		/// <param name="transportClient"><inheritdoc cref="ITransportClient" path="/summary"/></param>
 		/// <param name="requestResponseSerializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		protected TransportConfigurationBase(INodePool nodePool, ITransportClient transportClient, Serializer requestResponseSerializer, IProductRegistration productRegistration)
+		protected TransportConfigurationBase(NodePool nodePool, ITransportClient transportClient, Serializer requestResponseSerializer, IProductRegistration productRegistration)
 		{
 			_nodePool = nodePool;
 			_transportClient = transportClient ?? new HttpTransportClient();
@@ -218,7 +218,7 @@ namespace Elastic.Transport
 		ITransportClient ITransportConfiguration.Connection => _transportClient;
 		IProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
 		int ITransportConfiguration.ConnectionLimit => _transportClientLimit;
-		INodePool ITransportConfiguration.NodePool => _nodePool;
+		NodePool ITransportConfiguration.NodePool => _nodePool;
 		TimeSpan? ITransportConfiguration.DeadTimeout => _deadTimeout;
 		bool ITransportConfiguration.DisableAutomaticProxyDetection => _disableAutomaticProxyDetection;
 		bool ITransportConfiguration.DisableDirectStreaming => _disableDirectStreaming;

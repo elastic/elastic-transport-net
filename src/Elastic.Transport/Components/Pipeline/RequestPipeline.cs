@@ -34,7 +34,7 @@ namespace Elastic.Transport
 		where TConfiguration : class, ITransportConfiguration
 	{
 		private readonly ITransportClient _transportClient;
-		private readonly INodePool _nodePool;
+		private readonly NodePool _nodePool;
 		private readonly IDateTimeProvider _dateTimeProvider;
 		private readonly IMemoryStreamFactory _memoryStreamFactory;
 		private readonly Func<Node, bool> _nodePredicate;
@@ -314,7 +314,7 @@ namespace Elastic.Transport
 				using (Audit(SniffOnStartup))
 				{
 					Sniff();
-					_nodePool.SniffedOnStartup = true;
+					_nodePool.MarkAsSniffed();
 				}
 			}
 			finally
@@ -348,7 +348,7 @@ namespace Elastic.Transport
 				using (Audit(SniffOnStartup))
 				{
 					await SniffAsync(cancellationToken).ConfigureAwait(false);
-					_nodePool.SniffedOnStartup = true;
+					_nodePool.MarkAsSniffed();
 				}
 			}
 			finally
@@ -461,12 +461,12 @@ namespace Elastic.Transport
 				audit.Path = pingData.PathAndQuery;
 				try
 				{
-					var response = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
-					d.EndState = response;
-					ThrowBadAuthPipelineExceptionWhenNeeded(response);
+					var apiCallDetails = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
+					d.EndState = apiCallDetails;
+					ThrowBadAuthPipelineExceptionWhenNeeded(apiCallDetails);
 					//ping should not silently accept bad but valid http responses
-					if (!response.Success)
-						throw new PipelineException(pingData.OnFailurePipelineFailure, response.OriginalException) { ApiCall = response };
+					if (!apiCallDetails.Success)
+						throw new PipelineException(pingData.OnFailurePipelineFailure, apiCallDetails.OriginalException) { ApiCall = apiCallDetails };
 				}
 				catch (Exception e)
 				{
@@ -580,7 +580,7 @@ namespace Elastic.Transport
 			using (Audit(AuditEvent.SniffOnStaleCluster))
 			{
 				Sniff();
-				_nodePool.SniffedOnStartup = true;
+				_nodePool.MarkAsSniffed();
 			}
 		}
 
@@ -591,7 +591,7 @@ namespace Elastic.Transport
 			using (Audit(AuditEvent.SniffOnStaleCluster))
 			{
 				await SniffAsync(cancellationToken).ConfigureAwait(false);
-				_nodePool.SniffedOnStartup = true;
+				_nodePool.MarkAsSniffed();
 			}
 		}
 
