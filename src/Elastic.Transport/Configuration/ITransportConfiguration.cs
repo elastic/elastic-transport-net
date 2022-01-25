@@ -15,7 +15,7 @@ namespace Elastic.Transport
 {
 	/// <summary>
 	/// All the transport configuration that you as the user can use to steer the behavior of the <see cref="ITransport{TConnectionSettings}"/> and all the components such
-	/// as <see cref="IConnection"/> <see cref="INodePool"/> and <see cref="SerializerBase"/>.
+	/// as <see cref="ITransportClient"/> <see cref="INodePool"/> and <see cref="SerializerBase"/>.
 	/// </summary>
 	public interface ITransportConfiguration : IDisposable
 	{
@@ -32,18 +32,18 @@ namespace Elastic.Transport
 		X509CertificateCollection ClientCertificates { get; }
 
 		/// <summary> The connection abstraction behind which all actual IO happens</summary>
-		IConnection Connection { get; }
+		ITransportClient Connection { get; }
 
 		/// <summary>
 		/// Limits the number of concurrent connections that can be opened to an endpoint. Defaults to 80 (see
 		/// <see cref="TransportConfiguration.DefaultConnectionLimit" />).
 		/// <para>
 		/// For Desktop CLR, this setting applies to the DefaultConnectionLimit property on the  ServicePointManager object when creating
-		/// ServicePoint objects, affecting the default <see cref="IConnection" /> implementation.
+		/// ServicePoint objects, affecting the default <see cref="ITransportClient" /> implementation.
 		/// </para>
 		/// <para>
 		/// For Core CLR, this setting applies to the MaxConnectionsPerServer property on the HttpClientHandler instances used by the HttpClient
-		/// inside the default <see cref="IConnection" /> implementation
+		/// inside the default <see cref="ITransportClient" /> implementation
 		/// </para>
 		/// </summary>
 		int ConnectionLimit { get; }

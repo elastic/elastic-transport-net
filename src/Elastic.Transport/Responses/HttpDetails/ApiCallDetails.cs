@@ -81,6 +81,11 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="IApiCallDetails.ParsedHeaders"/>
 		public ReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; set; }
 
+		/// <summary>
+		/// 
+		/// </summary>
+		public ErrorResponseBase ErrorResponse { get; set; } = EmptyError.Instance;
+
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		public override string ToString() =>
 			$"{(Success ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on {HttpMethod.GetStringValue()}: {Uri.PathAndQuery}";

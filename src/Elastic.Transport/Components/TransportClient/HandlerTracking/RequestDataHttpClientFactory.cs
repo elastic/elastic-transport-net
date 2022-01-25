@@ -91,7 +91,7 @@ namespace Elastic.Transport
 		{
 			if (requestData == null) throw new ArgumentNullException(nameof(requestData));
 
-			var key = HttpConnection.GetClientKey(requestData);
+			var key = HttpTransportClient.GetClientKey(requestData);
 			var handler = CreateHandler(key, requestData);
 			var client = new HttpClient(handler, disposeHandler: false)
 			{

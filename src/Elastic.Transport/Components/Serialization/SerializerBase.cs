@@ -11,11 +11,10 @@ namespace Elastic.Transport
 {
 	/// <summary>
 	/// When the <see cref="ITransport{TConnectionSettings}"/> needs to (de)serialize anything it will call into the
-	/// <see cref="ITransportConfiguration.RequestResponseSerializer"/> implementation of this interface.
+	/// <see cref="ITransportConfiguration.RequestResponseSerializer"/> implementation of this base class.
 	///
 	/// <para>e.g: Whenever the <see cref="ITransport{TConnectionSettings}"/> receives <see cref="PostData.Serializable{T}"/>
 	/// to serialize that data.</para>
-	/// <para>Or when <see cref="ResponseBuilder.ToResponse{TResponse}"/> determines the response needs to be deserialized.</para>
 	/// </summary>
 	public abstract class SerializerBase
 	{

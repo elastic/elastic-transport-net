@@ -45,16 +45,8 @@ namespace Elastic.Transport
 		TResponse CallProductEndpoint<TResponse>(RequestData requestData)
 			where TResponse : class, ITransportResponse, new();
 
-		TResponse CallProductEndpoint<TResponse, TError>(RequestData requestData)
-			where TResponse : class, ITransportResponse<TError>, new()
-			where TError : class, IErrorResponse, new();
-
 		Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : class, ITransportResponse, new();
-
-		Task<TResponse> CallProductEndpointAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : class, ITransportResponse<TError>, new()
-			where TError : class, IErrorResponse, new();
 
 		void MarkAlive(Node node);
 

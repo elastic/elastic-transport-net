@@ -81,7 +81,6 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <param name="uri">The root of the Elastic stack product node we want to connect to. Defaults to http://localhost:9200</param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		[SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
 		public TransportConfiguration(Uri uri = null, IProductRegistration productRegistration = null)
 			: this(new SingleNodePool(uri ?? new Uri("http://localhost:9200")), productRegistration: productRegistration) { }
 
@@ -101,12 +100,12 @@ namespace Elastic.Transport
 
 		/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
 		/// <param name="nodePool"><inheritdoc cref="INodePool" path="/summary"/></param>
-		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
+		/// <param name="connection"><inheritdoc cref="ITransportClient" path="/summary"/></param>
 		/// <param name="serializer"><inheritdoc cref="SerializerBase" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		public TransportConfiguration(
 			INodePool nodePool,
-			IConnection connection = null,
+			ITransportClient connection = null,
 			SerializerBase serializer = null,
 			IProductRegistration productRegistration = null)
 			: base(nodePool, connection, serializer, productRegistration) { }
@@ -119,7 +118,7 @@ namespace Elastic.Transport
 	public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 		where T : TransportConfigurationBase<T>
 	{
-		private readonly IConnection _connection;
+		private readonly ITransportClient _transportClient;
 		private readonly INodePool _nodePool;
 		private readonly IProductRegistration _productRegistration;
 		private readonly NameValueCollection _headers = new NameValueCollection();
@@ -130,7 +129,7 @@ namespace Elastic.Transport
 		private IAuthenticationHeader _authenticationHeader;
 		private X509CertificateCollection _clientCertificates;
 		private Action<IApiCallDetails> _completedRequestHandler = DefaultCompletedRequestHandler;
-		private int _connectionLimit;
+		private int _transportClientLimit;
 		private TimeSpan? _deadTimeout;
 		private bool _disableAutomaticProxyDetection;
 		private bool _disableDirectStreaming;
@@ -171,18 +170,18 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="TransportConfiguration"/>
 		/// </summary>
 		/// <param name="nodePool"><inheritdoc cref="INodePool" path="/summary"/></param>
-		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
+		/// <param name="transportClient"><inheritdoc cref="ITransportClient" path="/summary"/></param>
 		/// <param name="requestResponseSerializer"><inheritdoc cref="SerializerBase" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		protected TransportConfigurationBase(INodePool nodePool, IConnection connection, SerializerBase requestResponseSerializer, IProductRegistration productRegistration)
+		protected TransportConfigurationBase(INodePool nodePool, ITransportClient transportClient, SerializerBase requestResponseSerializer, IProductRegistration productRegistration)
 		{
 			_nodePool = nodePool;
-			_connection = connection ?? new HttpConnection();
+			_transportClient = transportClient ?? new HttpTransportClient();
 			_productRegistration = productRegistration ?? ProductRegistration.Default;
 			var serializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
 			UseThisRequestResponseSerializer = new DiagnosticsSerializerProxy(serializer);
 
-			_connectionLimit = TransportConfiguration.DefaultConnectionLimit;
+			_transportClientLimit = TransportConfiguration.DefaultConnectionLimit;
 			_requestTimeout = TransportConfiguration.DefaultTimeout;
 			_dnsRefreshTimeout = TransportConfiguration.DefaultDnsRefreshTimeout;
 			_memoryStreamFactory = TransportConfiguration.DefaultMemoryStreamFactory;
@@ -202,7 +201,7 @@ namespace Elastic.Transport
 				_enableHttpCompression = true;
 			}
 
-			_headersToParse = _productRegistration.ResponseHeadersToParse;
+			_headersToParse = new HeadersList(_productRegistration.ResponseHeadersToParse);
 		}
 
 		/// <summary>
@@ -216,9 +215,9 @@ namespace Elastic.Transport
 		IAuthenticationHeader ITransportConfiguration.Authentication => _authenticationHeader;
 		SemaphoreSlim ITransportConfiguration.BootstrapLock => _semaphore;
 		X509CertificateCollection ITransportConfiguration.ClientCertificates => _clientCertificates;
-		IConnection ITransportConfiguration.Connection => _connection;
+		ITransportClient ITransportConfiguration.Connection => _transportClient;
 		IProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
-		int ITransportConfiguration.ConnectionLimit => _connectionLimit;
+		int ITransportConfiguration.ConnectionLimit => _transportClientLimit;
 		INodePool ITransportConfiguration.NodePool => _nodePool;
 		TimeSpan? ITransportConfiguration.DeadTimeout => _deadTimeout;
 		bool ITransportConfiguration.DisableAutomaticProxyDetection => _disableAutomaticProxyDetection;
@@ -289,7 +288,7 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="ITransportConfiguration.ConnectionLimit" path="/summary"/>
 		/// </summary>
 		/// <param name="connectionLimit">The connection limit, a value lower then 0 will cause the connection limit not to be set at all</param>
-		public T ConnectionLimit(int connectionLimit) => Assign(connectionLimit, (a, v) => a._connectionLimit = v);
+		public T ConnectionLimit(int connectionLimit) => Assign(connectionLimit, (a, v) => a._transportClientLimit = v);
 
 		/// <inheritdoc cref="ITransportConfiguration.SniffsOnConnectionFault"/>
 		public T SniffOnConnectionFault(bool sniffsOnConnectionFault = true) =>
@@ -472,7 +471,7 @@ namespace Elastic.Transport
 		protected virtual void DisposeManagedResources()
 		{
 			_nodePool?.Dispose();
-			_connection?.Dispose();
+			_transportClient?.Dispose();
 			_semaphore?.Dispose();
 			_proxyPassword?.Dispose();
 			_authenticationHeader?.Dispose();

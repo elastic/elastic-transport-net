@@ -48,6 +48,9 @@ namespace Elastic.Transport.Products
 		/// <inheritdoc cref="IProductRegistration.MetaHeaderProvider"/>
 		public MetaHeaderProviderBase MetaHeaderProvider => _metaHeaderProvider;
 
+		/// <inheritdoc cref="IProductRegistration.ResponseBuilder"/>
+		public ResponseBuilderBase ResponseBuilder => new DefaultResponseBuilder<EmptyError>();
+
 		/// <inheritdoc cref="IProductRegistration.HttpStatusCodeClassifier"/>
 		public bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
 			statusCode >= 200 && statusCode < 300;
@@ -65,11 +68,11 @@ namespace Elastic.Transport.Products
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.SniffAsync"/>
-		public Task<Tuple<IApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(IConnection connection, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) =>
+		public Task<Tuple<IApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(ITransportClient transportClient, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.Sniff"/>
-		public Tuple<IApiCallDetails, IReadOnlyCollection<Node>> Sniff(IConnection connection, bool forceSsl, RequestData requestData) =>
+		public Tuple<IApiCallDetails, IReadOnlyCollection<Node>> Sniff(ITransportClient connection, bool forceSsl, RequestData requestData) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.CreatePingRequestData"/>
@@ -77,11 +80,11 @@ namespace Elastic.Transport.Products
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.PingAsync"/>
-		public Task<IApiCallDetails> PingAsync(IConnection connection, RequestData pingData, CancellationToken cancellationToken) =>
+		public Task<IApiCallDetails> PingAsync(ITransportClient connection, RequestData pingData, CancellationToken cancellationToken) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.Ping"/>
-		public IApiCallDetails Ping(IConnection connection, RequestData pingData) =>
+		public IApiCallDetails Ping(ITransportClient connection, RequestData pingData) =>
 			throw new NotImplementedException();
 	}
 }

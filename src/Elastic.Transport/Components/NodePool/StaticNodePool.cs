@@ -12,7 +12,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A connection pool that disables <see cref="SupportsReseeding"/> which in turn disallows the <see cref="ITransport{TConnectionSettings}"/> to enable sniffing to
+	/// A node pool that disables <see cref="SupportsReseeding"/> which in turn disallows the <see cref="ITransport{TConnectionSettings}"/> to enable sniffing to
 	/// discover the current cluster's list of active nodes.
 	/// <para>Therefore the nodes you supply are the list of known nodes throughout its lifetime, hence static</para>
 	/// </summary>

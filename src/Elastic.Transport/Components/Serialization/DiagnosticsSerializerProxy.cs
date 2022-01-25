@@ -43,7 +43,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// Wraps configured serializer so that we can emit diagnostics per configured serializer.
 	/// </summary>
-	public class DiagnosticsSerializerProxy : SerializerBase
+	internal class DiagnosticsSerializerProxy : SerializerBase
 	{
 		private readonly SerializerBase _serializer;
 		private readonly SerializerRegistrationInformation _state;

@@ -19,15 +19,6 @@ namespace Elastic.Transport
 			where TResponse : class, ITransportResponse, new();
 
 		/// <inheritdoc cref="Request{TResponse}" />
-		TResponse Request<TResponse, TError>(
-			HttpMethod method,
-			string path,
-			PostData data = null,
-			IRequestParameters requestParameters = null)
-			where TResponse : class, ITransportResponse<TError>, new()
-			where TError : class, IErrorResponse, new();
-
-		/// <inheritdoc cref="Request{TResponse}" />
 		Task<TResponse> RequestAsync<TResponse>(
 			HttpMethod method,
 			string path,
@@ -35,20 +26,10 @@ namespace Elastic.Transport
 			IRequestParameters requestParameters = null,
 			CancellationToken cancellationToken = default)
 			where TResponse : class, ITransportResponse, new();
-
-		/// <inheritdoc cref="Request{TResponse}" />
-		Task<TResponse> RequestAsync<TResponse, TError>(
-			HttpMethod method,
-			string path,
-			PostData data = null,
-			IRequestParameters requestParameters = null,
-			CancellationToken cancellationToken = default)
-			where TResponse : class, ITransportResponse<TError>, new()
-			where TError : class, IErrorResponse, new();
 	}
 
 	/// <summary>
-	/// Transport coordinates the client requests over the connection pool nodes and is in charge of falling over on
+	/// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
 	/// different nodes
 	/// </summary>
 	public interface ITransport<out TConfiguration> : ITransport

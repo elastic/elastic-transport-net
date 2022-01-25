@@ -8,7 +8,7 @@ using Elastic.Transport.Diagnostics.Auditing;
 
 namespace Elastic.Transport
 {
-	/// <summary> A connection pool to a single node or endpoint </summary>
+	/// <summary> A pool to a single node or endpoint.</summary>
 	public class SingleNodePool : INodePool
 	{
 		/// <inheritdoc cref="SingleNodePool"/>

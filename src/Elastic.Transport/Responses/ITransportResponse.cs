@@ -15,16 +15,4 @@ namespace Elastic.Transport
 		/// </summary>
 		IApiCallDetails ApiCall { get; set; }
 	}
-
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <typeparam name="TError"></typeparam>
-	public interface ITransportResponse<TError> : ITransportResponse where TError : class, IErrorResponse, new()
-	{
-		/// <summary>
-		/// A deserialized server error if one was present on the response.
-		/// </summary>
-		TError ServerError { get; init; }
-	}
 }

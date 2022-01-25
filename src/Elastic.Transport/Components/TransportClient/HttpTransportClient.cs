@@ -36,8 +36,8 @@ namespace Elastic.Transport
 		public bool IsBypassed(Uri host) => host.IsLoopback;
 	}
 
-	/// <summary> The default IConnection implementation. Uses <see cref="HttpClient" />.</summary>
-	public class HttpConnection : IConnection
+	/// <summary> The default ITransportClient implementation. Uses <see cref="HttpClient" />.</summary>
+	public class HttpTransportClient : ITransportClient
 	{
 		private static readonly string MissingConnectionLimitMethodError =
 			$"Your target platform does not support {nameof(TransportConfiguration.ConnectionLimit)}"
@@ -46,8 +46,8 @@ namespace Elastic.Transport
 
 		private string _expectedCertificateFingerprint;
 
-		/// <inheritdoc cref="HttpConnection" />
-		public HttpConnection() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
+		/// <inheritdoc cref="HttpTransportClient" />
+		public HttpTransportClient() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
 
 		/// <inheritdoc cref="RequestDataHttpClientFactory.InUseHandlers" />
 		public int InUseHandlers => HttpClientFactory.InUseHandlers;
@@ -59,8 +59,7 @@ namespace Elastic.Transport
 
 		private RequestDataHttpClientFactory HttpClientFactory { get; }
 
-
-		/// <inheritdoc cref="IConnection.Request{TResponse}" />
+		/// <inheritdoc cref="ITransportClient.Request{TResponse}" />
 		public virtual TResponse Request<TResponse>(RequestData requestData)
 			where TResponse : class, ITransportResponse, new()
 		{
@@ -70,6 +69,7 @@ namespace Elastic.Transport
 			Stream responseStream = null;
 			Exception ex = null;
 			string mimeType = null;
+			long contentLength = -1;
 			IDisposable receive = DiagnosticSources.SingletonDisposable;
 			ReadOnlyDictionary<TcpState, int> tcpStats = null;
 			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
@@ -102,7 +102,7 @@ namespace Elastic.Transport
 
 				requestData.MadeItToResponse = true;
 				responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
-
+				contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 				mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
 
 				if (responseMessage.Content != null)
@@ -127,7 +127,7 @@ namespace Elastic.Transport
 			using (receive)
 			using (responseStream ??= Stream.Null)
 			{
-				var response = ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType);
+				var response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength);
 
 				// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
 				// gathering stats, they are still exposed on the call details. Ideally these would be set inside ResponseBuilder.ToResponse,
@@ -138,88 +138,7 @@ namespace Elastic.Transport
 			}
 		}
 
-		/// <inheritdoc cref="IConnection.Request{TResponse}" />
-		public virtual TResponse Request<TResponse, TError>(RequestData requestData)
-			where TResponse : class, ITransportResponse<TError>, new()
-			where TError : class, IErrorResponse, new ()
-		{
-			// TODO - Remove as much code duplication as possible between the two request implementations
-
-			var client = GetClient(requestData);
-			HttpResponseMessage responseMessage;
-			int? statusCode = null;
-			Stream responseStream = null;
-			Exception ex = null;
-			string mimeType = null;
-			IDisposable receive = DiagnosticSources.SingletonDisposable;
-			ReadOnlyDictionary<TcpState, int> tcpStats = null;
-			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
-			Dictionary<string, IEnumerable<string>> responseHeaders = null;
-
-			try
-			{
-				var requestMessage = CreateHttpRequestMessage(requestData);
-
-				if (requestData.PostData != null)
-					SetContent(requestMessage, requestData);
-
-				using (requestMessage?.Content ?? (IDisposable)Stream.Null)
-				using (var d = DiagnosticSource.Diagnose<RequestData, int?>(DiagnosticSources.HttpConnection.SendAndReceiveHeaders, requestData))
-				{
-					if (requestData.TcpStats)
-						tcpStats = TcpStats.GetStates();
-
-					if (requestData.ThreadPoolStats)
-						threadPoolStats = ThreadPoolStats.GetStats();
-
-#if NET5_0_OR_GREATER
-					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
-#else
-					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
-#endif
-					statusCode = (int)responseMessage.StatusCode;
-					d.EndState = statusCode;
-				}
-
-				requestData.MadeItToResponse = true;
-				responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
-
-				mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
-
-				if (responseMessage.Content != null)
-				{
-					receive = DiagnosticSource.Diagnose(DiagnosticSources.HttpConnection.ReceiveBody, requestData, statusCode);
-
-#if NET5_0_OR_GREATER
-					responseStream = responseMessage.Content.ReadAsStream();
-#else
-					responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
-#endif
-				}
-			}
-			catch (TaskCanceledException e)
-			{
-				ex = e;
-			}
-			catch (HttpRequestException e)
-			{
-				ex = e;
-			}
-			using (receive)
-			using (responseStream ??= Stream.Null)
-			{
-				var response = ResponseBuilder.ToResponse<TResponse, TError>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType);
-
-				// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
-				// gathering stats, they are still exposed on the call details. Ideally these would be set inside ResponseBuilder.ToResponse,
-				// but doing so would be a breaking change in 7.x
-				response.ApiCall.TcpStats = tcpStats;
-				response.ApiCall.ThreadPoolStats = threadPoolStats;
-				return response;
-			}
-		}
-
-		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}" />
+		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}" />
 		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : class, ITransportResponse, new()
 		{
@@ -229,6 +148,7 @@ namespace Elastic.Transport
 			Stream responseStream = null;
 			Exception ex = null;
 			string mimeType = null;
+			long contentLength = -1;
 			IDisposable receive = DiagnosticSources.SingletonDisposable;
 			ReadOnlyDictionary<TcpState, int> tcpStats = null;
 			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
@@ -259,6 +179,7 @@ namespace Elastic.Transport
 
 				requestData.MadeItToResponse = true;
 				mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
+				contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 				responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 
 				if (responseMessage.Content != null)
@@ -276,83 +197,10 @@ namespace Elastic.Transport
 				ex = e;
 			}
 			using (receive)
-			using (responseStream = responseStream ?? Stream.Null)
+			using (responseStream ??= Stream.Null)
 			{
-				var response = await ResponseBuilder.ToResponseAsync<TResponse>
-						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, cancellationToken)
-					.ConfigureAwait(false);
-
-				// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
-				// gathering stats, they are still exposed on the call details. Ideally these would be set inside ResponseBuilder.ToResponse,
-				// but doing so would be a breaking change in 7.x
-				response.ApiCall.TcpStats = tcpStats;
-				response.ApiCall.ThreadPoolStats = threadPoolStats;
-				return response;
-			}
-		}
-
-		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}" />
-		public virtual async Task<TResponse> RequestAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : class, ITransportResponse<TError>, new()
-			where TError : class, IErrorResponse, new()
-		{
-			var client = GetClient(requestData);
-			HttpResponseMessage responseMessage;
-			int? statusCode = null;
-			Stream responseStream = null;
-			Exception ex = null;
-			string mimeType = null;
-			IDisposable receive = DiagnosticSources.SingletonDisposable;
-			ReadOnlyDictionary<TcpState, int> tcpStats = null;
-			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
-			Dictionary<string, IEnumerable<string>> responseHeaders = null;
-			requestData.IsAsync = true;
-
-			try
-			{
-				var requestMessage = CreateHttpRequestMessage(requestData);
-
-				if (requestData.PostData != null)
-					await SetContentAsync(requestMessage, requestData, cancellationToken).ConfigureAwait(false);
-
-				using (requestMessage?.Content ?? (IDisposable)Stream.Null)
-				using (var d = DiagnosticSource.Diagnose<RequestData, int?>(DiagnosticSources.HttpConnection.SendAndReceiveHeaders, requestData))
-				{
-					if (requestData.TcpStats)
-						tcpStats = TcpStats.GetStates();
-
-					if (requestData.ThreadPoolStats)
-						threadPoolStats = ThreadPoolStats.GetStats();
-
-					responseMessage = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-						.ConfigureAwait(false);
-					statusCode = (int)responseMessage.StatusCode;
-					d.EndState = statusCode;
-				}
-
-				requestData.MadeItToResponse = true;
-				mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
-				responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
-
-				if (responseMessage.Content != null)
-				{
-					receive = DiagnosticSource.Diagnose(DiagnosticSources.HttpConnection.ReceiveBody, requestData, statusCode);
-					responseStream = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
-				}
-			}
-			catch (TaskCanceledException e)
-			{
-				ex = e;
-			}
-			catch (HttpRequestException e)
-			{
-				ex = e;
-			}
-			using (receive)
-			using (responseStream = responseStream ?? Stream.Null)
-			{
-				var response = await ResponseBuilder.ToResponseAsync<TResponse, TError>
-						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, cancellationToken)
+				var response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, cancellationToken)
 					.ConfigureAwait(false);
 
 				// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
@@ -395,7 +243,7 @@ namespace Elastic.Transport
 
 		/// <summary>
 		/// Creates an instance of <see cref="HttpMessageHandler" /> using the <paramref name="requestData" />.
-		/// This method is virtual so subclasses of <see cref="HttpConnection" /> can modify the instance if needed.
+		/// This method is virtual so subclasses of <see cref="HttpTransportClient" /> can modify the instance if needed.
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
 		/// <exception cref="Exception">
@@ -485,7 +333,7 @@ namespace Elastic.Transport
 
 		/// <summary>
 		/// Creates an instance of <see cref="HttpRequestMessage" /> using the <paramref name="requestData" />.
-		/// This method is virtual so subclasses of <see cref="HttpConnection" /> can modify the instance if needed.
+		/// This method is virtual so subclasses of <see cref="HttpTransportClient" /> can modify the instance if needed.
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
 		/// <exception cref="Exception">
@@ -520,7 +368,7 @@ namespace Elastic.Transport
 			// Basic auth credentials take the following precedence (highest -> lowest):
 			// 1 - Specified with the URI (highest precedence)
 			// 2 - Specified on the request
-			// 3 - Specified at the global IConnectionSettings level (lowest precedence)
+			// 3 - Specified at the global ITransportClientSettings level (lowest precedence)
 
 			string value = null;
 			string key = null;

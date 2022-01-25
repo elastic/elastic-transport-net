@@ -11,7 +11,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// A connection pool is responsible for maintaining a read only collection of <see cref="Node"/>(s) under <see cref="Nodes"/>.
 	/// <para>
-	/// Unlike the name might suggest this component is not responsible for IO level pooling. For that we rely on <see cref="IConnection"/> abstracting away
+	/// Unlike the name might suggest this component is not responsible for IO level pooling. For that we rely on <see cref="ITransportClient"/> abstracting away
 	/// the connection IO pooling.
 	/// </para>
 	/// <para>This interface signals the current connection strategy to <see cref="ITransport{TConnectionSettings}"/>.</para>

@@ -21,104 +21,6 @@ using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
 
 namespace Elastic.Transport
 {
-	internal abstract class PipelineBase
-	{
-		// Introduce a concept of "middleware" that can run before or after a request/response
-		// Product clients can then register this in configuration for sniffing, pinging etc.
-
-		public abstract void Initialize();
-
-		public abstract ValueTask InitializeAsync();
-
-		public abstract TResponse CallProductEndpoint<TResponse>(RequestData requestData)
-			where TResponse : class, ITransportResponse, new();
-
-		public abstract Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : class, ITransportResponse, new();
-	}
-
-	internal class TransportPipeline<TConfiguration> : PipelineBase where TConfiguration : class, ITransportConfiguration
-	{
-		private bool isInitialized = false;
-
-		private readonly IConnection _connection;
-		private readonly INodePool _nodePool;
-		private readonly IDateTimeProvider _dateTimeProvider;
-		private readonly IMemoryStreamFactory _memoryStreamFactory;
-		private readonly Func<Node, bool> _nodePredicate;
-		private readonly IProductRegistration _productRegistration;
-		private readonly TConfiguration _settings;
-
-		public TransportPipeline(
-			TConfiguration configurationValues,
-			IDateTimeProvider dateTimeProvider
-		)
-		{
-			_settings = configurationValues;
-			_nodePool = _settings.NodePool;
-			_connection = _settings.Connection;
-			_dateTimeProvider = dateTimeProvider;
-			_memoryStreamFactory = _settings.MemoryStreamFactory;
-			_productRegistration = configurationValues.ProductRegistration;
-			_nodePredicate = _settings.NodePredicate ?? _productRegistration.NodePredicate;
-		}
-
-		public override void Initialize()
-		{
-			if (!isInitialized)
-			{
-				isInitialized = true;
-			}
-		}
-
-		public override ValueTask InitializeAsync()
-		{
-			if (!isInitialized)
-			{
-				isInitialized = true;
-			}
-
-			return new(Task.CompletedTask);
-		}
-
-		public override TResponse CallProductEndpoint<TResponse>(RequestData requestData)
-		{
-			var response = _connection.Request<TResponse>(requestData);
-
-			return response;
-		}
-
-		public override Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) => throw new NotImplementedException();
-	}
-
-	internal class RequestDataV2
-	{
-		private readonly List<Audit> _auditTrail;
-
-		public RequestDataV2(
-			HttpMethod method,
-			string path,
-			PostData data,
-			ITransportConfiguration global,
-			IRequestParameters local)
-		{
-			// TODO: Configuration to control audit trail
-			_auditTrail = new List<Audit>();
-
-			PostData = data;
-		}
-
-		public void AddAuditTrailEntry(Audit audit) => _auditTrail.Add(audit);
-
-		public IReadOnlyCollection<Audit> AuditTrail => _auditTrail;
-
-		public PostData PostData { get; }
-
-		// TODO - Track retry state on request
-	}
-
-
-
 	internal static class RequestPipelineStatics
 	{
 		public static readonly string NoNodesAttemptedMessage =
@@ -131,13 +33,14 @@ namespace Elastic.Transport
 	public class RequestPipeline<TConfiguration> : IRequestPipeline
 		where TConfiguration : class, ITransportConfiguration
 	{
-		private readonly IConnection _connection;
+		private readonly ITransportClient _transportClient;
 		private readonly INodePool _nodePool;
 		private readonly IDateTimeProvider _dateTimeProvider;
 		private readonly IMemoryStreamFactory _memoryStreamFactory;
 		private readonly Func<Node, bool> _nodePredicate;
 		private readonly IProductRegistration _productRegistration;
 		private readonly TConfiguration _settings;
+		private readonly ResponseBuilderBase _responseBuilder;
 
 		private RequestConfiguration _pingAndSniffRequestConfiguration;
 
@@ -151,10 +54,11 @@ namespace Elastic.Transport
 		{
 			_settings = configurationValues;
 			_nodePool = _settings.NodePool;
-			_connection = _settings.Connection;
+			_transportClient = _settings.Connection;
 			_dateTimeProvider = dateTimeProvider;
 			_memoryStreamFactory = memoryStreamFactory;
 			_productRegistration = configurationValues.ProductRegistration;
+			_responseBuilder = _productRegistration.ResponseBuilder;
 			_nodePredicate = _settings.NodePredicate ?? _productRegistration.NodePredicate;
 
 			RequestConfiguration = requestParameters?.RequestConfiguration;
@@ -166,7 +70,7 @@ namespace Elastic.Transport
 
 		private RequestConfiguration PingAndSniffRequestConfiguration
 		{
-			// Lazily loaded when first required, since not all connection pools and configurations support pinging and sniffing.
+			// Lazily loaded when first required, since not all node pools and configurations support pinging and sniffing.
 			// This avoids allocating 192B per request for those which do not need to ping or sniff.
 			get
 			{
@@ -274,7 +178,7 @@ namespace Elastic.Transport
 				//make sure we copy over the error body in case we disabled direct streaming.
 				var s = callDetails?.ResponseBodyInBytes == null ? Stream.Null : _memoryStreamFactory.Create(callDetails.ResponseBodyInBytes);
 				var m = callDetails?.ResponseMimeType ?? RequestData.MimeType;
-				response = ResponseBuilder.ToResponse<TResponse>(data, exception, callDetails?.HttpStatusCode, null, s, m);
+				response = _responseBuilder.ToResponse<TResponse>(data, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1);
 			}
 
 			response.ApiCall.AuditTrail = AuditTrail;
@@ -290,34 +194,7 @@ namespace Elastic.Transport
 				audit.Path = requestData.PathAndQuery;
 				try
 				{
-					var response = _connection.Request<TResponse>(requestData);
-					d.EndState = response.ApiCall;
-					response.ApiCall.AuditTrail = AuditTrail;
-					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
-					if (!response.ApiCall.Success) audit.Event = requestData.OnFailureAuditEvent;
-					return response;
-				}
-				catch (Exception e)
-				{
-					audit.Event = requestData.OnFailureAuditEvent;
-					audit.Exception = e;
-					throw;
-				}
-			}
-		}
-
-		public TResponse CallProductEndpoint<TResponse, TError>(RequestData requestData)
-			where TResponse : class, ITransportResponse<TError>, new()
-			where TError : class, IErrorResponse, new()
-		{
-			using (var audit = Audit(HealthyResponse, requestData.Node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(
-				DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
-			{
-				audit.Path = requestData.PathAndQuery;
-				try
-				{
-					var response = _connection.Request<TResponse, TError>(requestData);
+					var response = _transportClient.Request<TResponse>(requestData);
 					d.EndState = response.ApiCall;
 					response.ApiCall.AuditTrail = AuditTrail;
 					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
@@ -343,7 +220,7 @@ namespace Elastic.Transport
 				audit.Path = requestData.PathAndQuery;
 				try
 				{
-					var response = await _connection.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
+					var response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
 					d.EndState = response.ApiCall;
 					response.ApiCall.AuditTrail = AuditTrail;
 					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
@@ -358,34 +235,6 @@ namespace Elastic.Transport
 				}
 			}
 		}
-
-		public async Task<TResponse> CallProductEndpointAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : class, ITransportResponse<TError>, new()
-			where TError : class, IErrorResponse, new()
-		{
-			using (var audit = Audit(HealthyResponse, requestData.Node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(
-				DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
-			{
-				audit.Path = requestData.PathAndQuery;
-				try
-				{
-					var response = await _connection.RequestAsync<TResponse, TError>(requestData, cancellationToken).ConfigureAwait(false);
-					d.EndState = response.ApiCall;
-					response.ApiCall.AuditTrail = AuditTrail;
-					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
-					if (!response.ApiCall.Success) audit.Event = requestData.OnFailureAuditEvent;
-					return response;
-				}
-				catch (Exception e)
-				{
-					audit.Event = requestData.OnFailureAuditEvent;
-					audit.Exception = e;
-					throw;
-				}
-			}
-		}
-
 
 		public TransportException CreateClientException<TResponse>(
 			TResponse response, IApiCallDetails callDetails, RequestData data, List<PipelineException> pipelineExceptions
@@ -542,7 +391,7 @@ namespace Elastic.Transport
 			}
 
 			//This for loop allows to break out of the view state machine if we need to
-			//force a refresh (after reseeding connectionpool). We have a hardcoded limit of only
+			//force a refresh (after reseeding node pool). We have a hardcoded limit of only
 			//allowing 100 of these refreshes per call
 			var refreshed = false;
 			for (var i = 0; i < 100; i++)
@@ -582,7 +431,7 @@ namespace Elastic.Transport
 				audit.Path = pingData.PathAndQuery;
 				try
 				{
-					var response = _productRegistration.Ping(_connection, pingData);
+					var response = _productRegistration.Ping(_transportClient, pingData);
 					d.EndState = response;
 					ThrowBadAuthPipelineExceptionWhenNeeded(response);
 					//ping should not silently accept bad but valid http responses
@@ -612,7 +461,7 @@ namespace Elastic.Transport
 				audit.Path = pingData.PathAndQuery;
 				try
 				{
-					var response = await _productRegistration.PingAsync(_connection, pingData, cancellationToken).ConfigureAwait(false);
+					var response = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
 					d.EndState = response;
 					ThrowBadAuthPipelineExceptionWhenNeeded(response);
 					//ping should not silently accept bad but valid http responses
@@ -645,7 +494,7 @@ namespace Elastic.Transport
 					try
 					{
 						audit.Path = requestData.PathAndQuery;
-						var (response, nodes) = _productRegistration.Sniff(_connection, _nodePool.UsingSsl, requestData);
+						var (response, nodes) = _productRegistration.Sniff(_transportClient, _nodePool.UsingSsl, requestData);
 						d.EndState = response;
 
 						ThrowBadAuthPipelineExceptionWhenNeeded(response);
@@ -684,7 +533,7 @@ namespace Elastic.Transport
 					{
 						audit.Path = requestData.PathAndQuery;
 						var (response, nodes) = await _productRegistration
-							.SniffAsync(_connection, _nodePool.UsingSsl, requestData, cancellationToken)
+							.SniffAsync(_transportClient, _nodePool.UsingSsl, requestData, cancellationToken)
 							.ConfigureAwait(false);
 						d.EndState = response;
 

@@ -10,7 +10,7 @@ namespace Elastic.Transport
 	public class DateTimeProvider : IDateTimeProvider
 	{
 		/// <summary> A static instance to reuse as <see cref="DateTimeProvider"/> is stateless </summary>
-		public static readonly DateTimeProvider Default = new DateTimeProvider();
+		public static readonly DateTimeProvider Default = new();
 		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
 		private static readonly TimeSpan MaximumTimeout = TimeSpan.FromMinutes(30);
 

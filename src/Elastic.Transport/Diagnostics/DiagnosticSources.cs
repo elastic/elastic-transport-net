@@ -45,12 +45,12 @@ namespace Elastic.Transport.Diagnostics
 
 		/// <summary>
 		/// Provides access to the string event names related to <see cref="HttpConnection"/> the default
-		/// <see cref="IConnection"/> implementation.
+		/// <see cref="ITransportClient"/> implementation.
 		/// </summary>
 		public class HttpConnectionDiagnosticKeys : IDiagnosticsKeys
 		{
 			/// <inheritdoc cref="IDiagnosticsKeys.SourceName"/>
-			public string SourceName { get; } = typeof(HttpConnection).FullName;
+			public string SourceName { get; } = typeof(HttpTransportClient).FullName;
 
 			/// <summary> Start and stop event initiating the request and sending and receiving the headers</summary>
 			public string SendAndReceiveHeaders { get; } = nameof(SendAndReceiveHeaders);

@@ -52,16 +52,16 @@ namespace Elastic.Transport.Products
 		RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, IMemoryStreamFactory memoryStreamFactory);
 
 		/// <summary>
-		/// Provide an implementation that performs the ping directly using <see cref="IConnection.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
+		/// Provide an implementation that performs the ping directly using <see cref="ITransportClient.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
 		/// return by <see cref="CreatePingRequestData"/>
 		/// </summary>
-		Task<IApiCallDetails> PingAsync(IConnection connection, RequestData pingData, CancellationToken cancellationToken);
+		Task<IApiCallDetails> PingAsync(ITransportClient connection, RequestData pingData, CancellationToken cancellationToken);
 
 		/// <summary>
-		/// Provide an implementation that performs the ping directly using <see cref="IConnection.Request{TResponse}"/> and the <see cref="RequestData"/>
+		/// Provide an implementation that performs the ping directly using <see cref="ITransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
 		/// return by <see cref="CreatePingRequestData"/>
 		/// </summary>
-		IApiCallDetails Ping(IConnection connection, RequestData pingData);
+		IApiCallDetails Ping(ITransportClient connection, RequestData pingData);
 
 		/// <summary>
 		/// Create an instance of <see cref="RequestData"/> that describes where and how to sniff the cluster using <paramref name="node" />
@@ -72,16 +72,16 @@ namespace Elastic.Transport.Products
 		);
 
 		/// <summary>
-		/// Provide an implementation that performs the sniff directly using <see cref="IConnection.Request{TResponse}"/> and the <see cref="RequestData"/>
+		/// Provide an implementation that performs the sniff directly using <see cref="ITransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
 		/// return by <see cref="CreateSniffRequestData"/>
 		/// </summary>
-		Task<Tuple<IApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(IConnection connection, bool forceSsl, RequestData requestData, CancellationToken cancellationToken);
+		Task<Tuple<IApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(ITransportClient connection, bool forceSsl, RequestData requestData, CancellationToken cancellationToken);
 
 		/// <summary>
-		/// Provide an implementation that performs the sniff directly using <see cref="IConnection.Request{TResponse}"/> and the <see cref="RequestData"/>
+		/// Provide an implementation that performs the sniff directly using <see cref="ITransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
 		/// return by <see cref="CreateSniffRequestData"/>
 		/// </summary>
-		Tuple<IApiCallDetails, IReadOnlyCollection<Node>> Sniff(IConnection connection, bool forceSsl, RequestData requestData);
+		Tuple<IApiCallDetails, IReadOnlyCollection<Node>> Sniff(ITransportClient connection, bool forceSsl, RequestData requestData);
 
 		/// <summary> Allows certain nodes to be queried first to obtain sniffing information </summary>
 		int SniffOrder(Node node);
@@ -92,7 +92,7 @@ namespace Elastic.Transport.Products
 		bool NodePredicate(Node node);
 
 		/// <summary>
-		/// Used by <see cref="ResponseBuilder"/> to determine if it needs to return true or false for
+		/// Used by <see cref="ResponseBuilderBase"/> to determine if it needs to return true or false for
 		/// <see cref="IApiCallDetails.Success"/>
 		/// </summary>
 		bool HttpStatusCodeClassifier(HttpMethod method, int statusCode);
@@ -104,5 +104,10 @@ namespace Elastic.Transport.Products
 		/// TODO
 		/// </summary>
 		MetaHeaderProviderBase MetaHeaderProvider { get; }
+
+		/// <summary>
+		/// TODO
+		/// </summary>
+		ResponseBuilderBase ResponseBuilder { get; }
 	}
 }

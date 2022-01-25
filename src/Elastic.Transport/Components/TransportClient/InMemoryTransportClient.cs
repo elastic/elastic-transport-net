@@ -13,9 +13,9 @@ using System.Threading.Tasks;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// An implementation of <see cref="IConnection"/> designed to not actually do any IO and services requests from an in memory byte buffer
+	/// An implementation of <see cref="ITransportClient"/> designed to not actually do any IO and services requests from an in memory byte buffer
 	/// </summary>
-	public class InMemoryConnection : IConnection
+	public class InMemoryConnection : ITransportClient
 	{
 		private static readonly byte[] EmptyBody = Encoding.UTF8.GetBytes("");
 		private readonly string _contentType;
@@ -40,12 +40,12 @@ namespace Elastic.Transport
 			_headers = headers;
 		}
 
-		/// <inheritdoc cref="IConnection.Request{TResponse}"/>>
+		/// <inheritdoc cref="ITransportClient.Request{TResponse}"/>>
 		public virtual TResponse Request<TResponse>(RequestData requestData)
 			where TResponse : class, ITransportResponse, new() =>
 			ReturnConnectionStatus<TResponse>(requestData);
 
-		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}"/>>
+		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}"/>>
 		public virtual Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : class, ITransportResponse, new() =>
 			ReturnConnectionStatusAsync<TResponse>(requestData, cancellationToken);
@@ -53,13 +53,13 @@ namespace Elastic.Transport
 		void IDisposable.Dispose() => DisposeManagedResources();
 
 		/// <summary>
-		/// Allow subclasses to provide their own implementations for <see cref="IConnection.Request{TResponse}"/> while reusing the more complex logic
+		/// Allow subclasses to provide their own implementations for <see cref="ITransportClient.Request{TResponse}"/> while reusing the more complex logic
 		/// to create a response
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
 		/// <param name="responseBody">The bytes intended to be used as return</param>
 		/// <param name="statusCode">The status code that the responses <see cref="ITransportResponse.ApiCall"/> should return</param>
-		/// <param name="contentType">The content type to be passed to <see cref="ResponseBuilder.ToResponse{TResponse}"/></param>
+		/// <param name="contentType"></param>
 		protected TResponse ReturnConnectionStatus<TResponse>(RequestData requestData, byte[] responseBody = null, int? statusCode = null,
 			string contentType = null)
 			where TResponse : class, ITransportResponse, new()
@@ -83,37 +83,8 @@ namespace Elastic.Transport
 
 			var sc = statusCode ?? _statusCode;
 			Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
-			return ResponseBuilder.ToResponse<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.MimeType);
+			return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.MimeType, responseBody?.Length ?? 0);
 		}
-
-		/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
-		protected TResponse ReturnConnectionStatus<TResponse, TError>(RequestData requestData, byte[] responseBody = null, int? statusCode = null,
-			string contentType = null)
-			where TResponse : class, ITransportResponse<TError>, new()
-			where TError : class, IErrorResponse, new()
-		{
-			var body = responseBody ?? _responseBody;
-			var data = requestData.PostData;
-			if (data != null)
-			{
-				using (var stream = requestData.MemoryStreamFactory.Create())
-				{
-					if (requestData.HttpCompression)
-					{
-						using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-						data.Write(zipStream, requestData.ConnectionSettings);
-					}
-					else
-						data.Write(stream, requestData.ConnectionSettings);
-				}
-			}
-			requestData.MadeItToResponse = true;
-
-			var sc = statusCode ?? _statusCode;
-			Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
-			return ResponseBuilder.ToResponse<TResponse, TError>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.MimeType);
-		}
-
 
 		/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
 		protected async Task<TResponse> ReturnConnectionStatusAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken,
@@ -139,48 +110,12 @@ namespace Elastic.Transport
 
 			var sc = statusCode ?? _statusCode;
 			Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
-			return await ResponseBuilder
-				.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, cancellationToken)
-				.ConfigureAwait(false);
-		}
-
-		/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
-		protected async Task<TResponse> ReturnConnectionStatusAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken,
-			byte[] responseBody = null, int? statusCode = null, string contentType = null)
-			where TResponse : class, ITransportResponse<TError>, new()
-			where TError : class, IErrorResponse, new()
-		{
-			var body = responseBody ?? _responseBody;
-			var data = requestData.PostData;
-			if (data != null)
-			{
-				using (var stream = requestData.MemoryStreamFactory.Create())
-				{
-					if (requestData.HttpCompression)
-					{
-						using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-						await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
-					}
-					else
-						await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
-				}
-			}
-			requestData.MadeItToResponse = true;
-
-			var sc = statusCode ?? _statusCode;
-			Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
-			return await ResponseBuilder
-				.ToResponseAsync<TResponse, TError>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, cancellationToken)
+			return await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
+				.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, responseBody?.Length ?? 0, cancellationToken)
 				.ConfigureAwait(false);
 		}
 
 		/// <summary> Allows subclasses to hook into the parents dispose </summary>
 		protected virtual void DisposeManagedResources() { }
-
-		Task<TResponse> IConnection.RequestAsync<TResponse, TError>(RequestData requestData, CancellationToken cancellationToken) =>
-			ReturnConnectionStatusAsync<TResponse, TError>(requestData, cancellationToken);
-
-		TResponse IConnection.Request<TResponse, TError>(RequestData requestData) =>
-			ReturnConnectionStatus<TResponse, TError>(requestData);
 	}
 }
