@@ -51,14 +51,14 @@ namespace Elastic.Transport
 		}
 
 		/// <inheritdoc cref="Serializer.DeserializeAsync"/>>
-		public override Task<object> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
+		public override ValueTask<object> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
 		{
 			using (DiagnosticSource.Diagnose(DiagnosticSources.Serializer.Deserialize, _state))
 				return _serializer.DeserializeAsync(type, stream, cancellationToken);
 		}
 
 		/// <inheritdoc cref="Serializer.DeserializeAsync{T}"/>>
-		public override Task<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
+		public override ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
 		{
 			using (DiagnosticSource.Diagnose(DiagnosticSources.Serializer.Deserialize, _state))
 				return _serializer.DeserializeAsync<T>(stream, cancellationToken);

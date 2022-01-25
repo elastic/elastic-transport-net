@@ -62,7 +62,7 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 
 		// ReSharper disable once UnusedMember.Global
 		/// <inheritdoc cref="Create"/>
-		public static Task<ServerError> CreateAsync(Stream stream, CancellationToken token = default) =>
+		public static ValueTask<ServerError> CreateAsync(Stream stream, CancellationToken token = default) =>
 			LowLevelRequestResponseSerializer.Instance.DeserializeAsync<ServerError>(stream, token);
 
 		/// <summary> A human readable string representation of the server error returned by Elasticsearch </summary>

@@ -17,27 +17,6 @@ namespace Elastic.Transport.Tests.CodeStandards
 	*/
 	public class NamingConventions
 	{
-		/** === Class Names
-		*
-		* Abstract class names should end with a `Base` suffix
-		*/
-		[Fact] public void AbstractClassNamesEndWithBase()
-		{
-			var exceptions = new []
-			{
-				typeof(PostData), typeof(RequestParameters<>)
-			};
-
-			var abstractClassesNotEndingInBase = typeof(ITransport<>).Assembly.GetTypes()
-				.Where(t => t.IsClass && t.IsAbstract && !t.IsSealed && !exceptions.Contains(t))
-				.Select(t => t.Name.Split('`')[0])
-				.Where(n => n != "DelegatingStream")
-				.Where(n => !n.EndsWith("Base"))
-				.ToList();
-
-			abstractClassesNotEndingInBase.Should().BeEmpty();
-		}
-
 		/**
 		* Class names that end with `Base` suffix are abstract
 		*/
@@ -83,7 +62,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 			var root = "Elastic.Transport";
 			var allowedNamespaces = new[]
 			{
-				$"{root}.Diagnostics", $"{root}.Products", $"{root}.Extensions"
+				$"{root}.Diagnostics", $"{root}.Products", $"{root}.Extensions", "System.Runtime.CompilerServices"
 			};
 			var transportTypes = Scan().Where(t => t.Namespace != root && !allowedNamespaces.Any(a => t.Namespace.StartsWith(a)))
 				.Where(t => !t.Name.StartsWith("<"))

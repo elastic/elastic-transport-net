@@ -27,10 +27,10 @@ namespace Elastic.Transport
 		public abstract T Deserialize<T>(Stream stream);
 
 		/// <inheritdoc cref="Deserialize"/>
-		public abstract Task<object> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default);
+		public abstract ValueTask<object> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default);
 
 		/// <inheritdoc cref="Deserialize"/>
-		public abstract Task<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default);
+		public abstract ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default);
 
 		/// <summary>
 		/// Serialize an instance of <typeparamref name="T"/> to <paramref name="stream"/> using <paramref name="formatting"/>.
