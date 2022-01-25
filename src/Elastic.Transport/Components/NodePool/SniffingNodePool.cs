@@ -12,23 +12,25 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A connection pool that enables <see cref="SupportsReseeding"/> which in turn allows the <see cref="ITransport{TConnectionSettings}"/> to enable sniffing to
+	/// A node pool that enables <see cref="SupportsReseeding"/> which in turn allows the <see cref="ITransport{TConnectionSettings}"/> to enable sniffing to
 	/// discover the current cluster's list of active nodes.
 	/// </summary>
-	public class SniffingConnectionPool : StaticConnectionPool
+	public class SniffingNodePool : StaticNodePool
 	{
-		private readonly ReaderWriterLockSlim _readerWriter = new ReaderWriterLockSlim();
+		private bool _disposed;
 
-		/// <inheritdoc cref="SniffingConnectionPool"/>>
-		public SniffingConnectionPool(IEnumerable<Uri> uris, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
+		private readonly ReaderWriterLockSlim _readerWriter = new();
+
+		/// <inheritdoc cref="SniffingNodePool"/>>
+		public SniffingNodePool(IEnumerable<Uri> uris, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
 			: base(uris, randomize, dateTimeProvider) { }
 
-		/// <inheritdoc cref="SniffingConnectionPool"/>>
-		public SniffingConnectionPool(IEnumerable<Node> nodes, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="SniffingNodePool"/>>
+		public SniffingNodePool(IEnumerable<Node> nodes, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
 			: base(nodes, randomize, dateTimeProvider) { }
 
-		/// <inheritdoc cref="SniffingConnectionPool"/>>
-		public SniffingConnectionPool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
+		/// <inheritdoc cref="SniffingNodePool"/>>
+		public SniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
 			: base(nodes, nodeScorer, dateTimeProvider) { }
 
 		/// <inheritdoc />
@@ -65,7 +67,7 @@ namespace Elastic.Transport
 			{
 				_readerWriter.EnterWriteLock();
 				var sortedNodes = SortNodes(nodesArray)
-					.DistinctBy(n => n.Uri)
+					.DistinctByCustom(n => n.Uri)
 					.ToList();
 
 				InternalNodes = sortedNodes;
@@ -92,11 +94,20 @@ namespace Elastic.Transport
 			}
 		}
 
-		/// <summary> Allows subclasses to hook into the parents dispose </summary>
-		protected override void DisposeManagedResources()
+		/// <inheritdoc />
+		protected override void Dispose(bool disposing)
 		{
-			_readerWriter?.Dispose();
-			base.DisposeManagedResources();
+			if (!_disposed)
+			{
+				if (disposing)
+				{
+					_readerWriter?.Dispose();
+				}
+
+				_disposed = true;
+			}
+
+			base.Dispose(disposing);
 		}
 	}
 }

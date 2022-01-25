@@ -19,9 +19,9 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// This provides an <see cref="IConnection"/> implementation that targets <see cref="HttpWebRequest"/>.
+	/// This provides an <see cref="ITransportClient"/> implementation that targets <see cref="HttpWebRequest"/>.
 	/// <para>
-	/// On .NET full framework <see cref="HttpConnection"/> is an alias to this.
+	/// On .NET full framework <see cref="HttpTransportClient"/> is an alias to this.
 	/// </para>
 	/// <para/>
 	/// <para>Do NOT use this class directly on .NET Core. <see cref="HttpWebRequest"/> is monkey patched
@@ -31,11 +31,11 @@ namespace Elastic.Transport
 #if DOTNETCORE
 	[Obsolete("CoreFX HttpWebRequest uses HttpClient under the covers but does not reuse HttpClient instances, do NOT use on .NET core only used as the default on Full Framework")]
 #endif
-	public class HttpWebRequestConnection : IConnection
+	public class HttpWebRequestTransportClient : ITransportClient
 	{
 		private string _expectedCertificateFingerprint;
 
-		static HttpWebRequestConnection()
+		static HttpWebRequestTransportClient()
 		{
 			//Not available under mono
 			if (!IsMono) HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
@@ -43,7 +43,7 @@ namespace Elastic.Transport
 
 		internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
 
-		/// <inheritdoc cref="IConnection.Request{TResponse}"/>>
+		/// <inheritdoc cref="ITransportClient.Request{TResponse}"/>>
 		public virtual TResponse Request<TResponse>(RequestData requestData)
 			where TResponse : class, ITransportResponse, new()
 		{
@@ -51,6 +51,7 @@ namespace Elastic.Transport
 			Stream responseStream = null;
 			Exception ex = null;
 			string mimeType = null;
+			long contentLength = -1;
 			ReadOnlyDictionary<TcpState, int> tcpStats = null;
 			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 			Dictionary<string, IEnumerable<string>> responseHeaders = null;
@@ -88,6 +89,7 @@ namespace Elastic.Transport
 				var httpWebResponse = (HttpWebResponse)request.GetResponse();
 				HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
 				responseHeaders = ParseHeaders(requestData, httpWebResponse, responseHeaders);
+				contentLength = httpWebResponse.ContentLength;
 			}
 			catch (WebException e)
 			{
@@ -97,7 +99,7 @@ namespace Elastic.Transport
 			}
 
 			responseStream ??= Stream.Null;
-			var response = ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType);
+			var response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength);
 
 			// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
 			// gathering stats, they are still exposed on the call details. Ideally these would be set inside ResponseBuilder.ToResponse,
@@ -107,7 +109,7 @@ namespace Elastic.Transport
 			return response;
 		}
 
-		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}"/>>
+		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}"/>>
 		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData,
 			CancellationToken cancellationToken
 		)
@@ -118,9 +120,11 @@ namespace Elastic.Transport
 			Stream responseStream = null;
 			Exception ex = null;
 			string mimeType = null;
+			long contentLength = -1;
 			ReadOnlyDictionary<TcpState, int> tcpStats = null;
 			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 			Dictionary<string, IEnumerable<string>> responseHeaders = null;
+			requestData.IsAsync = true;
 
 			try
 			{
@@ -164,6 +168,7 @@ namespace Elastic.Transport
 					var httpWebResponse = (HttpWebResponse)await apmGetResponseTask.ConfigureAwait(false);
 					HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
 					responseHeaders = ParseHeaders(requestData, httpWebResponse, responseHeaders);
+					contentLength = httpWebResponse.ContentLength;
 				}
 			}
 			catch (WebException e)
@@ -177,8 +182,8 @@ namespace Elastic.Transport
 				unregisterWaitHandle?.Invoke();
 			}
 			responseStream ??= Stream.Null;
-			var response = await ResponseBuilder.ToResponseAsync<TResponse>
-					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, cancellationToken)
+			var response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, cancellationToken)
 				.ConfigureAwait(false);
 
 			// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
@@ -238,6 +243,20 @@ namespace Elastic.Transport
 		{
 			if (requestData.ClientCertificates != null)
 				request.ClientCertificates.AddRange(requestData.ClientCertificates);
+		}
+
+		private string ComparableFingerprint(string fingerprint)
+		{
+			var finalFingerprint = fingerprint;
+			if (fingerprint.Contains(':'))
+			{
+				finalFingerprint = fingerprint.Replace(":", string.Empty);
+			}
+			else if (fingerprint.Contains('-'))
+			{
+				finalFingerprint = fingerprint.Replace("-", string.Empty);
+			}
+			return finalFingerprint;
 		}
 
 		/// <summary> Hook for subclasses override the certificate validation on <paramref name="request"/> </summary>
@@ -311,12 +330,20 @@ namespace Elastic.Transport
 			if (requestData.Headers != null && requestData.Headers.HasKeys())
 				request.Headers.Add(requestData.Headers);
 
+			if (requestData.MetaHeaderProvider is object)
+			{
+				var value = requestData.MetaHeaderProvider.ProduceHeaderValue(requestData);
+
+				if (!string.IsNullOrEmpty(value))
+					request.Headers.Add(requestData.MetaHeaderProvider.HeaderName, requestData.MetaHeaderProvider.ProduceHeaderValue(requestData));
+			}
+
 			var timeout = (int)requestData.RequestTimeout.TotalMilliseconds;
 			request.Timeout = timeout;
 			request.ReadWriteTimeout = timeout;
 
 			//WebRequest won't send Content-Length: 0 for empty bodies
-			//which goes against RFC's and might break i.e IIS hen used as a proxy.
+			//which goes against RFC's and might break i.e IIS when used as a proxy.
 			//see: https://github.com/elastic/elasticsearch-net/issues/562
 			var m = requestData.Method.GetStringValue();
 			request.Method = m;
@@ -373,14 +400,14 @@ namespace Elastic.Transport
 		{
 			// Basic auth credentials take the following precedence (highest -> lowest):
 			// 1 - Specified on the request (highest precedence)
-			// 2 - Specified at the global IConnectionSettings level
+			// 2 - Specified at the global ITransportClientSettings level
 			// 3 - Specified with the URI (lowest precedence)
 
 
 			// Basic auth credentials take the following precedence (highest -> lowest):
 			// 1 - Specified with the URI (highest precedence)
 			// 2 - Specified on the request
-			// 3 - Specified at the global IConnectionSettings level (lowest precedence)
+			// 3 - Specified at the global ITransportClientSettings level (lowest precedence)
 
 			string value = null;
 			string key = null;

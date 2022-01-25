@@ -15,8 +15,8 @@ namespace Elastic.Transport.Tests
 	{
 		public void Usage()
 		{
-			var pool = new StaticConnectionPool(new[] {new Node(new Uri("http://localhost:9200"))});
-			var connection = new HttpConnection();
+			var pool = new StaticNodePool(new[] {new Node(new Uri("http://localhost:9200"))});
+			var connection = new HttpTransportClient();
 			var serializer = LowLevelRequestResponseSerializer.Instance;
 			var product = ElasticsearchProductRegistration.Default;
 
@@ -60,13 +60,13 @@ namespace Elastic.Transport.Tests
 		public class MyClientConfiguration : TransportConfigurationBase<MyClientConfiguration>
 		{
 			public MyClientConfiguration(
-				IConnectionPool connectionPool = null,
-				IConnection connection = null,
-				ITransportSerializer requestResponseSerializer = null,
+				NodePool nodePool = null,
+				ITransportClient transportCLient = null,
+				Serializer requestResponseSerializer = null,
 				IProductRegistration productRegistration = null)
 				: base(
-					connectionPool ?? new SingleNodeConnectionPool(new Uri("http://default-endpoint.example"))
-					, connection, requestResponseSerializer, productRegistration)
+					nodePool ?? new SingleNodePool(new Uri("http://default-endpoint.example"))
+					, transportCLient, requestResponseSerializer, productRegistration)
 			{
 			}
 

@@ -8,16 +8,18 @@ using System.Text;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// An <see cref="IConnectionPool"/> implementation that can be seeded with a cloud id
+	/// An <see cref="NodePool"/> implementation that can be seeded with a cloud id
 	/// and will signal the right defaults for the client to use for Elastic Cloud to <see cref="ITransportConfiguration"/>.
 	///
 	/// <para>Read more about Elastic Cloud Id:</para>
 	/// <para>https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html</para>
 	/// </summary>
-	public class CloudConnectionPool : SingleNodeConnectionPool
+	public sealed class CloudNodePool : SingleNodePool
 	{
+		private bool _disposed;
+
 		/// <summary>
-		/// An <see cref="IConnectionPool"/> implementation that can be seeded with a cloud id
+		/// An <see cref="NodePool"/> implementation that can be seeded with a cloud id
 		/// and will signal the right defaults for the client to use for Elastic Cloud to <see cref="ITransportConfiguration"/>.
 		///
 		/// <para>Read more about Elastic Cloud Id here</para>
@@ -36,14 +38,14 @@ namespace Elastic.Transport
 		/// <para> Read more here: https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html</para>
 		/// </param>
 		/// <param name="credentials"></param>
-		/// <param name="dateTimeProvider">Optionally inject an instance of <see cref="IDateTimeProvider"/> used to set <see cref="IConnectionPool.LastUpdate"/></param>
-		public CloudConnectionPool(string cloudId, IAuthenticationHeader credentials, IDateTimeProvider dateTimeProvider = null) : this(ParseCloudId(cloudId), dateTimeProvider) =>
+		/// <param name="dateTimeProvider">Optionally inject an instance of <see cref="IDateTimeProvider"/> used to set <see cref="NodePool.LastUpdate"/></param>
+		public CloudNodePool(string cloudId, IAuthenticationHeader credentials, IDateTimeProvider dateTimeProvider = null) : this(ParseCloudId(cloudId), dateTimeProvider) =>
 			AuthenticationHeader  = credentials;
 
-		private CloudConnectionPool(ParsedCloudId parsedCloudId, IDateTimeProvider dateTimeProvider = null) : base(parsedCloudId.Uri, dateTimeProvider) =>
+		private CloudNodePool(ParsedCloudId parsedCloudId, IDateTimeProvider dateTimeProvider = null) : base(parsedCloudId.Uri, dateTimeProvider) =>
 			ClusterName = parsedCloudId.Name;
 
-		//TODO implement debugger display for IConnectionPool implementations and display it there and its ToString()
+		//TODO implement debugger display for NodePool implementations and display it there and its ToString()
 		// ReSharper disable once UnusedAutoPropertyAccessor.Local
 		private string ClusterName { get; }
 
@@ -93,7 +95,20 @@ namespace Elastic.Transport
 			return new ParsedCloudId(clusterName, new Uri($"https://{elasticsearchUuid}.{domainName}"));
 		}
 
-		/// <summary> Allows subclasses to hook into the parents dispose </summary>
-		protected override void DisposeManagedResources() => AuthenticationHeader?.Dispose();
+		/// <inheritdoc />
+		protected override void Dispose(bool disposing)
+		{
+			if (!_disposed)
+			{
+				if (disposing)
+				{
+					AuthenticationHeader?.Dispose();
+				}
+
+				_disposed = true;
+			}
+
+			base.Dispose(disposing);
+		}
 	}
 }

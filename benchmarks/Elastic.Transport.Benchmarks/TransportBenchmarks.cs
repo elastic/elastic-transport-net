@@ -16,7 +16,7 @@ namespace Elastic.Transport.Benchmarks
 		public void Setup()
 		{
 			var connection = new InMemoryConnection();
-			var pool = new SingleNodeConnectionPool(new Uri("http://localhost:9200"));
+			var pool = new SingleNodePool(new Uri("http://localhost:9200"));
 			var settings = new TransportConfiguration(pool, connection);
 
 			_transport = new Transport(settings);

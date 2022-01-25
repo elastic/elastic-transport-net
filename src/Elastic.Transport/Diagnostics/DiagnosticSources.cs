@@ -45,12 +45,12 @@ namespace Elastic.Transport.Diagnostics
 
 		/// <summary>
 		/// Provides access to the string event names related to <see cref="HttpConnection"/> the default
-		/// <see cref="IConnection"/> implementation.
+		/// <see cref="ITransportClient"/> implementation.
 		/// </summary>
 		public class HttpConnectionDiagnosticKeys : IDiagnosticsKeys
 		{
 			/// <inheritdoc cref="IDiagnosticsKeys.SourceName"/>
-			public string SourceName { get; } = typeof(HttpConnection).FullName;
+			public string SourceName { get; } = typeof(HttpTransportClient).FullName;
 
 			/// <summary> Start and stop event initiating the request and sending and receiving the headers</summary>
 			public string SendAndReceiveHeaders { get; } = nameof(SendAndReceiveHeaders);
@@ -61,17 +61,17 @@ namespace Elastic.Transport.Diagnostics
 
 		/// <summary>
 		/// Provides access to the string event names related to <see cref="DiagnosticsSerializerProxy"/> which
-		/// internally wraps any configured <see cref="ITransportSerializer"/>
+		/// internally wraps any configured <see cref="Elastic.Transport.Serializer"/>
 		/// </summary>
 		public class SerializerDiagnosticKeys : IDiagnosticsKeys
 		{
 			/// <inheritdoc cref="IDiagnosticsKeys.SourceName"/>
-			public string SourceName { get; } = typeof(ITransportSerializer).FullName;
+			public string SourceName { get; } = typeof(Serializer).FullName;
 
-			/// <summary> Start and stop event around <see cref="ITransportSerializer.Serialize{T}"/> invocations</summary>
+			/// <summary> Start and stop event around <see cref="Serializer.Serialize{T}"/> invocations</summary>
 			public string Serialize { get; } = nameof(Serialize);
 
-			/// <summary> Start and stop event around <see cref="ITransportSerializer.Deserialize{T}"/> invocations</summary>
+			/// <summary> Start and stop event around <see cref="Serializer.Deserialize{T}"/> invocations</summary>
 			public string Deserialize { get; } = nameof(Deserialize);
 		}
 

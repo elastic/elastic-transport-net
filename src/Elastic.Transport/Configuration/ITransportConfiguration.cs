@@ -15,7 +15,7 @@ namespace Elastic.Transport
 {
 	/// <summary>
 	/// All the transport configuration that you as the user can use to steer the behavior of the <see cref="ITransport{TConnectionSettings}"/> and all the components such
-	/// as <see cref="IConnection"/> <see cref="IConnectionPool"/> and <see cref="ITransportSerializer"/>.
+	/// as <see cref="ITransportClient"/> <see cref="NodePool"/> and <see cref="Serializer"/>.
 	/// </summary>
 	public interface ITransportConfiguration : IDisposable
 	{
@@ -32,24 +32,24 @@ namespace Elastic.Transport
 		X509CertificateCollection ClientCertificates { get; }
 
 		/// <summary> The connection abstraction behind which all actual IO happens</summary>
-		IConnection Connection { get; }
+		ITransportClient Connection { get; }
 
 		/// <summary>
 		/// Limits the number of concurrent connections that can be opened to an endpoint. Defaults to 80 (see
 		/// <see cref="TransportConfiguration.DefaultConnectionLimit" />).
 		/// <para>
 		/// For Desktop CLR, this setting applies to the DefaultConnectionLimit property on the  ServicePointManager object when creating
-		/// ServicePoint objects, affecting the default <see cref="IConnection" /> implementation.
+		/// ServicePoint objects, affecting the default <see cref="ITransportClient" /> implementation.
 		/// </para>
 		/// <para>
 		/// For Core CLR, this setting applies to the MaxConnectionsPerServer property on the HttpClientHandler instances used by the HttpClient
-		/// inside the default <see cref="IConnection" /> implementation
+		/// inside the default <see cref="ITransportClient" /> implementation
 		/// </para>
 		/// </summary>
 		int ConnectionLimit { get; }
 
 		/// <summary> The connection pool to use when talking with Elasticsearch </summary>
-		IConnectionPool ConnectionPool { get; }
+		NodePool NodePool { get; }
 
 		/// <summary>
 		/// Returns information about the current product making use of the transport.
@@ -133,7 +133,7 @@ namespace Elastic.Transport
 		/// <summary>
 		/// Register a predicate to select which nodes that you want to execute API calls on. Note that sniffing requests omit this predicate and
 		/// always execute on all nodes.
-		/// When using an <see cref="IConnectionPool" /> implementation that supports reseeding of nodes, this will default to omitting master only
+		/// When using an <see cref="NodePool" /> implementation that supports reseeding of nodes, this will default to omitting master only
 		/// node from regular API calls.
 		/// When using static or single node connection pooling it is assumed the list of node you instantiate the client with should be taken
 		/// verbatim.
@@ -182,7 +182,7 @@ namespace Elastic.Transport
 		NameValueCollection QueryStringParameters { get; }
 
 		/// <summary>The serializer to use to serialize requests and deserialize responses</summary>
-		ITransportSerializer RequestResponseSerializer { get; }
+		Serializer RequestResponseSerializer { get; }
 
 		/// <summary>
 		/// The timeout in milliseconds for each request to Elasticsearch
@@ -285,5 +285,15 @@ namespace Elastic.Transport
 		/// </summary>
 		bool PrettyJson { get; }
 
+		/// <summary>
+		/// Produces the client meta header for a request.
+		/// </summary>
+		MetaHeaderProvider MetaHeaderProvider { get; }
+
+		/// <summary>
+		/// Disables the meta header which is included on all requests by default. This header contains lightweight information 
+		/// about the client and runtime.
+		/// </summary>
+		bool DisableMetaHeader { get; }
 	}
 }

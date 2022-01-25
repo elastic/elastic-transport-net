@@ -17,7 +17,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// The default implementation for <see cref="IRequestPipeline"/> that returns <see cref="RequestPipeline{TConfiguration}"/>
 	/// </summary>
-	public class RequestPipelineFactory<TConfiguration> : IRequestPipelineFactory<TConfiguration>
+	internal class RequestPipelineFactory<TConfiguration> : IRequestPipelineFactory<TConfiguration>
 		where TConfiguration : class, ITransportConfiguration
 	{
 		/// <summary>

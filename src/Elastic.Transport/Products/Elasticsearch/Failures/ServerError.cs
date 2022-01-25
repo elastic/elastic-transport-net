@@ -13,7 +13,7 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 {
 	/// <summary> Represents the error response as returned by Elasticsearch. </summary>
 	[DataContract]
-	public class ServerError
+	public class ServerError : ErrorResponse
 	{
 		/// <inheritdoc cref="ServerError"/>
 		public ServerError() { }
@@ -62,7 +62,7 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 
 		// ReSharper disable once UnusedMember.Global
 		/// <inheritdoc cref="Create"/>
-		public static Task<ServerError> CreateAsync(Stream stream, CancellationToken token = default) =>
+		public static ValueTask<ServerError> CreateAsync(Stream stream, CancellationToken token = default) =>
 			LowLevelRequestResponseSerializer.Instance.DeserializeAsync<ServerError>(stream, token);
 
 		/// <summary> A human readable string representation of the server error returned by Elasticsearch </summary>
@@ -74,5 +74,11 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 				sb.Append(Error);
 			return sb.ToString();
 		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <returns></returns>
+		public override bool HasError() => Status > 0 && Error is not null;
 	}
 }

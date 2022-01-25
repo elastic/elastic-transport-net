@@ -38,7 +38,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 			bool transferEncodingChunked = false
 		)
 		{
-			var connectionPool = new SingleNodeConnectionPool(Server.Uri);
+			var connectionPool = new SingleNodePool(Server.Uri);
 			var config = new TransportConfiguration(connectionPool, connection)
 				.TransferEncodingChunked(transferEncodingChunked)
 				.EnableHttpCompression(httpCompression);
@@ -63,7 +63,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 			connection.LastHttpClientHandler.UseProxy.Should().BeFalse();
 			r.Body.Should().Be(BodyString);
 
-			r = await transport.PostAsync<StringResponse>(Path, Body, CancellationToken.None).ConfigureAwait(false);
+			r = await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
 			connection.LastHttpClientHandler.UseProxy.Should().BeFalse();
 			r.Body.Should().Be(BodyString);
 		}
@@ -75,7 +75,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 
 			transport.Post<StringResponse>(Path, Body);
 			connection.LastHttpClientHandler.UseProxy.Should().BeTrue();
-			await transport.PostAsync<StringResponse>(Path, Body, CancellationToken.None).ConfigureAwait(false);
+			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
 			connection.LastHttpClientHandler.UseProxy.Should().BeTrue();
 		}
 
@@ -88,7 +88,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 			var transport = Setup(connection, transferEncodingChunked: true);
 
 			transport.Post<StringResponse>(Path, Body);
-			await transport.PostAsync<StringResponse>(Path, Body, CancellationToken.None).ConfigureAwait(false);
+			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
 		}
 
 		[Fact] public async Task HttpClientSetsContentLengthWhenTransferEncodingChunkedFalse()
@@ -100,7 +100,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 			var transport = Setup(connection, transferEncodingChunked: false);
 
 			transport.Post<StringResponse>(Path, Body);
-			await transport.PostAsync<StringResponse>(Path, Body, CancellationToken.None).ConfigureAwait(false);
+			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
 		}
 
 		[Fact] public async Task HttpClientSetsContentLengthWhenTransferEncodingChunkedHttpCompression()
@@ -112,7 +112,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 			var transport = Setup(connection, transferEncodingChunked: false, httpCompression: true);
 
 			transport.Post<StringResponse>(Path, Body);
-			await transport.PostAsync<StringResponse>(Path, Body, CancellationToken.None).ConfigureAwait(false);
+			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
 		}
 	}
 }

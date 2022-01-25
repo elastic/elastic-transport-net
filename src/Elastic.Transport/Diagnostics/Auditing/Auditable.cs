@@ -20,8 +20,10 @@ namespace Elastic.Transport.Diagnostics.Auditing
 			_dateTimeProvider = dateTimeProvider;
 			var started = _dateTimeProvider.Now();
 
-			_audit = new Audit(type, started);
-			_audit.Node = node;
+			_audit = new Audit(type, started)
+			{
+				Node = node
+			};
 			auditTrail.Add(_audit);
 			var diagnosticName = type.GetAuditDiagnosticEventName();
 			_activity = diagnosticName != null ? DiagnosticSource.Diagnose(diagnosticName, _audit) : null;

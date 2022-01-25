@@ -32,36 +32,7 @@ namespace Elastic.Transport
 		/// As the old curl based handler is known to bleed TCP connections:
 		/// <para>https://github.com/dotnet/runtime/issues/22366</para>
 		/// </summary>
-		private static bool UsingCurlHandler
-		{
-			get
-			{
-#if !DOTNETCORE
-				return false;
-#else
-				var curlHandlerExists = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.CurlHandler") != null;
-				if (!curlHandlerExists) return false;
-
-				var socketsHandlerExists = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.SocketsHttpHandler") != null;
-				// running on a .NET core version with CurlHandler, before the existence of SocketsHttpHandler.
-				// Must be using CurlHandler.
-				if (!socketsHandlerExists) return true;
-
-				if (AppContext.TryGetSwitch("System.Net.Http.UseSocketsHttpHandler", out var isEnabled))
-					return !isEnabled;
-
-				var environmentVariable =
-					Environment.GetEnvironmentVariable("DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER");
-
-				// SocketsHandler exists and no environment variable exists to disable it.
-				// Must be using SocketsHandler and not CurlHandler
-				if (environmentVariable == null) return false;
-
-				return environmentVariable.Equals("false", StringComparison.OrdinalIgnoreCase) ||
-					environmentVariable.Equals("0");
-#endif
-			}
-		}
+		private static bool UsingCurlHandler => ConnectionInfo.UsingCurlHandler;
 
 		//public static IMemoryStreamFactory Default { get; } = RecyclableMemoryStreamFactory.Default;
 		// ReSharper disable once RedundantNameQualifier
@@ -110,35 +81,34 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <param name="uri">The root of the Elastic stack product node we want to connect to. Defaults to http://localhost:9200</param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		[SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
 		public TransportConfiguration(Uri uri = null, IProductRegistration productRegistration = null)
-			: this(new SingleNodeConnectionPool(uri ?? new Uri("http://localhost:9200")), productRegistration: productRegistration) { }
+			: this(new SingleNodePool(uri ?? new Uri("http://localhost:9200")), productRegistration: productRegistration) { }
 
 		/// <summary>
 		/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
-		/// <para><see cref="CloudConnectionPool"/> documentation for more information on how to obtain your Cloud Id</para>
+		/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
 		/// </summary>
 		public TransportConfiguration(string cloudId, BasicAuthentication credentials, IProductRegistration productRegistration = null)
-			: this(new CloudConnectionPool(cloudId, credentials), productRegistration: productRegistration) { }
+			: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
 
 		/// <summary>
 		/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
-		/// <para><see cref="CloudConnectionPool"/> documentation for more information on how to obtain your Cloud Id</para>
+		/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
 		/// </summary>
 		public TransportConfiguration(string cloudId, Base64ApiKey credentials, IProductRegistration productRegistration = null)
-			: this(new CloudConnectionPool(cloudId, credentials), productRegistration: productRegistration) { }
+			: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
 
 		/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool" path="/summary"/></param>
-		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
-		/// <param name="serializer"><inheritdoc cref="ITransportSerializer" path="/summary"/></param>
+		/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
+		/// <param name="connection"><inheritdoc cref="ITransportClient" path="/summary"/></param>
+		/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		public TransportConfiguration(
-			IConnectionPool connectionPool,
-			IConnection connection = null,
-			ITransportSerializer serializer = null,
+			NodePool nodePool,
+			ITransportClient connection = null,
+			Serializer serializer = null,
 			IProductRegistration productRegistration = null)
-			: base(connectionPool, connection, serializer, productRegistration) { }
+			: base(nodePool, connection, serializer, productRegistration) { }
 
 	}
 
@@ -148,8 +118,8 @@ namespace Elastic.Transport
 	public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 		where T : TransportConfigurationBase<T>
 	{
-		private readonly IConnection _connection;
-		private readonly IConnectionPool _connectionPool;
+		private readonly ITransportClient _transportClient;
+		private readonly NodePool _nodePool;
 		private readonly IProductRegistration _productRegistration;
 		private readonly NameValueCollection _headers = new NameValueCollection();
 		private readonly NameValueCollection _queryString = new NameValueCollection();
@@ -159,7 +129,7 @@ namespace Elastic.Transport
 		private IAuthenticationHeader _authenticationHeader;
 		private X509CertificateCollection _clientCertificates;
 		private Action<IApiCallDetails> _completedRequestHandler = DefaultCompletedRequestHandler;
-		private int _connectionLimit;
+		private int _transportClientLimit;
 		private TimeSpan? _deadTimeout;
 		private bool _disableAutomaticProxyDetection;
 		private bool _disableDirectStreaming;
@@ -191,26 +161,27 @@ namespace Elastic.Transport
 		private bool _enableThreadPoolStats;
 		private UserAgent _userAgent;
 		private string _certificateFingerprint;
-
+		private bool _disableMetaHeader;
+		private readonly MetaHeaderProvider _metaHeaderProvider;
 
 		private readonly Func<HttpMethod, int, bool> _statusCodeToResponseSuccess;
 
 		/// <summary>
 		/// <inheritdoc cref="TransportConfiguration"/>
 		/// </summary>
-		/// <param name="connectionPool"><inheritdoc cref="IConnectionPool" path="/summary"/></param>
-		/// <param name="connection"><inheritdoc cref="IConnection" path="/summary"/></param>
-		/// <param name="requestResponseSerializer"><inheritdoc cref="ITransportSerializer" path="/summary"/></param>
+		/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
+		/// <param name="transportClient"><inheritdoc cref="ITransportClient" path="/summary"/></param>
+		/// <param name="requestResponseSerializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		protected TransportConfigurationBase(IConnectionPool connectionPool, IConnection connection, ITransportSerializer requestResponseSerializer, IProductRegistration productRegistration)
+		protected TransportConfigurationBase(NodePool nodePool, ITransportClient transportClient, Serializer requestResponseSerializer, IProductRegistration productRegistration)
 		{
-			_connectionPool = connectionPool;
-			_connection = connection ?? new HttpConnection();
+			_nodePool = nodePool;
+			_transportClient = transportClient ?? new HttpTransportClient();
 			_productRegistration = productRegistration ?? ProductRegistration.Default;
 			var serializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
 			UseThisRequestResponseSerializer = new DiagnosticsSerializerProxy(serializer);
 
-			_connectionLimit = TransportConfiguration.DefaultConnectionLimit;
+			_transportClientLimit = TransportConfiguration.DefaultConnectionLimit;
 			_requestTimeout = TransportConfiguration.DefaultTimeout;
 			_dnsRefreshTimeout = TransportConfiguration.DefaultDnsRefreshTimeout;
 			_memoryStreamFactory = TransportConfiguration.DefaultMemoryStreamFactory;
@@ -218,17 +189,19 @@ namespace Elastic.Transport
 			_sniffOnStartup = true;
 			_sniffLifeSpan = TimeSpan.FromHours(1);
 
+			_metaHeaderProvider = productRegistration?.MetaHeaderProvider;
+
 			_urlFormatter = new UrlFormatter(this);
 			_statusCodeToResponseSuccess = (m, i) => _productRegistration.HttpStatusCodeClassifier(m, i);
 			_userAgent = Elastic.Transport.UserAgent.Create(_productRegistration.Name, _productRegistration.GetType());
 
-			if (connectionPool is CloudConnectionPool cloudPool)
+			if (nodePool is CloudNodePool cloudPool)
 			{
 				_authenticationHeader = cloudPool.AuthenticationHeader;
 				_enableHttpCompression = true;
 			}
 
-			_headersToParse = _productRegistration.ResponseHeadersToParse;
+			_headersToParse = new HeadersList(_productRegistration.ResponseHeadersToParse);
 		}
 
 		/// <summary>
@@ -237,15 +210,15 @@ namespace Elastic.Transport
 		/// </summary>
 		// ReSharper disable once MemberCanBePrivate.Global
 		// ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
-		protected ITransportSerializer UseThisRequestResponseSerializer { get; set; }
+		protected Serializer UseThisRequestResponseSerializer { get; set; }
 
 		IAuthenticationHeader ITransportConfiguration.Authentication => _authenticationHeader;
 		SemaphoreSlim ITransportConfiguration.BootstrapLock => _semaphore;
 		X509CertificateCollection ITransportConfiguration.ClientCertificates => _clientCertificates;
-		IConnection ITransportConfiguration.Connection => _connection;
+		ITransportClient ITransportConfiguration.Connection => _transportClient;
 		IProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
-		int ITransportConfiguration.ConnectionLimit => _connectionLimit;
-		IConnectionPool ITransportConfiguration.ConnectionPool => _connectionPool;
+		int ITransportConfiguration.ConnectionLimit => _transportClientLimit;
+		NodePool ITransportConfiguration.NodePool => _nodePool;
 		TimeSpan? ITransportConfiguration.DeadTimeout => _deadTimeout;
 		bool ITransportConfiguration.DisableAutomaticProxyDetection => _disableAutomaticProxyDetection;
 		bool ITransportConfiguration.DisableDirectStreaming => _disableDirectStreaming;
@@ -268,7 +241,7 @@ namespace Elastic.Transport
 		SecureString ITransportConfiguration.ProxyPassword => _proxyPassword;
 		string ITransportConfiguration.ProxyUsername => _proxyUsername;
 		NameValueCollection ITransportConfiguration.QueryStringParameters => _queryString;
-		ITransportSerializer ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
+		Serializer ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
 		TimeSpan ITransportConfiguration.RequestTimeout => _requestTimeout;
 		TimeSpan ITransportConfiguration.DnsRefreshTimeout => _dnsRefreshTimeout;
 		string ITransportConfiguration.CertificateFingerprint => _certificateFingerprint;
@@ -315,7 +288,7 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="ITransportConfiguration.ConnectionLimit" path="/summary"/>
 		/// </summary>
 		/// <param name="connectionLimit">The connection limit, a value lower then 0 will cause the connection limit not to be set at all</param>
-		public T ConnectionLimit(int connectionLimit) => Assign(connectionLimit, (a, v) => a._connectionLimit = v);
+		public T ConnectionLimit(int connectionLimit) => Assign(connectionLimit, (a, v) => a._transportClientLimit = v);
 
 		/// <inheritdoc cref="ITransportConfiguration.SniffsOnConnectionFault"/>
 		public T SniffOnConnectionFault(bool sniffsOnConnectionFault = true) =>
@@ -444,6 +417,10 @@ namespace Elastic.Transport
 		private HeadersList _headersToParse;
 		HeadersList ITransportConfiguration.ResponseHeadersToParse => _headersToParse;
 
+		MetaHeaderProvider ITransportConfiguration.MetaHeaderProvider => _metaHeaderProvider;
+
+		bool ITransportConfiguration.DisableMetaHeader => _disableMetaHeader;
+
 		/// <inheritdoc cref="ITransportConfiguration.ResponseHeadersToParse"/>
 		public virtual T ResponseHeadersToParse(HeadersList headersToParse)
 		{
@@ -486,12 +463,15 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="ITransportConfiguration.EnableThreadPoolStats"/>>
 		public T EnableThreadPoolStats(bool enableThreadPoolStats = true) => Assign(enableThreadPoolStats, (a, v) => a._enableThreadPoolStats = v);
 
+		/// <inheritdoc cref="ITransportConfiguration.DisableMetaHeader"/>>
+		public T DisableMetaHeader(bool disable = true) => Assign(disable, (a, v) => a._disableMetaHeader = v);
+
 		// ReSharper disable once VirtualMemberNeverOverridden.Global
 		/// <summary> Allows subclasses to hook into the parents dispose </summary>
 		protected virtual void DisposeManagedResources()
 		{
-			_connectionPool?.Dispose();
-			_connection?.Dispose();
+			_nodePool?.Dispose();
+			_transportClient?.Dispose();
 			_semaphore?.Dispose();
 			_proxyPassword?.Dispose();
 			_authenticationHeader?.Dispose();

@@ -13,7 +13,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// Where and how <see cref="IConnection.Request{TResponse}" /> should connect to.
+	/// Where and how <see cref="ITransportClient.Request{TResponse}" /> should connect to.
 	/// <para>
 	/// Represents the cumulative configuration from <see cref="ITransportConfiguration" />
 	/// and <see cref="IRequestConfiguration" />.
@@ -89,11 +89,14 @@ namespace Elastic.Transport
 			PingTimeout =
 				local?.PingTimeout
 				?? global.PingTimeout
-				?? (global.ConnectionPool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
+				?? (global.NodePool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
 
 			KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
 			KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
 			DnsRefreshTimeout = global.DnsRefreshTimeout;
+
+			MetaHeaderProvider = global.MetaHeaderProvider;
+			RequestMetaData = local?.RequestMetaData?.Items ?? EmptyReadOnly<string, string>.Dictionary;
 
 			ProxyAddress = global.ProxyAddress;
 			ProxyUsername = global.ProxyUsername;
@@ -110,6 +113,7 @@ namespace Elastic.Transport
 
 			if (local is not null)
 			{
+				ResponseHeadersToParse = local.ResponseHeadersToParse;
 				ResponseHeadersToParse = new HeadersList(local.ResponseHeadersToParse, global.ResponseHeadersToParse);
 			}
 			else
@@ -125,7 +129,7 @@ namespace Elastic.Transport
 		public IAuthenticationHeader AuthenticationHeader { get; }
 		public X509CertificateCollection ClientCertificates { get; }
 		public ITransportConfiguration ConnectionSettings { get; }
-		public CustomResponseBuilderBase CustomResponseBuilder { get; }
+		public CustomResponseBuilder CustomResponseBuilder { get; }
 		public bool DisableAutomaticProxyDetection { get; }
 		public HeadersList ResponseHeadersToParse { get; }
 		public bool ParseAllHeaders { get; }
@@ -183,6 +187,12 @@ namespace Elastic.Transport
 		}
 
 		public TimeSpan DnsRefreshTimeout { get; }
+
+		public MetaHeaderProvider MetaHeaderProvider { get; }
+
+		public IReadOnlyDictionary<string, string> RequestMetaData { get; }
+
+		public bool IsAsync { get; internal set; }
 
 		public override string ToString() => $"{Method.GetStringValue()} {_path}";
 

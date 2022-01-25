@@ -116,8 +116,10 @@ namespace Elastic.Transport
 
 			if (!string.IsNullOrEmpty(uri.UserInfo))
 			{
-				var builder = new UriBuilder(uri);
-				builder.Password = "redacted";
+				var builder = new UriBuilder(uri)
+				{
+					Password = "redacted"
+				};
 				uri = builder.Uri;
 			}
 			sb.Append($" Node: {uri}");

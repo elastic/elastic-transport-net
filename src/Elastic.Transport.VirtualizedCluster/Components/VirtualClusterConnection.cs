@@ -56,7 +56,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 			Virtual.Elasticsearch
 				.Bootstrap(1)
 				.ClientCalls(r => r.SucceedAlways().ReturnByteResponse(response))
-				.StaticConnectionPool()
+				.StaticNodePool()
 				.AllDefaults()
 				.Connection;
 
@@ -67,7 +67,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 			Virtual.Elasticsearch
 				.Bootstrap(1)
 				.ClientCalls(r => r.FailAlways(400))
-				.StaticConnectionPool()
+				.StaticNodePool()
 				.AllDefaults()
 				.Connection;
 
@@ -109,11 +109,11 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 
 		private bool IsPingRequest(RequestData requestData) => _productRegistration.IsPingRequest(requestData);
 
-		/// <inheritdoc cref="IConnection.RequestAsync{TResponse}"/>>
+		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}"/>>
 		public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) =>
 			Task.FromResult(Request<TResponse>(requestData));
 
-		/// <inheritdoc cref="IConnection.Request{TResponse}"/>>
+		/// <inheritdoc cref="ITransportClient.Request{TResponse}"/>>
 		public override TResponse Request<TResponse>(RequestData requestData)
 		{
 			if (!_calls.ContainsKey(requestData.Uri.Port))
@@ -158,7 +158,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 			}
 			catch (TheException e)
 			{
-				return ResponseBuilder.ToResponse<TResponse>(requestData, e, null, null, Stream.Null);
+				return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, e, null, null, Stream.Null, null, -1);
 			}
 		}
 

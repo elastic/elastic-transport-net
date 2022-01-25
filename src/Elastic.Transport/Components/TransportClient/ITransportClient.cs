@@ -14,7 +14,7 @@ namespace Elastic.Transport
 	/// <para>The instance to be used is provided to the constructor of <see cref="ITransportConfiguration"/> implementations</para>
 	/// <para>Where its exposed under <see cref="ITransportConfiguration.Connection"/></para>
 	/// </summary>
-	public interface IConnection : IDisposable
+	public interface ITransportClient : IDisposable
 	{
 		/// <summary>
 		/// Perform a request to the endpoint described by <paramref name="requestData"/> using its associated configuration.

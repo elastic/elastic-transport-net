@@ -36,7 +36,7 @@ namespace Elastic.Transport.Diagnostics.Auditing
 		Resurrection,
 
 		/// <summary>
-		/// All nodes returned by <see cref="IConnectionPool.CreateView"/> are marked dead (see <see cref="Node.IsAlive"/>)
+		/// All nodes returned by <see cref="NodePool.CreateView"/> are marked dead (see <see cref="Node.IsAlive"/>)
 		/// After this event a random node is resurrected and tried by force
 		/// </summary>
 		AllNodesDead,
@@ -73,7 +73,7 @@ namespace Elastic.Transport.Diagnostics.Auditing
 
 		/// <summary>
 		/// Rare but if <see cref="ITransportConfiguration.NodePredicate"/> is too stringent and node nodes in
-		/// the <see cref="IConnectionPool.Nodes"/> satisfies this predicate this will result in this failure.
+		/// the <see cref="NodePool.Nodes"/> satisfies this predicate this will result in this failure.
 		/// </summary>
 		NoNodesAttempted,
 
@@ -84,7 +84,7 @@ namespace Elastic.Transport.Diagnostics.Auditing
 
 		/// <summary>
 		/// The request failed within the allotted <see cref="ITransportConfiguration.MaxRetryTimeout"/> but failed
-		/// on all the available <see cref="IConnectionPool.Nodes"/>
+		/// on all the available <see cref="NodePool.Nodes"/>
 		/// </summary>
 		FailedOverAllNodes,
 	}
