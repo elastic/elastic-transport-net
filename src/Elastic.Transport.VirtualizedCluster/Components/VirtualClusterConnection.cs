@@ -187,7 +187,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 				if (always)
 					return Always<TResponse, TRule>(requestData, timeout, beforeReturn, successResponse, rule);
 
-				if (rule.Executed > times) continue;
+				if (rule.ExecuteCount > times) continue;
 
 				return Sometimes<TResponse, TRule>(requestData, timeout, beforeReturn, successResponse, rule);
 			}
@@ -198,7 +198,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 				if (always)
 					return Always<TResponse, TRule>(requestData, timeout, beforeReturn, successResponse, rule);
 
-				if (rule.Executed > times) continue;
+				if (rule.ExecuteCount > times) continue;
 
 				return Sometimes<TResponse, TRule>(requestData, timeout, beforeReturn, successResponse, rule);
 			}

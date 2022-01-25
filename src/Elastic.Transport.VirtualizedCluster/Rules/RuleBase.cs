@@ -34,7 +34,7 @@ namespace Elastic.Transport.VirtualizedCluster.Rules
 		RuleOption<TimesHelper.AllTimes, int> Times { get; set; }
 
 		/// <summary> The amount of times this rule has been executed</summary>
-		int Executed { get; }
+		int ExecuteCount { get; }
 
 		/// <summary> Mark a rule as executed </summary>
 		void RecordExecuted();
@@ -43,7 +43,7 @@ namespace Elastic.Transport.VirtualizedCluster.Rules
 	public abstract class RuleBase<TRule> : IRule
 		where TRule : RuleBase<TRule>, IRule
 	{
-		private int _executed;
+		private int _executeCount;
 		RuleOption<Exception, int> IRule.AfterSucceeds { get; set; }
 		int? IRule.OnPort { get; set; }
 		RuleOption<Exception, int> IRule.Return { get; set; }
@@ -54,9 +54,9 @@ namespace Elastic.Transport.VirtualizedCluster.Rules
 		TimeSpan? IRule.Takes { get; set; }
 		RuleOption<TimesHelper.AllTimes, int> IRule.Times { get; set; }
 
-		int IRule.Executed => _executed;
+		int IRule.ExecuteCount => _executeCount;
 
-		void IRule.RecordExecuted() => Interlocked.Increment(ref _executed);
+		void IRule.RecordExecuted() => Interlocked.Increment(ref _executeCount);
 
 		public TRule OnPort(int port)
 		{
