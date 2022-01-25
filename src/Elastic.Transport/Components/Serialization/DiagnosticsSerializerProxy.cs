@@ -11,41 +11,12 @@ using Elastic.Transport.Diagnostics;
 
 namespace Elastic.Transport
 {
-	/// <summary> Provides some information to the transport auditing and diagnostics infrastructure about the serializer in use and its <see cref="Purpose"/> </summary>
-	public class SerializerRegistrationInformation
-	{
-		private readonly string _stringRepresentation;
-
-		/// <inheritdoc cref="SerializerRegistrationInformation"/>
-		public SerializerRegistrationInformation(Type type, string purpose)
-		{
-			TypeInformation = type;
-			Purpose = purpose;
-			_stringRepresentation = $"{Purpose}: {TypeInformation.FullName}";
-		}
-
-		/// <summary> The type of <see cref="SerializerBase"/> in use currently </summary>
-		// ReSharper disable once MemberCanBePrivate.Global
-		public Type TypeInformation { get; }
-
-		/// <summary>
-		/// A string describing the purpose of the serializer emitting this events.
-		/// <para>In `Elastisearch.Net` this will always be "request/response"</para>
-		/// <para>Using `Nest` this could also be `source` allowing you to differentiate between the internal and configured source serializer</para>
-		/// </summary>
-		// ReSharper disable once MemberCanBePrivate.Global
-		public string Purpose { get; }
-
-		/// <summary> A precalculated string representation of the serializer in use </summary>
-		public override string ToString() => _stringRepresentation;
-	}
-
 	/// <summary>
 	/// Wraps configured serializer so that we can emit diagnostics per configured serializer.
 	/// </summary>
-	internal class DiagnosticsSerializerProxy : SerializerBase
+	internal class DiagnosticsSerializerProxy : Serializer
 	{
-		private readonly SerializerBase _serializer;
+		private readonly Serializer _serializer;
 		private readonly SerializerRegistrationInformation _state;
 		private static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.Serializer.SourceName);
 
@@ -54,53 +25,53 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <param name="serializer">The serializer we are proxying</param>
 		/// <param name="purpose"><inheritdoc cref="SerializerRegistrationInformation.Purpose" path="/summary"/></param>
-		public DiagnosticsSerializerProxy(SerializerBase serializer, string purpose = "request/response")
+		public DiagnosticsSerializerProxy(Serializer serializer, string purpose = "request/response")
 		{
 			_serializer = serializer;
 			_state = new SerializerRegistrationInformation(serializer.GetType(), purpose);
 		}
 
 		/// <summary>
-		/// Access to the inner <see cref="SerializerBase"/> wrapped by this proxy.
+		/// Access to the inner <see cref="Serializer"/> wrapped by this proxy.
 		/// </summary>
-		public SerializerBase InnerSerializer => _serializer;
+		public Serializer InnerSerializer => _serializer;
 
-		/// <inheritdoc cref="SerializerBase.Deserialize"/>>
+		/// <inheritdoc cref="Serializer.Deserialize"/>>
 		public override object Deserialize(Type type, Stream stream)
 		{
 			using (DiagnosticSource.Diagnose(DiagnosticSources.Serializer.Deserialize, _state))
 				return _serializer.Deserialize(type, stream);
 		}
 
-		/// <inheritdoc cref="SerializerBase.Deserialize{T}"/>>
+		/// <inheritdoc cref="Serializer.Deserialize{T}"/>>
 		public override T Deserialize<T>(Stream stream)
 		{
 			using (DiagnosticSource.Diagnose(DiagnosticSources.Serializer.Deserialize, _state))
 				return _serializer.Deserialize<T>(stream);
 		}
 
-		/// <inheritdoc cref="SerializerBase.DeserializeAsync"/>>
+		/// <inheritdoc cref="Serializer.DeserializeAsync"/>>
 		public override Task<object> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
 		{
 			using (DiagnosticSource.Diagnose(DiagnosticSources.Serializer.Deserialize, _state))
 				return _serializer.DeserializeAsync(type, stream, cancellationToken);
 		}
 
-		/// <inheritdoc cref="SerializerBase.DeserializeAsync{T}"/>>
+		/// <inheritdoc cref="Serializer.DeserializeAsync{T}"/>>
 		public override Task<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
 		{
 			using (DiagnosticSource.Diagnose(DiagnosticSources.Serializer.Deserialize, _state))
 				return _serializer.DeserializeAsync<T>(stream, cancellationToken);
 		}
 
-		/// <inheritdoc cref="SerializerBase.Serialize{T}"/>>
+		/// <inheritdoc cref="Serializer.Serialize{T}"/>>
 		public override void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None)
 		{
 			using (DiagnosticSource.Diagnose(DiagnosticSources.Serializer.Serialize, _state))
 				_serializer.Serialize(data, stream, formatting);
 		}
 
-		/// <inheritdoc cref="SerializerBase.SerializeAsync{T}"/>>
+		/// <inheritdoc cref="Serializer.SerializeAsync{T}"/>>
 		public override Task SerializeAsync<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None,
 			CancellationToken cancellationToken = default
 		)

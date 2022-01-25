@@ -14,7 +14,7 @@ namespace Elastic.Transport
 	public interface IRequestParameters
 	{
 		/// <summary> Allows you to completely circumvent the serializer to build the final response.</summary>
-		CustomResponseBuilderBase CustomResponseBuilder { get; set; }
+		CustomResponseBuilder CustomResponseBuilder { get; set; }
 
 		/// <summary>
 		/// The querystring that should be appended to the path of the request

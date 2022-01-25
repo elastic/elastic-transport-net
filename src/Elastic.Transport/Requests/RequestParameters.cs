@@ -33,7 +33,7 @@ namespace Elastic.Transport
 	public abstract class RequestParameters<T> : IRequestParameters where T : RequestParameters<T>
 	{
 		/// <inheritdoc cref="IRequestParameters.CustomResponseBuilder"/>
-		public CustomResponseBuilderBase CustomResponseBuilder { get; set; }
+		public CustomResponseBuilder CustomResponseBuilder { get; set; }
 
 		/// <inheritdoc cref="IRequestParameters.QueryString"/>
 		public Dictionary<string, object> QueryString { get; set; } = new Dictionary<string, object>();

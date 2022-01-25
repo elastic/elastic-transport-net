@@ -129,7 +129,7 @@ namespace Elastic.Transport
 		public IAuthenticationHeader AuthenticationHeader { get; }
 		public X509CertificateCollection ClientCertificates { get; }
 		public ITransportConfiguration ConnectionSettings { get; }
-		public CustomResponseBuilderBase CustomResponseBuilder { get; }
+		public CustomResponseBuilder CustomResponseBuilder { get; }
 		public bool DisableAutomaticProxyDetection { get; }
 		public HeadersList ResponseHeadersToParse { get; }
 		public bool ParseAllHeaders { get; }

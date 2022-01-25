@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Elastic.Transport.Diagnostics
 {
-	/// <summary> Provides a typed listener any time an <see cref="SerializerBase"/> does a write or read</summary>
+	/// <summary> Provides a typed listener any time an <see cref="Serializer"/> does a write or read</summary>
 	public class SerializerDiagnosticObserver : TypedDiagnosticObserverBase<SerializerRegistrationInformation>
 	{
 		/// <inheritdoc cref="SerializerDiagnosticObserver"/>

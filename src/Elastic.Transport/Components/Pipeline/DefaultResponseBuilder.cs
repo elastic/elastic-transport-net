@@ -16,7 +16,7 @@ namespace Elastic.Transport
 	///     <see cref="ITransportConfiguration.DisableDirectStreaming" />. And handling short circuiting special responses
 	///     such as <see cref="StringResponse" />, <see cref="BytesResponse" /> and <see cref="VoidResponse" />
 	/// </summary>
-	internal class DefaultResponseBuilder<TError> : ResponseBuilderBase where TError : ErrorResponseBase, new()
+	internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : ErrorResponse, new()
 	{
 		private const int BufferSize = 81920;
 

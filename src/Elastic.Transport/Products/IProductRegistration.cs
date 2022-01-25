@@ -92,7 +92,7 @@ namespace Elastic.Transport.Products
 		bool NodePredicate(Node node);
 
 		/// <summary>
-		/// Used by <see cref="ResponseBuilderBase"/> to determine if it needs to return true or false for
+		/// Used by <see cref="ResponseBuilder"/> to determine if it needs to return true or false for
 		/// <see cref="IApiCallDetails.Success"/>
 		/// </summary>
 		bool HttpStatusCodeClassifier(HttpMethod method, int statusCode);
@@ -108,6 +108,6 @@ namespace Elastic.Transport.Products
 		/// <summary>
 		/// TODO
 		/// </summary>
-		ResponseBuilderBase ResponseBuilder { get; }
+		ResponseBuilder ResponseBuilder { get; }
 	}
 }

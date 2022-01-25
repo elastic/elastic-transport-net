@@ -30,7 +30,7 @@ namespace Elastic.Transport
 	}
 
 	/// <inheritdoc cref="IRequestPipeline" />
-	public class RequestPipeline<TConfiguration> : IRequestPipeline
+	internal class RequestPipeline<TConfiguration> : IRequestPipeline
 		where TConfiguration : class, ITransportConfiguration
 	{
 		private readonly ITransportClient _transportClient;
@@ -40,7 +40,7 @@ namespace Elastic.Transport
 		private readonly Func<Node, bool> _nodePredicate;
 		private readonly IProductRegistration _productRegistration;
 		private readonly TConfiguration _settings;
-		private readonly ResponseBuilderBase _responseBuilder;
+		private readonly ResponseBuilder _responseBuilder;
 
 		private RequestConfiguration _pingAndSniffRequestConfiguration;
 

@@ -49,7 +49,7 @@ namespace Elastic.Transport.Products
 		public MetaHeaderProviderBase MetaHeaderProvider => _metaHeaderProvider;
 
 		/// <inheritdoc cref="IProductRegistration.ResponseBuilder"/>
-		public ResponseBuilderBase ResponseBuilder => new DefaultResponseBuilder<EmptyError>();
+		public ResponseBuilder ResponseBuilder => new DefaultResponseBuilder<EmptyError>();
 
 		/// <inheritdoc cref="IProductRegistration.HttpStatusCodeClassifier"/>
 		public bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>

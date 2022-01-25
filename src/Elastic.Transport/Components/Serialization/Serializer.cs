@@ -16,7 +16,7 @@ namespace Elastic.Transport
 	/// <para>e.g: Whenever the <see cref="ITransport{TConnectionSettings}"/> receives <see cref="PostData.Serializable{T}"/>
 	/// to serialize that data.</para>
 	/// </summary>
-	public abstract class SerializerBase
+	public abstract class Serializer
 	{
 		// TODO: Overloads taking a Memory<T>/Span<T>??
 
@@ -38,7 +38,7 @@ namespace Elastic.Transport
 		/// <param name="data">The instance of <typeparamref name="T"/> that we want to serialize.</param>
 		/// <param name="stream">The stream to serialize to.</param>
 		/// <param name="formatting">
-		/// Formatting hint. Note that not all implementations of <see cref="SerializerBase"/> are able to
+		/// Formatting hint. Note that not all implementations of <see cref="Serializer"/> are able to
 		/// satisfy this hint, including the default serializer that is shipped with 8.0.
 		/// </param>
 		public abstract void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None);

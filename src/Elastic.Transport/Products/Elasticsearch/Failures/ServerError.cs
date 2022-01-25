@@ -13,7 +13,7 @@ namespace Elastic.Transport.Products.Elasticsearch.Failures
 {
 	/// <summary> Represents the error response as returned by Elasticsearch. </summary>
 	[DataContract]
-	public class ServerError : ErrorResponseBase
+	public class ServerError : ErrorResponse
 	{
 		/// <inheritdoc cref="ServerError"/>
 		public ServerError() { }

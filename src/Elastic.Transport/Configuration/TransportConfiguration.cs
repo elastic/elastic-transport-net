@@ -101,12 +101,12 @@ namespace Elastic.Transport
 		/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
 		/// <param name="nodePool"><inheritdoc cref="INodePool" path="/summary"/></param>
 		/// <param name="connection"><inheritdoc cref="ITransportClient" path="/summary"/></param>
-		/// <param name="serializer"><inheritdoc cref="SerializerBase" path="/summary"/></param>
+		/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		public TransportConfiguration(
 			INodePool nodePool,
 			ITransportClient connection = null,
-			SerializerBase serializer = null,
+			Serializer serializer = null,
 			IProductRegistration productRegistration = null)
 			: base(nodePool, connection, serializer, productRegistration) { }
 
@@ -171,9 +171,9 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <param name="nodePool"><inheritdoc cref="INodePool" path="/summary"/></param>
 		/// <param name="transportClient"><inheritdoc cref="ITransportClient" path="/summary"/></param>
-		/// <param name="requestResponseSerializer"><inheritdoc cref="SerializerBase" path="/summary"/></param>
+		/// <param name="requestResponseSerializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		protected TransportConfigurationBase(INodePool nodePool, ITransportClient transportClient, SerializerBase requestResponseSerializer, IProductRegistration productRegistration)
+		protected TransportConfigurationBase(INodePool nodePool, ITransportClient transportClient, Serializer requestResponseSerializer, IProductRegistration productRegistration)
 		{
 			_nodePool = nodePool;
 			_transportClient = transportClient ?? new HttpTransportClient();
@@ -210,7 +210,7 @@ namespace Elastic.Transport
 		/// </summary>
 		// ReSharper disable once MemberCanBePrivate.Global
 		// ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
-		protected SerializerBase UseThisRequestResponseSerializer { get; set; }
+		protected Serializer UseThisRequestResponseSerializer { get; set; }
 
 		IAuthenticationHeader ITransportConfiguration.Authentication => _authenticationHeader;
 		SemaphoreSlim ITransportConfiguration.BootstrapLock => _semaphore;
@@ -241,7 +241,7 @@ namespace Elastic.Transport
 		SecureString ITransportConfiguration.ProxyPassword => _proxyPassword;
 		string ITransportConfiguration.ProxyUsername => _proxyUsername;
 		NameValueCollection ITransportConfiguration.QueryStringParameters => _queryString;
-		SerializerBase ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
+		Serializer ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
 		TimeSpan ITransportConfiguration.RequestTimeout => _requestTimeout;
 		TimeSpan ITransportConfiguration.DnsRefreshTimeout => _dnsRefreshTimeout;
 		string ITransportConfiguration.CertificateFingerprint => _certificateFingerprint;

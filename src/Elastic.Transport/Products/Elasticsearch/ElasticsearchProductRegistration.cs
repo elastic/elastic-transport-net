@@ -60,7 +60,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 		public MetaHeaderProviderBase MetaHeaderProvider => _metaHeaderProvider;
 
 		/// <inheritdoc cref="IProductRegistration.ResponseBuilder"/>
-		public ResponseBuilderBase ResponseBuilder => new ElasticsearchResponseBuilder();
+		public ResponseBuilder ResponseBuilder => new ElasticsearchResponseBuilder();
 
 		/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 		public const string SniffPath = "_nodes/http,settings";

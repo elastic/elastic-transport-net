@@ -13,12 +13,12 @@ namespace Elastic.Transport
 	/// how `TResponse` should be deserialized to a `TResponse` that implements <see cref="ITransportResponse"/> instance.
 	/// <para>Expert setting only</para>
 	/// </summary>
-	public abstract class CustomResponseBuilderBase
+	public abstract class CustomResponseBuilder
 	{
 		/// <summary> Custom routine that deserializes from <paramref name="stream"/> to an instance o <see cref="ITransportResponse"/> </summary>
-		public abstract object DeserializeResponse(SerializerBase builtInSerializer, IApiCallDetails response, Stream stream);
+		public abstract object DeserializeResponse(Serializer builtInSerializer, IApiCallDetails response, Stream stream);
 
 		/// <inheritdoc cref="DeserializeResponse"/>
-		public abstract Task<object> DeserializeResponseAsync(SerializerBase builtInSerializer, IApiCallDetails response, Stream stream, CancellationToken ctx = default);
+		public abstract Task<object> DeserializeResponseAsync(Serializer builtInSerializer, IApiCallDetails response, Stream stream, CancellationToken ctx = default);
 	}
 }

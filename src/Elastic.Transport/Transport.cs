@@ -31,10 +31,25 @@ namespace Elastic.Transport
 		///     nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
-		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
 		public Transport(TransportConfiguration configurationValues,
+			IDateTimeProvider dateTimeProvider = null, IMemoryStreamFactory memoryStreamFactory = null
+		)
+			: base(configurationValues, null, dateTimeProvider, memoryStreamFactory)
+		{
+		}
+
+		/// <summary>
+		///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
+		///     different
+		///     nodes
+		/// </summary>
+		/// <param name="configurationValues">The connection settings to use for this transport</param>
+		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
+		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
+		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
+		internal Transport(TransportConfiguration configurationValues,
 			IRequestPipelineFactory<TransportConfiguration> pipelineProvider = null,
 			IDateTimeProvider dateTimeProvider = null, IMemoryStreamFactory memoryStreamFactory = null
 		)
@@ -65,10 +80,24 @@ namespace Elastic.Transport
 		///     nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
-		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
 		public Transport(
+			TConfiguration configurationValues,
+			IDateTimeProvider dateTimeProvider = null,
+			IMemoryStreamFactory memoryStreamFactory = null)
+				: this(configurationValues, null, dateTimeProvider, memoryStreamFactory) { }
+
+		/// <summary>
+		///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
+		///     different
+		///     nodes
+		/// </summary>
+		/// <param name="configurationValues">The connection settings to use for this transport</param>
+		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
+		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
+		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
+		internal Transport(
 			TConfiguration configurationValues,
 			IRequestPipelineFactory<TConfiguration> pipelineProvider = null,
 			IDateTimeProvider dateTimeProvider = null,

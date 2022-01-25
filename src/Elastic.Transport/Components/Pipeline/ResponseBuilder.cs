@@ -13,7 +13,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// 
 	/// </summary>
-	public abstract class ResponseBuilderBase
+	public abstract class ResponseBuilder
 	{
 		/// <summary>
 		/// Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />

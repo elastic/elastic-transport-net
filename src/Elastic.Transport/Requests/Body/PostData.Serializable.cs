@@ -13,7 +13,7 @@ namespace Elastic.Transport
 	{
 		/// <summary>
 		/// Create a <see cref="PostData"/> instance that will serialize <paramref name="data"/> using
-		/// <see cref="SerializerBase"/>
+		/// <see cref="Serializer"/>
 		/// </summary>
 		public static PostData Serializable<T>(T data) => new SerializableData<T>(data);
 

@@ -84,7 +84,7 @@ namespace Elastic.Transport
 		/// <summary>
 		/// 
 		/// </summary>
-		public ErrorResponseBase ErrorResponse { get; set; } = EmptyError.Instance;
+		public ErrorResponse ErrorResponse { get; set; } = EmptyError.Instance;
 
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		public override string ToString() =>
