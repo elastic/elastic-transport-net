@@ -5,7 +5,7 @@
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
-namespace Elastic.Transport.Products.Elasticsearch.Failures
+namespace Elastic.Transport.Products.Elasticsearch
 {
 	/// <summary> Represents a failure that occurred on a shard involved in the request </summary>
 	[DataContract]

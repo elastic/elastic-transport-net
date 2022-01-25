@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
-using Elastic.Transport.Products.Elasticsearch.Failures;
 
 namespace Elastic.Transport.Products.Elasticsearch
 {

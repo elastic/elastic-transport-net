@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using FluentAssertions;
-using Elastic.Transport.Products.Elasticsearch.Sniff;
+using Elastic.Transport.Products.Elasticsearch;
 using Xunit;
 
 namespace Elastic.Transport.Tests

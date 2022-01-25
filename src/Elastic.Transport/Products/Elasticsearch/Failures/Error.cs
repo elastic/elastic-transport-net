@@ -10,7 +10,7 @@ using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Elastic.Transport.Products.Elasticsearch.Failures
+namespace Elastic.Transport.Products.Elasticsearch
 {
 	/// <summary> Represents the serialized Elasticsearch java exception that caused a request to fail </summary>
 	[DataContract]

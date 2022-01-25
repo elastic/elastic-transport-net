@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json.Serialization;
-using Elastic.Transport.Products.Elasticsearch.Failures;
 
 namespace Elastic.Transport.Products.Elasticsearch
 {
