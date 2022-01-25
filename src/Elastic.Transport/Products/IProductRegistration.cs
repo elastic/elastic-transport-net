@@ -103,7 +103,7 @@ namespace Elastic.Transport.Products
 		/// <summary>
 		/// TODO
 		/// </summary>
-		MetaHeaderProviderBase MetaHeaderProvider { get; }
+		MetaHeaderProvider MetaHeaderProvider { get; }
 
 		/// <summary>
 		/// TODO

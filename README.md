@@ -36,7 +36,7 @@ Wrapping clients most likely will list out all `components` explicitly and use `
 
 
 ```c#
-var pool = new StaticConnectionPool(new[] {new Node(new Uri("http://localhost:9200"))});
+var pool = new StaticNodePool(new[] {new Node(new Uri("http://localhost:9200"))});
 var connection = new HttpConnection();
 var serializer = LowLevelRequestResponseSerializer.Instance;
 var product = ElasticsearchProductRegistration.Default;
@@ -88,13 +88,13 @@ var transport = new Transport(settings);
 ### Injection
 
 All components are optional and ship with sane defaults. Typically client users only provide
-the `IConnectionPool` to the transport configuration
+the `NodePool` to the transport configuration
 
 ##### TransportConfiguration:
 
-* `IConnectionPool` a registry of `Nodes` the transport will ask for a view it can iterate over.  
+* `NodePool` a registry of `Nodes` the transport will ask for a view it can iterate over.  
 ONLY if a connection pool indicates it supports receiving new nodes will the transport sniff.
-* `IConnection`  
+* `ITransportClient`  
 Abstraction for the actual IO the transport needs to perform. 
 * `ITransportSerializer`  
 Allows you to inject your own serializer, the default uses `System.Text.Json`

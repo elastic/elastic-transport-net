@@ -17,7 +17,7 @@ namespace Elastic.Transport.Products
 	public class ProductRegistration : IProductRegistration
 	{
 		private readonly HeadersList _headers = new();
-		private readonly MetaHeaderProviderBase _metaHeaderProvider;
+		private readonly MetaHeaderProvider _metaHeaderProvider;
 
 		/// <summary>
 		/// 
@@ -46,7 +46,7 @@ namespace Elastic.Transport.Products
 		public HeadersList ResponseHeadersToParse => _headers;
 
 		/// <inheritdoc cref="IProductRegistration.MetaHeaderProvider"/>
-		public MetaHeaderProviderBase MetaHeaderProvider => _metaHeaderProvider;
+		public MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
 
 		/// <inheritdoc cref="IProductRegistration.ResponseBuilder"/>
 		public ResponseBuilder ResponseBuilder => new DefaultResponseBuilder<EmptyError>();

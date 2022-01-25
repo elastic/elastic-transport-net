@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <IsTestProject>True</IsTestProject>
     <IsPackable>false</IsPackable>
     <NoWarn>CS8002</NoWarn>
@@ -18,11 +18,6 @@
     <PackageReference Include="coverlet.collector" Version="1.3.0" />
     <PackageReference Include="Nullean.VsTest.Pretty.TestLogger" Version="0.3.0" />
     <PackageReference Include="JunitXml.TestLogger" Version="2.1.78" />
-
     <PackageReference Include="FluentAssertions" Version="5.10.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Elastic.Transport.VirtualizedCluster\Elastic.Transport.VirtualizedCluster.csproj" />
   </ItemGroup>
 </Project>

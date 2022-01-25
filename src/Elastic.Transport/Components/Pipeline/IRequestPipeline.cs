@@ -11,7 +11,7 @@ using Elastic.Transport.Diagnostics.Auditing;
 namespace Elastic.Transport
 {
 	/// <summary> Models the workflow of a request to multiple nodes</summary>
-	internal interface IRequestPipeline : IDisposable
+	public interface IRequestPipeline : IDisposable
 	{
 		//TODO should not be List but requires a refactor
 		/// <summary>

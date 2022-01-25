@@ -2,9 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using Elastic.Transport.VirtualizedCluster.Products;
 using Elastic.Transport.VirtualizedCluster.Providers;
 using Elastic.Transport.VirtualizedCluster.Rules;
@@ -30,7 +28,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 		internal string PublishAddressOverride { get; private set; }
 
 		internal bool SniffShouldReturnFqnd { get; private set; }
-		internal string ElasticsearchVersion { get; private set; } = "7.0.0";
+		internal string ElasticsearchVersion { get; private set; } = "8.0.0";
 
 		public IMockProductRegistration ProductRegistration { get; }
 
@@ -76,16 +74,16 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 			return new SealedVirtualCluster(this, new SingleNodeConnectionPool(nodes.First().Uri), DateTimeProvider, ProductRegistration);
 		}
 
-		public SealedVirtualCluster StaticConnectionPool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
+		public SealedVirtualCluster StaticNodePool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
 		{
 			var nodes = seedNodesSelector?.Invoke(InternalNodes) ?? InternalNodes;
-			return new SealedVirtualCluster(this, new StaticConnectionPool(nodes, false, DateTimeProvider), DateTimeProvider, ProductRegistration);
+			return new SealedVirtualCluster(this, new StaticNodePool(nodes, false, DateTimeProvider), DateTimeProvider, ProductRegistration);
 		}
 
-		public SealedVirtualCluster SniffingConnectionPool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
+		public SealedVirtualCluster SniffingNodePool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
 		{
 			var nodes = seedNodesSelector?.Invoke(InternalNodes) ?? InternalNodes;
-			return new SealedVirtualCluster(this, new SniffingConnectionPool(nodes, false, DateTimeProvider), DateTimeProvider, ProductRegistration);
+			return new SealedVirtualCluster(this, new SniffingNodePool(nodes, false, DateTimeProvider), DateTimeProvider, ProductRegistration);
 		}
 
 		public SealedVirtualCluster StickyConnectionPool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
@@ -94,12 +92,12 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 			return new SealedVirtualCluster(this, new StickyConnectionPool(nodes, DateTimeProvider), DateTimeProvider, ProductRegistration);
 		}
 
-		public SealedVirtualCluster StickySniffingConnectionPool(Func<Node, float> sorter = null,
+		public SealedVirtualCluster StickySniffingNodePool(Func<Node, float> sorter = null,
 			Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null
 		)
 		{
 			var nodes = seedNodesSelector?.Invoke(InternalNodes) ?? InternalNodes;
-			return new SealedVirtualCluster(this, new StickySniffingConnectionPool(nodes, sorter, DateTimeProvider), DateTimeProvider, ProductRegistration);
+			return new SealedVirtualCluster(this, new StickySniffingNodePool(nodes, sorter, DateTimeProvider), DateTimeProvider, ProductRegistration);
 		}
 	}
 }

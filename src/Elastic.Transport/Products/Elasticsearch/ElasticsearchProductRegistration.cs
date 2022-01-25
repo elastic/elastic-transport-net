@@ -24,7 +24,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 	public class ElasticsearchProductRegistration : IProductRegistration
 	{
 		private readonly HeadersList _headers;
-		private readonly MetaHeaderProviderBase _metaHeaderProvider;
+		private readonly MetaHeaderProvider _metaHeaderProvider;
 
 		/// <summary>
 		/// Create a new instance of the Elasticsearch product registration.
@@ -57,7 +57,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 		public HeadersList ResponseHeadersToParse => _headers;
 
 		/// <inheritdoc cref="IProductRegistration.MetaHeaderProvider"/>
-		public MetaHeaderProviderBase MetaHeaderProvider => _metaHeaderProvider;
+		public MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
 
 		/// <inheritdoc cref="IProductRegistration.ResponseBuilder"/>
 		public ResponseBuilder ResponseBuilder => new ElasticsearchResponseBuilder();

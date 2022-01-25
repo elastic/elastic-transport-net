@@ -188,7 +188,7 @@ namespace Elastic.Transport
 
 		public TimeSpan DnsRefreshTimeout { get; }
 
-		public MetaHeaderProviderBase MetaHeaderProvider { get; }
+		public MetaHeaderProvider MetaHeaderProvider { get; }
 
 		public IReadOnlyDictionary<string, string> RequestMetaData { get; }
 

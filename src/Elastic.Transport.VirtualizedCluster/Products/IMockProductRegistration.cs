@@ -19,7 +19,7 @@ namespace Elastic.Transport.VirtualizedCluster.Products
 		IProductRegistration ProductRegistration { get; }
 
 		/// <summary>
-		/// Return the sniff response for the product as raw bytes for <see cref="IConnection.Request{TResponse}"/> to return.
+		/// Return the sniff response for the product as raw bytes for <see cref="ITransportClient.Request{TResponse}"/> to return.
 		/// </summary>
 		/// <param name="nodes">The nodes we expect to be returned in the response</param>
 		/// <param name="stackVersion">The current version under test</param>

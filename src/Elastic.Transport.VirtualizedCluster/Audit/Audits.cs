@@ -27,7 +27,7 @@ namespace Elastic.Transport.VirtualizedCluster.Audit
 
 		public ClientCall(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides) => RequestOverrides = requestOverrides;
 
-		public Action<IConnectionPool> AssertPoolAfterCall { get; private set; }
+		public Action<NodePool> AssertPoolAfterCall { get; private set; }
 		public Action<ITransportResponse> AssertResponse { get; private set; }
 		public Func<RequestConfigurationDescriptor, IRequestConfiguration> RequestOverrides { get; }
 
@@ -37,7 +37,7 @@ namespace Elastic.Transport.VirtualizedCluster.Audit
 
 		public void Add(AuditEvent key) => Add(new CallTraceState(key));
 
-		public void Add(Action<IConnectionPool> pool) => AssertPoolAfterCall = pool;
+		public void Add(Action<NodePool> pool) => AssertPoolAfterCall = pool;
 
 		public void Add(AuditEvent key, int port, Action<ITransportResponse> assertResponse)
 		{

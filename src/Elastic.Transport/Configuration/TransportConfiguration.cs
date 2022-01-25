@@ -162,7 +162,7 @@ namespace Elastic.Transport
 		private UserAgent _userAgent;
 		private string _certificateFingerprint;
 		private bool _disableMetaHeader;
-		private readonly MetaHeaderProviderBase _metaHeaderProvider;
+		private readonly MetaHeaderProvider _metaHeaderProvider;
 
 		private readonly Func<HttpMethod, int, bool> _statusCodeToResponseSuccess;
 
@@ -417,7 +417,7 @@ namespace Elastic.Transport
 		private HeadersList _headersToParse;
 		HeadersList ITransportConfiguration.ResponseHeadersToParse => _headersToParse;
 
-		MetaHeaderProviderBase ITransportConfiguration.MetaHeaderProvider => _metaHeaderProvider;
+		MetaHeaderProvider ITransportConfiguration.MetaHeaderProvider => _metaHeaderProvider;
 
 		bool ITransportConfiguration.DisableMetaHeader => _disableMetaHeader;
 

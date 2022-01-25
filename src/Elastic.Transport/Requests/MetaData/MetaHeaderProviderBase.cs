@@ -7,7 +7,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// TODO
 	/// </summary>
-	public abstract class MetaHeaderProviderBase
+	public abstract class MetaHeaderProvider
 	{
 		/// <summary>
 		/// 

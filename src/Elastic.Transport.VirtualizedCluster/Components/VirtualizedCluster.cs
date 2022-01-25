@@ -49,7 +49,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 		}
 
 		public VirtualClusterConnection Connection => Transport.Settings.Connection as VirtualClusterConnection;
-		public IConnectionPool ConnectionPool => Transport.Settings.ConnectionPool;
+		public NodePool ConnectionPool => Transport.Settings.ConnectionPool;
 		public ITransport<ITransportConfiguration> Transport => _exposingRequestPipeline?.Transport;
 
 		public VirtualizedCluster TransportProxiesTo(

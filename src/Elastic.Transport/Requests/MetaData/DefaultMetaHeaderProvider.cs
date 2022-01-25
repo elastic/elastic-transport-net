@@ -9,7 +9,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// 
 	/// </summary>
-	public sealed class DefaultMetaHeaderProvider : MetaHeaderProviderBase
+	public sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
 	{
 		private const string MetaHeaderName = "x-elastic-client-meta";
 
