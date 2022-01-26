@@ -11,7 +11,7 @@ namespace Elastic.Transport
 {
 	internal sealed class ReflectionVersionInfo : VersionInfo
 	{
-		private static readonly Regex VersionRegex = new(@"(\d+\.)(\d+\.)(\d)");
+		private static readonly Regex VersionRegex = new(@"(\d+\.)(\d+\.)(\d)\-?");
 
 		public static readonly ReflectionVersionInfo Empty = new() { Version = new Version(0, 0, 0), IsPrerelease = false };
 
