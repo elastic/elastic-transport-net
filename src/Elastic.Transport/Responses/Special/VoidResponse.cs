@@ -4,20 +4,22 @@
 
 namespace Elastic.Transport
 {
-	/// <summary> A special response that omits reading the response from the server after reading the headers. </summary>
-	public class VoidResponse : TransportResponseBase<VoidResponse.VoidBody>
+	/// <summary>
+	/// A special response that omits reading the response from the server after reading the headers.
+	/// </summary>
+	public sealed class VoidResponse : TransportResponseBase<VoidResponse.VoidBody>
 	{
 		/// <inheritdoc cref="VoidResponse"/>
-		// ReSharper disable once MemberCanBePrivate.Global
 		public VoidResponse() => Body = new VoidBody();
 
-		/// <summary> A static instance that can be reused </summary>
+		/// <summary>
+		/// A static <see cref="VoidResponse"/> instance that can be reused.
+		/// </summary>
 		public static VoidResponse Default { get; } = new VoidResponse();
 
 		/// <summary>
-		/// A class that represents the absence of having read the servers response to completion
+		/// A class that represents the absence of having read the servers response to completion.
 		/// </summary>
-		// ReSharper disable once ClassNeverInstantiated.Global
 		public class VoidBody { }
 	}
 }

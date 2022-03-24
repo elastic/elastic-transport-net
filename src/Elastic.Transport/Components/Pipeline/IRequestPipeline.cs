@@ -11,7 +11,7 @@ using Elastic.Transport.Diagnostics.Auditing;
 namespace Elastic.Transport
 {
 	/// <summary> Models the workflow of a request to multiple nodes</summary>
-	public interface IRequestPipeline : IDisposable
+	public interface IRequestPipeline : IDisposable // TODO - Should we move IDisposable to the implementation / Make this an abstract base type instead?
 	{
 		//TODO should not be List but requires a refactor
 		/// <summary>

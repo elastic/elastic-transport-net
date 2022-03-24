@@ -14,7 +14,7 @@ namespace Elastic.Transport
 	/// A connection pool implementation that supports reseeding but stays on the first <see cref="Node"/> reporting true for <see cref="Node.IsAlive"/>.
 	/// This is great if for instance you have multiple proxies that you can fallback on allowing you to seed the proxies in order of preference.
 	/// </summary>
-	public class StickySniffingNodePool : SniffingNodePool
+	public sealed class StickySniffingNodePool : SniffingNodePool
 	{
 		/// <inheritdoc cref="StickySniffingNodePool"/>
 		public StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)

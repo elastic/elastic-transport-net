@@ -315,15 +315,12 @@ namespace Elastic.Transport
 		/// Equivalent to Dispose
 		/// </summary>
 #if NETSTANDARD1_4
-        public void Close()
+        public void Close() => Dispose(true);
 #else
-		public override void Close()
+		public override void Close() => Dispose(true);
 #endif
-		{
-			Dispose(true);
-		}
 
-		#endregion
+#endregion
 
 		#region MemoryStream overrides
 

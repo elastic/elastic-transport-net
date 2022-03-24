@@ -10,7 +10,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 	/// <summary>
 	/// A response from Elasticsearch
 	/// </summary>
-	public interface IResponse : ITransportResponse
+	public interface IElasticsearchResponse : ITransportResponse
 	{
 		/// <summary>
 		/// A lazily computed, human readable string representation of what happened during a request for both successful and

@@ -13,7 +13,7 @@ namespace Elastic.Transport
 	/// A formatter that can utilize <see cref="ITransportConfiguration" /> to resolve <see cref="IUrlParameter" />'s passed
 	/// as format arguments. It also handles known string representations for e.g bool/Enums/IEnumerable.
 	/// </summary>
-	public class UrlFormatter : IFormatProvider, ICustomFormatter
+	public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 	{
 		private readonly ITransportConfiguration _settings;
 

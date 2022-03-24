@@ -46,10 +46,7 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <value><c>true</c> if this instance has value; otherwise, <c>false</c>.</value>
 		/// <remarks><see langword="null" /> is considered as not being a value.</remarks>
-		public bool HasValue
-		{
-			get { return _value != null; }
-		}
+		public bool HasValue => _value != null;
 
 		/// <summary>
 		/// Try to get key <paramref name="name"/> from the object this instance references
@@ -59,8 +56,7 @@ namespace Elastic.Transport
 		{
 			get
 			{
-				object r;
-				Dispatch(out r, name);
+				Dispatch(out var r, name);
 				return (DynamicValue)r;
 			}
 		}
@@ -94,10 +90,7 @@ namespace Elastic.Transport
 		/// <summary>
 		/// Gets the inner value
 		/// </summary>
-		public object Value
-		{
-			get { return _value; }
-		}
+		public object Value => _value;
 
 		/// <summary>
 		/// Returns the <see cref="T:System.TypeCode" /> for this instance.
@@ -124,10 +117,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public bool ToBoolean(IFormatProvider provider)
-		{
-			return Convert.ToBoolean(_value, provider);
-		}
+		public bool ToBoolean(IFormatProvider provider) => Convert.ToBoolean(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent 8-bit unsigned integer using the specified culture-specific formatting information.
@@ -140,10 +130,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public byte ToByte(IFormatProvider provider)
-		{
-			return Convert.ToByte(_value, provider);
-		}
+		public byte ToByte(IFormatProvider provider) => Convert.ToByte(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent Unicode character using the specified culture-specific formatting information.
@@ -156,10 +143,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public char ToChar(IFormatProvider provider)
-		{
-			return Convert.ToChar(_value, provider);
-		}
+		public char ToChar(IFormatProvider provider) => Convert.ToChar(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent <see cref="T:System.DateTime" /> using the specified culture-specific formatting
@@ -173,10 +157,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public DateTime ToDateTime(IFormatProvider provider)
-		{
-			return Convert.ToDateTime(_value, provider);
-		}
+		public DateTime ToDateTime(IFormatProvider provider) => Convert.ToDateTime(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent <see cref="T:System.Decimal" /> number using the specified culture-specific formatting
@@ -190,10 +171,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public decimal ToDecimal(IFormatProvider provider)
-		{
-			return Convert.ToDecimal(_value, provider);
-		}
+		public decimal ToDecimal(IFormatProvider provider) => Convert.ToDecimal(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent double-precision floating-point number using the specified culture-specific formatting
@@ -207,10 +185,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public double ToDouble(IFormatProvider provider)
-		{
-			return Convert.ToDouble(_value, provider);
-		}
+		public double ToDouble(IFormatProvider provider) => Convert.ToDouble(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent 16-bit signed integer using the specified culture-specific formatting information.
@@ -223,10 +198,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public short ToInt16(IFormatProvider provider)
-		{
-			return Convert.ToInt16(_value, provider);
-		}
+		public short ToInt16(IFormatProvider provider) => Convert.ToInt16(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent 32-bit signed integer using the specified culture-specific formatting information.
@@ -239,10 +211,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public int ToInt32(IFormatProvider provider)
-		{
-			return Convert.ToInt32(_value, provider);
-		}
+		public int ToInt32(IFormatProvider provider) => Convert.ToInt32(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent 64-bit signed integer using the specified culture-specific formatting information.
@@ -255,10 +224,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public long ToInt64(IFormatProvider provider)
-		{
-			return Convert.ToInt64(_value, provider);
-		}
+		public long ToInt64(IFormatProvider provider) => Convert.ToInt64(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent 8-bit signed integer using the specified culture-specific formatting information.
@@ -272,10 +238,7 @@ namespace Elastic.Transport
 		/// </param>
 		/// <filterpriority>2</filterpriority>
 		[CLSCompliant(false)]
-		public sbyte ToSByte(IFormatProvider provider)
-		{
-			return Convert.ToSByte(_value, provider);
-		}
+		public sbyte ToSByte(IFormatProvider provider) => Convert.ToSByte(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent single-precision floating-point number using the specified culture-specific formatting
@@ -289,10 +252,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public float ToSingle(IFormatProvider provider)
-		{
-			return Convert.ToSingle(_value, provider);
-		}
+		public float ToSingle(IFormatProvider provider) => Convert.ToSingle(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent <see cref="T:System.String" /> using the specified culture-specific formatting
@@ -306,10 +266,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public string ToString(IFormatProvider provider)
-		{
-			return Convert.ToString(_value, provider)!;
-		}
+		public string ToString(IFormatProvider provider) => Convert.ToString(_value, provider)!;
 
 		/// <summary>
 		/// Converts the value of this instance to an <see cref="T:System.Object" /> of the specified <see cref="T:System.Type" /> that has an
@@ -325,10 +282,7 @@ namespace Elastic.Transport
 		/// information.
 		/// </param>
 		/// <filterpriority>2</filterpriority>
-		public object ToType(Type conversionType, IFormatProvider provider)
-		{
-			return Convert.ChangeType(_value, conversionType, provider);
-		}
+		public object ToType(Type conversionType, IFormatProvider provider) => Convert.ChangeType(_value, conversionType, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent 16-bit unsigned integer using the specified culture-specific formatting information.
@@ -342,10 +296,7 @@ namespace Elastic.Transport
 		/// </param>
 		/// <filterpriority>2</filterpriority>
 		[CLSCompliant(false)]
-		public ushort ToUInt16(IFormatProvider provider)
-		{
-			return Convert.ToUInt16(_value, provider);
-		}
+		public ushort ToUInt16(IFormatProvider provider) => Convert.ToUInt16(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent 32-bit unsigned integer using the specified culture-specific formatting information.
@@ -359,10 +310,7 @@ namespace Elastic.Transport
 		/// </param>
 		/// <filterpriority>2</filterpriority>
 		[CLSCompliant(false)]
-		public uint ToUInt32(IFormatProvider provider)
-		{
-			return Convert.ToUInt32(_value, provider);
-		}
+		public uint ToUInt32(IFormatProvider provider) => Convert.ToUInt32(_value, provider);
 
 		/// <summary>
 		/// Converts the value of this instance to an equivalent 64-bit unsigned integer using the specified culture-specific formatting information.
@@ -376,10 +324,7 @@ namespace Elastic.Transport
 		/// </param>
 		/// <filterpriority>2</filterpriority>
 		[CLSCompliant(false)]
-		public ulong ToUInt64(IFormatProvider provider)
-		{
-			return Convert.ToUInt64(_value, provider);
-		}
+		public ulong ToUInt64(IFormatProvider provider) => Convert.ToUInt64(_value, provider);
 
 		/// <summary>
 		/// Returns the value as a dictionary if the current value represents an object.
@@ -707,10 +652,7 @@ namespace Elastic.Transport
 			return dynamicValue._value != null && dynamicValue._value.Equals(compareValue);
 		}
 
-		public static bool operator !=(DynamicValue dynamicValue, object compareValue)
-		{
-			return !(dynamicValue == compareValue);
-		}
+		public static bool operator !=(DynamicValue dynamicValue, object compareValue) => !(dynamicValue == compareValue);
 
 		/// <summary>
 		/// Determines whether the specified <see cref="object" /> is equal to the current <see cref="object" />.
@@ -742,10 +684,7 @@ namespace Elastic.Transport
 		/// Serves as a hash function for a particular type.
 		/// </summary>
 		/// <returns>A hash code for the current instance.</returns>
-		public override int GetHashCode()
-		{
-			return _value != null ? _value.GetHashCode() : 0;
-		}
+		public override int GetHashCode() => _value != null ? _value.GetHashCode() : 0;
 
 		/// <summary>
 		/// Provides implementation for binary operations. Classes derived from the <see cref="T:System.Dynamic.DynamicObject" /> class can override
@@ -767,7 +706,6 @@ namespace Elastic.Transport
 		/// <param name="result">The result of the binary operation.</param>
 		public override bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result)
 		{
-			object resultOfCast;
 			result = null;
 
 			if (binder.Operation != ExpressionType.Equal)
@@ -778,7 +716,7 @@ namespace Elastic.Transport
 			var convert =
 				Binder.Convert(CSharpBinderFlags.None, arg.GetType(), typeof(DynamicValue));
 
-			if (!TryConvert((ConvertBinder)convert, out resultOfCast))
+			if (!TryConvert((ConvertBinder)convert, out var resultOfCast))
 			{
 				return false;
 			}
@@ -834,8 +772,7 @@ namespace Elastic.Transport
 
 			if (binderType == typeof(Guid) || binderType == typeof(Guid?))
 			{
-				Guid guid;
-				if (Guid.TryParse(Convert.ToString(_value), out guid))
+				if (Guid.TryParse(Convert.ToString(_value), out var guid))
 				{
 					result = guid;
 					return true;
@@ -843,8 +780,7 @@ namespace Elastic.Transport
 			}
 			else if (binderType == typeof(TimeSpan) || binderType == typeof(TimeSpan?))
 			{
-				TimeSpan timespan;
-				if (TimeSpan.TryParse(Convert.ToString(_value), out timespan))
+				if (TimeSpan.TryParse(Convert.ToString(_value), out var timespan))
 				{
 					result = timespan;
 					return true;
@@ -874,10 +810,7 @@ namespace Elastic.Transport
 			return base.TryConvert(binder, out result);
 		}
 
-		public override string ToString()
-		{
-			return _value == null ? base.ToString() : Convert.ToString(_value);
-		}
+		public override string ToString() => _value == null ? base.ToString() : Convert.ToString(_value);
 
 		public static implicit operator bool(DynamicValue dynamicValue)
 		{
@@ -910,44 +843,27 @@ namespace Elastic.Transport
 		public static implicit operator Guid(DynamicValue dynamicValue)
 		{
 			if (dynamicValue._value is JsonElement e && e.TryGetGuid(out var v)) return v;
-			if (dynamicValue._value is Guid)
-			{
-				return (Guid)dynamicValue._value;
-			}
-
-			return Guid.Parse(dynamicValue.ToString(CultureInfo.InvariantCulture));
+			return dynamicValue._value is Guid guid ? guid : Guid.Parse(dynamicValue.ToString(CultureInfo.InvariantCulture));
 		}
 
 		public static implicit operator DateTime(DynamicValue dynamicValue)
 		{
 			if (dynamicValue._value is JsonElement e && e.TryGetDateTime(out var v)) return v;
-			if (dynamicValue._value is DateTime)
-			{
-				return (DateTime)dynamicValue._value;
-			}
-
-			return DateTime.Parse(dynamicValue.ToString(CultureInfo.InvariantCulture));
+			return dynamicValue._value is DateTime dateTime
+				? dateTime
+				: DateTime.Parse(dynamicValue.ToString(CultureInfo.InvariantCulture));
 		}
 
 		public static implicit operator DateTimeOffset(DynamicValue dynamicValue)
 		{
 			if (dynamicValue._value is JsonElement e && e.TryGetDateTimeOffset(out var v)) return v;
-			if (dynamicValue._value is DateTimeOffset)
-			{
-				return (DateTimeOffset)dynamicValue._value;
-			}
-			return DateTimeOffset.Parse(dynamicValue);
+			return dynamicValue._value is DateTimeOffset offset ? offset : DateTimeOffset.Parse(dynamicValue);
 		}
 
-		public static implicit operator TimeSpan(DynamicValue dynamicValue)
-		{
-			if (dynamicValue._value is TimeSpan)
-			{
-				return (TimeSpan)dynamicValue._value;
-			}
-
-			return TimeSpan.Parse(dynamicValue.ToString(CultureInfo.InvariantCulture));
-		}
+		public static implicit operator TimeSpan(DynamicValue dynamicValue) =>
+			dynamicValue._value is TimeSpan timeSpan
+				? timeSpan
+				: TimeSpan.Parse(dynamicValue.ToString(CultureInfo.InvariantCulture));
 
 		public static implicit operator long(DynamicValue dynamicValue)
 		{

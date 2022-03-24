@@ -13,7 +13,7 @@ namespace Elastic.Transport
 	/// Represents the user agent string. Two constructors exists, one to aid with constructing elastic clients standard compliant
 	/// user agents and one free form to allow any custom string to be set.
 	/// </summary>
-	public class UserAgent
+	public sealed class UserAgent
 	{
 		private readonly string _toString;
 

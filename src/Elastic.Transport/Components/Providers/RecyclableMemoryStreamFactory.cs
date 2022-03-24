@@ -10,7 +10,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// A factory for creating memory streams using a recyclable pool of <see cref="MemoryStream" /> instances
 	/// </summary>
-	public class RecyclableMemoryStreamFactory : IMemoryStreamFactory
+	public sealed class RecyclableMemoryStreamFactory : IMemoryStreamFactory
 	{
 		private const string TagSource = "Elastic.Transport";
 		private readonly RecyclableMemoryStreamManager _manager;

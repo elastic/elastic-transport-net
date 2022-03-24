@@ -5,8 +5,7 @@
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// The minimum interface which custom responses should implement when providing a response type
-	/// to the low level client.
+	/// The minimum interface which custom responses should implement.
 	/// </summary>
 	public interface ITransportResponse
 	{

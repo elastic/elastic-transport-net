@@ -8,7 +8,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport.Diagnostics.Auditing
 {
 	/// <summary> An audit of the request made </summary>
-	public class Audit
+	public sealed class Audit
 	{
 		/// <inheritdoc cref="Audit"/>>
 		public Audit(AuditEvent type, DateTime started)
@@ -22,7 +22,6 @@ namespace Elastic.Transport.Diagnostics.Auditing
 		/// </summary>
 		public AuditEvent Event { get; internal set; }
 
-
 		/// <summary>
 		/// The node on which the request was made
 		/// </summary>
@@ -32,7 +31,6 @@ namespace Elastic.Transport.Diagnostics.Auditing
 		/// The path of the request
 		/// </summary>
 		public string Path { get; internal set; }
-
 
 		/// <summary>
 		/// The end date and time of the audit

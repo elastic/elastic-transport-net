@@ -9,7 +9,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// A factory for creating memory streams using instances of <see cref="MemoryStream" />
 	/// </summary>
-	public class MemoryStreamFactory : IMemoryStreamFactory
+	public sealed class MemoryStreamFactory : IMemoryStreamFactory
 	{
 		/// <summary> Provide a static instance of this stateless class, so it can be reused</summary>
 		public static MemoryStreamFactory Default { get; } = new MemoryStreamFactory();

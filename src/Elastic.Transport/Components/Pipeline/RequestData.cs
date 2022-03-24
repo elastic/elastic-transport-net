@@ -19,7 +19,7 @@ namespace Elastic.Transport
 	/// and <see cref="IRequestConfiguration" />.
 	/// </para>
 	/// </summary>
-	public class RequestData
+	public sealed class RequestData
 	{
 //TODO add xmldocs and clean up this class
 #pragma warning disable 1591
