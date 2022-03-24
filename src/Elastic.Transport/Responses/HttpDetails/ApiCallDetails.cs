@@ -14,7 +14,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <inheritdoc cref="IApiCallDetails"/>
-	public class ApiCallDetails : IApiCallDetails
+	public sealed class ApiCallDetails : IApiCallDetails
 	{
 		private string _debugInformation;
 

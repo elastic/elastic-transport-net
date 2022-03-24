@@ -10,9 +10,9 @@ using System.Text.Json.Serialization;
 namespace Elastic.Transport.Products.Elasticsearch
 {
 	/// <summary>
-	/// 
+	/// Base response for Elasticsearch responses.
 	/// </summary>
-	public abstract class ResponseBase : IResponse
+	public abstract class ElasticsearchResponseBase : IElasticsearchResponse
 	{
 		private IApiCallDetails? _originalApiCall;
 		

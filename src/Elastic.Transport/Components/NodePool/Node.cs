@@ -12,7 +12,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// Represents an endpoint <see cref="Uri"/> with additional associated metadata on which the <see cref="ITransport{TConnectionSettings}"/> can act.
 	/// </summary>
-	public class Node : IEquatable<Node>
+	public sealed class Node : IEquatable<Node>
 	{
 		private IReadOnlyCollection<string> _features;
 
@@ -34,6 +34,7 @@ namespace Elastic.Transport
 		}
 
 		private HashSet<string> _featureSet;
+
 		/// <summary>
 		/// A readonly collection backed by an <see cref="HashSet{T}"/> that signals what features are enabled on the node.
 		/// <para> This is loosely typed as to be agnostic to what solution the transport ends up talking to </para>

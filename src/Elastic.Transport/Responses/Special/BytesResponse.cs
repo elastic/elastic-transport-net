@@ -2,18 +2,19 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
+
 namespace Elastic.Transport
 {
 	/// <summary>
 	/// A response that exposes the response <see cref="TransportResponseBase{T}.Body"/> as byte array
 	/// </summary>
-	public class BytesResponse : TransportResponseBase<byte[]>
+	public sealed class BytesResponse : TransportResponseBase<byte[]>
 	{
 		/// <inheritdoc cref="BytesResponse"/>
-		public BytesResponse() { }
+		public BytesResponse() => Body = Array.Empty<byte>();
 
 		/// <inheritdoc cref="BytesResponse"/>
 		public BytesResponse(byte[] body) => Body = body;
-
 	}
 }

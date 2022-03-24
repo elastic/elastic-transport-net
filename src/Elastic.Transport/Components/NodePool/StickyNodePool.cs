@@ -13,7 +13,7 @@ namespace Elastic.Transport
 	/// A connection pool implementation that does not support reseeding and stays on the first <see cref="Node"/> reporting true for <see cref="Node.IsAlive"/>.
 	/// This is great if for instance you have multiple proxies that you can fallback on allowing you to seed the proxies in order of preference.
 	/// </summary>
-	public class StickyNodePool : StaticNodePool
+	public sealed class StickyNodePool : StaticNodePool
 	{
 		/// <inheritdoc cref="StickyNodePool"/>
 		public StickyNodePool(IEnumerable<Uri> uris, IDateTimeProvider dateTimeProvider = null)

@@ -17,7 +17,9 @@ namespace Elastic.Transport
 			{
 				// Not available after .NET 5.0
 #if NET5_0_OR_GREATER || !DOTNETCORE
+#pragma warning disable IDE0025 // Use expression body for properties
 				return false;
+#pragma warning restore IDE0025 // Use expression body for properties
 #else
 				var curlHandlerExists = typeof(HttpClientHandler).Assembly.GetType("System.Net.Http.CurlHandler") != null;
 				if (!curlHandlerExists)

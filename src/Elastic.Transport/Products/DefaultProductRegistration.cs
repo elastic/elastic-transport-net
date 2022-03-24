@@ -14,7 +14,7 @@ namespace Elastic.Transport.Products
 	/// Can be used to connect to unknown services before they develop their own <see cref="IProductRegistration"/>
 	/// implementations
 	/// </summary>
-	public class ProductRegistration : IProductRegistration
+	public sealed class ProductRegistration : IProductRegistration
 	{
 		private readonly HeadersList _headers = new();
 		private readonly MetaHeaderProvider _metaHeaderProvider;

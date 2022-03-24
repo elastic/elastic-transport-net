@@ -7,7 +7,7 @@ using System;
 namespace Elastic.Transport
 {
 	/// <summary> Provides some information to the transport auditing and diagnostics infrastructure about the serializer in use and its <see cref="Purpose"/> </summary>
-	public class SerializerRegistrationInformation
+	public sealed class SerializerRegistrationInformation
 	{
 		private readonly string _stringRepresentation;
 
