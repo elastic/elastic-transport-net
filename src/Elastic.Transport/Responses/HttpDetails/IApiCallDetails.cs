@@ -15,23 +15,20 @@ namespace Elastic.Transport
 	/// <summary> Details about the API call.</summary>
 	public interface IApiCallDetails
 	{
-		//TODO: Get rid of setter
         /// <summary>
         /// An audit trail of requests made to nodes within the cluster.
         /// </summary>
-        List<Audit> AuditTrail { get; set; }
+        List<Audit> AuditTrail { get; }
 
-		// TODO: Get rid of setter.
 		/// <summary>
 		/// Thread pool thread statistics collected when making a request.
 		/// </summary>
-		ReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; set; }
+		ReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; }
 
-		// TODO: Get rid of setter
 		/// <summary>
 		/// Active TCP connection statistics collected when making a request.
 		/// </summary>
-		ReadOnlyDictionary<TcpState, int> TcpStats { get; set; }
+		ReadOnlyDictionary<TcpState, int> TcpStats { get; }
 
 		/// <summary>
         /// A human readable string representation of what happened during this request for both successful and failed requests.
