@@ -12,7 +12,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 	{
 		protected override void SetErrorOnResponse<TResponse>(TResponse response, ServerError error)
 		{
-			if (response is ElasticsearchResponseBase elasticResponse)
+			if (response is ElasticsearchResponse elasticResponse)
 			{
 				elasticResponse.ServerError = error;
 			}
