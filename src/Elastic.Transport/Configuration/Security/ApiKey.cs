@@ -2,36 +2,26 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System;
-using System.Security;
-
 namespace Elastic.Transport
 {
 	/// <summary>
 	/// Credentials for Api Key Authentication
 	/// </summary>
-	public class ApiKey : IAuthenticationHeader
+	public sealed class ApiKey : AuthorizationHeader
 	{
-		/// <inheritdoc cref="Base64ApiKey"/>
-		public ApiKey(string apiKey) => Value = apiKey.CreateSecureString();
+		private readonly string _apiKey;
 
 		/// <inheritdoc cref="Base64ApiKey"/>
-		public ApiKey(SecureString apiKey) => Value = apiKey;
+		public ApiKey(string apiKey) => _apiKey = apiKey;
 
-		private SecureString Value { get; }
+		/// <inheritdoc cref="AuthorizationHeader.AuthScheme"/>
+		public override string AuthScheme { get; } = "ApiKey";
 
-		/// <inheritdoc cref="IAuthenticationHeader.Header"/>
-		public virtual string Header { get; } = "ApiKey";
-
-		/// <inheritdoc cref="IAuthenticationHeader.TryGetHeader"/>
-		public bool TryGetHeader(out string value)
+		/// <inheritdoc cref="AuthorizationHeader.TryGetAuthorizationParameters(out string)"/>
+		public override bool TryGetAuthorizationParameters(out string value)
 		{
-			value = Value.CreateString();
+			value = _apiKey;
 			return true;
 		}
-
-		/// <inheritdoc cref="IDisposable.Dispose "/>
-		public void Dispose() => Value?.Dispose();
-
 	}
 }

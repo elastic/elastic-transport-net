@@ -3,49 +3,31 @@
 // See the LICENSE file in the project root for more information
 
 using System;
-using System.Security;
 using System.Text;
 
 namespace Elastic.Transport
 {
-	/// <summary> Credentials for Basic Authentication </summary>
-	public class BasicAuthentication : IAuthenticationHeader
+	/// <summary>
+	/// Credentials for Basic Authentication.
+	/// </summary>
+	public sealed class BasicAuthentication : AuthorizationHeader
 	{
-		/// <inheritdoc cref="BasicAuthentication"/>
-		public BasicAuthentication(string username, string password)
-		{
-			Username = username;
-			_cachedHeaderValue = GetBase64String($"{Username}:{password}");
-		}
-
-		/// <inheritdoc cref="BasicAuthentication"/>
-		public BasicAuthentication(string username, SecureString password)
-		{
-			Username = username;
-			Password = password;
-		}
-
-		private readonly string _cachedHeaderValue;
-
-		/// <summary> The password with which to authenticate </summary>
-		private SecureString Password { get; }
-
-		/// <summary> The username with which to authenticate </summary>
-		private string Username { get; }
-
-		/// <inheritdoc cref="IDisposable.Dispose "/>
-		public void Dispose() => Password?.Dispose();
-
-		/// <inheritdoc cref="IAuthenticationHeader.Header"/>
-		public string Header { get; } = Base64Header;
+		private readonly string _base64String;
 
 		/// <summary> The default http header used for basic authentication </summary>
-		public static string Base64Header { get; } = "Basic";
+		public static string BasicAuthenticationScheme { get; } = "Basic";
 
-		/// <inheritdoc cref="IAuthenticationHeader.TryGetHeader"/>
-		public bool TryGetHeader(out string value)
+		/// <inheritdoc cref="BasicAuthentication"/>
+		public BasicAuthentication(string username, string password) =>
+			_base64String = GetBase64String($"{username}:{password}");
+
+		/// <inheritdoc cref="AuthorizationHeader.AuthScheme"/>
+		public override string AuthScheme { get; } = BasicAuthenticationScheme;
+
+		/// <inheritdoc cref="AuthorizationHeader.TryGetAuthorizationParameters(out string)"/>
+		public override bool TryGetAuthorizationParameters(out string value)
 		{
-			value = _cachedHeaderValue ?? GetBase64String($"{Username}:{Password.CreateString()}");
+			value = _base64String;
 			return true;
 		}
 

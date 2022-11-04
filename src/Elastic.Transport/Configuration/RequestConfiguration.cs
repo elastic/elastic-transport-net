@@ -28,7 +28,7 @@ namespace Elastic.Transport
 		/// <summary>
 		/// Provide an authentication header override for this request
 		/// </summary>
-		IAuthenticationHeader AuthenticationHeader { get; set; }
+		AuthorizationHeader AuthenticationHeader { get; set; }
 
 		/// <summary>
 		/// Use the following client certificates to authenticate this single request
@@ -137,7 +137,7 @@ namespace Elastic.Transport
 		/// <inheritdoc />
 		public IReadOnlyCollection<int> AllowedStatusCodes { get; set; }
 		/// <inheritdoc />
-		public IAuthenticationHeader AuthenticationHeader { get; set; }
+		public AuthorizationHeader AuthenticationHeader { get; set; }
 		/// <inheritdoc />
 		public X509CertificateCollection ClientCertificates { get; set; }
 		/// <inheritdoc />
@@ -215,7 +215,7 @@ namespace Elastic.Transport
 
 		string IRequestConfiguration.Accept { get; set; }
 		IReadOnlyCollection<int> IRequestConfiguration.AllowedStatusCodes { get; set; }
-		IAuthenticationHeader IRequestConfiguration.AuthenticationHeader { get; set; }
+		AuthorizationHeader IRequestConfiguration.AuthenticationHeader { get; set; }
 		X509CertificateCollection IRequestConfiguration.ClientCertificates { get; set; }
 		string IRequestConfiguration.ContentType { get; set; }
 		bool? IRequestConfiguration.DisableDirectStreaming { get; set; }
@@ -337,8 +337,8 @@ namespace Elastic.Transport
 			return this;
 		}
 
-		/// <inheritdoc cref="IAuthenticationHeader"/>
-		public RequestConfigurationDescriptor Authentication(IAuthenticationHeader authentication)
+		/// <inheritdoc cref="AuthorizationHeader"/>
+		public RequestConfigurationDescriptor Authentication(AuthorizationHeader authentication)
 		{
 			Self.AuthenticationHeader = authentication;
 			return this;
