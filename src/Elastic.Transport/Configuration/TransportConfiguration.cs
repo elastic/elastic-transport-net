@@ -126,7 +126,7 @@ namespace Elastic.Transport
 		private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 		private readonly UrlFormatter _urlFormatter;
 
-		private IAuthenticationHeader _authenticationHeader;
+		private AuthorizationHeader _authenticationHeader;
 		private X509CertificateCollection _clientCertificates;
 		private Action<IApiCallDetails> _completedRequestHandler = DefaultCompletedRequestHandler;
 		private int _transportClientLimit;
@@ -145,7 +145,7 @@ namespace Elastic.Transport
 		private Action<RequestData> _onRequestDataCreated = DefaultRequestDataCreated;
 		private TimeSpan? _pingTimeout;
 		private string _proxyAddress;
-		private SecureString _proxyPassword;
+		private string _proxyPassword;
 		private string _proxyUsername;
 		private TimeSpan _requestTimeout;
 		private TimeSpan _dnsRefreshTimeout;
@@ -212,7 +212,7 @@ namespace Elastic.Transport
 		// ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
 		protected Serializer UseThisRequestResponseSerializer { get; set; }
 
-		IAuthenticationHeader ITransportConfiguration.Authentication => _authenticationHeader;
+		AuthorizationHeader ITransportConfiguration.Authentication => _authenticationHeader;
 		SemaphoreSlim ITransportConfiguration.BootstrapLock => _semaphore;
 		X509CertificateCollection ITransportConfiguration.ClientCertificates => _clientCertificates;
 		ITransportClient ITransportConfiguration.Connection => _transportClient;
@@ -238,7 +238,7 @@ namespace Elastic.Transport
 		Action<RequestData> ITransportConfiguration.OnRequestDataCreated => _onRequestDataCreated;
 		TimeSpan? ITransportConfiguration.PingTimeout => _pingTimeout;
 		string ITransportConfiguration.ProxyAddress => _proxyAddress;
-		SecureString ITransportConfiguration.ProxyPassword => _proxyPassword;
+		string ITransportConfiguration.ProxyPassword => _proxyPassword;
 		string ITransportConfiguration.ProxyUsername => _proxyUsername;
 		NameValueCollection ITransportConfiguration.QueryStringParameters => _queryString;
 		Serializer ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
@@ -349,12 +349,6 @@ namespace Elastic.Transport
 		public T Proxy(Uri proxyAddress, string username, string password) =>
 			Assign(proxyAddress.ToString(), (a, v) => a._proxyAddress = v)
 				.Assign(username, (a, v) => a._proxyUsername = v)
-				.Assign(password, (a, v) => a._proxyPassword = v.CreateSecureString());
-
-		/// <inheritdoc cref="Proxy(System.Uri,string,string)"/>>
-		public T Proxy(Uri proxyAddress, string username, SecureString password) =>
-			Assign(proxyAddress.ToString(), (a, v) => a._proxyAddress = v)
-				.Assign(username, (a, v) => a._proxyUsername = v)
 				.Assign(password, (a, v) => a._proxyPassword = v);
 
 		/// <inheritdoc cref="ITransportConfiguration.DisableDirectStreaming"/>
@@ -369,8 +363,8 @@ namespace Elastic.Transport
 		public T OnRequestDataCreated(Action<RequestData> handler) =>
 			Assign(handler, (a, v) => a._onRequestDataCreated += v ?? DefaultRequestDataCreated);
 
-		/// <inheritdoc cref="IAuthenticationHeader"/>
-		public T Authentication(IAuthenticationHeader header) => Assign(header, (a, v) => a._authenticationHeader = v);
+		/// <inheritdoc cref="AuthorizationHeader"/>
+		public T Authentication(AuthorizationHeader header) => Assign(header, (a, v) => a._authenticationHeader = v);
 
 		/// <inheritdoc cref="ITransportConfiguration.HttpPipeliningEnabled"/>
 		public T EnableHttpPipelining(bool enabled = true) => Assign(enabled, (a, v) => a._enableHttpPipelining = v);
@@ -473,8 +467,6 @@ namespace Elastic.Transport
 			_nodePool?.Dispose();
 			_transportClient?.Dispose();
 			_semaphore?.Dispose();
-			_proxyPassword?.Dispose();
-			_authenticationHeader?.Dispose();
 		}
 
 		/// <summary> Allows subclasses to add/remove default global query string parameters </summary>

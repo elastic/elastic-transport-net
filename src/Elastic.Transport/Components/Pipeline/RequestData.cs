@@ -126,7 +126,7 @@ namespace Elastic.Transport
 
 		public string Accept { get; }
 		public IReadOnlyCollection<int> AllowedStatusCodes { get; }
-		public IAuthenticationHeader AuthenticationHeader { get; }
+		public AuthorizationHeader AuthenticationHeader { get; }
 		public X509CertificateCollection ClientCertificates { get; }
 		public ITransportConfiguration ConnectionSettings { get; }
 		public CustomResponseBuilder CustomResponseBuilder { get; }
@@ -159,7 +159,7 @@ namespace Elastic.Transport
 		public bool Pipelined { get; }
 		public PostData PostData { get; }
 		public string ProxyAddress { get; }
-		public SecureString ProxyPassword { get; }
+		public string ProxyPassword { get; }
 		public string ProxyUsername { get; }
 		// TODO: rename to ContentType in 8.0.0
 		public string RequestMimeType { get; }

@@ -370,22 +370,22 @@ namespace Elastic.Transport
 			// 2 - Specified on the request
 			// 3 - Specified at the global ITransportClientSettings level (lowest precedence)
 
-			string value = null;
-			string key = null;
+			string parameters = null;
+			string scheme = null;
 			if (!requestData.Uri.UserInfo.IsNullOrEmpty())
 			{
-				value = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(requestData.Uri.UserInfo));
-				key = BasicAuthentication.Base64Header;
+				parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(requestData.Uri.UserInfo));
+				scheme = BasicAuthentication.BasicAuthenticationScheme;
 			}
-			else if (requestData.AuthenticationHeader != null && requestData.AuthenticationHeader.TryGetHeader(out var v))
+			else if (requestData.AuthenticationHeader != null && requestData.AuthenticationHeader.TryGetAuthorizationParameters(out var v))
 			{
-				value = v;
-				key = requestData.AuthenticationHeader.Header;
+				parameters = v;
+				scheme = requestData.AuthenticationHeader.AuthScheme;
 			}
 
-			if (value.IsNullOrEmpty()) return;
+			if (parameters.IsNullOrEmpty()) return;
 
-			requestMessage.Headers.Authorization = new AuthenticationHeaderValue(key, value);
+			requestMessage.Headers.Authorization = new AuthenticationHeaderValue(scheme, parameters);
 		}
 
 		private static HttpRequestMessage CreateRequestMessage(RequestData requestData)

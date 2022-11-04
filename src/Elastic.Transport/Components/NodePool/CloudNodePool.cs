@@ -16,8 +16,6 @@ namespace Elastic.Transport
 	/// </summary>
 	public sealed class CloudNodePool : SingleNodePool
 	{
-		private bool _disposed;
-
 		/// <summary>
 		/// An <see cref="NodePool"/> implementation that can be seeded with a cloud id
 		/// and will signal the right defaults for the client to use for Elastic Cloud to <see cref="ITransportConfiguration"/>.
@@ -39,7 +37,7 @@ namespace Elastic.Transport
 		/// </param>
 		/// <param name="credentials"></param>
 		/// <param name="dateTimeProvider">Optionally inject an instance of <see cref="IDateTimeProvider"/> used to set <see cref="NodePool.LastUpdate"/></param>
-		public CloudNodePool(string cloudId, IAuthenticationHeader credentials, IDateTimeProvider dateTimeProvider = null) : this(ParseCloudId(cloudId), dateTimeProvider) =>
+		public CloudNodePool(string cloudId, AuthorizationHeader credentials, IDateTimeProvider dateTimeProvider = null) : this(ParseCloudId(cloudId), dateTimeProvider) =>
 			AuthenticationHeader  = credentials;
 
 		private CloudNodePool(ParsedCloudId parsedCloudId, IDateTimeProvider dateTimeProvider = null) : base(parsedCloudId.Uri, dateTimeProvider) =>
@@ -49,8 +47,8 @@ namespace Elastic.Transport
 		// ReSharper disable once UnusedAutoPropertyAccessor.Local
 		private string ClusterName { get; }
 
-		/// <inheritdoc cref="IAuthenticationHeader"/>
-		public IAuthenticationHeader AuthenticationHeader { get; }
+		/// <inheritdoc cref="AuthorizationHeader"/>
+		public AuthorizationHeader AuthenticationHeader { get; }
 
 		private readonly struct ParsedCloudId
 		{
@@ -96,19 +94,6 @@ namespace Elastic.Transport
 		}
 
 		/// <inheritdoc />
-		protected override void Dispose(bool disposing)
-		{
-			if (!_disposed)
-			{
-				if (disposing)
-				{
-					AuthenticationHeader?.Dispose();
-				}
-
-				_disposed = true;
-			}
-
-			base.Dispose(disposing);
-		}
+		protected override void Dispose(bool disposing) => base.Dispose(disposing);
 	}
 }

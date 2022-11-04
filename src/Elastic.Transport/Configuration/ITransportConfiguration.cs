@@ -19,8 +19,8 @@ namespace Elastic.Transport
 	/// </summary>
 	public interface ITransportConfiguration : IDisposable
 	{
-		/// <inheritdoc cref="IAuthenticationHeader"/>
-		IAuthenticationHeader Authentication { get; }
+		/// <inheritdoc cref="AuthorizationHeader"/>
+		AuthorizationHeader Authentication { get; }
 
 		/// <summary> Provides a semaphoreslim to transport implementations that need to limit access to a resource</summary>
 		SemaphoreSlim BootstrapLock { get; }
@@ -169,7 +169,7 @@ namespace Elastic.Transport
 		/// <summary>
 		/// The password for the proxy, when configured
 		/// </summary>
-		SecureString ProxyPassword { get; }
+		string ProxyPassword { get; }
 
 		/// <summary>
 		/// The username for the proxy, when configured
