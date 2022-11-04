@@ -5,13 +5,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
+using Elastic.Transport.Diagnostics;
 
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// 
+	/// Builds a <see cref="ITransportResponse"/> from the provided response data.
 	/// </summary>
 	public abstract class ResponseBuilder
 	{
@@ -25,7 +27,10 @@ namespace Elastic.Transport
 			Dictionary<string, IEnumerable<string>> headers,
 			Stream responseStream,
 			string mimeType,
-			long contentLength
+			long contentLength,
+			IReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats,
+			IReadOnlyDictionary<TcpState, int> tcpStats
+
 		) where TResponse : class, ITransportResponse, new();
 
 		/// <summary>
@@ -39,6 +44,8 @@ namespace Elastic.Transport
 			Stream responseStream,
 			string mimeType,
 			long contentLength,
+			IReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats,
+			IReadOnlyDictionary<TcpState, int> tcpStats,
 			CancellationToken cancellationToken = default
 		) where TResponse : class, ITransportResponse, new();
 	}

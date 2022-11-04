@@ -32,8 +32,8 @@ namespace Elastic.Transport.VirtualizedCluster.Audit
 		public Action<NodePool> AssertPoolBeforeCall { get; set; }
 		public Action<NodePool> AssertPoolBeforeStartup { get; set; }
 
-		public IReadOnlyCollection<Elastic.Transport.Diagnostics.Auditing.Audit> AsyncAuditTrail { get; set; }
-		public IReadOnlyCollection<Elastic.Transport.Diagnostics.Auditing.Audit> AuditTrail { get; set; }
+		public IEnumerable<Diagnostics.Auditing.Audit> AsyncAuditTrail { get; set; }
+		public IEnumerable<Diagnostics.Auditing.Audit> AuditTrail { get; set; }
 		public Func<Components.VirtualizedCluster> Cluster { get; set; }
 
 		public ITransportResponse Response { get; internal set; }
@@ -131,8 +131,9 @@ namespace Elastic.Transport.VirtualizedCluster.Audit
 
 			if (Response.ApiCall.Success) throw new Exception("Expected call to not be valid");
 
-			var exception = Response.ApiCall.OriginalException as TransportException;
-			if (exception == null) throw new Exception("OriginalException on response is not expected TransportException");
+			if (Response.ApiCall.OriginalException is not TransportException exception)
+				throw new Exception("OriginalException on response is not expected TransportException");
+
 			assert(exception);
 
 			AuditTrail = exception.AuditTrail;
@@ -181,7 +182,10 @@ namespace Elastic.Transport.VirtualizedCluster.Audit
 		private Auditor AssertAuditTrails(ClientCall callTrace, int nthCall)
 		{
 			var nl = Environment.NewLine;
-			if (AuditTrail.Count != AsyncAuditTrail.Count)
+
+			if (AuditTrail is ICollection<Diagnostics.Auditing.Audit> at && AsyncAuditTrail is ICollection<Diagnostics.Auditing.Audit> ata && at.Count != ata.Count)
+				throw new Exception($"{nthCall} has a mismatch between sync and async. {nl}async:{AuditTrail}{nl}sync:{AsyncAuditTrail}");
+			else if (AuditTrail.Count() != AsyncAuditTrail.Count())
 				throw new Exception($"{nthCall} has a mismatch between sync and async. {nl}async:{AuditTrail}{nl}sync:{AsyncAuditTrail}");
 
 			AssertTrailOnResponse(callTrace, AuditTrail, true, nthCall);
@@ -211,7 +215,7 @@ namespace Elastic.Transport.VirtualizedCluster.Audit
 			throw new Exception(string.Join(Environment.NewLine, messages));
 		}
 
-		private static string AuditTrailToString(List<Elastic.Transport.Diagnostics.Auditing.Audit> auditTrail)
+		private static string AuditTrailToString(IEnumerable<Diagnostics.Auditing.Audit> auditTrail)
 		{
 			var actualAuditTrail = auditTrail.Aggregate(new StringBuilder(),
 				(sb, a) => sb.AppendLine($"-> {a}"),
@@ -226,7 +230,7 @@ namespace Elastic.Transport.VirtualizedCluster.Audit
 			return auditor;
 		}
 
-		private static void AssertTrailOnResponse(ClientCall callTrace, IReadOnlyCollection<Diagnostics.Auditing.Audit> auditTrail, bool sync, int nthCall)
+		private static void AssertTrailOnResponse(ClientCall callTrace, IEnumerable<Diagnostics.Auditing.Audit> auditTrail, bool sync, int nthCall)
 		{
 			var typeOfTrail = (sync ? "synchronous" : "asynchronous") + " audit trail";
 			var nthClientCall = (nthCall + 1).ToOrdinal();
@@ -256,7 +260,9 @@ namespace Elastic.Transport.VirtualizedCluster.Audit
 				c.AssertWithBecause?.Invoke(string.Format(because, "custom assertion"), audit);
 			}
 
-			if (callTrace.Count != auditTrail.Count)
+			if (auditTrail is ICollection<Diagnostics.Auditing.Audit> at && callTrace.Count != at.Count)
+				throw new Exception($"callTrace has {callTrace.Count} items. Actual auditTrail {actualAuditTrail}");
+			else if (callTrace.Count != auditTrail.Count())
 				throw new Exception($"callTrace has {callTrace.Count} items. Actual auditTrail {actualAuditTrail}");
 		}
 

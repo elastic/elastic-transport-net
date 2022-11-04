@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
 using Elastic.Transport.Diagnostics;
@@ -15,23 +14,20 @@ namespace Elastic.Transport
 	/// <summary> Details about the API call.</summary>
 	public interface IApiCallDetails
 	{
-		//TODO: Get rid of setter
         /// <summary>
         /// An audit trail of requests made to nodes within the cluster.
         /// </summary>
-        List<Audit> AuditTrail { get; set; }
+        IEnumerable<Audit> AuditTrail { get; }
 
-		// TODO: Get rid of setter.
 		/// <summary>
 		/// Thread pool thread statistics collected when making a request.
 		/// </summary>
-		ReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; set; }
+		IReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; }
 
-		// TODO: Get rid of setter
 		/// <summary>
 		/// Active TCP connection statistics collected when making a request.
 		/// </summary>
-		ReadOnlyDictionary<TcpState, int> TcpStats { get; set; }
+		IReadOnlyDictionary<TcpState, int> TcpStats { get; }
 
 		/// <summary>
         /// A human readable string representation of what happened during this request for both successful and failed requests.
@@ -41,7 +37,7 @@ namespace Elastic.Transport
 		/// <summary>
 		/// Reference to the connection configuration that yielded this response.
 		/// </summary>
-		ITransportConfiguration ConnectionConfiguration { get; }
+		ITransportConfiguration TransportConfiguration { get; }
 
 		/// <summary>
 		/// The HTTP method used by the request.
@@ -62,7 +58,7 @@ namespace Elastic.Transport
 		/// When no headers have been configured for parsing, or no matching headers were found,
 		/// this will be null.
 		/// </summary>
-		ReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; }
+		IReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; }
 
 		/// <summary>
 		/// The request body bytes.

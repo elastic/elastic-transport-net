@@ -39,7 +39,7 @@ namespace Elastic.Transport.Tests
 			};
 
 			var stream = new TrackDisposeStream();
-			var response = _settings.ProductRegistration.ResponseBuilder.ToResponse<TestResponse>(requestData, null, statusCode, null, stream, null, -1);
+			var response = _settings.ProductRegistration.ResponseBuilder.ToResponse<TestResponse>(requestData, null, statusCode, null, stream, null, -1, null, null);
 			response.Should().NotBeNull();
 
 			memoryStreamFactory.Created.Count().Should().Be(disableDirectStreaming ? 1 : 0);
@@ -53,7 +53,7 @@ namespace Elastic.Transport.Tests
 
 			stream = new TrackDisposeStream();
 			var ct = new CancellationToken();
-			response = await _settings.ProductRegistration.ResponseBuilder.ToResponseAsync<TestResponse>(requestData, null, statusCode, null, stream, null, -1,
+			response = await _settings.ProductRegistration.ResponseBuilder.ToResponseAsync<TestResponse>(requestData, null, statusCode, null, stream, null, -1, null, null,
 				cancellationToken: ct);
 			response.Should().NotBeNull();
 			memoryStreamFactory.Created.Count().Should().Be(disableDirectStreaming ? 2 : 0);
@@ -86,7 +86,7 @@ namespace Elastic.Transport.Tests
 			};
 
 			var stream = new TrackDisposeStream();
-			var response = _settings.ProductRegistration.ResponseBuilder.ToResponse<TestResponse>(requestData, null, statusCode, null, stream, null, -1);
+			var response = _settings.ProductRegistration.ResponseBuilder.ToResponse<TestResponse>(requestData, null, statusCode, null, stream, null, -1, null, null);
 			response.Should().NotBeNull();
 
 			memoryStreamFactory.Created.Count().Should().Be(disableDirectStreaming ? 1 : 0);
@@ -94,7 +94,7 @@ namespace Elastic.Transport.Tests
 
 			stream = new TrackDisposeStream();
 			var ct = new CancellationToken();
-			response = await _settings.ProductRegistration.ResponseBuilder.ToResponseAsync<TestResponse>(requestData, null, statusCode, null, stream, null, -1,
+			response = await _settings.ProductRegistration.ResponseBuilder.ToResponseAsync<TestResponse>(requestData, null, statusCode, null, stream, null, -1, null, null,
 				cancellationToken: ct);
 			response.Should().NotBeNull();
 			memoryStreamFactory.Created.Count().Should().Be(disableDirectStreaming ? 2 : 0);

@@ -12,7 +12,7 @@ namespace Elastic.Transport.Diagnostics
 	/// <summary>
 	/// Gets statistics about TCP connections
 	/// </summary>
-	public static class TcpStats
+	internal static class TcpStats
 	{
 		private static readonly int StateLength = Enum.GetNames(typeof(TcpState)).Length;
 

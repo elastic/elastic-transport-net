@@ -99,13 +99,7 @@ namespace Elastic.Transport
 			}
 
 			responseStream ??= Stream.Null;
-			var response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength);
-
-			// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
-			// gathering stats, they are still exposed on the call details. Ideally these would be set inside ResponseBuilder.ToResponse,
-			// but doing so would be a breaking change in 7.x
-			response.ApiCall.TcpStats = tcpStats;
-			response.ApiCall.ThreadPoolStats = threadPoolStats;
+			var response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 			return response;
 		}
 
@@ -183,14 +177,8 @@ namespace Elastic.Transport
 			}
 			responseStream ??= Stream.Null;
 			var response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, cancellationToken)
+					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
 				.ConfigureAwait(false);
-
-			// set TCP and threadpool stats on the response here so that in the event the request fails after the point of
-			// gathering stats, they are still exposed on the call details. Ideally these would be set inside ResponseBuilder.ToResponse,
-			// but doing so would be a breaking change in 7.x
-			response.ApiCall.TcpStats = tcpStats;
-			response.ApiCall.ThreadPoolStats = threadPoolStats;
 			return response;
 		}
 

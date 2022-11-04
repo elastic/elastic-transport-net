@@ -78,7 +78,7 @@ namespace Elastic.Transport
 		/// Write the exceptions recorded in <paramref name="auditTrail"/> to <paramref name="sb"/> in
 		/// a debuggable and human readable string
 		/// </summary>
-		public static void DebugAuditTrailExceptions(IReadOnlyCollection<Audit> auditTrail, StringBuilder sb)
+		public static void DebugAuditTrailExceptions(IEnumerable<Audit> auditTrail, StringBuilder sb)
 		{
 			if (auditTrail == null) return;
 
@@ -91,7 +91,7 @@ namespace Elastic.Transport
 		/// Write the events recorded in <paramref name="auditTrail"/> to <paramref name="sb"/> in
 		/// a debuggable and human readable string
 		/// </summary>
-		public static void DebugAuditTrail(IReadOnlyCollection<Audit> auditTrail, StringBuilder sb)
+		public static void DebugAuditTrail(IEnumerable<Audit> auditTrail, StringBuilder sb)
 		{
 			if (auditTrail == null) return;
 

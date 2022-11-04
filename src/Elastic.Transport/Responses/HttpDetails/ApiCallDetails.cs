@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Net.NetworkInformation;
 using System.Text;
 using Elastic.Transport.Diagnostics;
@@ -19,13 +18,13 @@ namespace Elastic.Transport
 		private string _debugInformation;
 
 		/// <inheritdoc cref="IApiCallDetails.AuditTrail"/>
-		public List<Audit> AuditTrail { get; set; }
+		public IEnumerable<Audit> AuditTrail { get; set; }
 
 		/// <inheritdoc cref="IApiCallDetails.ThreadPoolStats"/>
-		public ReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; set; }
+		public IReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; set; }
 
 		/// <inheritdoc cref="IApiCallDetails.TcpStats"/>
-		public ReadOnlyDictionary<TcpState, int> TcpStats { get; set; }
+		public IReadOnlyDictionary<TcpState, int> TcpStats { get; set; }
 
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		public string DebugInformation
@@ -64,7 +63,7 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="IApiCallDetails.Success"/>
 		public bool Success { get; set; }
 
-		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
+		/// <inheritdoc cref="IApiCallDetails.SuccessOrKnownError"/>
 		public bool SuccessOrKnownError =>
 			Success || HttpStatusCode >= 400
 			&& HttpStatusCode < 599
@@ -72,21 +71,23 @@ namespace Elastic.Transport
 			&& HttpStatusCode != 503 //service unavailable needs to be retried
 			&& HttpStatusCode != 502;
 
-		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
+		/// <inheritdoc cref="IApiCallDetails.Uri"/>
 		public Uri Uri { get; set; }
 
-		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
-		public ITransportConfiguration ConnectionConfiguration { get; set; }
+		/// <inheritdoc cref="IApiCallDetails.TransportConfiguration"/>
+		public ITransportConfiguration TransportConfiguration { get; set; }
 
 		/// <inheritdoc cref="IApiCallDetails.ParsedHeaders"/>
-		public ReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; set; }
+		public IReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; set; }
 
 		/// <summary>
-		/// 
+		/// The error response is the server returned JSON describing a server error.
 		/// </summary>
 		public ErrorResponse ErrorResponse { get; set; } = EmptyError.Instance;
 
-		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
+		/// <summary>
+		/// A string summarising the API call.
+		/// </summary>
 		public override string ToString() =>
 			$"{(Success ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on {HttpMethod.GetStringValue()}: {Uri.PathAndQuery}";
 	}

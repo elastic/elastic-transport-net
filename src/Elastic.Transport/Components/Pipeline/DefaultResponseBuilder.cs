@@ -7,9 +7,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Elastic.Transport.Diagnostics;
 using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport
@@ -43,12 +45,14 @@ namespace Elastic.Transport
 			Dictionary<string, IEnumerable<string>> headers,
 			Stream responseStream,
 			string mimeType,
-			long contentLength
+			long contentLength,
+			IReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats,
+			IReadOnlyDictionary<TcpState, int> tcpStats
 		)
 		{
 			responseStream.ThrowIfNull(nameof(responseStream));
 
-			var details = Initialize(requestData, ex, statusCode, headers, mimeType);
+			var details = Initialize(requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats);
 
 			TResponse response = null;
 
@@ -75,12 +79,14 @@ namespace Elastic.Transport
 			Stream responseStream,
 			string mimeType,
 			long contentLength,
+			IReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats,
+			IReadOnlyDictionary<TcpState, int> tcpStats,
 			CancellationToken cancellationToken = default
 		)
 		{
 			responseStream.ThrowIfNull(nameof(responseStream));
 
-			var details = Initialize(requestData, ex, statusCode, headers, mimeType);
+			var details = Initialize(requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats);
 
 			TResponse response = null;
 
@@ -104,7 +110,8 @@ namespace Elastic.Transport
 			contentLength != 0 && (!statusCode.HasValue || statusCode.Value != 204 && httpMethod != HttpMethod.HEAD);
 
 		private static ApiCallDetails Initialize(
-			RequestData requestData, Exception exception, int? statusCode, Dictionary<string, IEnumerable<string>> headers, string mimeType
+			RequestData requestData, Exception exception, int? statusCode, Dictionary<string, IEnumerable<string>> headers, string mimeType, IReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats,
+			IReadOnlyDictionary<TcpState, int> tcpStats
 		)
 		{
 			var success = false;
@@ -130,9 +137,10 @@ namespace Elastic.Transport
 				RequestBodyInBytes = requestData.PostData?.WrittenBytes,
 				Uri = requestData.Uri,
 				HttpMethod = requestData.Method,
-				//DeprecationWarnings = warnings ?? Enumerable.Empty<string>(),
+				TcpStats = tcpStats,
+				ThreadPoolStats = threadPoolStats,
 				ResponseMimeType = mimeType,
-				ConnectionConfiguration = requestData.ConnectionSettings
+				TransportConfiguration = requestData.ConnectionSettings
 			};
 
 			if (headers is not null)

@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace Elastic.Transport.Products.Elasticsearch
 {
-	internal class ElasticsearchResponseBuilder : DefaultResponseBuilder<ServerError>
+	internal sealed class ElasticsearchResponseBuilder : DefaultResponseBuilder<ServerError>
 	{
 		protected override void SetErrorOnResponse<TResponse>(TResponse response, ServerError error)
 		{

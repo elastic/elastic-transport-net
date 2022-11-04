@@ -158,7 +158,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 			}
 			catch (TheException e)
 			{
-				return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, e, null, null, Stream.Null, null, -1);
+				return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, e, null, null, Stream.Null, null, -1, null, null);
 			}
 		}
 

@@ -178,10 +178,11 @@ namespace Elastic.Transport
 				//make sure we copy over the error body in case we disabled direct streaming.
 				var s = callDetails?.ResponseBodyInBytes == null ? Stream.Null : _memoryStreamFactory.Create(callDetails.ResponseBodyInBytes);
 				var m = callDetails?.ResponseMimeType ?? RequestData.MimeType;
-				response = _responseBuilder.ToResponse<TResponse>(data, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1);
+				response = _responseBuilder.ToResponse<TResponse>(data, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
 			}
 
-			response.ApiCall.AuditTrail = AuditTrail;
+			if (response.ApiCall is ApiCallDetails apiCallDetails)
+				apiCallDetails.AuditTrail = AuditTrail;
 		}
 
 		public TResponse CallProductEndpoint<TResponse>(RequestData requestData)
@@ -196,7 +197,10 @@ namespace Elastic.Transport
 				{
 					var response = _transportClient.Request<TResponse>(requestData);
 					d.EndState = response.ApiCall;
-					response.ApiCall.AuditTrail = AuditTrail;
+
+					if (response.ApiCall is ApiCallDetails apiCallDetails)
+						apiCallDetails.AuditTrail = AuditTrail;
+
 					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
 					if (!response.ApiCall.Success) audit.Event = requestData.OnFailureAuditEvent;
 					return response;
@@ -222,7 +226,10 @@ namespace Elastic.Transport
 				{
 					var response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
 					d.EndState = response.ApiCall;
-					response.ApiCall.AuditTrail = AuditTrail;
+
+					if (response.ApiCall is ApiCallDetails apiCallDetails)
+						apiCallDetails.AuditTrail = AuditTrail;
+
 					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
 					if (!response.ApiCall.Success) audit.Event = requestData.OnFailureAuditEvent;
 					return response;
@@ -607,7 +614,7 @@ namespace Elastic.Transport
 			(RequestConfiguration?.DisablePing).GetValueOrDefault(false)
 			|| _settings.DisablePings || !_nodePool.SupportsPinging || !node.IsResurrected;
 
-		private Auditable Audit(AuditEvent type, Node node = null) => new Auditable(type, AuditTrail, _dateTimeProvider, node);
+		private Auditable Audit(AuditEvent type, Node node = null) => new(type, AuditTrail, _dateTimeProvider, node);
 
 		private static void ThrowBadAuthPipelineExceptionWhenNeeded(IApiCallDetails details, ITransportResponse response = null)
 		{
