@@ -2,53 +2,123 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
+using System.Collections.Generic;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Elastic.Transport.Products.Elasticsearch
 {
 	/// <summary>
-	/// Extends the builtin responses with parsing for <see cref="ServerError"/>
+	/// Base response for Elasticsearch responses.
 	/// </summary>
-	public static class ElasticsearchErrorExtensions
+	public abstract class ElasticsearchResponse : IElasticsearchResponse
 	{
-		/// <summary> Try to parse an Elasticsearch <see cref="ServerError"/> </summary>
-		public static bool TryGetElasticsearchServerError(this StringResponse response, out ServerError serverError)
-		{
-			serverError = null;
-			if (string.IsNullOrEmpty(response.Body) || response.ResponseMimeType != RequestData.MimeType)
-				return false;
+		private IApiCallDetails? _originalApiCall;
+		
+		/// <summary> Returns useful information about the request(s) that were part of this API call. </summary>
+		[JsonIgnore]
+		public virtual IApiCallDetails? ApiCall => _originalApiCall;
 
-			var settings = response.ApiCall.ConnectionConfiguration;
-			using var stream = settings.MemoryStreamFactory.Create(Encoding.UTF8.GetBytes(response.Body));
-			return ServerError.TryCreate(stream, out serverError);
+		/// <summary>
+		/// A collection of warnings returned from Elasticsearch.
+		/// <para>Used to provide server warnings, for example, when the request uses an API feature that is marked as deprecated.</para>
+		/// </summary>
+		[JsonIgnore]
+		public IEnumerable<string> Warnings
+		{
+			get
+			{
+				if (ApiCall.ParsedHeaders is not null && ApiCall.ParsedHeaders.TryGetValue("warning", out var warnings))
+				{
+					foreach (var warning in warnings)
+						yield return warning;
+				}
+			}
 		}
 
-		/// <summary> Try to parse an Elasticsearch <see cref="ServerError"/> </summary>
-		public static bool TryGetElasticsearchServerError(this BytesResponse response, out ServerError serverError)
+		/// <inheritdoc />
+		[JsonIgnore]
+		public string DebugInformation
 		{
-			serverError = null;
-			if (response.Body == null || response.Body.Length == 0 || response.ResponseMimeType != RequestData.MimeType)
-				return false;
+			get
+			{
+				var sb = new StringBuilder();
+				sb.Append($"{(!IsValid ? "Inv" : "V")}alid Elastic.Clients.Elasticsearch response built from a ");
+				sb.AppendLine(ApiCall?.ToString().ToCamelCase() ??
+							"null ApiCall which is highly exceptional, please open a bug if you see this");
+				if (!IsValid)
+					DebugIsValid(sb);
 
-			var settings = response.ApiCall.ConnectionConfiguration;
-			using var stream = settings.MemoryStreamFactory.Create(response.Body);
-			return ServerError.TryCreate(stream, out serverError);
+				if (ApiCall.ParsedHeaders is not null && ApiCall.ParsedHeaders.TryGetValue("warning", out var warnings))
+				{
+					sb.AppendLine($"# Server indicated warnings:");
+
+					foreach (var warning in warnings)
+						sb.AppendLine($"- {warning}");
+				}
+
+				if (ApiCall != null)
+					ResponseStatics.DebugInformationBuilder(ApiCall, sb);
+				return sb.ToString();
+			}
+		}
+
+		/// <inheritdoc />
+		[JsonIgnore]
+		public virtual bool IsValid
+		{
+			get
+			{
+				var statusCode = ApiCall?.HttpStatusCode;
+
+				// TODO - Review this on a request by reqeust basis
+				if (statusCode == 404)
+					return false;
+
+				return (ApiCall?.Success ?? false) && (!ServerError?.HasError() ?? true);
+			}
+		}
+
+		/// <inheritdoc />
+		[JsonIgnore]
+		public Exception? OriginalException => ApiCall?.OriginalException;
+
+		IApiCallDetails? ITransportResponse.ApiCall
+		{
+			get => _originalApiCall;
+			set => _originalApiCall = value;
 		}
 
 		/// <summary>
-		/// Try to parse an Elasticsearch <see cref="ServerError"/>, this only works if
-		/// <see cref="ITransportConfiguration.DisableDirectStreaming"/> gives us access to <see cref="IApiCallDetails.RequestBodyInBytes"/>
+		/// 
 		/// </summary>
-		public static bool TryGetElasticsearchServerError(this ITransportResponse response, out ServerError serverError)
-		{
-			serverError = null;
-			var bytes = response.ApiCall.ResponseBodyInBytes;
-			if (bytes == null || response.ApiCall.ResponseMimeType != RequestData.MimeType)
-				return false;
+		[JsonIgnore]
+		public ServerError ServerError { get; internal set; }
 
-			var settings = response.ApiCall.ConnectionConfiguration;
-			using var stream = settings.MemoryStreamFactory.Create(bytes);
-			return ServerError.TryCreate(stream, out serverError);
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="exception"></param>
+		/// <returns></returns>
+		// TODO: We need nullable annotations here ideally as exception is not null when the return value is true.
+		public bool TryGetOriginalException(out Exception? exception)
+		{
+			if (OriginalException is not null)
+			{
+				exception = OriginalException;
+				return true;
+			}
+
+			exception = null;
+			return false;
 		}
+
+		/// <summary>Subclasses can override this to provide more information on why a call is not valid.</summary>
+		protected virtual void DebugIsValid(StringBuilder sb) { }
+
+		/// <inheritdoc />
+		public override string ToString() =>
+			$"{(!IsValid ? "Inv" : "V")}alid Elastic.Clients.Elasticsearch response built from a {ApiCall?.ToString().ToCamelCase()}";
 	}
 }

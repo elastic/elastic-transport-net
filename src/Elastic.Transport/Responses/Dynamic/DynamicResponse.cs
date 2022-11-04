@@ -15,7 +15,7 @@ namespace Elastic.Transport
 	/// <see cref="Get{T}"/> which support an xpath'esque syntax to fish for values in the returned json.
 	/// </para>
 	/// </summary>
-	public sealed class DynamicResponse : TransportResponseBase<DynamicDictionary>
+	public sealed class DynamicResponse : TransportResponse<DynamicDictionary>
 	{
 		/// <inheritdoc cref="DynamicResponse"/>
 		public DynamicResponse() { }

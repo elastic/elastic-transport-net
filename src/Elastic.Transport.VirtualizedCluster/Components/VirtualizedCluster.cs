@@ -18,7 +18,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components
 		private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<ITransportResponse>> _asyncCall;
 		private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, ITransportResponse> _syncCall;
 
-		private class VirtualResponse : TransportResponseBase { }
+		private class VirtualResponse : TransportResponse { }
 
 		internal VirtualizedCluster(TestableDateTimeProvider dateTimeProvider, TransportConfiguration settings)
 		{

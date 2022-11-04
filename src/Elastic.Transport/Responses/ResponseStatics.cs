@@ -16,7 +16,7 @@ namespace Elastic.Transport
 	/// Creates human readable debug strings based on <see cref="IApiCallDetails"/> so that
 	/// its clear what exactly transpired during a call into <see cref="ITransport.Request{TResponse}"/>
 	/// </summary>
-	public static class ResponseStatics
+	internal static class ResponseStatics
 	{
 		private static readonly string RequestAlreadyCaptured =
 			"<Request stream not captured or already read to completion by serializer. Set DisableDirectStreaming() on ConnectionSettings to force it to be set on the response.>";

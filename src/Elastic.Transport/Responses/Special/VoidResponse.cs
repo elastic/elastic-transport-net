@@ -7,7 +7,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// A special response that omits reading the response from the server after reading the headers.
 	/// </summary>
-	public sealed class VoidResponse : TransportResponseBase<VoidResponse.VoidBody>
+	public sealed class VoidResponse : TransportResponse<VoidResponse.VoidBody>
 	{
 		/// <inheritdoc cref="VoidResponse"/>
 		public VoidResponse() => Body = new VoidBody();

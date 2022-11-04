@@ -4,5 +4,5 @@
 
 namespace Elastic.Transport.Tests.Plumbing
 {
-	public class TestResponse : TransportResponseBase { }
+	public class TestResponse : TransportResponse { }
 }
