@@ -83,7 +83,7 @@ namespace Elastic.Transport
 
 			var sc = statusCode ?? _statusCode;
 			Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
-			return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.MimeType, body?.Length ?? 0);
+			return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.MimeType, body?.Length ?? 0, null, null);
 		}
 
 		/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
@@ -111,7 +111,7 @@ namespace Elastic.Transport
 			var sc = statusCode ?? _statusCode;
 			Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
 			return await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
-				.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, body?.Length ?? 0, cancellationToken)
+				.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
 				.ConfigureAwait(false);
 		}
 

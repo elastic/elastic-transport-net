@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Net.NetworkInformation;
 using System.Text.Json.Serialization;
 using Elastic.Transport.Diagnostics;
@@ -35,11 +34,7 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="IApiCallDetails.TcpStats"/>
 		[JsonIgnore]
-		public ReadOnlyDictionary<TcpState, int> TcpStats
-		{
-			get => ApiCall.TcpStats;
-			set => ApiCall.TcpStats = value;
-		}
+		public IReadOnlyDictionary<TcpState, int> TcpStats => ApiCall.TcpStats;
 
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		[JsonIgnore]
@@ -51,19 +46,11 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="IApiCallDetails.AuditTrail"/>
 		[JsonIgnore]
-		public List<Audit> AuditTrail
-		{
-			get => ApiCall.AuditTrail;
-			set => ApiCall.AuditTrail = value;
-		}
+		public IEnumerable<Audit> AuditTrail => ApiCall.AuditTrail;
 
 		/// <inheritdoc cref="IApiCallDetails.ThreadPoolStats"/>
 		[JsonIgnore]
-		public ReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats
-		{
-			get => ApiCall.ThreadPoolStats;
-			set => ApiCall.ThreadPoolStats = value;
-		}		
+		public IReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats => ApiCall.ThreadPoolStats;
 
 		/// <inheritdoc cref="IApiCallDetails.SuccessOrKnownError"/>
 		[JsonIgnore]
@@ -85,9 +72,9 @@ namespace Elastic.Transport
 		[JsonIgnore]
 		public Uri Uri => ApiCall.Uri;
 
-		/// <inheritdoc cref="IApiCallDetails.ConnectionConfiguration"/>
+		/// <inheritdoc cref="IApiCallDetails.TransportConfiguration"/>
 		[JsonIgnore]
-		public ITransportConfiguration ConnectionConfiguration => ApiCall.ConnectionConfiguration;
+		public ITransportConfiguration TransportConfiguration => ApiCall.TransportConfiguration;
 
 		/// <inheritdoc cref="IApiCallDetails.ResponseBodyInBytes"/>
 		[JsonIgnore]
@@ -99,7 +86,7 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="IApiCallDetails.ParsedHeaders"/>
 		[JsonIgnore]
-		public ReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders => ApiCall.ParsedHeaders;
+		public IReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders => ApiCall.ParsedHeaders;
 
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		public override string ToString() => ApiCall.ToString();

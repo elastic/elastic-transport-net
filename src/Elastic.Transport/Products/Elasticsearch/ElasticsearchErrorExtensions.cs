@@ -18,7 +18,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 			if (string.IsNullOrEmpty(response.Body) || response.ResponseMimeType != RequestData.MimeType)
 				return false;
 
-			var settings = response.ApiCall.ConnectionConfiguration;
+			var settings = response.ApiCall.TransportConfiguration;
 			using var stream = settings.MemoryStreamFactory.Create(Encoding.UTF8.GetBytes(response.Body));
 			return ServerError.TryCreate(stream, out serverError);
 		}
@@ -30,7 +30,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 			if (response.Body == null || response.Body.Length == 0 || response.ResponseMimeType != RequestData.MimeType)
 				return false;
 
-			var settings = response.ApiCall.ConnectionConfiguration;
+			var settings = response.ApiCall.TransportConfiguration;
 			using var stream = settings.MemoryStreamFactory.Create(response.Body);
 			return ServerError.TryCreate(stream, out serverError);
 		}
@@ -46,7 +46,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 			if (bytes == null || response.ApiCall.ResponseMimeType != RequestData.MimeType)
 				return false;
 
-			var settings = response.ApiCall.ConnectionConfiguration;
+			var settings = response.ApiCall.TransportConfiguration;
 			using var stream = settings.MemoryStreamFactory.Create(bytes);
 			return ServerError.TryCreate(stream, out serverError);
 		}

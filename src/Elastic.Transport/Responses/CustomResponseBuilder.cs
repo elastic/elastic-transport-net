@@ -15,7 +15,7 @@ namespace Elastic.Transport
 	/// </summary>
 	public abstract class CustomResponseBuilder
 	{
-		/// <summary> Custom routine that deserializes from <paramref name="stream"/> to an instance o <see cref="ITransportResponse"/> </summary>
+		/// <summary> Custom routine that deserializes from <paramref name="stream"/> to an instance of <see cref="ITransportResponse"/>.</summary>
 		public abstract object DeserializeResponse(Serializer builtInSerializer, IApiCallDetails response, Stream stream);
 
 		/// <inheritdoc cref="DeserializeResponse"/>

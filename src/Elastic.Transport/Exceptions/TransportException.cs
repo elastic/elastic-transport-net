@@ -44,7 +44,7 @@ namespace Elastic.Transport
 		/// The audit trail keeping track of what happened during the invocation of
 		/// <see cref="ITransport.Request{TResponse}"/> up until the moment of this exception
 		/// </summary>
-		public IReadOnlyCollection<Audit> AuditTrail { get; internal set; }
+		public IEnumerable<Audit> AuditTrail { get; internal set; }
 
 		/// <summary>
 		/// The reason this exception occurred was one of the well defined exit points as modelled by
