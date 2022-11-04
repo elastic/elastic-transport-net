@@ -40,7 +40,5 @@ namespace Elastic.Transport.Diagnostics.Auditing
 				default: return @event.GetStringValue(); //still cached but uses reflection
 			}
 		}
-
-
 	}
 }

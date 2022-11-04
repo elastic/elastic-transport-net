@@ -16,16 +16,18 @@ namespace Elastic.Transport
 	/// A response from an Elastic product including details about the request/response life cycle. Base class for the built in low level response
 	/// types, <see cref="StringResponse"/>, <see cref="BytesResponse"/>, <see cref="DynamicResponse"/> and <see cref="VoidResponse"/>
 	/// </summary>
-	public abstract class TransportResponseBase<T> : TransportResponseBase
+	public abstract class TransportResponse<T> : TransportResponse
 	{
-		/// <summary> The deserialized body return by the product </summary>
+		/// <summary>
+		/// The deserialized body returned by the product.
+		/// </summary>
 		public T Body { get; protected internal set; }
 	}
 
 	/// <summary>
-	/// A response as returned by <see cref="ITransport{TConnectionSettings}"/> including details about the request/response life cycle
+	/// A response as returned by <see cref="ITransport{TConnectionSettings}"/> including details about the request/response life cycle.
 	/// </summary>
-	public abstract class TransportResponseBase : IApiCallDetails, ITransportResponse
+	public abstract class TransportResponse : IApiCallDetails, ITransportResponse
 	{
 		/// <inheritdoc />
 		[JsonIgnore]
@@ -42,9 +44,11 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
 		[JsonIgnore]
 		public string DebugInformation => ApiCall.DebugInformation;
+
 		/// <inheritdoc cref="IApiCallDetails.HttpMethod"/>
 		[JsonIgnore]
 		public HttpMethod HttpMethod => ApiCall.HttpMethod;
+
 		/// <inheritdoc cref="IApiCallDetails.AuditTrail"/>
 		[JsonIgnore]
 		public List<Audit> AuditTrail

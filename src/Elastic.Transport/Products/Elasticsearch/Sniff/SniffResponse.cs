@@ -46,7 +46,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 		}
 	}
 
-	internal class SniffResponse : TransportResponseBase
+	internal class SniffResponse : TransportResponse
 	{
 		// ReSharper disable InconsistentNaming
 		public string cluster_name { get; set; }

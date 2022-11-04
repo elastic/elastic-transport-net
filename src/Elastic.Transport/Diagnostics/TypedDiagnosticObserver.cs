@@ -12,14 +12,14 @@ namespace Elastic.Transport.Diagnostics
 	/// Provides a base implementation of <see cref="IObserver{T}"/> that makes it easier to consume
 	/// the <see cref="DiagnosticSource"/>'s exposed in this library
 	/// </summary>
-	public abstract class TypedDiagnosticObserverBase<TOnNext> : IObserver<KeyValuePair<string, object>>
+	public abstract class TypedDiagnosticObserver<TOnNext> : IObserver<KeyValuePair<string, object>>
 	{
 		private readonly Action<KeyValuePair<string, TOnNext>> _onNext;
 		private readonly Action<Exception> _onError;
 		private readonly Action _onCompleted;
 
-		/// <inheritdoc cref="TypedDiagnosticObserverBase{TOnNext}"/>
-		protected TypedDiagnosticObserverBase(
+		/// <inheritdoc cref="TypedDiagnosticObserver{TOnNext}"/>
+		protected TypedDiagnosticObserver(
 			Action<KeyValuePair<string, TOnNext>> onNext,
 			Action<Exception> onError = null,
 			Action onCompleted = null
@@ -44,16 +44,16 @@ namespace Elastic.Transport.Diagnostics
 		}
 	}
 
-	/// <inheritdoc cref="TypedDiagnosticObserverBase{TOnNext}"/>
-	public abstract class TypedDiagnosticObserverBase<TOnNextStart, TOnNextEnd> : IObserver<KeyValuePair<string, object>>
+	/// <inheritdoc cref="TypedDiagnosticObserver{TOnNext}"/>
+	public abstract class TypedDiagnosticObserver<TOnNextStart, TOnNextEnd> : IObserver<KeyValuePair<string, object>>
 	{
 		private readonly Action<KeyValuePair<string, TOnNextStart>> _onNextStart;
 		private readonly Action<KeyValuePair<string, TOnNextEnd>> _onNextEnd;
 		private readonly Action<Exception> _onError;
 		private readonly Action _onCompleted;
 
-		/// <inheritdoc cref="TypedDiagnosticObserverBase{TOnNext}"/>
-		protected TypedDiagnosticObserverBase(
+		/// <inheritdoc cref="TypedDiagnosticObserver{TOnNext}"/>
+		protected TypedDiagnosticObserver(
 			Action<KeyValuePair<string, TOnNextStart>> onNextStart,
 			Action<KeyValuePair<string, TOnNextEnd>> onNextEnd,
 			Action<Exception> onError = null,

@@ -5,9 +5,9 @@
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A response that exposes the response <see cref="TransportResponseBase{T}.Body"/> as <see cref="string"/>.
+	/// A response that exposes the response <see cref="TransportResponse{T}.Body"/> as <see cref="string"/>.
 	/// </summary>
-	public sealed class StringResponse : TransportResponseBase<string>
+	public sealed class StringResponse : TransportResponse<string>
 	{
 		/// <inheritdoc cref="StringResponse"/>
 		public StringResponse() => Body = string.Empty;

@@ -7,9 +7,9 @@ using System;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A response that exposes the response <see cref="TransportResponseBase{T}.Body"/> as byte array
+	/// A response that exposes the response <see cref="TransportResponse{T}.Body"/> as byte array
 	/// </summary>
-	public sealed class BytesResponse : TransportResponseBase<byte[]>
+	public sealed class BytesResponse : TransportResponse<byte[]>
 	{
 		/// <inheritdoc cref="BytesResponse"/>
 		public BytesResponse() => Body = Array.Empty<byte>();
