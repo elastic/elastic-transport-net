@@ -13,13 +13,13 @@ namespace Elastic.Transport.Products.Elasticsearch
 {
 	/// <summary> Represents the error response as returned by Elasticsearch. </summary>
 	[DataContract]
-	public class ServerError : ErrorResponse
+	public sealed class ElasticsearchServerError : ErrorResponse
 	{
-		/// <inheritdoc cref="ServerError"/>
-		public ServerError() { }
+		/// <inheritdoc cref="ElasticsearchServerError"/>
+		public ElasticsearchServerError() { }
 
-		/// <inheritdoc cref="ServerError"/>
-		public ServerError(Error error, int? statusCode)
+		/// <inheritdoc cref="ElasticsearchServerError"/>
+		public ElasticsearchServerError(Error error, int? statusCode)
 		{
 			Error = error;
 			Status = statusCode.GetValueOrDefault(-1);
@@ -28,18 +28,18 @@ namespace Elastic.Transport.Products.Elasticsearch
 		/// <summary> an <see cref="Error"/> object that represents the server exception that occurred</summary>
 		[DataMember(Name = "error")]
 		[JsonPropertyName("error")]
-		public Error Error { get; set; }
+		public Error Error { get; init; }
 
 		/// <summary> The HTTP status code returned from the server </summary>
 		[DataMember(Name = "status")]
 		[JsonPropertyName("status")]
-		public int Status { get; set; } = -1;
+		public int Status { get; init; } = -1;
 
 		/// <summary>
-		/// Try and create an instance of <see cref="ServerError"/> from <paramref name="stream"/>
+		/// Try and create an instance of <see cref="ElasticsearchServerError"/> from <paramref name="stream"/>
 		/// </summary>
-		/// <returns>Whether a an instance of <see cref="ServerError"/> was created successfully</returns>
-		public static bool TryCreate(Stream stream, out ServerError serverError)
+		/// <returns>Whether a an instance of <see cref="ElasticsearchServerError"/> was created successfully</returns>
+		public static bool TryCreate(Stream stream, out ElasticsearchServerError serverError)
 		{
 			try
 			{
@@ -55,15 +55,15 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 		/// <summary>
 		/// Use the clients default <see cref="LowLevelRequestResponseSerializer"/> to create an instance
-		/// of <see cref="ServerError"/> from <paramref name="stream"/>
+		/// of <see cref="ElasticsearchServerError"/> from <paramref name="stream"/>
 		/// </summary>
-		public static ServerError Create(Stream stream) =>
-			LowLevelRequestResponseSerializer.Instance.Deserialize<ServerError>(stream);
+		public static ElasticsearchServerError Create(Stream stream) =>
+			LowLevelRequestResponseSerializer.Instance.Deserialize<ElasticsearchServerError>(stream);
 
 		// ReSharper disable once UnusedMember.Global
 		/// <inheritdoc cref="Create"/>
-		public static ValueTask<ServerError> CreateAsync(Stream stream, CancellationToken token = default) =>
-			LowLevelRequestResponseSerializer.Instance.DeserializeAsync<ServerError>(stream, token);
+		public static ValueTask<ElasticsearchServerError> CreateAsync(Stream stream, CancellationToken token = default) =>
+			LowLevelRequestResponseSerializer.Instance.DeserializeAsync<ElasticsearchServerError>(stream, token);
 
 		/// <summary> A human readable string representation of the server error returned by Elasticsearch </summary>
 		public override string ToString()

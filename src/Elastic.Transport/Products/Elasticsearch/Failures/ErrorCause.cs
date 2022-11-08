@@ -27,21 +27,21 @@ namespace Elastic.Transport.Products.Elasticsearch
 		/// Additional properties related to the error cause. Contains properties that
 		/// are not explicitly mapped on <see cref="ErrorCause" />
 		/// </summary>
-		public IReadOnlyDictionary<string, object> AdditionalProperties { get; set; } = DefaultDictionary;
+		public IReadOnlyDictionary<string, object> AdditionalProperties { get; internal set; } = DefaultDictionary;
 
 		/// <summary> The name of the Elasticsearch server exception that was thrown </summary>
-		public string Type { get; set; }
+		public string Type { get; internal set; }
 
 		/// <summary>
 		/// If stacktrace was requested this holds the java stack trace as it occurred on the server
 		/// </summary>
 		[JsonPropertyName("stack_trace")]
-		public string StackTrace { get; set; }
+		public string StackTrace { get; internal set; }
 
 		/// <summary>
 		/// The exception message of the exception that was thrown on the server causing the request to fail
 		/// </summary>
-		public string Reason { get; set; }
+		public string Reason { get; internal set; }
 
 // The following are all very specific to individual failures
 // Seeking to clean this up within Elasticsearch itself: https://github.com/elastic/elasticsearch/issues/27672
@@ -50,7 +50,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 		//public long? BytesWanted { get; set; }
 
-		public ErrorCause CausedBy { get; set; }
+		public ErrorCause CausedBy { get; internal set; }
 
 		//public int? Column { get; set; }
 
@@ -58,9 +58,9 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 		//public bool? Grouped { get; set; }
 
-		public string Index { get; set; }
+		public string Index { get; internal set; }
 
-		public string IndexUUID { get; set; }
+		public string IndexUUID { get; internal set; }
 
 		//public string Language { get; set; }
 

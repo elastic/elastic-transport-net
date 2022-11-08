@@ -14,12 +14,12 @@ namespace Elastic.Transport
 	public interface IRequestParameters
 	{
 		/// <summary> Allows you to completely circumvent the serializer to build the final response.</summary>
-		CustomResponseBuilder CustomResponseBuilder { get; set; }
+		CustomResponseBuilder CustomResponseBuilder { get; }
 
 		/// <summary>
 		/// The querystring that should be appended to the path of the request
 		/// </summary>
-		Dictionary<string, object> QueryString { get; set; }
+		Dictionary<string, object> QueryString { get; }
 
 		/// <summary>
 		/// Configuration for this specific request, i.e disable sniffing, custom timeouts etcetera.

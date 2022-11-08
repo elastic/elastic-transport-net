@@ -12,21 +12,33 @@ using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport
 {
-	/// <inheritdoc cref="IApiCallDetails"/>
-	public sealed class ApiCallDetails : IApiCallDetails
+	/// <summary>
+	/// 
+	/// </summary>
+	public sealed class ApiCallDetails
 	{
 		private string _debugInformation;
 
-		/// <inheritdoc cref="IApiCallDetails.AuditTrail"/>
-		public IEnumerable<Audit> AuditTrail { get; set; }
+		internal ApiCallDetails() { }
 
-		/// <inheritdoc cref="IApiCallDetails.ThreadPoolStats"/>
-		public IReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>>
+		public IEnumerable<Audit> AuditTrail { get; internal set; }
 
-		/// <inheritdoc cref="IApiCallDetails.TcpStats"/>
-		public IReadOnlyDictionary<TcpState, int> TcpStats { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		internal IReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; set; }
 
-		/// <inheritdoc cref="IApiCallDetails.DebugInformation"/>
+		/// <summary>
+		/// 
+		/// </summary>
+		internal IReadOnlyDictionary<TcpState, int> TcpStats { get; set; }
+
+		/// <summary>
+		/// 
+		/// </summary>
 		public string DebugInformation
 		{
 			get
@@ -42,53 +54,85 @@ namespace Elastic.Transport
 			}
 		}
 
-		/// <inheritdoc cref="IApiCallDetails.HttpMethod"/>
-		public HttpMethod HttpMethod { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		public HttpMethod HttpMethod { get; internal set; }
 
-		/// <inheritdoc cref="IApiCallDetails.HttpStatusCode"/>
-		public int? HttpStatusCode { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		public int? HttpStatusCode { get; internal set; }
 
-		/// <inheritdoc cref="IApiCallDetails.OriginalException"/>
-		public Exception OriginalException { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		public Exception OriginalException { get; internal set; }
 
-		/// <inheritdoc cref="IApiCallDetails.RequestBodyInBytes"/>
-		public byte[] RequestBodyInBytes { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		public byte[] RequestBodyInBytes { get; internal set; }
 
-		/// <inheritdoc cref="IApiCallDetails.RequestBodyInBytes"/>
-		public byte[] ResponseBodyInBytes { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		public byte[] ResponseBodyInBytes { get; internal set; }
 
-		/// <inheritdoc cref="IApiCallDetails.ResponseMimeType"/>
-		public string ResponseMimeType { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		internal string ResponseMimeType { get; set; }
 
-		/// <inheritdoc cref="IApiCallDetails.Success"/>
-		public bool Success { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool Success { get; internal set; }
 
-		/// <inheritdoc cref="IApiCallDetails.SuccessOrKnownError"/>
-		public bool SuccessOrKnownError =>
+		/// <summary>
+		/// 
+		/// </summary>
+		internal bool SuccessOrKnownError =>
 			Success || HttpStatusCode >= 400
 			&& HttpStatusCode < 599
 			&& HttpStatusCode != 504 //Gateway timeout needs to be retried
 			&& HttpStatusCode != 503 //service unavailable needs to be retried
 			&& HttpStatusCode != 502;
 
-		/// <inheritdoc cref="IApiCallDetails.Uri"/>
-		public Uri Uri { get; set; }
-
-		/// <inheritdoc cref="IApiCallDetails.TransportConfiguration"/>
-		public ITransportConfiguration TransportConfiguration { get; set; }
-
-		/// <inheritdoc cref="IApiCallDetails.ParsedHeaders"/>
-		public IReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		public Uri Uri { get; internal set; }
 
 		/// <summary>
-		/// The error response is the server returned JSON describing a server error.
+		/// 
 		/// </summary>
-		public ErrorResponse ErrorResponse { get; set; } = EmptyError.Instance;
+		internal ITransportConfiguration TransportConfiguration { get; set; }
+
+		/// <summary>
+		/// 
+		/// </summary>
+		internal IReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; set; }
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="key"></param>
+		/// <param name="headerValues"></param>
+		/// <returns></returns>
+		// TODO: Nullable annotations
+		public bool TryGetHeader(string key, out IEnumerable<string> headerValues)
+			=> ParsedHeaders.TryGetValue(key, out headerValues);
+
+		/// <summary>
+		/// The error response if the server returned JSON describing a server error.
+		/// </summary>
+		internal ErrorResponse ErrorResponse { get; set; } = EmptyError.Instance;
 
 		/// <summary>
 		/// A string summarising the API call.
 		/// </summary>
 		public override string ToString() =>
-			$"{(Success ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on {HttpMethod.GetStringValue()}: {Uri.PathAndQuery}";
+			$"{(Success ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on {HttpMethod.GetStringValue()}: {(Uri is not null ? Uri.PathAndQuery: "UNKNOWN URI")}";
 	}
 }

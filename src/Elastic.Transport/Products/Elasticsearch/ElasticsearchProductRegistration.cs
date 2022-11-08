@@ -78,7 +78,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 		/// <inheritdoc cref="IProductRegistration.TryGetServerErrorReason{TResponse}"/>>
 		public virtual bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason)
-			where TResponse : ITransportResponse
+			where TResponse : TransportResponse
 		{
 			reason = null;
 			if (response is StringResponse s && s.TryGetElasticsearchServerError(out var e)) reason = e.Error?.ToString();
@@ -104,23 +104,23 @@ namespace Elastic.Transport.Products.Elasticsearch
 		}
 
 		/// <inheritdoc cref="IProductRegistration.SniffAsync"/>
-		public async Task<Tuple<IApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(ITransportClient transportClient,
+		public async Task<Tuple<ApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(ITransportClient transportClient,
 			bool forceSsl, RequestData requestData, CancellationToken cancellationToken)
 		{
 			var response = await transportClient.RequestAsync<SniffResponse>(requestData, cancellationToken)
 				.ConfigureAwait(false);
 			var nodes = response.ToNodes(forceSsl);
-			return Tuple.Create<IApiCallDetails, IReadOnlyCollection<Node>>(response,
+			return Tuple.Create<ApiCallDetails, IReadOnlyCollection<Node>>(response.ApiCallDetails,
 				new ReadOnlyCollection<Node>(nodes.ToArray()));
 		}
 
 		/// <inheritdoc cref="IProductRegistration.Sniff"/>
-		public Tuple<IApiCallDetails, IReadOnlyCollection<Node>> Sniff(ITransportClient transportClient, bool forceSsl,
+		public Tuple<ApiCallDetails, IReadOnlyCollection<Node>> Sniff(ITransportClient transportClient, bool forceSsl,
 			RequestData requestData)
 		{
 			var response = transportClient.Request<SniffResponse>(requestData);
 			var nodes = response.ToNodes(forceSsl);
-			return Tuple.Create<IApiCallDetails, IReadOnlyCollection<Node>>(response,
+			return Tuple.Create<ApiCallDetails, IReadOnlyCollection<Node>>(response.ApiCallDetails,
 				new ReadOnlyCollection<Node>(nodes.ToArray()));
 		}
 
@@ -141,12 +141,18 @@ namespace Elastic.Transport.Products.Elasticsearch
 		}
 
 		/// <inheritdoc cref="IProductRegistration.PingAsync"/>
-		public async Task<IApiCallDetails> PingAsync(ITransportClient transportClient, RequestData pingData,
-			CancellationToken cancellationToken) =>
-			await transportClient.RequestAsync<VoidResponse>(pingData, cancellationToken).ConfigureAwait(false);
+		public async Task<ApiCallDetails> PingAsync(ITransportClient transportClient, RequestData pingData,
+			CancellationToken cancellationToken)
+		{
+			var response = await transportClient.RequestAsync<VoidResponse>(pingData, cancellationToken).ConfigureAwait(false);
+			return response.ApiCallDetails;
+		}
 
 		/// <inheritdoc cref="IProductRegistration.Ping"/>
-		public IApiCallDetails Ping(ITransportClient connection, RequestData pingData) =>
-			connection.Request<VoidResponse>(pingData);
+		public ApiCallDetails Ping(ITransportClient connection, RequestData pingData)
+		{
+			var response = connection.Request<VoidResponse>(pingData);
+			return response.ApiCallDetails;
+		}
 	}
 }

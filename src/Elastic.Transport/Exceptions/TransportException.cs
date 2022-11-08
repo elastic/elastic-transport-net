@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using Elastic.Transport.Diagnostics.Auditing;
 using Elastic.Transport.Extensions;
-using static Elastic.Transport.ResponseStatics;
+using static Elastic.Transport.Diagnostics.ResponseStatics;
 
 namespace Elastic.Transport
 {
@@ -32,12 +32,12 @@ namespace Elastic.Transport
 			: base(message, innerException) => FailureReason = failure;
 
 		/// <inheritdoc cref="TransportException"/>
-		public TransportException(PipelineFailure failure, string message, IApiCallDetails apiCall)
+		public TransportException(PipelineFailure failure, string message, TransportResponse response)
 			: this(message)
 		{
-			Response = apiCall;
+			ApiCallDetails = response.ApiCallDetails;
 			FailureReason = failure;
-			AuditTrail = apiCall?.AuditTrail;
+			AuditTrail = response.ApiCallDetails?.AuditTrail;
 		}
 
 		/// <summary>
@@ -57,7 +57,7 @@ namespace Elastic.Transport
 		public RequestData Request { get; internal set; }
 
 		/// <summary> The response if available that triggered the exception </summary>
-		public IApiCallDetails Response { get; internal set; }
+		public ApiCallDetails ApiCallDetails { get; internal set; }
 
 		/// <summary>
 		/// A self describing human readable string explaining why this exception was thrown.
@@ -88,17 +88,17 @@ namespace Elastic.Transport
 							.AppendLine(" on an empty node, likely a node predicate on ConnectionSettings not matching ANY nodes");
 					}
 				}
-				else if (Response != null)
+				else if (ApiCallDetails != null)
 				{
-					sb.Append(Response.HttpMethod.GetStringValue())
+					sb.Append(ApiCallDetails.HttpMethod.GetStringValue())
 						.Append(" on ")
-						.AppendLine(Response.Uri.ToString());
+						.AppendLine(ApiCallDetails.Uri.ToString());
 				}
 				else
 					sb.AppendLine("a request");
 
-				if (Response != null)
-					DebugInformationBuilder(Response, sb);
+				if (ApiCallDetails != null)
+					DebugInformationBuilder(ApiCallDetails, sb);
 				else
 				{
 					DebugAuditTrail(AuditTrail, sb);

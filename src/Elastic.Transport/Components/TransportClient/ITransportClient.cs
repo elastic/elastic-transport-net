@@ -22,33 +22,33 @@ namespace Elastic.Transport
 		/// <param name="requestData">An object describing where and how to perform the IO call</param>
 		/// <param name="cancellationToken"></param>
 		/// <typeparam name="TResponse">
-		/// An implementation of <see cref="ITransportResponse"/> ensuring enough information is available
+		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
 		/// for <see cref="IRequestPipeline"/> and <see cref="ITransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </typeparam>
 		/// <returns>
-		/// An implementation of <see cref="ITransportResponse"/> ensuring enough information is available
+		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
 		/// for <see cref="IRequestPipeline"/> and <see cref="ITransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </returns>
 		Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : class, ITransportResponse, new();
+			where TResponse : TransportResponse, new();
 
 		/// <summary>
 		/// Perform a request to the endpoint described by <paramref name="requestData"/> using its associated configuration.
 		/// </summary>
 		/// <param name="requestData">An object describing where and how to perform the IO call</param>
 		/// <typeparam name="TResponse">
-		/// An implementation of <see cref="ITransportResponse"/> ensuring enough information is available
+		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
 		/// for <see cref="IRequestPipeline"/> and <see cref="ITransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </typeparam>
 		/// <returns>
-		/// An implementation of <see cref="ITransportResponse"/> ensuring enough information is available
+		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
 		/// for <see cref="IRequestPipeline"/> and <see cref="ITransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </returns>
 		TResponse Request<TResponse>(RequestData requestData)
-			where TResponse : class, ITransportResponse, new();
+			where TResponse : TransportResponse, new();
 	}
 }

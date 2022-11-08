@@ -42,12 +42,12 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="ITransportClient.Request{TResponse}"/>>
 		public virtual TResponse Request<TResponse>(RequestData requestData)
-			where TResponse : class, ITransportResponse, new() =>
+			where TResponse : TransportResponse, new() =>
 			ReturnConnectionStatus<TResponse>(requestData);
 
 		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}"/>>
 		public virtual Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : class, ITransportResponse, new() =>
+			where TResponse : TransportResponse, new() =>
 			ReturnConnectionStatusAsync<TResponse>(requestData, cancellationToken);
 
 		void IDisposable.Dispose() => DisposeManagedResources();
@@ -58,11 +58,11 @@ namespace Elastic.Transport
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
 		/// <param name="responseBody">The bytes intended to be used as return</param>
-		/// <param name="statusCode">The status code that the responses <see cref="ITransportResponse.ApiCall"/> should return</param>
+		/// <param name="statusCode">The status code that the responses <see cref="TransportResponse.ApiCallDetails"/> should return</param>
 		/// <param name="contentType"></param>
 		protected TResponse ReturnConnectionStatus<TResponse>(RequestData requestData, byte[] responseBody = null, int? statusCode = null,
 			string contentType = null)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			var body = responseBody ?? _responseBody;
 			var data = requestData.PostData;
@@ -89,7 +89,7 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
 		protected async Task<TResponse> ReturnConnectionStatusAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken,
 			byte[] responseBody = null, int? statusCode = null, string contentType = null)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			var body = responseBody ?? _responseBody;
 			var data = requestData.PostData;

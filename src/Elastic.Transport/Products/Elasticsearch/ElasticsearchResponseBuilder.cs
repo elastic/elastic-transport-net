@@ -8,9 +8,9 @@ using System.Text.Json;
 
 namespace Elastic.Transport.Products.Elasticsearch
 {
-	internal sealed class ElasticsearchResponseBuilder : DefaultResponseBuilder<ServerError>
+	internal sealed class ElasticsearchResponseBuilder : DefaultResponseBuilder<ElasticsearchServerError>
 	{
-		protected override void SetErrorOnResponse<TResponse>(TResponse response, ServerError error)
+		protected override void SetErrorOnResponse<TResponse>(TResponse response, ElasticsearchServerError error)
 		{
 			if (response is ElasticsearchResponse elasticResponse)
 			{
@@ -18,7 +18,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 			}
 		}
 
-		protected override bool TryGetError(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, out ServerError error)
+		protected override bool TryGetError(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, out ElasticsearchServerError error)
 		{
 			error = null;
 			
@@ -28,7 +28,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 
 			try
 			{
-				error = serializer.Deserialize<ServerError>(responseStream);
+				error = serializer.Deserialize<ElasticsearchServerError>(responseStream);
 				return error is not null;
 			}
 			catch (JsonException)

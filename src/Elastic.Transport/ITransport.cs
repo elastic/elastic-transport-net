@@ -20,7 +20,7 @@ namespace Elastic.Transport
 			string path,
 			PostData data = null,
 			IRequestParameters requestParameters = null)
-			where TResponse : class, ITransportResponse, new();
+			where TResponse : TransportResponse, new();
 
 		/// <inheritdoc cref="Request{TResponse}" />
 		Task<TResponse> RequestAsync<TResponse>(
@@ -29,7 +29,7 @@ namespace Elastic.Transport
 			PostData data = null,
 			IRequestParameters requestParameters = null,
 			CancellationToken cancellationToken = default)
-			where TResponse : class, ITransportResponse, new();
+			where TResponse : TransportResponse, new();
 	}
 
 	/// <summary>

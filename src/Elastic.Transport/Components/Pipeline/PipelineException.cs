@@ -37,10 +37,10 @@ namespace Elastic.Transport
 		//TODO why do we have both Response and ApiCall?
 
 		/// <summary> The response that triggered this exception </summary>
-		public ITransportResponse Response { get; internal set; }
+		public TransportResponse Response { get; internal set; }
 
 		/// <summary> The response that triggered this exception </summary>
-		public IApiCallDetails ApiCall { get; internal set; }
+		public ApiCallDetails ApiCall { get; internal set; }
 
 		private static string GetMessage(PipelineFailure failure)
 		{

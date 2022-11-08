@@ -9,11 +9,10 @@ using System.Text;
 using Elastic.Transport.Diagnostics.Auditing;
 using Elastic.Transport.Extensions;
 
-namespace Elastic.Transport
+namespace Elastic.Transport.Diagnostics
 {
-	//TODO Put in diagnostics folder/namespace
 	/// <summary>
-	/// Creates human readable debug strings based on <see cref="IApiCallDetails"/> so that
+	/// Creates human readable debug strings based on <see cref="ApiCallDetails"/> so that
 	/// its clear what exactly transpired during a call into <see cref="ITransport.Request{TResponse}"/>
 	/// </summary>
 	internal static class ResponseStatics
@@ -25,7 +24,7 @@ namespace Elastic.Transport
 			"<Response stream not captured or already read to completion by serializer. Set DisableDirectStreaming() on ConnectionSettings to force it to be set on the response.>";
 
 		/// <inheritdoc cref="ResponseStatics"/>
-		public static string DebugInformationBuilder(IApiCallDetails r, StringBuilder sb)
+		public static string DebugInformationBuilder(ApiCallDetails r, StringBuilder sb)
 		{
 			sb.AppendLine($"# Audit trail of this API call:");
 			var auditTrail = (r.AuditTrail ?? Enumerable.Empty<Audit>()).ToList();

@@ -45,7 +45,7 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="ITransportClient.Request{TResponse}"/>>
 		public virtual TResponse Request<TResponse>(RequestData requestData)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			int? statusCode = null;
 			Stream responseStream = null;
@@ -107,7 +107,7 @@ namespace Elastic.Transport
 		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData,
 			CancellationToken cancellationToken
 		)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			Action unregisterWaitHandle = null;
 			int? statusCode = null;

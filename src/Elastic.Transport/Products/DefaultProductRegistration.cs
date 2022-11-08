@@ -57,7 +57,7 @@ namespace Elastic.Transport.Products
 
 		/// <inheritdoc cref="IProductRegistration.TryGetServerErrorReason{TResponse}"/>>
 		public bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason)
-			where TResponse : ITransportResponse
+			where TResponse : TransportResponse
 		{
 			reason = null;
 			return false;
@@ -68,11 +68,11 @@ namespace Elastic.Transport.Products
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.SniffAsync"/>
-		public Task<Tuple<IApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(ITransportClient transportClient, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) =>
+		public Task<Tuple<ApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(ITransportClient transportClient, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.Sniff"/>
-		public Tuple<IApiCallDetails, IReadOnlyCollection<Node>> Sniff(ITransportClient connection, bool forceSsl, RequestData requestData) =>
+		public Tuple<ApiCallDetails, IReadOnlyCollection<Node>> Sniff(ITransportClient connection, bool forceSsl, RequestData requestData) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.CreatePingRequestData"/>
@@ -80,11 +80,11 @@ namespace Elastic.Transport.Products
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.PingAsync"/>
-		public Task<IApiCallDetails> PingAsync(ITransportClient connection, RequestData pingData, CancellationToken cancellationToken) =>
+		public Task<ApiCallDetails> PingAsync(ITransportClient connection, RequestData pingData, CancellationToken cancellationToken) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.Ping"/>
-		public IApiCallDetails Ping(ITransportClient connection, RequestData pingData) =>
+		public ApiCallDetails Ping(ITransportClient connection, RequestData pingData) =>
 			throw new NotImplementedException();
 	}
 }

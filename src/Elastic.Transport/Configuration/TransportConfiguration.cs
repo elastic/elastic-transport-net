@@ -128,7 +128,7 @@ namespace Elastic.Transport
 
 		private AuthorizationHeader _authenticationHeader;
 		private X509CertificateCollection _clientCertificates;
-		private Action<IApiCallDetails> _completedRequestHandler = DefaultCompletedRequestHandler;
+		private Action<ApiCallDetails> _completedRequestHandler = DefaultCompletedRequestHandler;
 		private int _transportClientLimit;
 		private TimeSpan? _deadTimeout;
 		private bool _disableAutomaticProxyDetection;
@@ -234,7 +234,7 @@ namespace Elastic.Transport
 		IMemoryStreamFactory ITransportConfiguration.MemoryStreamFactory => _memoryStreamFactory;
 
 		Func<Node, bool> ITransportConfiguration.NodePredicate => _nodePredicate;
-		Action<IApiCallDetails> ITransportConfiguration.OnRequestCompleted => _completedRequestHandler;
+		Action<ApiCallDetails> ITransportConfiguration.OnRequestCompleted => _completedRequestHandler;
 		Action<RequestData> ITransportConfiguration.OnRequestDataCreated => _onRequestDataCreated;
 		TimeSpan? ITransportConfiguration.PingTimeout => _pingTimeout;
 		string ITransportConfiguration.ProxyAddress => _proxyAddress;
@@ -263,7 +263,7 @@ namespace Elastic.Transport
 
 		void IDisposable.Dispose() => DisposeManagedResources();
 
-		private static void DefaultCompletedRequestHandler(IApiCallDetails response) { }
+		private static void DefaultCompletedRequestHandler(ApiCallDetails response) { }
 
 		private static void DefaultRequestDataCreated(RequestData response) { }
 
@@ -356,7 +356,7 @@ namespace Elastic.Transport
 		public T DisableDirectStreaming(bool b = true) => Assign(b, (a, v) => a._disableDirectStreaming = v);
 
 		/// <inheritdoc cref="ITransportConfiguration.OnRequestCompleted"/>
-		public T OnRequestCompleted(Action<IApiCallDetails> handler) =>
+		public T OnRequestCompleted(Action<ApiCallDetails> handler) =>
 			Assign(handler, (a, v) => a._completedRequestHandler += v ?? DefaultCompletedRequestHandler);
 
 		/// <inheritdoc cref="ITransportConfiguration.OnRequestDataCreated"/>
@@ -386,7 +386,7 @@ namespace Elastic.Transport
 		/// will be written to the debug output by default.
 		/// </param>
 		// ReSharper disable once VirtualMemberNeverOverridden.Global
-		public virtual T EnableDebugMode(Action<IApiCallDetails> onRequestCompleted = null) =>
+		public virtual T EnableDebugMode(Action<ApiCallDetails> onRequestCompleted = null) =>
 			PrettyJson()
 				.DisableDirectStreaming()
 				.EnableTcpStats()

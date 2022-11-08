@@ -168,10 +168,10 @@ namespace Elastic.Transport
 
 		public void AuditCancellationRequested() => Audit(CancellationRequested).Dispose();
 
-		public void BadResponse<TResponse>(ref TResponse response, IApiCallDetails callDetails, RequestData data,
+		public void BadResponse<TResponse>(ref TResponse response, ApiCallDetails callDetails, RequestData data,
 			TransportException exception
 		)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			if (response == null)
 			{
@@ -181,28 +181,28 @@ namespace Elastic.Transport
 				response = _responseBuilder.ToResponse<TResponse>(data, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
 			}
 
-			if (response.ApiCall is ApiCallDetails apiCallDetails)
+			if (response.ApiCallDetails is ApiCallDetails apiCallDetails)
 				apiCallDetails.AuditTrail = AuditTrail;
 		}
 
 		public TResponse CallProductEndpoint<TResponse>(RequestData requestData)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			using (var audit = Audit(HealthyResponse, requestData.Node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(
 				DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
 			{
 				audit.Path = requestData.PathAndQuery;
 				try
 				{
 					var response = _transportClient.Request<TResponse>(requestData);
-					d.EndState = response.ApiCall;
+					d.EndState = response.ApiCallDetails;
 
-					if (response.ApiCall is ApiCallDetails apiCallDetails)
+					if (response.ApiCallDetails is ApiCallDetails apiCallDetails)
 						apiCallDetails.AuditTrail = AuditTrail;
 
-					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
-					if (!response.ApiCall.Success) audit.Event = requestData.OnFailureAuditEvent;
+					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
+					if (!response.ApiCallDetails.Success) audit.Event = requestData.OnFailureAuditEvent;
 					return response;
 				}
 				catch (Exception e)
@@ -215,23 +215,23 @@ namespace Elastic.Transport
 		}
 
 		public async Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			using (var audit = Audit(HealthyResponse, requestData.Node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(
 				DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
 			{
 				audit.Path = requestData.PathAndQuery;
 				try
 				{
 					var response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
-					d.EndState = response.ApiCall;
+					d.EndState = response.ApiCallDetails;
 
-					if (response.ApiCall is ApiCallDetails apiCallDetails)
+					if (response.ApiCallDetails is ApiCallDetails apiCallDetails)
 						apiCallDetails.AuditTrail = AuditTrail;
 
-					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCall, response);
-					if (!response.ApiCall.Success) audit.Event = requestData.OnFailureAuditEvent;
+					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
+					if (!response.ApiCallDetails.Success) audit.Event = requestData.OnFailureAuditEvent;
 					return response;
 				}
 				catch (Exception e)
@@ -244,9 +244,9 @@ namespace Elastic.Transport
 		}
 
 		public TransportException CreateClientException<TResponse>(
-			TResponse response, IApiCallDetails callDetails, RequestData data, List<PipelineException> pipelineExceptions
+			TResponse response, ApiCallDetails callDetails, RequestData data, List<PipelineException> pipelineExceptions
 		)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			if (callDetails?.Success ?? false) return null;
 
@@ -292,7 +292,7 @@ namespace Elastic.Transport
 
 			var clientException = new TransportException(pipelineFailure, exceptionMessage, innerException)
 			{
-				Request = data, Response = callDetails, AuditTrail = AuditTrail
+				Request = data, ApiCallDetails = callDetails, AuditTrail = AuditTrail
 			};
 
 			return clientException;
@@ -432,7 +432,7 @@ namespace Elastic.Transport
 
 			var pingData = _productRegistration.CreatePingRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
 			using (var audit = Audit(PingSuccess, node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping,
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(DiagnosticSources.RequestPipeline.Ping,
 				pingData))
 			{
 				audit.Path = pingData.PathAndQuery;
@@ -462,7 +462,7 @@ namespace Elastic.Transport
 
 			var pingData = _productRegistration.CreatePingRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
 			using (var audit = Audit(PingSuccess, node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Ping,
+			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(DiagnosticSources.RequestPipeline.Ping,
 				pingData))
 			{
 				audit.Path = pingData.PathAndQuery;
@@ -495,7 +495,7 @@ namespace Elastic.Transport
 				var requestData =
 					_productRegistration.CreateSniffRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
 				using (var audit = Audit(SniffSuccess, node))
-				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff,
+				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff,
 					requestData))
 				using (RequestPipelineStatics.DiagnosticSource.Diagnose(DiagnosticSources.RequestPipeline.Sniff, requestData))
 					try
@@ -534,7 +534,7 @@ namespace Elastic.Transport
 				var requestData =
 					_productRegistration.CreateSniffRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
 				using (var audit = Audit(SniffSuccess, node))
-				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, IApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff,
+				using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff,
 					requestData))
 					try
 					{
@@ -616,7 +616,7 @@ namespace Elastic.Transport
 
 		private Auditable Audit(AuditEvent type, Node node = null) => new(type, AuditTrail, _dateTimeProvider, node);
 
-		private static void ThrowBadAuthPipelineExceptionWhenNeeded(IApiCallDetails details, ITransportResponse response = null)
+		private static void ThrowBadAuthPipelineExceptionWhenNeeded(ApiCallDetails details, TransportResponse response = null)
 		{
 			if (details?.HttpStatusCode == 401)
 				throw new PipelineException(PipelineFailure.BadAuthentication, details.OriginalException) { Response = response, ApiCall = details };

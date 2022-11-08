@@ -43,10 +43,10 @@ namespace Elastic.Transport
 		DateTime StartedOn { get; }
 
 		TResponse CallProductEndpoint<TResponse>(RequestData requestData)
-			where TResponse : class, ITransportResponse, new();
+			where TResponse : TransportResponse, new();
 
 		Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : class, ITransportResponse, new();
+			where TResponse : TransportResponse, new();
 
 		void MarkAlive(Node node);
 
@@ -84,17 +84,17 @@ namespace Elastic.Transport
 
 		Task SniffOnConnectionFailureAsync(CancellationToken cancellationToken);
 
-		void BadResponse<TResponse>(ref TResponse response, IApiCallDetails callDetails, RequestData data, TransportException exception)
-			where TResponse : class, ITransportResponse, new();
+		void BadResponse<TResponse>(ref TResponse response, ApiCallDetails callDetails, RequestData data, TransportException exception)
+			where TResponse : TransportResponse, new();
 
 		void ThrowNoNodesAttempted(RequestData requestData, List<PipelineException> seenExceptions);
 
 		void AuditCancellationRequested();
 
-		TransportException CreateClientException<TResponse>(TResponse response, IApiCallDetails callDetails, RequestData data,
+		TransportException CreateClientException<TResponse>(TResponse response, ApiCallDetails callDetails, RequestData data,
 			List<PipelineException> seenExceptions
 		)
-			where TResponse : class, ITransportResponse, new();
+			where TResponse : TransportResponse, new();
 #pragma warning restore 1591
 	}
 }

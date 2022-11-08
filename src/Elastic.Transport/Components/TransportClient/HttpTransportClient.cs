@@ -61,7 +61,7 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="ITransportClient.Request{TResponse}" />
 		public virtual TResponse Request<TResponse>(RequestData requestData)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			var client = GetClient(requestData);
 			HttpResponseMessage responseMessage;
@@ -136,7 +136,7 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}" />
 		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			var client = GetClient(requestData);
 			HttpResponseMessage responseMessage;

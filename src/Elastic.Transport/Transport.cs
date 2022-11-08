@@ -131,7 +131,7 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="ITransport.Request{TResponse}" />
 		public TResponse Request<TResponse>(HttpMethod method, string path, PostData data = null,
 			IRequestParameters requestParameters = null)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			using var pipeline =
 				PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
@@ -177,7 +177,7 @@ namespace Elastic.Transport
 						if (_productRegistration.SupportsPing) Ping(pipeline, node);
 
 						response = pipeline.CallProductEndpoint<TResponse>(requestData);
-						if (!response.ApiCall.SuccessOrKnownError)
+						if (!response.ApiCallDetails.SuccessOrKnownError)
 						{
 							pipeline.MarkDead(node);
 							if (_productRegistration.SupportsSniff) pipeline.SniffOnConnectionFailure();
@@ -198,7 +198,7 @@ namespace Elastic.Transport
 							pipeline);
 					}
 
-					if (response == null || !response.ApiCall.SuccessOrKnownError) continue; // try the next node
+					if (response == null || !response.ApiCallDetails.SuccessOrKnownError) continue; // try the next node
 
 					pipeline.MarkAlive(node);
 					break;
@@ -212,7 +212,7 @@ namespace Elastic.Transport
 			PostData data = null, IRequestParameters requestParameters = null,
 			CancellationToken cancellationToken = default
 		)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			using var pipeline =
 				PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
@@ -262,7 +262,7 @@ namespace Elastic.Transport
 
 						response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
 							.ConfigureAwait(false);
-						if (!response.ApiCall.SuccessOrKnownError)
+						if (!response.ApiCallDetails.SuccessOrKnownError)
 						{
 							pipeline.MarkDead(node);
 							if (_productRegistration.SupportsSniff)
@@ -285,7 +285,7 @@ namespace Elastic.Transport
 
 						throw new UnexpectedTransportException(killerException, seenExceptions)
 						{
-							Request = requestData, Response = response?.ApiCall, AuditTrail = pipeline.AuditTrail
+							Request = requestData, ApiCallDetails = response?.ApiCallDetails, AuditTrail = pipeline.AuditTrail
 						};
 					}
 
@@ -295,7 +295,7 @@ namespace Elastic.Transport
 						break;
 					}
 
-					if (response == null || !response.ApiCall.SuccessOrKnownError) continue;
+					if (response == null || !response.ApiCallDetails.SuccessOrKnownError) continue;
 
 					pipeline.MarkAlive(node);
 					break;
@@ -307,17 +307,17 @@ namespace Elastic.Transport
 			List<PipelineException> seenExceptions,
 			RequestData requestData,
 			TResponse response, IRequestPipeline pipeline
-		) where TResponse : class, ITransportResponse, new() =>
+		) where TResponse : TransportResponse, new() =>
 			throw new UnexpectedTransportException(killerException, seenExceptions)
 			{
-				Request = requestData, Response = response?.ApiCall, AuditTrail = pipeline.AuditTrail
+				Request = requestData, ApiCallDetails = response?.ApiCallDetails, AuditTrail = pipeline.AuditTrail
 			};
 
 		private static void HandlePipelineException<TResponse>(
 			ref TResponse response, PipelineException ex, IRequestPipeline pipeline, Node node,
 			ICollection<PipelineException> seenExceptions
 		)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			response ??= ex.Response as TResponse;
 			pipeline.MarkDead(node);
@@ -327,7 +327,7 @@ namespace Elastic.Transport
 		private TResponse FinalizeResponse<TResponse>(RequestData requestData, IRequestPipeline pipeline,
 			List<PipelineException> seenExceptions,
 			TResponse response
-		) where TResponse : class, ITransportResponse, new()
+		) where TResponse : TransportResponse, new()
 		{
 			if (requestData.Node == null) //foreach never ran
 				pipeline.ThrowNoNodesAttempted(requestData, seenExceptions);
@@ -335,25 +335,25 @@ namespace Elastic.Transport
 			var callDetails = GetMostRecentCallDetails(response, seenExceptions);
 			var clientException = pipeline.CreateClientException(response, callDetails, requestData, seenExceptions);
 
-			if (response?.ApiCall == null)
+			if (response?.ApiCallDetails == null)
 				pipeline.BadResponse(ref response, callDetails, requestData, clientException);
 
 			HandleTransportException(requestData, clientException, response);
 			return response;
 		}
 
-		private static IApiCallDetails GetMostRecentCallDetails<TResponse>(TResponse response,
+		private static ApiCallDetails GetMostRecentCallDetails<TResponse>(TResponse response,
 			IEnumerable<PipelineException> seenExceptions)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
-			var callDetails = response?.ApiCall ?? seenExceptions.LastOrDefault(e => e.ApiCall != null)?.ApiCall;
+			var callDetails = response?.ApiCallDetails ?? seenExceptions.LastOrDefault(e => e.ApiCall != null)?.ApiCall;
 			return callDetails;
 		}
 
 		// ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
-		private void HandleTransportException(RequestData data, Exception clientException, ITransportResponse response)
+		private void HandleTransportException(RequestData data, Exception clientException, TransportResponse response)
 		{
-			if (response.ApiCall is ApiCallDetails a)
+			if (response.ApiCallDetails is ApiCallDetails a)
 			{
 				//if original exception was not explicitly set during the pipeline
 				//set it to the TransportException we created for the bad response
@@ -369,7 +369,7 @@ namespace Elastic.Transport
 #endif
 			}
 
-			Settings.OnRequestCompleted?.Invoke(response.ApiCall);
+			Settings.OnRequestCompleted?.Invoke(response.ApiCallDetails);
 			if (data != null && clientException != null && data.ThrowExceptions) throw clientException;
 		}
 

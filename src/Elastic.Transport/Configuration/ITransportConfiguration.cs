@@ -143,7 +143,7 @@ namespace Elastic.Transport
 		/// <summary>
 		/// Allows you to register a callback every time a an API call is returned
 		/// </summary>
-		Action<IApiCallDetails> OnRequestCompleted { get; }
+		Action<ApiCallDetails> OnRequestCompleted { get; }
 
 		/// <summary>
 		/// An action to run when the <see cref="RequestData" /> for a request has been
@@ -152,7 +152,7 @@ namespace Elastic.Transport
 		Action<RequestData> OnRequestDataCreated { get; }
 
 		/// <summary>
-		/// When enabled, all headers from the HTTP response will be included in the <see cref="IApiCallDetails"/>.
+		/// When enabled, all headers from the HTTP response will be included in the <see cref="ApiCallDetails"/>.
 		/// </summary>
 		bool? ParseAllHeaders { get; }
 
@@ -191,7 +191,7 @@ namespace Elastic.Transport
 
 		/// <summary>
 		/// A <see cref="HeadersList"/> containing the names of all HTTP response headers to attempt to parse and
-		/// included on the <see cref="IApiCallDetails"/>.
+		/// included on the <see cref="ApiCallDetails"/>.
 		/// </summary>
 		HeadersList ResponseHeadersToParse { get; }
 
@@ -229,7 +229,7 @@ namespace Elastic.Transport
 		bool SniffsOnStartup { get; }
 
 		/// <summary>
-		/// Instead of following a c/go like error checking on response.IsValid do throw an exception (except when <see cref="IApiCallDetails.SuccessOrKnownError"/> is false)
+		/// Instead of following a c/go like error checking on response.IsValid do throw an exception (except when <see cref="ApiCallDetails.SuccessOrKnownError"/> is false)
 		/// on the client when a call resulted in an exception on either the client or the Elasticsearch server.
 		/// <para>Reasons for such exceptions could be search parser errors, index missing exceptions, etc...</para>
 		/// </summary>
@@ -247,7 +247,7 @@ namespace Elastic.Transport
 		UserAgent UserAgent { get; }
 
 		/// <summary>
-		/// Allow you to override the status code inspection that sets <see cref="IApiCallDetails.Success"/>
+		/// Allow you to override the status code inspection that sets <see cref="ApiCallDetails.Success"/>
 		/// <para>
 		/// Defaults to validating the statusCode is greater or equal to 200 and less then 300
 		/// </para>

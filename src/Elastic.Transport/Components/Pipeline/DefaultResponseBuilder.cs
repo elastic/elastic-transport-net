@@ -18,7 +18,7 @@ namespace Elastic.Transport
 {
 	/// <summary>
 	///     A helper class that deals with handling how a <see cref="Stream" /> is transformed to the requested
-	///     <see cref="ITransportResponse" /> implementation. This includes handling optionally buffering based on
+	///     <see cref="TransportResponse" /> implementation. This includes handling optionally buffering based on
 	///     <see cref="ITransportConfiguration.DisableDirectStreaming" />. And handling short circuiting special responses
 	///     such as <see cref="StringResponse" />, <see cref="BytesResponse" /> and <see cref="VoidResponse" />
 	/// </summary>
@@ -64,7 +64,7 @@ namespace Elastic.Transport
 
 			response ??= new TResponse();
 
-			response.ApiCall = details;
+			response.ApiCallDetails = details;
 			return response;
 		}
 
@@ -99,7 +99,7 @@ namespace Elastic.Transport
 
 			response ??= new TResponse();
 
-			response.ApiCall = details;
+			response.ApiCallDetails = details;
 			return response;
 		}
 
@@ -151,7 +151,7 @@ namespace Elastic.Transport
 
 		private TResponse SetBody<TResponse>(ApiCallDetails details, RequestData requestData,
 			Stream responseStream, string mimeType)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			byte[] bytes = null;
 
@@ -237,13 +237,13 @@ namespace Elastic.Transport
 		/// <typeparam name="TResponse"></typeparam>
 		/// <param name="response"></param>
 		/// <param name="error"></param>
-		protected virtual void SetErrorOnResponse<TResponse>(TResponse response, TError error) where TResponse : class, ITransportResponse, new() { }
+		protected virtual void SetErrorOnResponse<TResponse>(TResponse response, TError error) where TResponse : TransportResponse, new() { }
 
 		private async Task<TResponse> SetBodyAsync<TResponse>(
 			ApiCallDetails details, RequestData requestData, Stream responseStream, string mimeType,
 			CancellationToken cancellationToken
 		)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			byte[] bytes = null;
 			var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ?? requestData.ConnectionSettings.DisableDirectStreaming;
@@ -299,7 +299,7 @@ namespace Elastic.Transport
 		
 		private static bool SetSpecialTypes<TResponse>(string mimeType, byte[] bytes,
 			IMemoryStreamFactory memoryStreamFactory, out TResponse cs)
-			where TResponse : class, ITransportResponse, new()
+			where TResponse : TransportResponse, new()
 		{
 			cs = null;
 			var responseType = typeof(TResponse);
@@ -334,7 +334,7 @@ namespace Elastic.Transport
 		}
 
 		private static bool NeedsToEagerReadStream<TResponse>()
-			where TResponse : class, ITransportResponse, new() =>
+			where TResponse : TransportResponse, new() =>
 			typeof(TResponse) == typeof(StringResponse)
 			|| typeof(TResponse) == typeof(BytesResponse)
 			|| typeof(TResponse) == typeof(DynamicResponse);

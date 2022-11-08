@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,7 +14,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 	/// <summary> Represents the serialized Elasticsearch java exception that caused a request to fail </summary>
 	[DataContract]
 	[JsonConverter(typeof(ErrorConverter))]
-	public class Error : ErrorCause
+	public sealed class Error : ErrorCause
 	{
 		private static readonly IReadOnlyDictionary<string, string> DefaultHeaders =
 			new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0));
