@@ -4,51 +4,50 @@
 
 using System.Text;
 
-namespace Elastic.Transport.Products.Elasticsearch
+namespace Elastic.Transport.Products.Elasticsearch;
+
+/// <summary>
+/// Extends the builtin responses with parsing for <see cref="ElasticsearchServerError"/>
+/// </summary>
+public static class ElasticsearchErrorExtensions
 {
-	/// <summary>
-	/// Extends the builtin responses with parsing for <see cref="ServerError"/>
-	/// </summary>
-	public static class ElasticsearchErrorExtensions
+	/// <summary> Try to parse an Elasticsearch <see cref="ElasticsearchServerError"/> </summary>
+	public static bool TryGetElasticsearchServerError(this StringResponse response, out ElasticsearchServerError serverError)
 	{
-		/// <summary> Try to parse an Elasticsearch <see cref="ServerError"/> </summary>
-		public static bool TryGetElasticsearchServerError(this StringResponse response, out ServerError serverError)
-		{
-			serverError = null;
-			if (string.IsNullOrEmpty(response.Body) || response.ResponseMimeType != RequestData.MimeType)
-				return false;
+		serverError = null;
+		if (string.IsNullOrEmpty(response.Body) || response.ApiCallDetails.ResponseMimeType != RequestData.MimeType)
+			return false;
 
-			var settings = response.ApiCall.TransportConfiguration;
-			using var stream = settings.MemoryStreamFactory.Create(Encoding.UTF8.GetBytes(response.Body));
-			return ServerError.TryCreate(stream, out serverError);
-		}
+		var settings = response.ApiCallDetails.TransportConfiguration;
+		using var stream = settings.MemoryStreamFactory.Create(Encoding.UTF8.GetBytes(response.Body));
+		return ElasticsearchServerError.TryCreate(stream, out serverError);
+	}
 
-		/// <summary> Try to parse an Elasticsearch <see cref="ServerError"/> </summary>
-		public static bool TryGetElasticsearchServerError(this BytesResponse response, out ServerError serverError)
-		{
-			serverError = null;
-			if (response.Body == null || response.Body.Length == 0 || response.ResponseMimeType != RequestData.MimeType)
-				return false;
+	/// <summary> Try to parse an Elasticsearch <see cref="ElasticsearchServerError"/> </summary>
+	public static bool TryGetElasticsearchServerError(this BytesResponse response, out ElasticsearchServerError serverError)
+	{
+		serverError = null;
+		if (response.Body == null || response.Body.Length == 0 || response.ApiCallDetails.ResponseMimeType != RequestData.MimeType)
+			return false;
 
-			var settings = response.ApiCall.TransportConfiguration;
-			using var stream = settings.MemoryStreamFactory.Create(response.Body);
-			return ServerError.TryCreate(stream, out serverError);
-		}
+		var settings = response.ApiCallDetails.TransportConfiguration;
+		using var stream = settings.MemoryStreamFactory.Create(response.Body);
+		return ElasticsearchServerError.TryCreate(stream, out serverError);
+	}
 
-		/// <summary>
-		/// Try to parse an Elasticsearch <see cref="ServerError"/>, this only works if
-		/// <see cref="ITransportConfiguration.DisableDirectStreaming"/> gives us access to <see cref="IApiCallDetails.RequestBodyInBytes"/>
-		/// </summary>
-		public static bool TryGetElasticsearchServerError(this ITransportResponse response, out ServerError serverError)
-		{
-			serverError = null;
-			var bytes = response.ApiCall.ResponseBodyInBytes;
-			if (bytes == null || response.ApiCall.ResponseMimeType != RequestData.MimeType)
-				return false;
+	/// <summary>
+	/// Try to parse an Elasticsearch <see cref="ElasticsearchServerError"/>, this only works if
+	/// <see cref="ITransportConfiguration.DisableDirectStreaming"/> gives us access to <see cref="ApiCallDetails.RequestBodyInBytes"/>
+	/// </summary>
+	public static bool TryGetElasticsearchServerError(this TransportResponse response, out ElasticsearchServerError serverError)
+	{
+		serverError = null;
+		var bytes = response.ApiCallDetails.ResponseBodyInBytes;
+		if (bytes == null || response.ApiCallDetails.ResponseMimeType != RequestData.MimeType)
+			return false;
 
-			var settings = response.ApiCall.TransportConfiguration;
-			using var stream = settings.MemoryStreamFactory.Create(bytes);
-			return ServerError.TryCreate(stream, out serverError);
-		}
+		var settings = response.ApiCallDetails.TransportConfiguration;
+		using var stream = settings.MemoryStreamFactory.Create(bytes);
+		return ElasticsearchServerError.TryCreate(stream, out serverError);
 	}
 }

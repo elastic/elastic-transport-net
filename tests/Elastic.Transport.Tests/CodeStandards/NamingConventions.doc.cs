@@ -24,7 +24,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 		{
 			var exceptions = new Type[] { };
 
-			var baseClassesNotAbstract = typeof(ITransport<>).Assembly.GetTypes()
+			var baseClassesNotAbstract = typeof(HttpTransport<>).Assembly.GetTypes()
 				.Where(t => t.IsClass && !exceptions.Contains(t))
 				.Where(t => t.Name.Split('`')[0].EndsWith("Base"))
 				.Where(t => !t.IsAbstract)
@@ -36,7 +36,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 
 		private List<Type> Scan()
 		{
-			var assembly = typeof(ITransport<>).Assembly;
+			var assembly = typeof(HttpTransport<>).Assembly;
 
 			var exceptions = new List<Type>
 			{

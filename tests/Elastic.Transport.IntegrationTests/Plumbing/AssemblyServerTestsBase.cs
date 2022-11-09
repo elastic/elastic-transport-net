@@ -6,13 +6,13 @@ using Xunit.Extensions.Ordering;
 
 namespace Elastic.Transport.IntegrationTests.Plumbing
 {
-	public class AssemblyServerTestsBase<TServer> : IAssemblyFixture<TServer> where TServer : class, ITransportTestServer
+	public class AssemblyServerTestsBase<TServer> : IAssemblyFixture<TServer> where TServer : class, HttpTransportTestServer
 	{
 		public AssemblyServerTestsBase(TServer instance) => Server = instance;
 
 		protected TServer Server { get; }
 
-		protected Transport Transport => Server.DefaultTransport;
+		protected HttpTransport Transport => Server.DefaultTransport;
 	}
 
 	public class AssemblyServerTestsBase : AssemblyServerTestsBase<TransportTestServer>

@@ -4,17 +4,16 @@
 
 using System;
 
-namespace Elastic.Transport
-{
-	/// <summary>
-	/// A response that exposes the response <see cref="TransportResponse{T}.Body"/> as byte array
-	/// </summary>
-	public sealed class BytesResponse : TransportResponse<byte[]>
-	{
-		/// <inheritdoc cref="BytesResponse"/>
-		public BytesResponse() => Body = Array.Empty<byte>();
+namespace Elastic.Transport;
 
-		/// <inheritdoc cref="BytesResponse"/>
-		public BytesResponse(byte[] body) => Body = body;
-	}
+/// <summary>
+/// A response that exposes the response <see cref="TransportResponse{T}.Body"/> as byte array
+/// </summary>
+public sealed class BytesResponse : TransportResponse<byte[]>
+{
+	/// <inheritdoc cref="BytesResponse"/>
+	public BytesResponse() => Body = Array.Empty<byte>();
+
+	/// <inheritdoc cref="BytesResponse"/>
+	public BytesResponse(byte[] body) => Body = body;
 }

@@ -10,7 +10,7 @@ namespace Elastic.Transport.Benchmarks
 {
 	public class TransportBenchmarks
 	{
-		private Transport _transport;
+		private DefaultHttpTransport _transport;
 
 		[GlobalSetup]
 		public void Setup()
@@ -19,7 +19,7 @@ namespace Elastic.Transport.Benchmarks
 			var pool = new SingleNodePool(new Uri("http://localhost:9200"));
 			var settings = new TransportConfiguration(pool, connection);
 
-			_transport = new Transport(settings);
+			_transport = new DefaultHttpTransport(settings);
 		}
 
 		[Benchmark]
@@ -28,9 +28,11 @@ namespace Elastic.Transport.Benchmarks
 		[Benchmark]
 		public async Task TransportSuccessfulAsyncRequestBenchmark() => await _transport.GetAsync<EmptyResponse>("/");
 
-		private class EmptyResponse : ITransportResponse
+		private class EmptyResponse : TransportResponse
 		{
-			public IApiCallDetails ApiCall { get; set; }
+			public EmptyResponse() : base() { }
+
+			public ApiCallDetails ApiCall { get; set; }
 		}
 	}
 }

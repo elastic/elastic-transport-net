@@ -7,55 +7,54 @@ using System.Threading;
 using System.Threading.Tasks;
 using static Elastic.Transport.SerializationFormatting;
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+public abstract partial class PostData
 {
-	public abstract partial class PostData
+	/// <summary>
+	/// Create a <see cref="PostData"/> instance that will serialize <paramref name="data"/> using
+	/// <see cref="Serializer"/>
+	/// </summary>
+	public static PostData Serializable<T>(T data) => new SerializableData<T>(data);
+
+	private class SerializableData<T> : PostData
 	{
-		/// <summary>
-		/// Create a <see cref="PostData"/> instance that will serialize <paramref name="data"/> using
-		/// <see cref="Serializer"/>
-		/// </summary>
-		public static PostData Serializable<T>(T data) => new SerializableData<T>(data);
+		private readonly T _serializable;
 
-		private class SerializableData<T> : PostData
+		public SerializableData(T item)
 		{
-			private readonly T _serializable;
+			Type = PostType.Serializable;
+			_serializable = item;
+		}
 
-			public SerializableData(T item)
-			{
-				Type = PostType.Serializable;
-				_serializable = item;
-			}
+		public static implicit operator SerializableData<T>(T serializableData) =>
+			new SerializableData<T>(serializableData);
 
-			public static implicit operator SerializableData<T>(T serializableData) =>
-				new SerializableData<T>(serializableData);
+		public override void Write(Stream writableStream, ITransportConfiguration settings)
+		{
+			MemoryStream buffer = null;
+			var stream = writableStream;
+			BufferIfNeeded(settings, ref buffer, ref stream);
 
-			public override void Write(Stream writableStream, ITransportConfiguration settings)
-			{
-				MemoryStream buffer = null;
-				var stream = writableStream;
-				BufferIfNeeded(settings, ref buffer, ref stream);
+			var indent = settings.PrettyJson ? Indented : None;
+			settings.RequestResponseSerializer.Serialize(_serializable, stream, indent);
 
-				var indent = settings.PrettyJson ? Indented : None;
-				settings.RequestResponseSerializer.Serialize(_serializable, stream, indent);
+			FinishStream(writableStream, buffer, settings);
+		}
 
-				FinishStream(writableStream, buffer, settings);
-			}
+		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
+			CancellationToken cancellationToken)
+		{
+			MemoryStream buffer = null;
+			var stream = writableStream;
+			BufferIfNeeded(settings, ref buffer, ref stream);
 
-			public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
-				CancellationToken cancellationToken)
-			{
-				MemoryStream buffer = null;
-				var stream = writableStream;
-				BufferIfNeeded(settings, ref buffer, ref stream);
+			var indent = settings.PrettyJson ? Indented : None;
+			await settings.RequestResponseSerializer
+				.SerializeAsync(_serializable, stream, indent, cancellationToken)
+				.ConfigureAwait(false);
 
-				var indent = settings.PrettyJson ? Indented : None;
-				await settings.RequestResponseSerializer
-					.SerializeAsync(_serializable, stream, indent, cancellationToken)
-					.ConfigureAwait(false);
-
-				await FinishStreamAsync(writableStream, buffer, settings, cancellationToken).ConfigureAwait(false);
-			}
+			await FinishStreamAsync(writableStream, buffer, settings, cancellationToken).ConfigureAwait(false);
 		}
 	}
 }

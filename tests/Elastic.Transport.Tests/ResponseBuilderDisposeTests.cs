@@ -119,25 +119,25 @@ namespace Elastic.Transport.Tests
 			}
 		}
 
-		private class TrackMemoryStreamFactory : IMemoryStreamFactory
+		private class TrackMemoryStreamFactory : MemoryStreamFactory
 		{
 			public IList<TrackDisposeStream> Created { get; } = new List<TrackDisposeStream>();
 
-			public MemoryStream Create()
+			public override MemoryStream Create()
 			{
 				var stream = new TrackDisposeStream();
 				Created.Add(stream);
 				return stream;
 			}
 
-			public MemoryStream Create(byte[] bytes)
+			public override MemoryStream Create(byte[] bytes)
 			{
 				var stream = new TrackDisposeStream(bytes);
 				Created.Add(stream);
 				return stream;
 			}
 
-			public MemoryStream Create(byte[] bytes, int index, int count)
+			public override MemoryStream Create(byte[] bytes, int index, int count)
 			{
 				var stream = new TrackDisposeStream(bytes, index, count);
 				Created.Add(stream);

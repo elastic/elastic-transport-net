@@ -4,8 +4,8 @@
 
 using Elastic.Transport.VirtualizedCluster.Products.Elasticsearch;
 
-namespace Elastic.Transport.VirtualizedCluster
-{
+namespace Elastic.Transport.VirtualizedCluster;
+
 	/// <summary>
 	/// Static factory class that can be used to bootstrap virtual product clusters. E.g a cluster of virtual Elasticsearch nodes.
 	/// </summary>
@@ -16,4 +16,3 @@ namespace Elastic.Transport.VirtualizedCluster
 		/// </summary>
 		public static ElasticsearchClusterFactory Elasticsearch { get; } = ElasticsearchClusterFactory.Default;
 	}
-}

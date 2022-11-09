@@ -17,11 +17,11 @@ using Xunit;
 
 namespace Elastic.Transport.IntegrationTests.Plumbing
 {
-	public interface ITransportTestServer
+	public interface HttpTransportTestServer
 	{
 		Uri Uri { get;  }
 
-		Transport DefaultTransport { get;  }
+		HttpTransport DefaultTransport { get;  }
 	}
 
 	public class TransportTestServer : TransportTestServer<DefaultStartup>
@@ -39,12 +39,12 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 
 	}
 
-	public class TransportTestServer<TStartup> : ITransportTestServer, IDisposable, IAsyncDisposable, IAsyncLifetime
+	public class TransportTestServer<TStartup> : HttpTransportTestServer, IDisposable, IAsyncDisposable, IAsyncLifetime
 		where TStartup : class
 	{
 		private readonly IWebHost _host;
 		private Uri _uri;
-		private Transport _defaultTransport;
+		private HttpTransport _defaultTransport;
 
 		public TransportTestServer()
 		{
@@ -69,7 +69,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			private set => _uri = value;
 		}
 
-		public Transport DefaultTransport
+		public HttpTransport DefaultTransport
 		{
 			get => _defaultTransport ?? throw new Exception($"{nameof(DefaultTransport)} is not available until {nameof(StartAsync)} is called");
 			private set => _defaultTransport = value;
@@ -81,11 +81,11 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			var port = _host.GetServerPort();
 			var url = $"http://{TransportTestServer.LocalOrProxyHost}:{port}";
 			Uri = new Uri(url);
-			DefaultTransport = CreateTransport(c => new Transport(c));
+			DefaultTransport = CreateTransport(c => new DefaultHttpTransport(c));
 			return this;
 		}
 
-		public Transport CreateTransport(Func<TransportConfiguration, Transport> create) =>
+		public HttpTransport CreateTransport(Func<TransportConfiguration, HttpTransport> create) =>
 			create(TransportTestServer.RerouteToProxyIfNeeded(new TransportConfiguration(Uri)));
 
 		public void Dispose() => _host?.Dispose();
@@ -100,7 +100,5 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			Dispose();
 			return ValueTask.CompletedTask;
 		}
-
-
 	}
 }

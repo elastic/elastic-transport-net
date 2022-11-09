@@ -41,9 +41,9 @@ namespace Elastic.Transport.Tests
 
 					{ HealthyResponse, 9200, response =>
 					{
-						response.ApiCall.Success.Should().BeTrue();
-						response.ApiCall.HttpStatusCode.Should().Be(200);
-						response.ApiCall.DebugInformation.Should().Contain("x\":1");
+						response.ApiCallDetails.Success.Should().BeTrue();
+						response.ApiCallDetails.HttpStatusCode.Should().Be(200);
+						response.ApiCallDetails.DebugInformation.Should().Contain("x\":1");
 					} },
 				}
 			);
@@ -86,42 +86,42 @@ namespace Elastic.Transport.Tests
 
 					{ HealthyResponse, 9200, response =>
 					{
-						response.ApiCall.Success.Should().BeTrue();
-						response.ApiCall.HttpStatusCode.Should().Be(200);
-						response.ApiCall.DebugInformation.Should().Contain("x\":1");
+						response.ApiCallDetails.Success.Should().BeTrue();
+						response.ApiCallDetails.HttpStatusCode.Should().Be(200);
+						response.ApiCallDetails.DebugInformation.Should().Contain("x\":1");
 					} },
 				},
 				new ClientCall {
 
 					{ BadResponse, 9200, response =>
 					{
-						response.ApiCall.Success.Should().BeFalse();
-						response.ApiCall.HttpStatusCode.Should().Be(500);
-						response.ApiCall.DebugInformation.Should().Contain("x\":2");
+						response.ApiCallDetails.Success.Should().BeFalse();
+						response.ApiCallDetails.HttpStatusCode.Should().Be(500);
+						response.ApiCallDetails.DebugInformation.Should().Contain("x\":2");
 					} },
 				},
 				new ClientCall {
 
 					{ BadResponse, 9200, response =>
 					{
-						response.ApiCall.HttpStatusCode.Should().Be(400);
-						response.ApiCall.DebugInformation.Should().Contain("x\":3");
+						response.ApiCallDetails.HttpStatusCode.Should().Be(400);
+						response.ApiCallDetails.DebugInformation.Should().Contain("x\":3");
 					} },
 				},
 				new ClientCall {
 
 					{ BadResponse, 9200, response =>
 					{
-						response.ApiCall.HttpStatusCode.Should().Be(400);
-						response.ApiCall.DebugInformation.Should().Contain("x\":3");
+						response.ApiCallDetails.HttpStatusCode.Should().Be(400);
+						response.ApiCallDetails.DebugInformation.Should().Contain("x\":3");
 					} },
 				},
 				new ClientCall {
 
 					{ HealthyResponse, 9200, response =>
 					{
-						response.ApiCall.HttpStatusCode.Should().Be(200);
-						response.ApiCall.DebugInformation.Should().Contain("x\":4");
+						response.ApiCallDetails.HttpStatusCode.Should().Be(200);
+						response.ApiCallDetails.DebugInformation.Should().Contain("x\":4");
 					} },
 				}
 			);

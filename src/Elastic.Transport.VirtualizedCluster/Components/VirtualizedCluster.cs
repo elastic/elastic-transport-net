@@ -7,69 +7,68 @@ using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.VirtualizedCluster.Providers;
 
-namespace Elastic.Transport.VirtualizedCluster.Components
+namespace Elastic.Transport.VirtualizedCluster.Components;
+
+public class VirtualizedCluster
 {
-	public class VirtualizedCluster
+	private readonly ExposingPipelineFactory<ITransportConfiguration> _exposingRequestPipeline;
+	private readonly TestableDateTimeProvider _dateTimeProvider;
+	private readonly TransportConfiguration _settings;
+
+	private Func<HttpTransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<TransportResponse>> _asyncCall;
+	private Func<HttpTransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> _syncCall;
+
+	private class VirtualResponse : TransportResponse { }
+
+	internal VirtualizedCluster(TestableDateTimeProvider dateTimeProvider, TransportConfiguration settings)
 	{
-		private readonly ExposingPipelineFactory<TransportConfiguration> _exposingRequestPipeline;
-		private readonly TestableDateTimeProvider _dateTimeProvider;
-		private readonly TransportConfiguration _settings;
+		_dateTimeProvider = dateTimeProvider;
+		_settings = settings;
+		_exposingRequestPipeline = new ExposingPipelineFactory<ITransportConfiguration>(settings, _dateTimeProvider);
 
-		private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<ITransportResponse>> _asyncCall;
-		private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, ITransportResponse> _syncCall;
-
-		private class VirtualResponse : TransportResponse { }
-
-		internal VirtualizedCluster(TestableDateTimeProvider dateTimeProvider, TransportConfiguration settings)
+		_syncCall = (t, r) => t.Request<VirtualResponse>(
+			HttpMethod.GET, "/",
+			PostData.Serializable(new {}), new DefaultRequestParameters()
 		{
-			_dateTimeProvider = dateTimeProvider;
-			_settings = settings;
-			_exposingRequestPipeline = new ExposingPipelineFactory<TransportConfiguration>(settings, _dateTimeProvider);
-
-			_syncCall = (t, r) => t.Request<VirtualResponse>(
+				RequestConfiguration = r?.Invoke(new RequestConfigurationDescriptor(null))
+		});
+		_asyncCall = async (t, r) =>
+		{
+			var res = await t.RequestAsync<VirtualResponse>
+			(
 				HttpMethod.GET, "/",
-				PostData.Serializable(new {}), new RequestParameters()
-			{
+				PostData.Serializable(new { }),
+				new DefaultRequestParameters()
+				{
 					RequestConfiguration = r?.Invoke(new RequestConfigurationDescriptor(null))
-			});
-			_asyncCall = async (t, r) =>
-			{
-				var res = await t.RequestAsync<VirtualResponse>
-				(
-					HttpMethod.GET, "/",
-					PostData.Serializable(new { }),
-					new RequestParameters()
-					{
-						RequestConfiguration = r?.Invoke(new RequestConfigurationDescriptor(null))
-					},
-					CancellationToken.None
-				).ConfigureAwait(false);
-				return (ITransportResponse)res;
-			};
-		}
-
-		public VirtualClusterConnection Connection => Transport.Settings.Connection as VirtualClusterConnection;
-		public NodePool ConnectionPool => Transport.Settings.NodePool;
-		public ITransport<ITransportConfiguration> Transport => _exposingRequestPipeline?.Transport;
-
-		public VirtualizedCluster TransportProxiesTo(
-			Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, ITransportResponse> sync,
-			Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<ITransportResponse>> async
-		)
-		{
-			_syncCall = sync;
-			_asyncCall = async;
-			return this;
-		}
-
-		public ITransportResponse ClientCall(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null) =>
-			_syncCall(Transport, requestOverrides);
-
-		public async Task<ITransportResponse> ClientCallAsync(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null) =>
-			await _asyncCall(Transport, requestOverrides).ConfigureAwait(false);
-
-		public void ChangeTime(Func<DateTime, DateTime> change) => _dateTimeProvider.ChangeTime(change);
-
-		public void ClientThrows(bool throws) => _settings.ThrowExceptions(throws);
+				},
+				CancellationToken.None
+			).ConfigureAwait(false);
+			return (TransportResponse)res;
+		};
 	}
+
+	public VirtualClusterConnection Connection => Transport.Settings.Connection as VirtualClusterConnection;
+	public NodePool ConnectionPool => Transport.Settings.NodePool;
+	public HttpTransport<ITransportConfiguration> Transport => _exposingRequestPipeline?.Transport;
+
+	public VirtualizedCluster TransportProxiesTo(
+		Func<HttpTransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> sync,
+		Func<HttpTransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<TransportResponse>> async
+	)
+	{
+		_syncCall = sync;
+		_asyncCall = async;
+		return this;
+	}
+
+	public TransportResponse ClientCall(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null) =>
+		_syncCall(Transport, requestOverrides);
+
+	public async Task<TransportResponse> ClientCallAsync(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null) =>
+		await _asyncCall(Transport, requestOverrides).ConfigureAwait(false);
+
+	public void ChangeTime(Func<DateTime, DateTime> change) => _dateTimeProvider.ChangeTime(change);
+
+	public void ClientThrows(bool throws) => _settings.ThrowExceptions(throws);
 }

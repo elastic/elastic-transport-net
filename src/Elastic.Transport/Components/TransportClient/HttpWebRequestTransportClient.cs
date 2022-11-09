@@ -16,65 +16,141 @@ using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
 using Elastic.Transport.Extensions;
 
-namespace Elastic.Transport
-{
-	/// <summary>
-	/// This provides an <see cref="ITransportClient"/> implementation that targets <see cref="HttpWebRequest"/>.
-	/// <para>
-	/// On .NET full framework <see cref="HttpTransportClient"/> is an alias to this.
-	/// </para>
-	/// <para/>
-	/// <para>Do NOT use this class directly on .NET Core. <see cref="HttpWebRequest"/> is monkey patched
-	/// over HttpClient and does not reuse its instances of HttpClient
-	/// </para>
-	/// </summary>
-#if DOTNETCORE
-	[Obsolete("CoreFX HttpWebRequest uses HttpClient under the covers but does not reuse HttpClient instances, do NOT use on .NET core only used as the default on Full Framework")]
-#endif
-	public class HttpWebRequestTransportClient : ITransportClient
-	{
-		private string _expectedCertificateFingerprint;
+namespace Elastic.Transport;
 
-		static HttpWebRequestTransportClient()
+/// <summary>
+/// This provides an <see cref="TransportClient"/> implementation that targets <see cref="HttpWebRequest"/>.
+/// <para>
+/// On .NET full framework <see cref="HttpTransportClient"/> is an alias to this.
+/// </para>
+/// <para/>
+/// <para>Do NOT use this class directly on .NET Core. <see cref="HttpWebRequest"/> is monkey patched
+/// over HttpClient and does not reuse its instances of HttpClient
+/// </para>
+/// </summary>
+#if DOTNETCORE
+[Obsolete("CoreFX HttpWebRequest uses HttpClient under the covers but does not reuse HttpClient instances, do NOT use on .NET core only used as the default on Full Framework")]
+#endif
+public class HttpWebRequestTransportClient : TransportClient
+{
+	private string _expectedCertificateFingerprint;
+
+	static HttpWebRequestTransportClient()
+	{
+		//Not available under mono
+		if (!IsMono) HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
+	}
+
+	internal HttpWebRequestTransportClient() { }
+
+	internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
+
+	/// <inheritdoc cref="TransportClient.Request{TResponse}"/>>
+	public override TResponse Request<TResponse>(RequestData requestData)
+	{
+		int? statusCode = null;
+		Stream responseStream = null;
+		Exception ex = null;
+		string mimeType = null;
+		long contentLength = -1;
+		ReadOnlyDictionary<TcpState, int> tcpStats = null;
+		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
+		Dictionary<string, IEnumerable<string>> responseHeaders = null;
+
+		try
 		{
-			//Not available under mono
-			if (!IsMono) HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
+			var request = CreateHttpWebRequest(requestData);
+			var data = requestData.PostData;
+
+			if (data != null)
+			{
+				using (var stream = request.GetRequestStream())
+				{
+					if (requestData.HttpCompression)
+					{
+						using var zipStream = new GZipStream(stream, CompressionMode.Compress);
+						data.Write(zipStream, requestData.ConnectionSettings);
+					}
+					else
+						data.Write(stream, requestData.ConnectionSettings);
+				}
+			}
+			requestData.MadeItToResponse = true;
+
+			if (requestData.TcpStats)
+				tcpStats = TcpStats.GetStates();
+
+			if (requestData.ThreadPoolStats)
+				threadPoolStats = ThreadPoolStats.GetStats();
+
+			//http://msdn.microsoft.com/en-us/library/system.net.httpwebresponse.getresponsestream.aspx
+			//Either the stream or the response object needs to be closed but not both although it won't
+			//throw any errors if both are closed atleast one of them has to be Closed.
+			//Since we expose the stream we let closing the stream determining when to close the connection
+			var httpWebResponse = (HttpWebResponse)request.GetResponse();
+			HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
+			responseHeaders = ParseHeaders(requestData, httpWebResponse, responseHeaders);
+			contentLength = httpWebResponse.ContentLength;
+		}
+		catch (WebException e)
+		{
+			ex = e;
+			if (e.Response is HttpWebResponse httpWebResponse)
+				HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
 		}
 
-		internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
+		responseStream ??= Stream.Null;
+		var response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+		return response;
+	}
 
-		/// <inheritdoc cref="ITransportClient.Request{TResponse}"/>>
-		public virtual TResponse Request<TResponse>(RequestData requestData)
-			where TResponse : class, ITransportResponse, new()
+	/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}"/>>
+	public override async Task<TResponse> RequestAsync<TResponse>(RequestData requestData,
+		CancellationToken cancellationToken)
+	{
+		Action unregisterWaitHandle = null;
+		int? statusCode = null;
+		Stream responseStream = null;
+		Exception ex = null;
+		string mimeType = null;
+		long contentLength = -1;
+		ReadOnlyDictionary<TcpState, int> tcpStats = null;
+		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
+		Dictionary<string, IEnumerable<string>> responseHeaders = null;
+		requestData.IsAsync = true;
+
+		try
 		{
-			int? statusCode = null;
-			Stream responseStream = null;
-			Exception ex = null;
-			string mimeType = null;
-			long contentLength = -1;
-			ReadOnlyDictionary<TcpState, int> tcpStats = null;
-			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
-			Dictionary<string, IEnumerable<string>> responseHeaders = null;
-
-			try
+			var data = requestData.PostData;
+			var request = CreateHttpWebRequest(requestData);
+			using (cancellationToken.Register(() => request.Abort()))
 			{
-				var request = CreateHttpWebRequest(requestData);
-				var data = requestData.PostData;
-
 				if (data != null)
 				{
-					using (var stream = request.GetRequestStream())
+					var apmGetRequestStreamTask =
+						Task.Factory.FromAsync(request.BeginGetRequestStream, r => request.EndGetRequestStream(r), null);
+					unregisterWaitHandle = RegisterApmTaskTimeout(apmGetRequestStreamTask, request, requestData);
+
+					using (var stream = await apmGetRequestStreamTask.ConfigureAwait(false))
 					{
 						if (requestData.HttpCompression)
 						{
 							using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-							data.Write(zipStream, requestData.ConnectionSettings);
+							await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
 						}
 						else
-							data.Write(stream, requestData.ConnectionSettings);
+							await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
 					}
+					unregisterWaitHandle?.Invoke();
 				}
 				requestData.MadeItToResponse = true;
+				//http://msdn.microsoft.com/en-us/library/system.net.httpwebresponse.getresponsestream.aspx
+				//Either the stream or the response object needs to be closed but not both although it won't
+				//throw any errors if both are closed atleast one of them has to be Closed.
+				//Since we expose the stream we let closing the stream determining when to close the connection
+
+				var apmGetResponseTask = Task.Factory.FromAsync(request.BeginGetResponse, r => request.EndGetResponse(r), null);
+				unregisterWaitHandle = RegisterApmTaskTimeout(apmGetResponseTask, request, requestData);
 
 				if (requestData.TcpStats)
 					tcpStats = TcpStats.GetStates();
@@ -82,369 +158,286 @@ namespace Elastic.Transport
 				if (requestData.ThreadPoolStats)
 					threadPoolStats = ThreadPoolStats.GetStats();
 
-				//http://msdn.microsoft.com/en-us/library/system.net.httpwebresponse.getresponsestream.aspx
-				//Either the stream or the response object needs to be closed but not both although it won't
-				//throw any errors if both are closed atleast one of them has to be Closed.
-				//Since we expose the stream we let closing the stream determining when to close the connection
-				var httpWebResponse = (HttpWebResponse)request.GetResponse();
+				var httpWebResponse = (HttpWebResponse)await apmGetResponseTask.ConfigureAwait(false);
 				HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
 				responseHeaders = ParseHeaders(requestData, httpWebResponse, responseHeaders);
 				contentLength = httpWebResponse.ContentLength;
 			}
-			catch (WebException e)
-			{
-				ex = e;
-				if (e.Response is HttpWebResponse httpWebResponse)
-					HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
-			}
-
-			responseStream ??= Stream.Null;
-			var response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
-			return response;
 		}
-
-		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}"/>>
-		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData,
-			CancellationToken cancellationToken
-		)
-			where TResponse : class, ITransportResponse, new()
+		catch (WebException e)
 		{
-			Action unregisterWaitHandle = null;
-			int? statusCode = null;
-			Stream responseStream = null;
-			Exception ex = null;
-			string mimeType = null;
-			long contentLength = -1;
-			ReadOnlyDictionary<TcpState, int> tcpStats = null;
-			ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
-			Dictionary<string, IEnumerable<string>> responseHeaders = null;
-			requestData.IsAsync = true;
-
-			try
-			{
-				var data = requestData.PostData;
-				var request = CreateHttpWebRequest(requestData);
-				using (cancellationToken.Register(() => request.Abort()))
-				{
-					if (data != null)
-					{
-						var apmGetRequestStreamTask =
-							Task.Factory.FromAsync(request.BeginGetRequestStream, r => request.EndGetRequestStream(r), null);
-						unregisterWaitHandle = RegisterApmTaskTimeout(apmGetRequestStreamTask, request, requestData);
-
-						using (var stream = await apmGetRequestStreamTask.ConfigureAwait(false))
-						{
-							if (requestData.HttpCompression)
-							{
-								using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-								await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
-							}
-							else
-								await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
-						}
-						unregisterWaitHandle?.Invoke();
-					}
-					requestData.MadeItToResponse = true;
-					//http://msdn.microsoft.com/en-us/library/system.net.httpwebresponse.getresponsestream.aspx
-					//Either the stream or the response object needs to be closed but not both although it won't
-					//throw any errors if both are closed atleast one of them has to be Closed.
-					//Since we expose the stream we let closing the stream determining when to close the connection
-
-					var apmGetResponseTask = Task.Factory.FromAsync(request.BeginGetResponse, r => request.EndGetResponse(r), null);
-					unregisterWaitHandle = RegisterApmTaskTimeout(apmGetResponseTask, request, requestData);
-
-					if (requestData.TcpStats)
-						tcpStats = TcpStats.GetStates();
-
-					if (requestData.ThreadPoolStats)
-						threadPoolStats = ThreadPoolStats.GetStats();
-
-					var httpWebResponse = (HttpWebResponse)await apmGetResponseTask.ConfigureAwait(false);
-					HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
-					responseHeaders = ParseHeaders(requestData, httpWebResponse, responseHeaders);
-					contentLength = httpWebResponse.ContentLength;
-				}
-			}
-			catch (WebException e)
-			{
-				ex = e;
-				if (e.Response is HttpWebResponse httpWebResponse)
-					HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
-			}
-			finally
-			{
-				unregisterWaitHandle?.Invoke();
-			}
-			responseStream ??= Stream.Null;
-			var response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-				.ConfigureAwait(false);
-			return response;
+			ex = e;
+			if (e.Response is HttpWebResponse httpWebResponse)
+				HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
 		}
-
-		private static Dictionary<string, IEnumerable<string>> ParseHeaders(RequestData requestData, HttpWebResponse responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
+		finally
 		{
-			if (!responseMessage.SupportsHeaders && !responseMessage.Headers.HasKeys()) return null;
+			unregisterWaitHandle?.Invoke();
+		}
+		responseStream ??= Stream.Null;
+		var response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+				(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+			.ConfigureAwait(false);
+		return response;
+	}
 
-			if (requestData.ParseAllHeaders)
+	private static Dictionary<string, IEnumerable<string>> ParseHeaders(RequestData requestData, HttpWebResponse responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
+	{
+		if (!responseMessage.SupportsHeaders && !responseMessage.Headers.HasKeys()) return null;
+
+		if (requestData.ParseAllHeaders)
+		{
+			foreach (var key in responseMessage.Headers.AllKeys)
 			{
-				foreach (var key in responseMessage.Headers.AllKeys)
+				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+				responseHeaders.Add(key, responseMessage.Headers.GetValues(key));
+			}
+		}
+		else if (requestData.ResponseHeadersToParse.Count > 0)
+		{
+			foreach (var headerToParse in requestData.ResponseHeadersToParse)
+			{
+				if (responseMessage.Headers.AllKeys.Contains(headerToParse, StringComparer.OrdinalIgnoreCase))
 				{
 					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
-					responseHeaders.Add(key, responseMessage.Headers.GetValues(key));
+					responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse));
 				}
 			}
-			else if (requestData.ResponseHeadersToParse.Count > 0)
-			{
-				foreach (var headerToParse in requestData.ResponseHeadersToParse)
-				{
-					if (responseMessage.Headers.AllKeys.Contains(headerToParse, StringComparer.OrdinalIgnoreCase))
-					{
-						responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
-						responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse));
-					}
-				}
-			}
-
-			return responseHeaders;
 		}
 
-		void IDisposable.Dispose() => DisposeManagedResources();
+		return responseHeaders;
+	}
 
-		/// <summary>
-		/// Allows subclasses to modify the <see cref="HttpWebRequest"/> instance that is going to be used for the API call
-		/// </summary>
-		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
-		protected virtual HttpWebRequest CreateHttpWebRequest(RequestData requestData)
+	/// <summary>
+	/// Allows subclasses to modify the <see cref="HttpWebRequest"/> instance that is going to be used for the API call
+	/// </summary>
+	/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
+	internal HttpWebRequest CreateHttpWebRequest(RequestData requestData)
+	{
+		var request = CreateWebRequest(requestData);
+		SetAuthenticationIfNeeded(requestData, request);
+		SetProxyIfNeeded(request, requestData);
+		SetServerCertificateValidationCallBackIfNeeded(request, requestData);
+		SetClientCertificates(request, requestData);
+		AlterServicePoint(request.ServicePoint, requestData);
+		return request;
+	}
+
+	/// <summary> Hook for subclasses to set additional client certificates on <paramref name="request"/> </summary>
+	internal void SetClientCertificates(HttpWebRequest request, RequestData requestData)
+	{
+		if (requestData.ClientCertificates != null)
+			request.ClientCertificates.AddRange(requestData.ClientCertificates);
+	}
+
+	private string ComparableFingerprint(string fingerprint)
+	{
+		var finalFingerprint = fingerprint;
+		if (fingerprint.Contains(':'))
 		{
-			var request = CreateWebRequest(requestData);
-			SetAuthenticationIfNeeded(requestData, request);
-			SetProxyIfNeeded(request, requestData);
-			SetServerCertificateValidationCallBackIfNeeded(request, requestData);
-			SetClientCertificates(request, requestData);
-			AlterServicePoint(request.ServicePoint, requestData);
-			return request;
+			finalFingerprint = fingerprint.Replace(":", string.Empty);
 		}
-
-		/// <summary> Hook for subclasses to set additional client certificates on <paramref name="request"/> </summary>
-		protected virtual void SetClientCertificates(HttpWebRequest request, RequestData requestData)
+		else if (fingerprint.Contains('-'))
 		{
-			if (requestData.ClientCertificates != null)
-				request.ClientCertificates.AddRange(requestData.ClientCertificates);
+			finalFingerprint = fingerprint.Replace("-", string.Empty);
 		}
+		return finalFingerprint;
+	}
 
-		private string ComparableFingerprint(string fingerprint)
-		{
-			var finalFingerprint = fingerprint;
-			if (fingerprint.Contains(':'))
-			{
-				finalFingerprint = fingerprint.Replace(":", string.Empty);
-			}
-			else if (fingerprint.Contains('-'))
-			{
-				finalFingerprint = fingerprint.Replace("-", string.Empty);
-			}
-			return finalFingerprint;
-		}
-
-		/// <summary> Hook for subclasses override the certificate validation on <paramref name="request"/> </summary>
-		protected virtual void SetServerCertificateValidationCallBackIfNeeded(HttpWebRequest request, RequestData requestData)
-		{
-			var callback = requestData?.ConnectionSettings?.ServerCertificateValidationCallback;
+	/// <summary> Hook for subclasses override the certificate validation on <paramref name="request"/> </summary>
+	internal void SetServerCertificateValidationCallBackIfNeeded(HttpWebRequest request, RequestData requestData)
+	{
+		var callback = requestData?.ConnectionSettings?.ServerCertificateValidationCallback;
 #if !__MonoCS__
-			//Only assign if one is defined on connection settings and a subclass has not already set one
-			if (callback != null && request.ServerCertificateValidationCallback == null)
+		//Only assign if one is defined on connection settings and a subclass has not already set one
+		if (callback != null && request.ServerCertificateValidationCallback == null)
+		{
+			request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(callback);
+		}
+		else if (!string.IsNullOrEmpty(requestData.ConnectionSettings.CertificateFingerprint))
+		{
+			request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((request, certificate, chain, policyErrors) =>
 			{
-				request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(callback);
-			}
-			else if (!string.IsNullOrEmpty(requestData.ConnectionSettings.CertificateFingerprint))
-			{
-				request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((request, certificate, chain, policyErrors) =>
+				if (certificate is null && chain is null) return false;
+
+				// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
+				_expectedCertificateFingerprint  ??= CertificateHelpers.ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
+
+				// If there is a chain, check each certificate up to the root
+				if (chain is not null)
 				{
-					if (certificate is null && chain is null) return false;
-
-					// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
-					_expectedCertificateFingerprint  ??= CertificateHelpers.ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
-
-					// If there is a chain, check each certificate up to the root
-					if (chain is not null)
+					foreach (var element in chain.ChainElements)
 					{
-						foreach (var element in chain.ChainElements)
-						{
-							if (CertificateHelpers.ValidateCertificateFingerprint(element.Certificate, _expectedCertificateFingerprint))
-								return true;
-						}
+						if (CertificateHelpers.ValidateCertificateFingerprint(element.Certificate, _expectedCertificateFingerprint))
+							return true;
 					}
+				}
 
-					// Otherwise, check the certificate
-					return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
-				});
-			}
+				// Otherwise, check the certificate
+				return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
+			});
+		}
 #else
-			if (callback != null)
-				throw new Exception("Mono misses ServerCertificateValidationCallback on HttpWebRequest");
+		if (callback != null)
+			throw new Exception("Mono misses ServerCertificateValidationCallback on HttpWebRequest");
 #endif
-		}
+	}
 
-		private static HttpWebRequest CreateWebRequest(RequestData requestData)
-		{
-			var request = (HttpWebRequest)WebRequest.Create(requestData.Uri);
+	private static HttpWebRequest CreateWebRequest(RequestData requestData)
+	{
+		var request = (HttpWebRequest)WebRequest.Create(requestData.Uri);
 
-			request.Accept = requestData.Accept;
-			request.ContentType = requestData.RequestMimeType;
+		request.Accept = requestData.Accept;
+		request.ContentType = requestData.RequestMimeType;
 #if !DOTNETCORE
-			// on netstandard/netcoreapp2.0 this throws argument exception
-			request.MaximumResponseHeadersLength = -1;
+		// on netstandard/netcoreapp2.0 this throws argument exception
+		request.MaximumResponseHeadersLength = -1;
 #endif
-			request.Pipelined = requestData.Pipelined;
+		request.Pipelined = requestData.Pipelined;
 
-			if (requestData.TransferEncodingChunked)
-				request.SendChunked = true;
+		if (requestData.TransferEncodingChunked)
+			request.SendChunked = true;
 
-			if (requestData.HttpCompression)
-			{
-				request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-				request.Headers.Add("Accept-Encoding", "gzip,deflate");
-				request.Headers.Add("Content-Encoding", "gzip");
-			}
-
-			var userAgent = requestData.UserAgent?.ToString();
-			if (!string.IsNullOrWhiteSpace(userAgent))
-				request.UserAgent = userAgent;
-
-			if (!string.IsNullOrWhiteSpace(requestData.RunAs))
-				request.Headers.Add(RequestData.RunAsSecurityHeader, requestData.RunAs);
-
-			if (requestData.Headers != null && requestData.Headers.HasKeys())
-				request.Headers.Add(requestData.Headers);
-
-			if (requestData.MetaHeaderProvider is object)
-			{
-				var value = requestData.MetaHeaderProvider.ProduceHeaderValue(requestData);
-
-				if (!string.IsNullOrEmpty(value))
-					request.Headers.Add(requestData.MetaHeaderProvider.HeaderName, requestData.MetaHeaderProvider.ProduceHeaderValue(requestData));
-			}
-
-			var timeout = (int)requestData.RequestTimeout.TotalMilliseconds;
-			request.Timeout = timeout;
-			request.ReadWriteTimeout = timeout;
-
-			//WebRequest won't send Content-Length: 0 for empty bodies
-			//which goes against RFC's and might break i.e IIS when used as a proxy.
-			//see: https://github.com/elastic/elasticsearch-net/issues/562
-			var m = requestData.Method.GetStringValue();
-			request.Method = m;
-			if (m != "HEAD" && m != "GET" && requestData.PostData == null)
-				request.ContentLength = 0;
-
-			return request;
-		}
-
-		/// <summary> Hook for subclasses override <see cref="ServicePoint"/> behavior</summary>
-		protected virtual void AlterServicePoint(ServicePoint requestServicePoint, RequestData requestData)
+		if (requestData.HttpCompression)
 		{
-			requestServicePoint.UseNagleAlgorithm = false;
-			requestServicePoint.Expect100Continue = false;
-			requestServicePoint.ConnectionLeaseTimeout = (int)requestData.DnsRefreshTimeout.TotalMilliseconds;
-			if (requestData.ConnectionSettings.ConnectionLimit > 0)
-				requestServicePoint.ConnectionLimit = requestData.ConnectionSettings.ConnectionLimit;
-			//looking at http://referencesource.microsoft.com/#System/net/System/Net/ServicePoint.cs
-			//this method only sets internal values and wont actually cause timers and such to be reset
-			//So it should be idempotent if called with the same parameters
-			requestServicePoint.SetTcpKeepAlive(true, requestData.KeepAliveTime, requestData.KeepAliveInterval);
+			request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+			request.Headers.Add("Accept-Encoding", "gzip,deflate");
+			request.Headers.Add("Content-Encoding", "gzip");
 		}
 
-		/// <summary> Hook for subclasses to set proxy on <paramref name="request"/> </summary>
-		protected virtual void SetProxyIfNeeded(HttpWebRequest request, RequestData requestData)
+		var userAgent = requestData.UserAgent?.ToString();
+		if (!string.IsNullOrWhiteSpace(userAgent))
+			request.UserAgent = userAgent;
+
+		if (!string.IsNullOrWhiteSpace(requestData.RunAs))
+			request.Headers.Add(RequestData.RunAsSecurityHeader, requestData.RunAs);
+
+		if (requestData.Headers != null && requestData.Headers.HasKeys())
+			request.Headers.Add(requestData.Headers);
+
+		if (requestData.MetaHeaderProvider is object)
 		{
-			if (!string.IsNullOrWhiteSpace(requestData.ProxyAddress))
-			{
-				var uri = new Uri(requestData.ProxyAddress);
-				var proxy = new WebProxy(uri);
-				var credentials = new NetworkCredential(requestData.ProxyUsername, requestData.ProxyPassword);
-				proxy.Credentials = credentials;
-				request.Proxy = proxy;
-			}
+			var value = requestData.MetaHeaderProvider.ProduceHeaderValue(requestData);
 
-			if (requestData.DisableAutomaticProxyDetection)
-				request.Proxy = null!;
+			if (!string.IsNullOrEmpty(value))
+				request.Headers.Add(requestData.MetaHeaderProvider.HeaderName, requestData.MetaHeaderProvider.ProduceHeaderValue(requestData));
 		}
 
-		/// <summary> Hook for subclasses to set authentication on <paramref name="request"/></summary>
-		protected virtual void SetAuthenticationIfNeeded(RequestData requestData, HttpWebRequest request)
+		var timeout = (int)requestData.RequestTimeout.TotalMilliseconds;
+		request.Timeout = timeout;
+		request.ReadWriteTimeout = timeout;
+
+		//WebRequest won't send Content-Length: 0 for empty bodies
+		//which goes against RFC's and might break i.e IIS when used as a proxy.
+		//see: https://github.com/elastic/elasticsearch-net/issues/562
+		var m = requestData.Method.GetStringValue();
+		request.Method = m;
+		if (m != "HEAD" && m != "GET" && requestData.PostData == null)
+			request.ContentLength = 0;
+
+		return request;
+	}
+
+	/// <summary> Hook for subclasses override <see cref="ServicePoint"/> behavior</summary>
+	internal void AlterServicePoint(ServicePoint requestServicePoint, RequestData requestData)
+	{
+		requestServicePoint.UseNagleAlgorithm = false;
+		requestServicePoint.Expect100Continue = false;
+		requestServicePoint.ConnectionLeaseTimeout = (int)requestData.DnsRefreshTimeout.TotalMilliseconds;
+		if (requestData.ConnectionSettings.ConnectionLimit > 0)
+			requestServicePoint.ConnectionLimit = requestData.ConnectionSettings.ConnectionLimit;
+		//looking at http://referencesource.microsoft.com/#System/net/System/Net/ServicePoint.cs
+		//this method only sets internal values and wont actually cause timers and such to be reset
+		//So it should be idempotent if called with the same parameters
+		requestServicePoint.SetTcpKeepAlive(true, requestData.KeepAliveTime, requestData.KeepAliveInterval);
+	}
+
+	/// <summary> Hook for subclasses to set proxy on <paramref name="request"/> </summary>
+	internal void SetProxyIfNeeded(HttpWebRequest request, RequestData requestData)
+	{
+		if (!string.IsNullOrWhiteSpace(requestData.ProxyAddress))
 		{
-			//If user manually specifies an Authorization Header give it preference
-			if (requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
-			{
-				var header = requestData.Headers["Authorization"];
-				request.Headers["Authorization"] = header;
-				return;
-			}
-			SetBasicAuthenticationIfNeeded(request, requestData);
+			var uri = new Uri(requestData.ProxyAddress);
+			var proxy = new WebProxy(uri);
+			var credentials = new NetworkCredential(requestData.ProxyUsername, requestData.ProxyPassword);
+			proxy.Credentials = credentials;
+			request.Proxy = proxy;
 		}
 
-		private static void SetBasicAuthenticationIfNeeded(HttpWebRequest request, RequestData requestData)
+		if (requestData.DisableAutomaticProxyDetection)
+			request.Proxy = null!;
+	}
+
+	/// <summary> Hook for subclasses to set authentication on <paramref name="request"/></summary>
+	internal void SetAuthenticationIfNeeded(RequestData requestData, HttpWebRequest request)
+	{
+		//If user manually specifies an Authorization Header give it preference
+		if (requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
 		{
-			// Basic auth credentials take the following precedence (highest -> lowest):
-			// 1 - Specified on the request (highest precedence)
-			// 2 - Specified at the global ITransportClientSettings level
-			// 3 - Specified with the URI (lowest precedence)
-
-
-			// Basic auth credentials take the following precedence (highest -> lowest):
-			// 1 - Specified with the URI (highest precedence)
-			// 2 - Specified on the request
-			// 3 - Specified at the global ITransportClientSettings level (lowest precedence)
-
-			string parameters = null;
-			string scheme = null;
-			if (!requestData.Uri.UserInfo.IsNullOrEmpty())
-			{
-				parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(requestData.Uri.UserInfo));
-				scheme = BasicAuthentication.BasicAuthenticationScheme;
-			}
-			else if (requestData.AuthenticationHeader != null && requestData.AuthenticationHeader.TryGetAuthorizationParameters(out var v))
-			{
-				parameters = v;
-				scheme = requestData.AuthenticationHeader.AuthScheme;
-			}
-
-			if (parameters.IsNullOrEmpty()) return;
-
-			request.Headers["Authorization"] = $"{scheme} {parameters}";
+			var header = requestData.Headers["Authorization"];
+			request.Headers["Authorization"] = header;
+			return;
 		}
+		SetBasicAuthenticationIfNeeded(request, requestData);
+	}
 
-		/// <summary>
-		/// Registers an APM async task cancellation on the threadpool
-		/// </summary>
-		/// <returns>An unregister action that can be used to remove the waithandle prematurely</returns>
-		private static Action RegisterApmTaskTimeout(IAsyncResult result, WebRequest request, RequestData requestData)
+	private static void SetBasicAuthenticationIfNeeded(HttpWebRequest request, RequestData requestData)
+	{
+		// Basic auth credentials take the following precedence (highest -> lowest):
+		// 1 - Specified on the request (highest precedence)
+		// 2 - Specified at the global TransportClientSettings level
+		// 3 - Specified with the URI (lowest precedence)
+
+
+		// Basic auth credentials take the following precedence (highest -> lowest):
+		// 1 - Specified with the URI (highest precedence)
+		// 2 - Specified on the request
+		// 3 - Specified at the global TransportClientSettings level (lowest precedence)
+
+		string parameters = null;
+		string scheme = null;
+		if (!requestData.Uri.UserInfo.IsNullOrEmpty())
 		{
-			var waitHandle = result.AsyncWaitHandle;
-			var registeredWaitHandle =
-				ThreadPool.RegisterWaitForSingleObject(waitHandle, TimeoutCallback, request, requestData.RequestTimeout, true);
-			return () => registeredWaitHandle.Unregister(waitHandle);
+			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(requestData.Uri.UserInfo));
+			scheme = BasicAuthentication.BasicAuthenticationScheme;
 		}
-
-		private static void TimeoutCallback(object state, bool timedOut)
+		else if (requestData.AuthenticationHeader != null && requestData.AuthenticationHeader.TryGetAuthorizationParameters(out var v))
 		{
-			if (!timedOut) return;
-
-			(state as WebRequest)?.Abort();
+			parameters = v;
+			scheme = requestData.AuthenticationHeader.AuthScheme;
 		}
 
-		private static void HandleResponse(HttpWebResponse response, out int? statusCode, out Stream responseStream, out string mimeType)
-		{
-			statusCode = (int)response.StatusCode;
-			responseStream = response.GetResponseStream();
-			mimeType = response.ContentType;
-			// https://github.com/elastic/elasticsearch-net/issues/2311
-			// if stream is null call dispose on response instead.
-			if (responseStream == null || responseStream == Stream.Null) response.Dispose();
-		}
+		if (parameters.IsNullOrEmpty()) return;
 
-		/// <summary> Allows subclasses to hook into the parents dispose </summary>
-		protected virtual void DisposeManagedResources() { }
+		request.Headers["Authorization"] = $"{scheme} {parameters}";
+	}
+
+	/// <summary>
+	/// Registers an APM async task cancellation on the threadpool
+	/// </summary>
+	/// <returns>An unregister action that can be used to remove the waithandle prematurely</returns>
+	private static Action RegisterApmTaskTimeout(IAsyncResult result, WebRequest request, RequestData requestData)
+	{
+		var waitHandle = result.AsyncWaitHandle;
+		var registeredWaitHandle =
+			ThreadPool.RegisterWaitForSingleObject(waitHandle, TimeoutCallback, request, requestData.RequestTimeout, true);
+		return () => registeredWaitHandle.Unregister(waitHandle);
+	}
+
+	private static void TimeoutCallback(object state, bool timedOut)
+	{
+		if (!timedOut) return;
+
+		(state as WebRequest)?.Abort();
+	}
+
+	private static void HandleResponse(HttpWebResponse response, out int? statusCode, out Stream responseStream, out string mimeType)
+	{
+		statusCode = (int)response.StatusCode;
+		responseStream = response.GetResponseStream();
+		mimeType = response.ContentType;
+		// https://github.com/elastic/elasticsearch-net/issues/2311
+		// if stream is null call dispose on response instead.
+		if (responseStream == null || responseStream == Stream.Null) response.Dispose();
 	}
 }

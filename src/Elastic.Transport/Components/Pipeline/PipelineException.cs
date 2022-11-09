@@ -4,63 +4,51 @@
 
 using System;
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+/// <summary>
+/// A pipeline exception is throw when ever a known failing exit point is reached in <see cref="DefaultRequestPipeline{TConfiguration}"/>
+/// <para>See <see cref="PipelineFailure"/> for known exits points</para>
+/// </summary>
+public class PipelineException : Exception
 {
+	/// <inheritdoc cref="PipelineException"/>
+	public PipelineException(PipelineFailure failure)
+		: base(GetMessage(failure)) => FailureReason = failure;
+
+	/// <inheritdoc cref="PipelineException"/>
+	public PipelineException(PipelineFailure failure, Exception innerException)
+		: base(GetMessage(failure), innerException) => FailureReason = failure;
+
+	/// <inheritdoc cref="PipelineFailure"/>
+	public PipelineFailure FailureReason { get; }
+
 	/// <summary>
-	/// A pipeline exception is throw when ever a known failing exit point is reached in <see cref="RequestPipeline{TConfiguration}"/>
-	/// <para>See <see cref="PipelineFailure"/> for known exits points</para>
+	/// This exception is one the <see cref="HttpTransport{TConnectionSettings}"/> can handle
+	/// <para><see cref="PipelineFailure.BadRequest"/></para>
+	/// <para><see cref="PipelineFailure.BadResponse"/></para>
+	/// <para><see cref="PipelineFailure.PingFailure"/></para>
 	/// </summary>
-	public class PipelineException : Exception
-	{
-		/// <inheritdoc cref="PipelineException"/>
-		public PipelineException(PipelineFailure failure)
-			: base(GetMessage(failure)) => FailureReason = failure;
+	public bool Recoverable =>
+		FailureReason == PipelineFailure.BadRequest
+		|| FailureReason == PipelineFailure.BadResponse
+		|| FailureReason == PipelineFailure.PingFailure;
 
-		/// <inheritdoc cref="PipelineException"/>
-		public PipelineException(PipelineFailure failure, Exception innerException)
-			: base(GetMessage(failure), innerException) => FailureReason = failure;
+	/// <summary> The response that triggered this exception </summary>
+	public TransportResponse Response { get; internal set; }
 
-		/// <inheritdoc cref="PipelineFailure"/>
-		public PipelineFailure FailureReason { get; }
-
-		/// <summary>
-		/// This exception is one the <see cref="ITransport{TConnectionSettings}"/> can handle
-		/// <para><see cref="PipelineFailure.BadRequest"/></para>
-		/// <para><see cref="PipelineFailure.BadResponse"/></para>
-		/// <para><see cref="PipelineFailure.PingFailure"/></para>
-		/// </summary>
-		public bool Recoverable =>
-			FailureReason == PipelineFailure.BadRequest
-			|| FailureReason == PipelineFailure.BadResponse
-			|| FailureReason == PipelineFailure.PingFailure;
-
-		//TODO why do we have both Response and ApiCall?
-
-		/// <summary> The response that triggered this exception </summary>
-		public ITransportResponse Response { get; internal set; }
-
-		/// <summary> The response that triggered this exception </summary>
-		public IApiCallDetails ApiCall { get; internal set; }
-
-		private static string GetMessage(PipelineFailure failure)
+	private static string GetMessage(PipelineFailure failure) =>
+		failure switch
 		{
-			switch (failure)
-			{
-				case PipelineFailure.BadRequest: return "An error occurred trying to write the request data to the specified node.";
-				case PipelineFailure.BadResponse: return "An error occurred trying to read the response from the specified node.";
-				case PipelineFailure.BadAuthentication:
-					return "Could not authenticate with the specified node. Try verifying your credentials or check your Shield configuration.";
-				case PipelineFailure.PingFailure: return "Failed to ping the specified node.";
-				case PipelineFailure.SniffFailure: return "Failed sniffing cluster state.";
-				case PipelineFailure.CouldNotStartSniffOnStartup: return "Failed sniffing cluster state upon client startup.";
-				case PipelineFailure.MaxTimeoutReached: return "Maximum timeout was reached.";
-				case PipelineFailure.MaxRetriesReached: return "The call was retried the configured maximum amount of times";
-				case PipelineFailure.NoNodesAttempted:
-					return "No nodes were attempted, this can happen when a node predicate does not match any nodes";
-				case PipelineFailure.Unexpected:
-				default:
-					return "An unexpected error occurred. Try checking the original exception for more information.";
-			}
-		}
-	}
+			PipelineFailure.BadRequest => "An error occurred trying to write the request data to the specified node.",
+			PipelineFailure.BadResponse => "An error occurred trying to read the response from the specified node.",
+			PipelineFailure.BadAuthentication => "Could not authenticate with the specified node. Try verifying your credentials or check your Shield configuration.",
+			PipelineFailure.PingFailure => "Failed to ping the specified node.",
+			PipelineFailure.SniffFailure => "Failed sniffing cluster state.",
+			PipelineFailure.CouldNotStartSniffOnStartup => "Failed sniffing cluster state upon client startup.",
+			PipelineFailure.MaxTimeoutReached => "Maximum timeout was reached.",
+			PipelineFailure.MaxRetriesReached => "The call was retried the configured maximum amount of times",
+			PipelineFailure.NoNodesAttempted => "No nodes were attempted, this can happen when a node predicate does not match any nodes",
+			_ => "An unexpected error occurred. Try checking the original exception for more information.",
+		};
 }
