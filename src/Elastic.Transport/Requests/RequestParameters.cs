@@ -20,8 +20,7 @@ namespace Elastic.Transport
 		string GetString();
 	}
 
-	/// <inheritdoc cref="IRequestParameters"/>
-	public class RequestParameters : RequestParameters<RequestParameters>
+	internal sealed class DefaultRequestParameters : RequestParameters
 	{
 	}
 
@@ -29,45 +28,56 @@ namespace Elastic.Transport
 	/// Used by the raw client to compose querystring parameters in a matter that still exposes some xmldocs
 	/// You can always pass a simple NameValueCollection if you want.
 	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	public abstract class RequestParameters<T> : IRequestParameters where T : RequestParameters<T>
+	public abstract class RequestParameters
 	{
-		/// <inheritdoc cref="IRequestParameters.CustomResponseBuilder"/>
-		public CustomResponseBuilder CustomResponseBuilder { get; set; }
+		/// <summary>
+		/// 
+		/// </summary>
+		public CustomResponseBuilder CustomResponseBuilder { get; internal set; }
 
-		/// <inheritdoc cref="IRequestParameters.QueryString"/>
-		public Dictionary<string, object> QueryString { get; set; } = new Dictionary<string, object>();
+		/// <summary>
+		/// 
+		/// </summary>
+		public Dictionary<string, object> QueryString { get; internal set; } = new Dictionary<string, object>();
 
-		/// <inheritdoc cref="IRequestParameters.RequestConfiguration"/>
+		/// <summary>
+		/// 
+		/// </summary>
 		public IRequestConfiguration RequestConfiguration { get; set; }
 
-		private IRequestParameters Self => this;
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool ContainsQueryString(string name) => QueryString != null && QueryString.ContainsKey(name);
 
-		/// <inheritdoc />
-		public bool ContainsQueryString(string name) => Self.QueryString != null && Self.QueryString.ContainsKey(name);
-
-		/// <inheritdoc />
+		/// <summary>
+		/// 
+		/// </summary>
 		public TOut GetQueryStringValue<TOut>(string name)
 		{
 			if (!ContainsQueryString(name))
 				return default;
 
-			var value = Self.QueryString[name];
+			var value = QueryString[name];
 			if (value == null)
 				return default;
 
 			return (TOut)value;
 		}
 
-		/// <inheritdoc />
+		/// <summary>
+		/// 
+		/// </summary>
 		public string GetResolvedQueryStringValue(string name, ITransportConfiguration transportConfiguration) =>
 			CreateString(GetQueryStringValue<object>(name), transportConfiguration);
 
-		/// <inheritdoc />
+		/// <summary>
+		/// 
+		/// </summary>
 		public void SetQueryString(string name, object value)
 		{
 			if (value == null) RemoveQueryString(name);
-			else Self.QueryString[name] = value;
+			else QueryString[name] = value;
 		}
 
 		/// <summary> Shortcut to <see cref="GetQueryStringValue{TOut}"/> for generated code </summary>
@@ -81,9 +91,9 @@ namespace Elastic.Transport
 
 		private void RemoveQueryString(string name)
 		{
-			if (!Self.QueryString.ContainsKey(name)) return;
+			if (!QueryString.ContainsKey(name)) return;
 
-			Self.QueryString.Remove(name);
+			QueryString.Remove(name);
 		}
 
 		/// <summary>
@@ -97,7 +107,9 @@ namespace Elastic.Transport
 			RequestConfiguration.Accept = AcceptHeaderFromFormat(format);
 		}
 
-		/// <inheritdoc />
+		/// <summary>
+		/// 
+		/// </summary>
 		public string AcceptHeaderFromFormat(string format)
 		{
 			if (format == null)

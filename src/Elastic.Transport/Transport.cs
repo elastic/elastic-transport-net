@@ -130,7 +130,7 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="ITransport.Request{TResponse}" />
 		public TResponse Request<TResponse>(HttpMethod method, string path, PostData data = null,
-			IRequestParameters requestParameters = null)
+			RequestParameters requestParameters = null)
 			where TResponse : TransportResponse, new()
 		{
 			using var pipeline =
@@ -209,7 +209,7 @@ namespace Elastic.Transport
 
 		/// <inheritdoc cref="ITransport.RequestAsync{TResponse}" />
 		public async Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path,
-			PostData data = null, IRequestParameters requestParameters = null,
+			PostData data = null, RequestParameters requestParameters = null,
 			CancellationToken cancellationToken = default
 		)
 			where TResponse : TransportResponse, new()

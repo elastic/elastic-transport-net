@@ -14,7 +14,7 @@ namespace Elastic.Transport
 		/// returns instances of <see cref="RequestPipeline{TConfiguration}"/>
 		/// </summary>
 		public override IRequestPipeline Create(TConfiguration configurationValues, DateTimeProvider dateTimeProvider,
-			MemoryStreamFactory memoryStreamFactory, IRequestParameters requestParameters) =>
+			MemoryStreamFactory memoryStreamFactory, RequestParameters requestParameters) =>
 				new RequestPipeline<TConfiguration>(configurationValues, dateTimeProvider, memoryStreamFactory, requestParameters);
 	}
 }

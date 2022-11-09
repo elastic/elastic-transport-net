@@ -34,7 +34,7 @@ namespace Elastic.Transport
 			HttpMethod method, string path,
 			PostData data,
 			ITransportConfiguration global,
-			IRequestParameters local,
+			RequestParameters local,
 			MemoryStreamFactory memoryStreamFactory
 		)
 			: this(method, data, global, local?.RequestConfiguration, memoryStreamFactory)
@@ -196,7 +196,7 @@ namespace Elastic.Transport
 		public override string ToString() => $"{Method.GetStringValue()} {_path}";
 
 		// TODO This feels like its in the wrong place
-		private string CreatePathWithQueryStrings(string path, ITransportConfiguration global, IRequestParameters request)
+		private string CreatePathWithQueryStrings(string path, ITransportConfiguration global, RequestParameters request)
 		{
 			path ??= string.Empty;
 			if (path.Contains("?"))

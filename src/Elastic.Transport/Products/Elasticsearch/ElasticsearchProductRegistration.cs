@@ -93,7 +93,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 			MemoryStreamFactory memoryStreamFactory
 		)
 		{
-			var requestParameters = new RequestParameters
+			var requestParameters = new DefaultRequestParameters
 			{
 				QueryString = {{"timeout", requestConfiguration.PingTimeout}, {"flat_settings", true},}
 			};
@@ -130,7 +130,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 			MemoryStreamFactory memoryStreamFactory
 		)
 		{
-			IRequestParameters requestParameters = new RequestParameters
+			var requestParameters = new DefaultRequestParameters
 			{
 				RequestConfiguration = requestConfiguration
 			};

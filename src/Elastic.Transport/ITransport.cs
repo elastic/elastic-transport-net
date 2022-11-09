@@ -19,7 +19,7 @@ namespace Elastic.Transport
 			HttpMethod method,
 			string path,
 			PostData data = null,
-			IRequestParameters requestParameters = null)
+			RequestParameters requestParameters = null)
 			where TResponse : TransportResponse, new();
 
 		/// <inheritdoc cref="Request{TResponse}" />
@@ -27,7 +27,7 @@ namespace Elastic.Transport
 			HttpMethod method,
 			string path,
 			PostData data = null,
-			IRequestParameters requestParameters = null,
+			RequestParameters requestParameters = null,
 			CancellationToken cancellationToken = default)
 			where TResponse : TransportResponse, new();
 	}

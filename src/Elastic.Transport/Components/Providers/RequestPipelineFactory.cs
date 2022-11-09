@@ -12,6 +12,6 @@ namespace Elastic.Transport
 
 		/// <summary> Create an instance of <see cref="IRequestPipeline"/> </summary>
 		public abstract IRequestPipeline Create(TConfiguration configuration, DateTimeProvider dateTimeProvider,
-			MemoryStreamFactory memoryStreamFactory, IRequestParameters requestParameters);
+			MemoryStreamFactory memoryStreamFactory, RequestParameters requestParameters);
 	}
 }

@@ -49,7 +49,7 @@ namespace Elastic.Transport
 			TConfiguration configurationValues,
 			DateTimeProvider dateTimeProvider,
 			MemoryStreamFactory memoryStreamFactory,
-			IRequestParameters requestParameters
+			RequestParameters requestParameters
 		)
 		{
 			_settings = configurationValues;
