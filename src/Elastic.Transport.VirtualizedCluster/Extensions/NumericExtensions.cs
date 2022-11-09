@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Transport.VirtualizedCluster.Extensions
-{
+namespace Elastic.Transport.VirtualizedCluster.Extensions;
+
 	internal static class NumericExtensions
 	{
 		public static string ToOrdinal(this int num)
@@ -31,4 +31,3 @@ namespace Elastic.Transport.VirtualizedCluster.Extensions
 			}
 		}
 	}
-}

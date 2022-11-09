@@ -13,7 +13,7 @@ namespace Elastic.Transport;
 /// <summary>
 /// Models the workflow of a request to multiple nodes
 /// </summary>
-public abstract class RequestPipeline : IDisposable // TODO - Should we move IDisposable to the implementation / Make this an abstract base type instead?
+public abstract class RequestPipeline : IDisposable
 {
 	private bool _disposed = false;
 

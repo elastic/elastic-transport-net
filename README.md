@@ -30,7 +30,7 @@ var response = transport.Get<StringResponse>("/");
 var headResponse = transport.Head("/");
 ```
 
-`Get` and `Head` are extension methods to  the only method `ITransport` dictates namely `Request()` and its async variant.
+`Get` and `Head` are extension methods to  the only method `HttpTransport` dictates namely `Request()` and its async variant.
 
 Wrapping clients most likely will list out all `components` explicitly and use `Transport<TConfiguration>`
 
@@ -52,9 +52,9 @@ This allows implementers to extend `TransportConfiguration` with product/service
 
 ### Components
 
-`ITransport` itself only defines `Request()` and `RequestAsync()` and all wrapping clients accept an `ITransport`.
+`HttpTransport` itself only defines `Request()` and `RequestAsync()` and all wrapping clients accept an `HttpTransport`.
 
-The `ITransport` implementation that this library ships models a request pipeline that can deal with a large variety of topologies
+The `HttpTransport` implementation that this library ships models a request pipeline that can deal with a large variety of topologies
 
 ![request-pipeline.png](request-pipeline.png)
 
@@ -96,7 +96,7 @@ the `IConnectionPool` to the transport configuration
 ONLY if a connection pool indicates it supports receiving new nodes will the transport sniff.
 * `IConnection`  
 Abstraction for the actual IO the transport needs to perform. 
-* `ITransportSerializer`  
+* `HttpTransportSerializer`  
 Allows you to inject your own serializer, the default uses `System.Text.Json`
 * `IProductRegistration`  
 Product specific implementations and metadata provider
@@ -106,24 +106,24 @@ Product specific implementations and metadata provider
 
 * `ITransportConfigurationValues`  
 A transport configuration instance, explictly designed for clients to introduce subclasses of
-* `IRequestPipelineFactory`
-A factory creating `IRequestPipeline` instances
-* `IDateTimeProvider`
+* `RequestPipelineFactory`
+A factory creating `RequestPipeline` instances
+* `DateTimeProvider`
 Abstraction around the static `DateTime.Now` so we can test algorithms without waiting on the clock on the wall.
-* `IMemoryStreamFactory`
+* `MemoryStreamFactory`
 A factory creating `MemoryStream` instances.
 
 
 
 ### Observability
 
-The default `ITransport` implementation ships with various `DiagnosticSources` to make the whole 
+The default `HttpTransport` implementation ships with various `DiagnosticSources` to make the whole 
 flow through the request pipeline auditable and debuggable.  
 
-Every response returned by `Transport` has to implement `ITransportResponse` which has one property `ApiCall` of 
-type `IApiCallDetails` which in turns holds all information relevant to the request and response. 
+Every response returned by `Transport` has to implement `TransportResponse` which has one property `ApiCall` of 
+type `ApiCallDetails` which in turns holds all information relevant to the request and response. 
 
-`NOTE:` it also exposes `response.ApiCall.DebugInformation` always holds a human readable string to indicate 
+`NOTE:` it also exposes `response.ApiCallDetails.DebugInformation` always holds a human readable string to indicate 
 what happened.
 
 Further more `DiagnosticSources` exists for various purposes e.g (de)serialization times, time to first byte & various counters

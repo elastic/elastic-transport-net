@@ -15,7 +15,7 @@ namespace Elastic.Transport;
 /// <summary>
 /// An implementation of <see cref="TransportClient"/> designed to not actually do any IO and services requests from an in memory byte buffer
 /// </summary>
-public sealed class InMemoryConnection : TransportClient
+public class InMemoryConnection : TransportClient
 {
 	private static readonly byte[] EmptyBody = Encoding.UTF8.GetBytes("");
 	private readonly string _contentType;

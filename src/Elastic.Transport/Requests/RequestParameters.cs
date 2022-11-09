@@ -20,7 +20,10 @@ public interface IStringable
 	string GetString();
 }
 
-internal sealed class DefaultRequestParameters : RequestParameters
+/// <summary>
+/// 
+/// </summary>
+public sealed class DefaultRequestParameters : RequestParameters
 {
 }
 

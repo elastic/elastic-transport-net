@@ -17,7 +17,7 @@ namespace Elastic.Transport.Profiling
 			MemoryProfiler.GetSnapshot("start");
 
 			var config = new TransportConfiguration(new Uri("http://localhost:9200"), new ElasticsearchProductRegistration());
-			var transport = new Transport(config);
+			var transport = new DefaultHttpTransport(config);
 
 			_ = await transport.GetAsync<VoidResponse>("/");
 

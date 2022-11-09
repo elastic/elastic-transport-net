@@ -23,8 +23,6 @@ public abstract class TransportResponse<T> : TransportResponse
 /// </summary>
 public abstract class TransportResponse
 {
-	internal TransportResponse() { }
-
 	/// <summary>
 	/// 
 	/// </summary>

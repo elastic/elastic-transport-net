@@ -23,7 +23,7 @@ using static System.Net.DecompressionMethods;
 namespace Elastic.Transport;
 
 /// <summary> The default TransportClient implementation. Uses <see cref="HttpClient" />.</summary>
-public sealed class HttpTransportClient : TransportClient
+public class HttpTransportClient : TransportClient
 {
 	private static readonly string MissingConnectionLimitMethodError =
 		$"Your target platform does not support {nameof(TransportConfiguration.ConnectionLimit)}"
@@ -222,7 +222,7 @@ public sealed class HttpTransportClient : TransportClient
 	/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
 	/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 	/// </exception>
-	internal HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
+	protected virtual HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
 	{
 		var handler = new HttpClientHandler { AutomaticDecompression = requestData.HttpCompression ? GZip | Deflate : None, };
 

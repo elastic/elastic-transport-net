@@ -21,7 +21,7 @@ namespace Elastic.Transport.Tests
 			var product = ElasticsearchProductRegistration.Default;
 
 			var settings = new TransportConfiguration(pool, connection, serializer, product);
-			var transport = new Transport<TransportConfiguration>(settings);
+			var transport = new DefaultHttpTransport<TransportConfiguration>(settings);
 
 			var response = transport.Request<StringResponse>(HttpMethod.GET, "/");
 		}
@@ -29,7 +29,7 @@ namespace Elastic.Transport.Tests
 		public void MinimalUsage()
 		{
 			var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
-			var transport = new Transport(settings);
+			var transport = new DefaultHttpTransport(settings);
 
 			var response = transport.Get<StringResponse>("/");
 
@@ -40,7 +40,7 @@ namespace Elastic.Transport.Tests
 		{
 			var uri = new Uri("http://localhost:9200");
 			var settings = new TransportConfiguration(uri, ElasticsearchProductRegistration.Default);
-			var transport = new Transport(settings);
+			var transport = new DefaultHttpTransport(settings);
 
 			var response = transport.Get<StringResponse>("/");
 
@@ -50,9 +50,9 @@ namespace Elastic.Transport.Tests
 		public void MinimalUsageWithRequestParameters()
 		{
 			var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
-			var transport = new Transport(settings);
+			var transport = new DefaultHttpTransport(settings);
 
-			var response = transport.Get<StringResponse>("/", new RequestParameters());
+			var response = transport.Get<StringResponse>("/", new DefaultRequestParameters());
 
 			var headResponse = transport.Head("/");
 		}
@@ -61,9 +61,9 @@ namespace Elastic.Transport.Tests
 		{
 			public MyClientConfiguration(
 				NodePool nodePool = null,
-				ITransportClient transportCLient = null,
+				TransportClient transportCLient = null,
 				Serializer requestResponseSerializer = null,
-				IProductRegistration productRegistration = null)
+				ProductRegistration productRegistration = null)
 				: base(
 					nodePool ?? new SingleNodePool(new Uri("http://default-endpoint.example"))
 					, transportCLient, requestResponseSerializer, productRegistration)
@@ -74,12 +74,12 @@ namespace Elastic.Transport.Tests
 			public MyClientConfiguration NewSettings(string value) => Assign(value, (c, v) => _setting = v);
 		}
 
-		public class MyClientRequestPipeline : RequestPipeline<MyClientConfiguration>
+		public class MyClientRequestPipeline : DefaultRequestPipeline<MyClientConfiguration>
 		{
 			public MyClientRequestPipeline(MyClientConfiguration configurationValues,
-				IDateTimeProvider dateTimeProvider, IMemoryStreamFactory memoryStreamFactory,
-				IRequestParameters requestParameters)
-				: base(configurationValues, dateTimeProvider, memoryStreamFactory, requestParameters)
+				DateTimeProvider dateTimeProvider, MemoryStreamFactory memoryStreamFactory,
+					RequestParameters requestParameters)
+						: base(configurationValues, dateTimeProvider, memoryStreamFactory, requestParameters)
 			{
 			}
 		}
@@ -88,7 +88,8 @@ namespace Elastic.Transport.Tests
 		{
 			var clientConfiguration = new MyClientConfiguration()
 				.NewSettings("some-value");
-			var transport = new Transport<MyClientConfiguration>(clientConfiguration);
+
+			var transport = new DefaultHttpTransport<MyClientConfiguration>(clientConfiguration);
 		}
 	}
 }

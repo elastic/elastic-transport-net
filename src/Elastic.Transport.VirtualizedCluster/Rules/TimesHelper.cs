@@ -4,19 +4,18 @@
 
 using System;
 
-namespace Elastic.Transport.VirtualizedCluster.Rules
+namespace Elastic.Transport.VirtualizedCluster.Rules;
+
+public static class TimesHelper
 {
-	public static class TimesHelper
+	public static AllTimes Always = new();
+	public static readonly int Once = 0;
+	public static readonly int Twice = 1;
+
+	public static int Times(int n) => Math.Max(0, n - 1);
+
+	public class AllTimes
 	{
-		public static AllTimes Always = new AllTimes();
-		public static readonly int Once = 0;
-		public static readonly int Twice = 1;
-
-		public static int Times(int n) => Math.Max(0, n - 1);
-
-		public class AllTimes
-		{
-			internal AllTimes() { }
-		}
+		internal AllTimes() { }
 	}
 }

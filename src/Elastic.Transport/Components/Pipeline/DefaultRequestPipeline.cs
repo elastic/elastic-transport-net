@@ -21,7 +21,7 @@ using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
 namespace Elastic.Transport;
 
 /// <inheritdoc cref="RequestPipeline" />
-public sealed class DefaultRequestPipeline<TConfiguration> : RequestPipeline
+public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	where TConfiguration : class, ITransportConfiguration
 {
 	private readonly TransportClient _transportClient;
@@ -36,7 +36,7 @@ public sealed class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	private RequestConfiguration _pingAndSniffRequestConfiguration;		
 
 	/// <inheritdoc cref="RequestPipeline" />
-	public DefaultRequestPipeline(
+	internal DefaultRequestPipeline(
 		TConfiguration configurationValues,
 		DateTimeProvider dateTimeProvider,
 		MemoryStreamFactory memoryStreamFactory,
@@ -51,7 +51,6 @@ public sealed class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		_productRegistration = configurationValues.ProductRegistration;
 		_responseBuilder = _productRegistration.ResponseBuilder;
 		_nodePredicate = _settings.NodePredicate ?? _productRegistration.NodePredicate;
-
 		RequestConfiguration = requestParameters?.RequestConfiguration;
 		StartedOn = dateTimeProvider.Now();
 	}

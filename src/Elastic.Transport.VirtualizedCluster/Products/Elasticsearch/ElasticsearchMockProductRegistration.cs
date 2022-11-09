@@ -7,26 +7,25 @@ using System.Collections.Generic;
 using Elastic.Transport.Products;
 using Elastic.Transport.Products.Elasticsearch;
 
-namespace Elastic.Transport.VirtualizedCluster.Products.Elasticsearch
+namespace Elastic.Transport.VirtualizedCluster.Products.Elasticsearch;
+
+/// <inheritdoc cref="MockProductRegistration"/>>
+public sealed class ElasticsearchMockProductRegistration : MockProductRegistration
 {
-	/// <inheritdoc cref="IMockProductRegistration"/>>
-	public class ElasticsearchMockProductRegistration : IMockProductRegistration
-	{
-		/// <summary> A static instance of <see cref="ElasticsearchMockProductRegistration"/> to reuse </summary>
-		public static IMockProductRegistration Default { get; } = new ElasticsearchMockProductRegistration();
+	/// <summary> A static instance of <see cref="ElasticsearchMockProductRegistration"/> to reuse </summary>
+	public static MockProductRegistration Default { get; } = new ElasticsearchMockProductRegistration();
 
-		/// <inheritdoc cref="IMockProductRegistration.ProductRegistration"/>>
-		public IProductRegistration ProductRegistration { get; } = ElasticsearchProductRegistration.Default;
+	/// <inheritdoc cref="MockProductRegistration.ProductRegistration"/>>
+	public override ProductRegistration ProductRegistration { get; } = ElasticsearchProductRegistration.Default;
 
-		/// <inheritdoc cref="IMockProductRegistration.CreateSniffResponseBytes"/>>
-		public byte[] CreateSniffResponseBytes(IReadOnlyList<Node> nodes, string stackVersion, string publishAddressOverride, bool returnFullyQualifiedDomainNames) =>
-			ElasticsearchSniffResponseFactory.Create(nodes, stackVersion, publishAddressOverride, returnFullyQualifiedDomainNames);
+	/// <inheritdoc cref="MockProductRegistration.CreateSniffResponseBytes"/>>
+	public override byte[] CreateSniffResponseBytes(IReadOnlyList<Node> nodes, string stackVersion, string publishAddressOverride, bool returnFullyQualifiedDomainNames) =>
+		ElasticsearchSniffResponseFactory.Create(nodes, stackVersion, publishAddressOverride, returnFullyQualifiedDomainNames);
 
-		public bool IsSniffRequest(RequestData requestData) =>
-			requestData.PathAndQuery.StartsWith(ElasticsearchProductRegistration.SniffPath, StringComparison.Ordinal);
+	public override bool IsSniffRequest(RequestData requestData) =>
+		requestData.PathAndQuery.StartsWith(ElasticsearchProductRegistration.SniffPath, StringComparison.Ordinal);
 
-		public bool IsPingRequest(RequestData requestData) =>
-			requestData.Method == HttpMethod.HEAD &&
-			(requestData.PathAndQuery == string.Empty || requestData.PathAndQuery.StartsWith("?"));
-	}
+	public override bool IsPingRequest(RequestData requestData) =>
+		requestData.Method == HttpMethod.HEAD &&
+		(requestData.PathAndQuery == string.Empty || requestData.PathAndQuery.StartsWith("?"));
 }
