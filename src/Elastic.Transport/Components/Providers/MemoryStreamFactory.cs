@@ -7,20 +7,25 @@ using System.IO;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A factory for creating memory streams using instances of <see cref="MemoryStream" />
+	/// A factory for creating memory streams
 	/// </summary>
-	public sealed class MemoryStreamFactory : IMemoryStreamFactory
+	public abstract class MemoryStreamFactory
 	{
-		/// <summary> Provide a static instance of this stateless class, so it can be reused</summary>
-		public static MemoryStreamFactory Default { get; } = new MemoryStreamFactory();
+		internal MemoryStreamFactory() { }
 
-		/// <inheritdoc />
-		public MemoryStream Create() => new();
+		/// <summary>
+		/// Creates a memory stream
+		/// </summary>
+		public abstract MemoryStream Create();
 
-		/// <inheritdoc />
-		public MemoryStream Create(byte[] bytes) => new(bytes);
+		/// <summary>
+		/// Creates a memory stream with the bytes written to the stream
+		/// </summary>
+		public abstract MemoryStream Create(byte[] bytes);
 
-		/// <inheritdoc />
-		public MemoryStream Create(byte[] bytes, int index, int count) => new(bytes, index, count);
+		/// <summary>
+		/// Creates a memory stream with the bytes written to the stream
+		/// </summary>
+		public abstract MemoryStream Create(byte[] bytes, int index, int count);
 	}
 }

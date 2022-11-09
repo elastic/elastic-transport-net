@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using Elastic.Transport.Diagnostics.Auditing;
 using Elastic.Transport.Extensions;
@@ -13,7 +12,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// Where and how <see cref="ITransportClient.Request{TResponse}" /> should connect to.
+	/// Where and how <see cref="TransportClient.Request{TResponse}" /> should connect to.
 	/// <para>
 	/// Represents the cumulative configuration from <see cref="ITransportConfiguration" />
 	/// and <see cref="IRequestConfiguration" />.
@@ -36,7 +35,7 @@ namespace Elastic.Transport
 			PostData data,
 			ITransportConfiguration global,
 			IRequestParameters local,
-			IMemoryStreamFactory memoryStreamFactory
+			MemoryStreamFactory memoryStreamFactory
 		)
 			: this(method, data, global, local?.RequestConfiguration, memoryStreamFactory)
 		{
@@ -49,7 +48,7 @@ namespace Elastic.Transport
 			PostData data,
 			ITransportConfiguration global,
 			IRequestConfiguration local,
-			IMemoryStreamFactory memoryStreamFactory
+			MemoryStreamFactory memoryStreamFactory
 		)
 		{
 			ConnectionSettings = global;
@@ -138,7 +137,7 @@ namespace Elastic.Transport
 		public int KeepAliveInterval { get; }
 		public int KeepAliveTime { get; }
 		public bool MadeItToResponse { get; set; }
-		public IMemoryStreamFactory MemoryStreamFactory { get; }
+		public MemoryStreamFactory MemoryStreamFactory { get; }
 		public HttpMethod Method { get; }
 
 		public Node Node

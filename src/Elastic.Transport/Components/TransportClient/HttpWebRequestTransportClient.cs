@@ -19,7 +19,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// This provides an <see cref="ITransportClient"/> implementation that targets <see cref="HttpWebRequest"/>.
+	/// This provides an <see cref="TransportClient"/> implementation that targets <see cref="HttpWebRequest"/>.
 	/// <para>
 	/// On .NET full framework <see cref="HttpTransportClient"/> is an alias to this.
 	/// </para>
@@ -31,7 +31,7 @@ namespace Elastic.Transport
 #if DOTNETCORE
 	[Obsolete("CoreFX HttpWebRequest uses HttpClient under the covers but does not reuse HttpClient instances, do NOT use on .NET core only used as the default on Full Framework")]
 #endif
-	public class HttpWebRequestTransportClient : ITransportClient
+	public class HttpWebRequestTransportClient : TransportClient
 	{
 		private string _expectedCertificateFingerprint;
 
@@ -41,11 +41,12 @@ namespace Elastic.Transport
 			if (!IsMono) HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
 		}
 
+		internal HttpWebRequestTransportClient() { }
+
 		internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
 
-		/// <inheritdoc cref="ITransportClient.Request{TResponse}"/>>
-		public virtual TResponse Request<TResponse>(RequestData requestData)
-			where TResponse : TransportResponse, new()
+		/// <inheritdoc cref="TransportClient.Request{TResponse}"/>>
+		public override TResponse Request<TResponse>(RequestData requestData)
 		{
 			int? statusCode = null;
 			Stream responseStream = null;
@@ -103,11 +104,9 @@ namespace Elastic.Transport
 			return response;
 		}
 
-		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}"/>>
-		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData,
-			CancellationToken cancellationToken
-		)
-			where TResponse : TransportResponse, new()
+		/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}"/>>
+		public override async Task<TResponse> RequestAsync<TResponse>(RequestData requestData,
+			CancellationToken cancellationToken)
 		{
 			Action unregisterWaitHandle = null;
 			int? statusCode = null;
@@ -209,13 +208,11 @@ namespace Elastic.Transport
 			return responseHeaders;
 		}
 
-		void IDisposable.Dispose() => DisposeManagedResources();
-
 		/// <summary>
 		/// Allows subclasses to modify the <see cref="HttpWebRequest"/> instance that is going to be used for the API call
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
-		protected virtual HttpWebRequest CreateHttpWebRequest(RequestData requestData)
+		internal HttpWebRequest CreateHttpWebRequest(RequestData requestData)
 		{
 			var request = CreateWebRequest(requestData);
 			SetAuthenticationIfNeeded(requestData, request);
@@ -227,7 +224,7 @@ namespace Elastic.Transport
 		}
 
 		/// <summary> Hook for subclasses to set additional client certificates on <paramref name="request"/> </summary>
-		protected virtual void SetClientCertificates(HttpWebRequest request, RequestData requestData)
+		internal void SetClientCertificates(HttpWebRequest request, RequestData requestData)
 		{
 			if (requestData.ClientCertificates != null)
 				request.ClientCertificates.AddRange(requestData.ClientCertificates);
@@ -248,7 +245,7 @@ namespace Elastic.Transport
 		}
 
 		/// <summary> Hook for subclasses override the certificate validation on <paramref name="request"/> </summary>
-		protected virtual void SetServerCertificateValidationCallBackIfNeeded(HttpWebRequest request, RequestData requestData)
+		internal void SetServerCertificateValidationCallBackIfNeeded(HttpWebRequest request, RequestData requestData)
 		{
 			var callback = requestData?.ConnectionSettings?.ServerCertificateValidationCallback;
 #if !__MonoCS__
@@ -342,7 +339,7 @@ namespace Elastic.Transport
 		}
 
 		/// <summary> Hook for subclasses override <see cref="ServicePoint"/> behavior</summary>
-		protected virtual void AlterServicePoint(ServicePoint requestServicePoint, RequestData requestData)
+		internal void AlterServicePoint(ServicePoint requestServicePoint, RequestData requestData)
 		{
 			requestServicePoint.UseNagleAlgorithm = false;
 			requestServicePoint.Expect100Continue = false;
@@ -356,7 +353,7 @@ namespace Elastic.Transport
 		}
 
 		/// <summary> Hook for subclasses to set proxy on <paramref name="request"/> </summary>
-		protected virtual void SetProxyIfNeeded(HttpWebRequest request, RequestData requestData)
+		internal void SetProxyIfNeeded(HttpWebRequest request, RequestData requestData)
 		{
 			if (!string.IsNullOrWhiteSpace(requestData.ProxyAddress))
 			{
@@ -372,7 +369,7 @@ namespace Elastic.Transport
 		}
 
 		/// <summary> Hook for subclasses to set authentication on <paramref name="request"/></summary>
-		protected virtual void SetAuthenticationIfNeeded(RequestData requestData, HttpWebRequest request)
+		internal void SetAuthenticationIfNeeded(RequestData requestData, HttpWebRequest request)
 		{
 			//If user manually specifies an Authorization Header give it preference
 			if (requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
@@ -388,14 +385,14 @@ namespace Elastic.Transport
 		{
 			// Basic auth credentials take the following precedence (highest -> lowest):
 			// 1 - Specified on the request (highest precedence)
-			// 2 - Specified at the global ITransportClientSettings level
+			// 2 - Specified at the global TransportClientSettings level
 			// 3 - Specified with the URI (lowest precedence)
 
 
 			// Basic auth credentials take the following precedence (highest -> lowest):
 			// 1 - Specified with the URI (highest precedence)
 			// 2 - Specified on the request
-			// 3 - Specified at the global ITransportClientSettings level (lowest precedence)
+			// 3 - Specified at the global TransportClientSettings level (lowest precedence)
 
 			string parameters = null;
 			string scheme = null;
@@ -443,8 +440,5 @@ namespace Elastic.Transport
 			// if stream is null call dispose on response instead.
 			if (responseStream == null || responseStream == Stream.Null) response.Dispose();
 		}
-
-		/// <summary> Allows subclasses to hook into the parents dispose </summary>
-		protected virtual void DisposeManagedResources() { }
 	}
 }

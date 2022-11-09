@@ -90,7 +90,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 		/// <inheritdoc cref="IProductRegistration.CreateSniffRequestData"/>
 		public RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration,
 			ITransportConfiguration settings,
-			IMemoryStreamFactory memoryStreamFactory
+			MemoryStreamFactory memoryStreamFactory
 		)
 		{
 			var requestParameters = new RequestParameters
@@ -104,30 +104,30 @@ namespace Elastic.Transport.Products.Elasticsearch
 		}
 
 		/// <inheritdoc cref="IProductRegistration.SniffAsync"/>
-		public async Task<Tuple<ApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(ITransportClient transportClient,
+		public async Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(TransportClient transportClient,
 			bool forceSsl, RequestData requestData, CancellationToken cancellationToken)
 		{
 			var response = await transportClient.RequestAsync<SniffResponse>(requestData, cancellationToken)
 				.ConfigureAwait(false);
 			var nodes = response.ToNodes(forceSsl);
-			return Tuple.Create<ApiCallDetails, IReadOnlyCollection<Node>>(response.ApiCallDetails,
+			return Tuple.Create<TransportResponse, IReadOnlyCollection<Node>>(response,
 				new ReadOnlyCollection<Node>(nodes.ToArray()));
 		}
 
 		/// <inheritdoc cref="IProductRegistration.Sniff"/>
-		public Tuple<ApiCallDetails, IReadOnlyCollection<Node>> Sniff(ITransportClient transportClient, bool forceSsl,
+		public Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(TransportClient transportClient, bool forceSsl,
 			RequestData requestData)
 		{
 			var response = transportClient.Request<SniffResponse>(requestData);
 			var nodes = response.ToNodes(forceSsl);
-			return Tuple.Create<ApiCallDetails, IReadOnlyCollection<Node>>(response.ApiCallDetails,
+			return Tuple.Create<TransportResponse, IReadOnlyCollection<Node>>(response,
 				new ReadOnlyCollection<Node>(nodes.ToArray()));
 		}
 
 		/// <inheritdoc cref="IProductRegistration.CreatePingRequestData"/>
 		public RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration,
 			ITransportConfiguration global,
-			IMemoryStreamFactory memoryStreamFactory
+			MemoryStreamFactory memoryStreamFactory
 		)
 		{
 			IRequestParameters requestParameters = new RequestParameters
@@ -141,18 +141,18 @@ namespace Elastic.Transport.Products.Elasticsearch
 		}
 
 		/// <inheritdoc cref="IProductRegistration.PingAsync"/>
-		public async Task<ApiCallDetails> PingAsync(ITransportClient transportClient, RequestData pingData,
+		public async Task<TransportResponse> PingAsync(TransportClient transportClient, RequestData pingData,
 			CancellationToken cancellationToken)
 		{
 			var response = await transportClient.RequestAsync<VoidResponse>(pingData, cancellationToken).ConfigureAwait(false);
-			return response.ApiCallDetails;
+			return response;
 		}
 
 		/// <inheritdoc cref="IProductRegistration.Ping"/>
-		public ApiCallDetails Ping(ITransportClient connection, RequestData pingData)
+		public TransportResponse Ping(TransportClient connection, RequestData pingData)
 		{
 			var response = connection.Request<VoidResponse>(pingData);
-			return response.ApiCallDetails;
+			return response;
 		}
 	}
 }

@@ -36,11 +36,11 @@ namespace Elastic.Transport
 		/// <para> Read more here: https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html</para>
 		/// </param>
 		/// <param name="credentials"></param>
-		/// <param name="dateTimeProvider">Optionally inject an instance of <see cref="IDateTimeProvider"/> used to set <see cref="NodePool.LastUpdate"/></param>
-		public CloudNodePool(string cloudId, AuthorizationHeader credentials, IDateTimeProvider dateTimeProvider = null) : this(ParseCloudId(cloudId), dateTimeProvider) =>
+		/// <param name="dateTimeProvider">Optionally inject an instance of <see cref="DateTimeProvider"/> used to set <see cref="NodePool.LastUpdate"/></param>
+		public CloudNodePool(string cloudId, AuthorizationHeader credentials, DateTimeProvider dateTimeProvider = null) : this(ParseCloudId(cloudId), dateTimeProvider) =>
 			AuthenticationHeader  = credentials;
 
-		private CloudNodePool(ParsedCloudId parsedCloudId, IDateTimeProvider dateTimeProvider = null) : base(parsedCloudId.Uri, dateTimeProvider) =>
+		private CloudNodePool(ParsedCloudId parsedCloudId, DateTimeProvider dateTimeProvider = null) : base(parsedCloudId.Uri, dateTimeProvider) =>
 			ClusterName = parsedCloudId.Name;
 
 		//TODO implement debugger display for NodePool implementations and display it there and its ToString()

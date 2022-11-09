@@ -14,8 +14,12 @@ namespace Elastic.Transport
 	/// <para>The instance to be used is provided to the constructor of <see cref="ITransportConfiguration"/> implementations</para>
 	/// <para>Where its exposed under <see cref="ITransportConfiguration.Connection"/></para>
 	/// </summary>
-	public interface ITransportClient : IDisposable
+	public abstract class TransportClient : IDisposable
 	{
+		private bool _disposed = false;
+
+		internal TransportClient() { }
+
 		/// <summary>
 		/// Perform a request to the endpoint described by <paramref name="requestData"/> using its associated configuration.
 		/// </summary>
@@ -31,7 +35,7 @@ namespace Elastic.Transport
 		/// for <see cref="IRequestPipeline"/> and <see cref="ITransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </returns>
-		Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+		public abstract Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 			where TResponse : TransportResponse, new();
 
 		/// <summary>
@@ -48,7 +52,38 @@ namespace Elastic.Transport
 		/// for <see cref="IRequestPipeline"/> and <see cref="ITransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </returns>
-		TResponse Request<TResponse>(RequestData requestData)
+		public abstract TResponse Request<TResponse>(RequestData requestData)
 			where TResponse : TransportResponse, new();
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public void Dispose()
+		{
+			Dispose(disposing: true);
+			GC.SuppressFinalize(this);
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="disposing"></param>
+		protected virtual void Dispose(bool disposing)
+		{
+			if (_disposed)
+				return;
+
+			if (disposing)
+			{
+				DisposeManagedResources();
+			}
+
+			_disposed = true;
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		protected virtual void DisposeManagedResources() { }
 	}
 }

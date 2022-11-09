@@ -12,10 +12,10 @@ namespace Elastic.Transport.Diagnostics.Auditing
 	{
 		private readonly Audit _audit;
 		private readonly IDisposable _activity;
-		private readonly IDateTimeProvider _dateTimeProvider;
+		private readonly DateTimeProvider _dateTimeProvider;
 		private static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.AuditTrailEvents.SourceName);
 
-		public Auditable(AuditEvent type, List<Audit> auditTrail, IDateTimeProvider dateTimeProvider, Node node)
+		public Auditable(AuditEvent type, List<Audit> auditTrail, DateTimeProvider dateTimeProvider, Node node)
 		{
 			_dateTimeProvider = dateTimeProvider;
 			var started = _dateTimeProvider.Now();

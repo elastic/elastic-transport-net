@@ -45,7 +45,7 @@ namespace Elastic.Transport.Diagnostics
 
 		/// <summary>
 		/// Provides access to the string event names related to <see cref="HttpConnection"/> the default
-		/// <see cref="ITransportClient"/> implementation.
+		/// <see cref="TransportClient"/> implementation.
 		/// </summary>
 		public class HttpConnectionDiagnosticKeys : IDiagnosticsKeys
 		{

@@ -14,7 +14,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
-using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -23,21 +22,8 @@ using static System.Net.DecompressionMethods;
 
 namespace Elastic.Transport
 {
-	internal class WebProxy : IWebProxy
-	{
-		private readonly Uri _uri;
-
-		public WebProxy(Uri uri) => _uri = uri;
-
-		public ICredentials Credentials { get; set; }
-
-		public Uri GetProxy(Uri destination) => _uri;
-
-		public bool IsBypassed(Uri host) => host.IsLoopback;
-	}
-
-	/// <summary> The default ITransportClient implementation. Uses <see cref="HttpClient" />.</summary>
-	public class HttpTransportClient : ITransportClient
+	/// <summary> The default TransportClient implementation. Uses <see cref="HttpClient" />.</summary>
+	public sealed class HttpTransportClient : TransportClient
 	{
 		private static readonly string MissingConnectionLimitMethodError =
 			$"Your target platform does not support {nameof(TransportConfiguration.ConnectionLimit)}"
@@ -59,9 +45,8 @@ namespace Elastic.Transport
 
 		private RequestDataHttpClientFactory HttpClientFactory { get; }
 
-		/// <inheritdoc cref="ITransportClient.Request{TResponse}" />
-		public virtual TResponse Request<TResponse>(RequestData requestData)
-			where TResponse : TransportResponse, new()
+		/// <inheritdoc cref="TransportClient.Request{TResponse}" />
+		public override TResponse Request<TResponse>(RequestData requestData)
 		{
 			var client = GetClient(requestData);
 			HttpResponseMessage responseMessage;
@@ -134,9 +119,8 @@ namespace Elastic.Transport
 			}
 		}
 
-		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}" />
-		public virtual async Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : TransportResponse, new()
+		/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}" />
+		public override async Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 		{
 			var client = GetClient(requestData);
 			HttpResponseMessage responseMessage;
@@ -227,8 +211,6 @@ namespace Elastic.Transport
 			return responseHeaders;
 		}
 
-		void IDisposable.Dispose() => DisposeManagedResources();
-
 		private HttpClient GetClient(RequestData requestData) => HttpClientFactory.CreateClient(requestData);
 
 		/// <summary>
@@ -240,7 +222,7 @@ namespace Elastic.Transport
 		/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
 		/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 		/// </exception>
-		protected virtual HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
+		internal HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
 		{
 			var handler = new HttpClientHandler { AutomaticDecompression = requestData.HttpCompression ? GZip | Deflate : None, };
 
@@ -330,7 +312,7 @@ namespace Elastic.Transport
 		/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
 		/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 		/// </exception>
-		protected virtual HttpRequestMessage CreateHttpRequestMessage(RequestData requestData)
+		internal HttpRequestMessage CreateHttpRequestMessage(RequestData requestData)
 		{
 			var request = CreateRequestMessage(requestData);
 			SetAuthenticationIfNeeded(request, requestData);
@@ -340,7 +322,7 @@ namespace Elastic.Transport
 		/// <summary> Isolated hook for subclasses to set authentication on <paramref name="requestMessage" /> </summary>
 		/// <param name="requestMessage">The instance of <see cref="HttpRequestMessage" /> that needs authentication details</param>
 		/// <param name="requestData">An object describing where and how we want to call out to</param>
-		protected virtual void SetAuthenticationIfNeeded(HttpRequestMessage requestMessage, RequestData requestData)
+		internal void SetAuthenticationIfNeeded(HttpRequestMessage requestMessage, RequestData requestData)
 		{
 			//If user manually specifies an Authorization Header give it preference
 			if (requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
@@ -358,7 +340,7 @@ namespace Elastic.Transport
 			// Basic auth credentials take the following precedence (highest -> lowest):
 			// 1 - Specified with the URI (highest precedence)
 			// 2 - Specified on the request
-			// 3 - Specified at the global ITransportClientSettings level (lowest precedence)
+			// 3 - Specified at the global TransportClientSettings level (lowest precedence)
 
 			string parameters = null;
 			string scheme = null;
@@ -512,8 +494,8 @@ namespace Elastic.Transport
 			}
 		}
 
-		/// <summary> Allows subclasses to hook into the parents dispose </summary>
-		protected virtual void DisposeManagedResources() => HttpClientFactory.Dispose();
+		/// <inheritdoc />
+		protected override void DisposeManagedResources() => HttpClientFactory.Dispose();
 	}
 }
 #endif

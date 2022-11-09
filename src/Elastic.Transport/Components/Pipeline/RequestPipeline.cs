@@ -33,10 +33,10 @@ namespace Elastic.Transport
 	public class RequestPipeline<TConfiguration> : IRequestPipeline
 		where TConfiguration : class, ITransportConfiguration
 	{
-		private readonly ITransportClient _transportClient;
+		private readonly TransportClient _transportClient;
 		private readonly NodePool _nodePool;
-		private readonly IDateTimeProvider _dateTimeProvider;
-		private readonly IMemoryStreamFactory _memoryStreamFactory;
+		private readonly DateTimeProvider _dateTimeProvider;
+		private readonly MemoryStreamFactory _memoryStreamFactory;
 		private readonly Func<Node, bool> _nodePredicate;
 		private readonly IProductRegistration _productRegistration;
 		private readonly TConfiguration _settings;
@@ -47,8 +47,8 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="IRequestPipeline" />
 		public RequestPipeline(
 			TConfiguration configurationValues,
-			IDateTimeProvider dateTimeProvider,
-			IMemoryStreamFactory memoryStreamFactory,
+			DateTimeProvider dateTimeProvider,
+			MemoryStreamFactory memoryStreamFactory,
 			IRequestParameters requestParameters
 		)
 		{
@@ -439,18 +439,18 @@ namespace Elastic.Transport
 				try
 				{
 					var response = _productRegistration.Ping(_transportClient, pingData);
-					d.EndState = response;
-					ThrowBadAuthPipelineExceptionWhenNeeded(response);
+					d.EndState = response.ApiCallDetails;
+					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 					//ping should not silently accept bad but valid http responses
-					if (!response.Success)
-						throw new PipelineException(pingData.OnFailurePipelineFailure, response.OriginalException) { ApiCall = response };
+					if (!response.ApiCallDetails.Success)
+						throw new PipelineException(pingData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
 				}
 				catch (Exception e)
 				{
-					var response = (e as PipelineException)?.ApiCall;
+					var response = (e as PipelineException)?.Response;
 					audit.Event = PingFailure;
 					audit.Exception = e;
-					throw new PipelineException(PipelineFailure.PingFailure, e) { ApiCall = response };
+					throw new PipelineException(PipelineFailure.PingFailure, e) { Response = response };
 				}
 			}
 		}
@@ -468,19 +468,19 @@ namespace Elastic.Transport
 				audit.Path = pingData.PathAndQuery;
 				try
 				{
-					var apiCallDetails = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
-					d.EndState = apiCallDetails;
-					ThrowBadAuthPipelineExceptionWhenNeeded(apiCallDetails);
+					var response = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
+					d.EndState = response.ApiCallDetails;
+					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 					//ping should not silently accept bad but valid http responses
-					if (!apiCallDetails.Success)
-						throw new PipelineException(pingData.OnFailurePipelineFailure, apiCallDetails.OriginalException) { ApiCall = apiCallDetails };
+					if (!response.ApiCallDetails.Success)
+						throw new PipelineException(pingData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
 				}
 				catch (Exception e)
 				{
-					var response = (e as PipelineException)?.ApiCall;
+					var response = (e as PipelineException)?.Response;
 					audit.Event = PingFailure;
 					audit.Exception = e;
-					throw new PipelineException(PipelineFailure.PingFailure, e) { ApiCall = response };
+					throw new PipelineException(PipelineFailure.PingFailure, e) { Response = response };
 				}
 			}
 		}
@@ -502,12 +502,12 @@ namespace Elastic.Transport
 					{
 						audit.Path = requestData.PathAndQuery;
 						var (response, nodes) = _productRegistration.Sniff(_transportClient, _nodePool.UsingSsl, requestData);
-						d.EndState = response;
+						d.EndState = response.ApiCallDetails;
 
-						ThrowBadAuthPipelineExceptionWhenNeeded(response);
+						ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 						//sniff should not silently accept bad but valid http responses
-						if (!response.Success)
-							throw new PipelineException(requestData.OnFailurePipelineFailure, response.OriginalException) { ApiCall = response };
+						if (!response.ApiCallDetails.Success)
+							throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
 
 						_nodePool.Reseed(nodes);
 						Refresh = true;
@@ -542,12 +542,12 @@ namespace Elastic.Transport
 						var (response, nodes) = await _productRegistration
 							.SniffAsync(_transportClient, _nodePool.UsingSsl, requestData, cancellationToken)
 							.ConfigureAwait(false);
-						d.EndState = response;
+						d.EndState = response.ApiCallDetails;
 
-						ThrowBadAuthPipelineExceptionWhenNeeded(response);
+						ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 						//sniff should not silently accept bad but valid http responses
-						if (!response.Success)
-							throw new PipelineException(requestData.OnFailurePipelineFailure, response.OriginalException) { ApiCall = response };
+						if (!response.ApiCallDetails.Success)
+							throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
 
 						_nodePool.Reseed(nodes);
 						Refresh = true;
@@ -619,7 +619,7 @@ namespace Elastic.Transport
 		private static void ThrowBadAuthPipelineExceptionWhenNeeded(ApiCallDetails details, TransportResponse response = null)
 		{
 			if (details?.HttpStatusCode == 401)
-				throw new PipelineException(PipelineFailure.BadAuthentication, details.OriginalException) { Response = response, ApiCall = details };
+				throw new PipelineException(PipelineFailure.BadAuthentication, details.OriginalException) { Response = response };
 		}
 
 		private void LazyAuditable(AuditEvent e, Node n)

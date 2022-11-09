@@ -17,7 +17,7 @@ namespace Elastic.Transport
 	/// is eligible to be disposed.
 	/// <para>https://github.com/dotnet/runtime/blob/master/src/libraries/Microsoft.Extensions.Http/src/LifetimeTrackingHttpMessageHandler.cs</para>
 	/// </summary>
-	internal class LifetimeTrackingHttpMessageHandler : DelegatingHandler
+	internal sealed class LifetimeTrackingHttpMessageHandler : DelegatingHandler
 	{
 		public LifetimeTrackingHttpMessageHandler(HttpMessageHandler innerHandler)
 			: base(innerHandler) { }

@@ -31,7 +31,7 @@ namespace Elastic.Transport.Extensions
 		public static byte[] SerializeToBytes<T>(
 			this Serializer serializer,
 			T data,
-			IMemoryStreamFactory memoryStreamFactory,
+			MemoryStreamFactory memoryStreamFactory,
 			SerializationFormatting formatting = SerializationFormatting.None
 		)
 		{
@@ -65,7 +65,7 @@ namespace Elastic.Transport.Extensions
 		public static string SerializeToString<T>(
 			this Serializer serializer,
 			T data,
-			IMemoryStreamFactory memoryStreamFactory,
+			MemoryStreamFactory memoryStreamFactory,
 			SerializationFormatting formatting = SerializationFormatting.None
 		)
 		{

@@ -113,6 +113,7 @@ namespace Elastic.Transport
 		/// 
 		/// </summary>
 		internal IReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; set; }
+			= EmptyReadOnly<string, IEnumerable<string>>.Dictionary;
 
 		/// <summary>
 		/// 
@@ -121,8 +122,8 @@ namespace Elastic.Transport
 		/// <param name="headerValues"></param>
 		/// <returns></returns>
 		// TODO: Nullable annotations
-		public bool TryGetHeader(string key, out IEnumerable<string> headerValues)
-			=> ParsedHeaders.TryGetValue(key, out headerValues);
+		public bool TryGetHeader(string key, out IEnumerable<string> headerValues) =>
+			ParsedHeaders.TryGetValue(key, out headerValues);
 
 		/// <summary>
 		/// The error response if the server returned JSON describing a server error.

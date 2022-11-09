@@ -26,7 +26,7 @@ namespace Elastic.Transport
 	/// which can be written to directly. The ability to push data to the output stream differs from the
 	/// <see cref="StreamContent"/> where data is pulled and not pushed.
 	/// </summary>
-	internal class RequestDataContent : HttpContent
+	internal sealed class RequestDataContent : HttpContent
 	{
 		private readonly RequestData _requestData;
 
@@ -74,10 +74,11 @@ namespace Elastic.Transport
 			if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
 #if NET5_0_OR_GREATER
-			await
+			await using (stream.ConfigureAwait(false))
+#else
+			using (stream)
 #endif
-				using (stream)
-				await data.PostData.WriteAsync(stream, data.ConnectionSettings, ctx).ConfigureAwait(false);
+			await data.PostData.WriteAsync(stream, data.ConnectionSettings, ctx).ConfigureAwait(false);
 		}
 
 		/// <summary>
@@ -92,9 +93,11 @@ namespace Elastic.Transport
 		protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
 			SerializeToStreamAsync(stream, context, default);
 
-		protected
+
 #if NET5_0_OR_GREATER
-			override
+		protected override
+#else
+		private
 #endif
 			async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
 		{

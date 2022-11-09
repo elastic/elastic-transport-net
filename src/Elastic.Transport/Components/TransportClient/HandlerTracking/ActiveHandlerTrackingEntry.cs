@@ -18,7 +18,7 @@ namespace Elastic.Transport
 	/// for the 'expiry' pool simplifies the threading requirements significantly.
 	/// <para>https://github.com/dotnet/runtime/blob/master/src/libraries/Microsoft.Extensions.Http/src/ActiveHandlerTrackingEntry.cs</para>
 	/// </summary>
-    internal class ActiveHandlerTrackingEntry
+    internal sealed class ActiveHandlerTrackingEntry
     {
         private static readonly TimerCallback TimerCallback = (s) => ((ActiveHandlerTrackingEntry)s).Timer_Tick();
         private readonly object _lock;

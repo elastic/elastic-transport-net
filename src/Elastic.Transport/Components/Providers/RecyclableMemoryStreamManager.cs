@@ -42,7 +42,7 @@ namespace Elastic.Transport
 	/// multiples/exponentials of LargeBufferMultiple (1 MB by default). They are split by size to avoid overly-wasteful buffer
 	/// usage. There should be far fewer 8 MB buffers than 1 MB buffers, for example.
 	/// </remarks>
-	internal partial class RecyclableMemoryStreamManager
+	internal sealed partial class RecyclableMemoryStreamManager
 	{
 		/// <summary>
 		/// Generic delegate for handling events without any arguments.

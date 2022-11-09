@@ -8,7 +8,6 @@ using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport
 {
-
 	/// <summary>
 	/// An exception occured that was not the result of one the well defined exit points as modelled by
 	/// <see cref="PipelineFailure"/>. This exception will always bubble out.
@@ -26,6 +25,4 @@ namespace Elastic.Transport
 		// ReSharper disable once MemberCanBePrivate.Global
 		public IReadOnlyCollection<PipelineException> SeenExceptions { get; }
 	}
-
-
 }

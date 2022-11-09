@@ -49,39 +49,39 @@ namespace Elastic.Transport.Products
 		/// Create an instance of <see cref="RequestData"/> that describes where and how to ping see <paramref name="node" />
 		/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
 		/// </summary>
-		RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, IMemoryStreamFactory memoryStreamFactory);
+		RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, MemoryStreamFactory memoryStreamFactory);
 
 		/// <summary>
-		/// Provide an implementation that performs the ping directly using <see cref="ITransportClient.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
+		/// Provide an implementation that performs the ping directly using <see cref="TransportClient.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
 		/// return by <see cref="CreatePingRequestData"/>
 		/// </summary>
-		Task<ApiCallDetails> PingAsync(ITransportClient connection, RequestData pingData, CancellationToken cancellationToken);
+		Task<TransportResponse> PingAsync(TransportClient connection, RequestData pingData, CancellationToken cancellationToken);
 
 		/// <summary>
-		/// Provide an implementation that performs the ping directly using <see cref="ITransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
+		/// Provide an implementation that performs the ping directly using <see cref="TransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
 		/// return by <see cref="CreatePingRequestData"/>
 		/// </summary>
-		ApiCallDetails Ping(ITransportClient connection, RequestData pingData);
+		TransportResponse Ping(TransportClient connection, RequestData pingData);
 
 		/// <summary>
 		/// Create an instance of <see cref="RequestData"/> that describes where and how to sniff the cluster using <paramref name="node" />
 		/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
 		/// </summary>
 		RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings,
-			IMemoryStreamFactory memoryStreamFactory
+			MemoryStreamFactory memoryStreamFactory
 		);
 
 		/// <summary>
-		/// Provide an implementation that performs the sniff directly using <see cref="ITransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
+		/// Provide an implementation that performs the sniff directly using <see cref="TransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
 		/// return by <see cref="CreateSniffRequestData"/>
 		/// </summary>
-		Task<Tuple<ApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(ITransportClient connection, bool forceSsl, RequestData requestData, CancellationToken cancellationToken);
+		Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(TransportClient connection, bool forceSsl, RequestData requestData, CancellationToken cancellationToken);
 
 		/// <summary>
-		/// Provide an implementation that performs the sniff directly using <see cref="ITransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
+		/// Provide an implementation that performs the sniff directly using <see cref="TransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
 		/// return by <see cref="CreateSniffRequestData"/>
 		/// </summary>
-		Tuple<ApiCallDetails, IReadOnlyCollection<Node>> Sniff(ITransportClient connection, bool forceSsl, RequestData requestData);
+		Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(TransportClient connection, bool forceSsl, RequestData requestData);
 
 		/// <summary> Allows certain nodes to be queried first to obtain sniffing information </summary>
 		int SniffOrder(Node node);

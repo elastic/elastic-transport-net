@@ -34,33 +34,22 @@ namespace Elastic.Transport
 			|| FailureReason == PipelineFailure.BadResponse
 			|| FailureReason == PipelineFailure.PingFailure;
 
-		//TODO why do we have both Response and ApiCall?
-
 		/// <summary> The response that triggered this exception </summary>
 		public TransportResponse Response { get; internal set; }
 
-		/// <summary> The response that triggered this exception </summary>
-		public ApiCallDetails ApiCall { get; internal set; }
-
-		private static string GetMessage(PipelineFailure failure)
-		{
-			switch (failure)
+		private static string GetMessage(PipelineFailure failure) =>
+			failure switch
 			{
-				case PipelineFailure.BadRequest: return "An error occurred trying to write the request data to the specified node.";
-				case PipelineFailure.BadResponse: return "An error occurred trying to read the response from the specified node.";
-				case PipelineFailure.BadAuthentication:
-					return "Could not authenticate with the specified node. Try verifying your credentials or check your Shield configuration.";
-				case PipelineFailure.PingFailure: return "Failed to ping the specified node.";
-				case PipelineFailure.SniffFailure: return "Failed sniffing cluster state.";
-				case PipelineFailure.CouldNotStartSniffOnStartup: return "Failed sniffing cluster state upon client startup.";
-				case PipelineFailure.MaxTimeoutReached: return "Maximum timeout was reached.";
-				case PipelineFailure.MaxRetriesReached: return "The call was retried the configured maximum amount of times";
-				case PipelineFailure.NoNodesAttempted:
-					return "No nodes were attempted, this can happen when a node predicate does not match any nodes";
-				case PipelineFailure.Unexpected:
-				default:
-					return "An unexpected error occurred. Try checking the original exception for more information.";
-			}
-		}
+				PipelineFailure.BadRequest => "An error occurred trying to write the request data to the specified node.",
+				PipelineFailure.BadResponse => "An error occurred trying to read the response from the specified node.",
+				PipelineFailure.BadAuthentication => "Could not authenticate with the specified node. Try verifying your credentials or check your Shield configuration.",
+				PipelineFailure.PingFailure => "Failed to ping the specified node.",
+				PipelineFailure.SniffFailure => "Failed sniffing cluster state.",
+				PipelineFailure.CouldNotStartSniffOnStartup => "Failed sniffing cluster state upon client startup.",
+				PipelineFailure.MaxTimeoutReached => "Maximum timeout was reached.",
+				PipelineFailure.MaxRetriesReached => "The call was retried the configured maximum amount of times",
+				PipelineFailure.NoNodesAttempted => "No nodes were attempted, this can happen when a node predicate does not match any nodes",
+				_ => "An unexpected error occurred. Try checking the original exception for more information.",
+			};
 	}
 }

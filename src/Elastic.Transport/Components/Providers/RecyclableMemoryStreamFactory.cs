@@ -10,7 +10,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// A factory for creating memory streams using a recyclable pool of <see cref="MemoryStream" /> instances
 	/// </summary>
-	public sealed class RecyclableMemoryStreamFactory : IMemoryStreamFactory
+	public sealed class RecyclableMemoryStreamFactory : MemoryStreamFactory
 	{
 		private const string TagSource = "Elastic.Transport";
 		private readonly RecyclableMemoryStreamManager _manager;
@@ -32,16 +32,15 @@ namespace Elastic.Transport
 			{
 				AggressiveBufferReturn = true, MaximumFreeLargePoolBytes = maxBufferSize * 4, MaximumFreeSmallPoolBytes = 100 * blockSize
 			};
-
 		}
 
 		/// <inheritdoc />
-		public MemoryStream Create() => _manager.GetStream(Guid.Empty, TagSource);
+		public override MemoryStream Create() => _manager.GetStream(Guid.Empty, TagSource);
 
 		/// <inheritdoc />
-		public MemoryStream Create(byte[] bytes) => _manager.GetStream(bytes);
+		public override MemoryStream Create(byte[] bytes) => _manager.GetStream(bytes);
 
 		/// <inheritdoc />
-		public MemoryStream Create(byte[] bytes, int index, int count) => _manager.GetStream(Guid.Empty, TagSource, bytes, index, count);
+		public override MemoryStream Create(byte[] bytes, int index, int count) => _manager.GetStream(Guid.Empty, TagSource, bytes, index, count);
 	}
 }

@@ -19,7 +19,7 @@ namespace Elastic.Transport
 	/// Heavily modified version of DefaultHttpClientFactory, re-purposed for RequestData
 	/// <para>https://github.com/dotnet/runtime/blob/master/src/libraries/Microsoft.Extensions.Http/src/DefaultHttpClientFactory.cs</para>
 	/// </summary>
-	internal class RequestDataHttpClientFactory : IDisposable
+	internal sealed class RequestDataHttpClientFactory : IDisposable
 	{
 		private readonly Func<RequestData, HttpMessageHandler> _createHttpClientHandler;
 		private static readonly TimerCallback CleanupCallback = (s) => ((RequestDataHttpClientFactory)s).CleanupTimer_Tick();
@@ -155,15 +155,15 @@ namespace Elastic.Transport
 			StartCleanupTimer();
 		}
 
-		protected virtual void StartHandlerEntryTimer(ActiveHandlerTrackingEntry entry) => entry.StartExpiryTimer(_expiryCallback);
+		private void StartHandlerEntryTimer(ActiveHandlerTrackingEntry entry) => entry.StartExpiryTimer(_expiryCallback);
 
-		protected virtual void StartCleanupTimer()
+		private void StartCleanupTimer()
 		{
 			lock (_cleanupTimerLock)
 				_cleanupTimer ??= NonCapturingTimer.Create(CleanupCallback, this, _defaultCleanupInterval, Timeout.InfiniteTimeSpan);
 		}
 
-		protected virtual void StopCleanupTimer()
+		private void StopCleanupTimer()
 		{
 			lock (_cleanupTimerLock)
 			{

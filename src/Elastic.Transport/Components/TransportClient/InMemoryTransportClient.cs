@@ -13,9 +13,9 @@ using System.Threading.Tasks;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// An implementation of <see cref="ITransportClient"/> designed to not actually do any IO and services requests from an in memory byte buffer
+	/// An implementation of <see cref="TransportClient"/> designed to not actually do any IO and services requests from an in memory byte buffer
 	/// </summary>
-	public class InMemoryConnection : ITransportClient
+	public sealed class InMemoryConnection : TransportClient
 	{
 		private static readonly byte[] EmptyBody = Encoding.UTF8.GetBytes("");
 		private readonly string _contentType;
@@ -40,27 +40,23 @@ namespace Elastic.Transport
 			_headers = headers;
 		}
 
-		/// <inheritdoc cref="ITransportClient.Request{TResponse}"/>>
-		public virtual TResponse Request<TResponse>(RequestData requestData)
-			where TResponse : TransportResponse, new() =>
+		/// <inheritdoc cref="TransportClient.Request{TResponse}"/>>
+		public override TResponse Request<TResponse>(RequestData requestData) =>
 			ReturnConnectionStatus<TResponse>(requestData);
 
-		/// <inheritdoc cref="ITransportClient.RequestAsync{TResponse}"/>>
-		public virtual Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
-			where TResponse : TransportResponse, new() =>
+		/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}"/>>
+		public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) =>
 			ReturnConnectionStatusAsync<TResponse>(requestData, cancellationToken);
 
-		void IDisposable.Dispose() => DisposeManagedResources();
-
 		/// <summary>
-		/// Allow subclasses to provide their own implementations for <see cref="ITransportClient.Request{TResponse}"/> while reusing the more complex logic
+		/// Allow subclasses to provide their own implementations for <see cref="TransportClient.Request{TResponse}"/> while reusing the more complex logic
 		/// to create a response
 		/// </summary>
 		/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
 		/// <param name="responseBody">The bytes intended to be used as return</param>
 		/// <param name="statusCode">The status code that the responses <see cref="TransportResponse.ApiCallDetails"/> should return</param>
 		/// <param name="contentType"></param>
-		protected TResponse ReturnConnectionStatus<TResponse>(RequestData requestData, byte[] responseBody = null, int? statusCode = null,
+		internal TResponse ReturnConnectionStatus<TResponse>(RequestData requestData, byte[] responseBody = null, int? statusCode = null,
 			string contentType = null)
 			where TResponse : TransportResponse, new()
 		{
@@ -87,7 +83,7 @@ namespace Elastic.Transport
 		}
 
 		/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
-		protected async Task<TResponse> ReturnConnectionStatusAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken,
+		internal async Task<TResponse> ReturnConnectionStatusAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken,
 			byte[] responseBody = null, int? statusCode = null, string contentType = null)
 			where TResponse : TransportResponse, new()
 		{
@@ -114,8 +110,5 @@ namespace Elastic.Transport
 				.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
 				.ConfigureAwait(false);
 		}
-
-		/// <summary> Allows subclasses to hook into the parents dispose </summary>
-		protected virtual void DisposeManagedResources() { }
 	}
 }

@@ -12,12 +12,12 @@ namespace Elastic.Transport
 	public class SingleNodePool : NodePool
 	{
 		/// <inheritdoc cref="SingleNodePool"/>
-		public SingleNodePool(Uri uri, IDateTimeProvider dateTimeProvider = null)
+		public SingleNodePool(Uri uri, DateTimeProvider dateTimeProvider = null)
 		{
 			var node = new Node(uri);
 			UsingSsl = node.Uri.Scheme == "https";
 			Nodes = new List<Node> { node };
-			LastUpdate = (dateTimeProvider ?? DateTimeProvider.Default).Now();
+			LastUpdate = (dateTimeProvider ?? DefaultDateTimeProvider.Default).Now();
 		}
 
 		/// <inheritdoc />

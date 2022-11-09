@@ -16,11 +16,11 @@ namespace Elastic.Transport
 	public sealed class StickyNodePool : StaticNodePool
 	{
 		/// <inheritdoc cref="StickyNodePool"/>
-		public StickyNodePool(IEnumerable<Uri> uris, IDateTimeProvider dateTimeProvider = null)
+		public StickyNodePool(IEnumerable<Uri> uris, DateTimeProvider dateTimeProvider = null)
 			: base(uris, false, dateTimeProvider) { }
 
 		/// <inheritdoc cref="StickyNodePool"/>
-		public StickyNodePool(IEnumerable<Node> nodes, IDateTimeProvider dateTimeProvider = null)
+		public StickyNodePool(IEnumerable<Node> nodes, DateTimeProvider dateTimeProvider = null)
 			: base(nodes, false, dateTimeProvider) { }
 
 		/// <inheritdoc cref="StaticNodePool.CreateView"/>

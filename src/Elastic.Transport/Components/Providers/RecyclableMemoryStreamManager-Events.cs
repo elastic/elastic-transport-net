@@ -37,7 +37,7 @@ namespace Elastic.Transport
 	/// Stub for System.Diagnostics.Tracing.EventCounter which is not available on .NET 4.6.1
 	/// </summary>
 	// ReSharper disable once UnusedType.Global
-	internal class EventCounter
+	internal sealed class EventCounter
 	{
 		// ReSharper disable UnusedParameter.Local
 		public EventCounter(string blocks, RecyclableMemoryStreamManager.Events eventsWriter) { }
@@ -47,7 +47,7 @@ namespace Elastic.Transport
 	}
 #endif
 #if NETSTANDARD2_0 || NETFRAMEWORK
-	internal class PollingCounter : IDisposable
+	internal sealed class PollingCounter : IDisposable
 	{
 		// ReSharper disable UnusedParameter.Local
 		public PollingCounter(string largeBuffers, RecyclableMemoryStreamManager.Events eventsWriter, Func<double> func) { }

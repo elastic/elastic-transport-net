@@ -16,7 +16,7 @@ namespace Elastic.Transport
 	/// Thread-safety: This class is immutable
 	/// <para>https://github.com/dotnet/runtime/blob/master/src/libraries/Microsoft.Extensions.Http/src/ExpiredHandlerTrackingEntry.cs</para>
 	/// </summary>
-	internal class ExpiredHandlerTrackingEntry
+	internal sealed class ExpiredHandlerTrackingEntry
 	{
 		private readonly WeakReference _livenessTracker;
 

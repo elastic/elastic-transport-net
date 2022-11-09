@@ -298,7 +298,7 @@ namespace Elastic.Transport
 
 		
 		private static bool SetSpecialTypes<TResponse>(string mimeType, byte[] bytes,
-			IMemoryStreamFactory memoryStreamFactory, out TResponse cs)
+			MemoryStreamFactory memoryStreamFactory, out TResponse cs)
 			where TResponse : TransportResponse, new()
 		{
 			cs = null;

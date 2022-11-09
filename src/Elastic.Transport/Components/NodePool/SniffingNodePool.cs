@@ -22,15 +22,15 @@ namespace Elastic.Transport
 		private readonly ReaderWriterLockSlim _readerWriter = new();
 
 		/// <inheritdoc cref="SniffingNodePool"/>>
-		public SniffingNodePool(IEnumerable<Uri> uris, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
+		public SniffingNodePool(IEnumerable<Uri> uris, bool randomize = true, DateTimeProvider dateTimeProvider = null)
 			: base(uris, randomize, dateTimeProvider) { }
 
 		/// <inheritdoc cref="SniffingNodePool"/>>
-		public SniffingNodePool(IEnumerable<Node> nodes, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
+		public SniffingNodePool(IEnumerable<Node> nodes, bool randomize = true, DateTimeProvider dateTimeProvider = null)
 			: base(nodes, randomize, dateTimeProvider) { }
 
 		/// <inheritdoc cref="SniffingNodePool"/>>
-		public SniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
+		public SniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, DateTimeProvider dateTimeProvider = null)
 			: base(nodes, nodeScorer, dateTimeProvider) { }
 
 		/// <inheritdoc />

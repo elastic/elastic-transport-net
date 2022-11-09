@@ -34,12 +34,12 @@ namespace Elastic.Transport
 		/// </summary>
 		private static bool UsingCurlHandler => ConnectionInfo.UsingCurlHandler;
 
-		//public static IMemoryStreamFactory Default { get; } = RecyclableMemoryStreamFactory.Default;
+		//public static MemoryStreamFactory Default { get; } = RecyclableMemoryStreamFactory.Default;
 		// ReSharper disable once RedundantNameQualifier
 		/// <summary>
 		/// The default memory stream factory if none is configured on <see cref="ITransportConfiguration.MemoryStreamFactory"/>
 		/// </summary>
-		public static IMemoryStreamFactory DefaultMemoryStreamFactory { get; } = Elastic.Transport.MemoryStreamFactory.Default;
+		public static MemoryStreamFactory DefaultMemoryStreamFactory { get; } = Elastic.Transport.DefaultMemoryStreamFactory.Default;
 
 		/// <summary>
 		/// The default ping timeout. Defaults to 2 seconds
@@ -100,12 +100,12 @@ namespace Elastic.Transport
 
 		/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
 		/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
-		/// <param name="connection"><inheritdoc cref="ITransportClient" path="/summary"/></param>
+		/// <param name="connection"><inheritdoc cref="TransportClient" path="/summary"/></param>
 		/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
 		public TransportConfiguration(
 			NodePool nodePool,
-			ITransportClient connection = null,
+			TransportClient connection = null,
 			Serializer serializer = null,
 			IProductRegistration productRegistration = null)
 			: base(nodePool, connection, serializer, productRegistration) { }
@@ -118,7 +118,7 @@ namespace Elastic.Transport
 	public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 		where T : TransportConfigurationBase<T>
 	{
-		private readonly ITransportClient _transportClient;
+		private readonly TransportClient _transportClient;
 		private readonly NodePool _nodePool;
 		private readonly IProductRegistration _productRegistration;
 		private readonly NameValueCollection _headers = new NameValueCollection();
@@ -156,7 +156,7 @@ namespace Elastic.Transport
 		private bool _sniffOnStartup;
 		private bool _throwExceptions;
 		private bool _transferEncodingChunked;
-		private IMemoryStreamFactory _memoryStreamFactory;
+		private MemoryStreamFactory _memoryStreamFactory;
 		private bool _enableTcpStats;
 		private bool _enableThreadPoolStats;
 		private UserAgent _userAgent;
@@ -170,10 +170,10 @@ namespace Elastic.Transport
 		/// <inheritdoc cref="TransportConfiguration"/>
 		/// </summary>
 		/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
-		/// <param name="transportClient"><inheritdoc cref="ITransportClient" path="/summary"/></param>
+		/// <param name="transportClient"><inheritdoc cref="TransportClient" path="/summary"/></param>
 		/// <param name="requestResponseSerializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		protected TransportConfigurationBase(NodePool nodePool, ITransportClient transportClient, Serializer requestResponseSerializer, IProductRegistration productRegistration)
+		protected TransportConfigurationBase(NodePool nodePool, TransportClient transportClient, Serializer requestResponseSerializer, IProductRegistration productRegistration)
 		{
 			_nodePool = nodePool;
 			_transportClient = transportClient ?? new HttpTransportClient();
@@ -215,7 +215,7 @@ namespace Elastic.Transport
 		AuthorizationHeader ITransportConfiguration.Authentication => _authenticationHeader;
 		SemaphoreSlim ITransportConfiguration.BootstrapLock => _semaphore;
 		X509CertificateCollection ITransportConfiguration.ClientCertificates => _clientCertificates;
-		ITransportClient ITransportConfiguration.Connection => _transportClient;
+		TransportClient ITransportConfiguration.Connection => _transportClient;
 		IProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
 		int ITransportConfiguration.ConnectionLimit => _transportClientLimit;
 		NodePool ITransportConfiguration.NodePool => _nodePool;
@@ -231,7 +231,7 @@ namespace Elastic.Transport
 		TimeSpan? ITransportConfiguration.MaxDeadTimeout => _maxDeadTimeout;
 		int? ITransportConfiguration.MaxRetries => _maxRetries;
 		TimeSpan? ITransportConfiguration.MaxRetryTimeout => _maxRetryTimeout;
-		IMemoryStreamFactory ITransportConfiguration.MemoryStreamFactory => _memoryStreamFactory;
+		MemoryStreamFactory ITransportConfiguration.MemoryStreamFactory => _memoryStreamFactory;
 
 		Func<Node, bool> ITransportConfiguration.NodePredicate => _nodePredicate;
 		Action<ApiCallDetails> ITransportConfiguration.OnRequestCompleted => _completedRequestHandler;
@@ -449,7 +449,7 @@ namespace Elastic.Transport
 		public T TransferEncodingChunked(bool transferEncodingChunked = true) => Assign(transferEncodingChunked, (a, v) => a._transferEncodingChunked = v);
 
 		/// <inheritdoc cref="ITransportConfiguration.MemoryStreamFactory"/>
-		public T MemoryStreamFactory(IMemoryStreamFactory memoryStreamFactory) => Assign(memoryStreamFactory, (a, v) => a._memoryStreamFactory = v);
+		public T MemoryStreamFactory(MemoryStreamFactory memoryStreamFactory) => Assign(memoryStreamFactory, (a, v) => a._memoryStreamFactory = v);
 
 		/// <inheritdoc cref="ITransportConfiguration.EnableTcpStats"/>>
 		public T EnableTcpStats(bool enableTcpStats = true) => Assign(enableTcpStats, (a, v) => a._enableTcpStats = v);
@@ -477,6 +477,5 @@ namespace Elastic.Transport
 				return GlobalQueryStringParameters(new NameValueCollection { { key, "true" } });
 			return (T)this;
 		}
-
 	}
 }

@@ -38,7 +38,7 @@ namespace Elastic.Transport
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
 		public Transport(TransportConfiguration configurationValues,
-			IDateTimeProvider dateTimeProvider = null, IMemoryStreamFactory memoryStreamFactory = null
+			DateTimeProvider dateTimeProvider = null, MemoryStreamFactory memoryStreamFactory = null
 		)
 			: base(configurationValues, null, dateTimeProvider, memoryStreamFactory)
 		{
@@ -54,8 +54,8 @@ namespace Elastic.Transport
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
 		internal Transport(TransportConfiguration configurationValues,
-			IRequestPipelineFactory<TransportConfiguration> pipelineProvider = null,
-			IDateTimeProvider dateTimeProvider = null, IMemoryStreamFactory memoryStreamFactory = null
+			RequestPipelineFactory<TransportConfiguration> pipelineProvider = null,
+			DateTimeProvider dateTimeProvider = null, MemoryStreamFactory memoryStreamFactory = null
 		)
 			: base(configurationValues, pipelineProvider, dateTimeProvider, memoryStreamFactory)
 		{
@@ -88,8 +88,8 @@ namespace Elastic.Transport
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
 		public Transport(
 			TConfiguration configurationValues,
-			IDateTimeProvider dateTimeProvider = null,
-			IMemoryStreamFactory memoryStreamFactory = null)
+			DateTimeProvider dateTimeProvider = null,
+			MemoryStreamFactory memoryStreamFactory = null)
 				: this(configurationValues, null, dateTimeProvider, memoryStreamFactory) { }
 
 		/// <summary>
@@ -103,9 +103,9 @@ namespace Elastic.Transport
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
 		public Transport(
 			TConfiguration configurationValues,
-			IRequestPipelineFactory<TConfiguration> pipelineProvider = null,
-			IDateTimeProvider dateTimeProvider = null,
-			IMemoryStreamFactory memoryStreamFactory = null
+			RequestPipelineFactory<TConfiguration> pipelineProvider = null,
+			DateTimeProvider dateTimeProvider = null,
+			MemoryStreamFactory memoryStreamFactory = null
 		)
 		{
 			configurationValues.ThrowIfNull(nameof(configurationValues));
@@ -116,14 +116,14 @@ namespace Elastic.Transport
 
 			_productRegistration = configurationValues.ProductRegistration;
 			Settings = configurationValues;
-			PipelineProvider = pipelineProvider ?? new RequestPipelineFactory<TConfiguration>();
-			DateTimeProvider = dateTimeProvider ?? Elastic.Transport.DateTimeProvider.Default;
+			PipelineProvider = pipelineProvider ?? new DefaultRequestPipelineFactory<TConfiguration>();
+			DateTimeProvider = dateTimeProvider ?? Elastic.Transport.DefaultDateTimeProvider.Default;
 			MemoryStreamFactory = memoryStreamFactory ?? configurationValues.MemoryStreamFactory;
 		}
 
-		private IDateTimeProvider DateTimeProvider { get; }
-		private IMemoryStreamFactory MemoryStreamFactory { get; }
-		private IRequestPipelineFactory<TConfiguration> PipelineProvider { get; }
+		private DateTimeProvider DateTimeProvider { get; }
+		private MemoryStreamFactory MemoryStreamFactory { get; }
+		private RequestPipelineFactory<TConfiguration> PipelineProvider { get; }
 
 		/// <inheritdoc cref="ITransport{TConnectionSettings}.Settings" />
 		public TConfiguration Settings { get; }
@@ -346,7 +346,7 @@ namespace Elastic.Transport
 			IEnumerable<PipelineException> seenExceptions)
 			where TResponse : TransportResponse, new()
 		{
-			var callDetails = response?.ApiCallDetails ?? seenExceptions.LastOrDefault(e => e.ApiCall != null)?.ApiCall;
+			var callDetails = response?.ApiCallDetails ?? seenExceptions.LastOrDefault(e => e.Response.ApiCallDetails != null)?.Response.ApiCallDetails;
 			return callDetails;
 		}
 
@@ -359,7 +359,7 @@ namespace Elastic.Transport
 				//set it to the TransportException we created for the bad response
 				if (clientException != null && a.OriginalException == null)
 					a.OriginalException = clientException;
-				//On .NET Core the ITransportClient implementation throws exceptions on bad responses
+				//On .NET Core the TransportClient implementation throws exceptions on bad responses
 				//This causes it to behave differently to .NET FULL. We already wrapped the WebException
 				//under TransportException and it exposes way more information as part of it's
 				//exception message e.g the the root cause of the server error body.

@@ -12,7 +12,7 @@ namespace Elastic.Transport
 	/// <summary>
 	/// Represents a unique, case-insensitive, immutable collection of header names.
 	/// </summary>
-	public struct HeadersList : IEnumerable<string>
+	public readonly struct HeadersList : IEnumerable<string>
 	{
 		private readonly List<string> _headers;
 

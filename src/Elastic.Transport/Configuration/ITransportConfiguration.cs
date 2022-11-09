@@ -15,7 +15,7 @@ namespace Elastic.Transport
 {
 	/// <summary>
 	/// All the transport configuration that you as the user can use to steer the behavior of the <see cref="ITransport{TConnectionSettings}"/> and all the components such
-	/// as <see cref="ITransportClient"/> <see cref="NodePool"/> and <see cref="Serializer"/>.
+	/// as <see cref="TransportClient"/> <see cref="NodePool"/> and <see cref="Serializer"/>.
 	/// </summary>
 	public interface ITransportConfiguration : IDisposable
 	{
@@ -32,18 +32,18 @@ namespace Elastic.Transport
 		X509CertificateCollection ClientCertificates { get; }
 
 		/// <summary> The connection abstraction behind which all actual IO happens</summary>
-		ITransportClient Connection { get; }
+		TransportClient Connection { get; }
 
 		/// <summary>
 		/// Limits the number of concurrent connections that can be opened to an endpoint. Defaults to 80 (see
 		/// <see cref="TransportConfiguration.DefaultConnectionLimit" />).
 		/// <para>
 		/// For Desktop CLR, this setting applies to the DefaultConnectionLimit property on the  ServicePointManager object when creating
-		/// ServicePoint objects, affecting the default <see cref="ITransportClient" /> implementation.
+		/// ServicePoint objects, affecting the default <see cref="TransportClient" /> implementation.
 		/// </para>
 		/// <para>
 		/// For Core CLR, this setting applies to the MaxConnectionsPerServer property on the HttpClientHandler instances used by the HttpClient
-		/// inside the default <see cref="ITransportClient" /> implementation
+		/// inside the default <see cref="TransportClient" /> implementation
 		/// </para>
 		/// </summary>
 		int ConnectionLimit { get; }
@@ -128,7 +128,7 @@ namespace Elastic.Transport
 		TimeSpan? MaxRetryTimeout { get; }
 
 		/// <summary> Provides a memory stream factory</summary>
-		IMemoryStreamFactory MemoryStreamFactory { get; }
+		MemoryStreamFactory MemoryStreamFactory { get; }
 
 		/// <summary>
 		/// Register a predicate to select which nodes that you want to execute API calls on. Note that sniffing requests omit this predicate and

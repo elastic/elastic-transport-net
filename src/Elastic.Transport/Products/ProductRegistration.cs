@@ -64,27 +64,27 @@ namespace Elastic.Transport.Products
 		}
 
 		/// <inheritdoc cref="IProductRegistration.CreateSniffRequestData"/>
-		public RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings, IMemoryStreamFactory memoryStreamFactory) =>
+		public RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings, MemoryStreamFactory memoryStreamFactory) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.SniffAsync"/>
-		public Task<Tuple<ApiCallDetails, IReadOnlyCollection<Node>>> SniffAsync(ITransportClient transportClient, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) =>
+		public Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(TransportClient transportClient, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.Sniff"/>
-		public Tuple<ApiCallDetails, IReadOnlyCollection<Node>> Sniff(ITransportClient connection, bool forceSsl, RequestData requestData) =>
+		public Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(TransportClient connection, bool forceSsl, RequestData requestData) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.CreatePingRequestData"/>
-		public RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, IMemoryStreamFactory memoryStreamFactory) =>
+		public RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, MemoryStreamFactory memoryStreamFactory) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.PingAsync"/>
-		public Task<ApiCallDetails> PingAsync(ITransportClient connection, RequestData pingData, CancellationToken cancellationToken) =>
+		public Task<TransportResponse> PingAsync(TransportClient connection, RequestData pingData, CancellationToken cancellationToken) =>
 			throw new NotImplementedException();
 
 		/// <inheritdoc cref="IProductRegistration.Ping"/>
-		public ApiCallDetails Ping(ITransportClient connection, RequestData pingData) =>
+		public TransportResponse Ping(TransportClient connection, RequestData pingData) =>
 			throw new NotImplementedException();
 	}
 }

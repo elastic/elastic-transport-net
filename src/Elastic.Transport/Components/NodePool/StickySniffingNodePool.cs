@@ -17,11 +17,11 @@ namespace Elastic.Transport
 	public sealed class StickySniffingNodePool : SniffingNodePool
 	{
 		/// <inheritdoc cref="StickySniffingNodePool"/>
-		public StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
+		public StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float> nodeScorer, DateTimeProvider dateTimeProvider = null)
 			: base(uris.Select(uri => new Node(uri)), nodeScorer ?? DefaultNodeScore, dateTimeProvider) { }
 
 		/// <inheritdoc cref="StickySniffingNodePool"/>
-		public StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, IDateTimeProvider dateTimeProvider = null)
+		public StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, DateTimeProvider dateTimeProvider = null)
 			: base(nodes, nodeScorer ?? DefaultNodeScore, dateTimeProvider) { }
 
 		/// <inheritdoc cref="NodePool.SupportsPinging"/>

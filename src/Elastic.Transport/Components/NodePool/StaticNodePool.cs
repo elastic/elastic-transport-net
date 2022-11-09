@@ -28,15 +28,15 @@ namespace Elastic.Transport
 		private readonly Func<Node, float> _nodeScorer;
 
 		/// <inheritdoc cref="StaticNodePool"/>
-		public StaticNodePool(IEnumerable<Uri> uris, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
+		public StaticNodePool(IEnumerable<Uri> uris, bool randomize = true, DateTimeProvider dateTimeProvider = null)
 			: this(uris.Select(uri => new Node(uri)), randomize, null, dateTimeProvider) { }
 
 		/// <inheritdoc cref="StaticNodePool"/>
-		public StaticNodePool(IEnumerable<Node> nodes, bool randomize = true, IDateTimeProvider dateTimeProvider = null)
+		public StaticNodePool(IEnumerable<Node> nodes, bool randomize = true, DateTimeProvider dateTimeProvider = null)
 			: this(nodes, randomize, null, dateTimeProvider) { }
 
 		/// <inheritdoc cref="StaticNodePool"/>
-		protected StaticNodePool(IEnumerable<Node> nodes, bool randomize, int? randomizeSeed = null, IDateTimeProvider dateTimeProvider = null)
+		protected StaticNodePool(IEnumerable<Node> nodes, bool randomize, int? randomizeSeed = null, DateTimeProvider dateTimeProvider = null)
 		{
 			Randomize = randomize;
 			Random = !randomize || !randomizeSeed.HasValue
@@ -48,17 +48,17 @@ namespace Elastic.Transport
 
 		//this constructor is protected because nodeScorer only makes sense on subclasses that support reseeding otherwise just manually sort `nodes` before instantiating.
 		/// <inheritdoc cref="StaticNodePool"/>
-		protected StaticNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer = null, IDateTimeProvider dateTimeProvider = null)
+		protected StaticNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer = null, DateTimeProvider dateTimeProvider = null)
 		{
 			_nodeScorer = nodeScorer;
 			Initialize(nodes, dateTimeProvider);
 		}
 
-		private void Initialize(IEnumerable<Node> nodes, IDateTimeProvider dateTimeProvider)
+		private void Initialize(IEnumerable<Node> nodes, DateTimeProvider dateTimeProvider)
 		{
 			var nodesProvided = nodes?.ToList() ?? throw new ArgumentNullException(nameof(nodes));
 			nodesProvided.ThrowIfEmpty(nameof(nodes));
-			DateTimeProvider = dateTimeProvider ?? Elastic.Transport.DateTimeProvider.Default;
+			DateTimeProvider = dateTimeProvider ?? Elastic.Transport.DefaultDateTimeProvider.Default;
 
 			string scheme = null;
 			foreach (var node in nodesProvided)
@@ -98,7 +98,7 @@ namespace Elastic.Transport
 
 		/// <summary>
 		/// A window into <see cref="InternalNodes"/> that only selects the nodes considered alive at the time of calling
-		/// this property. Taking into account <see cref="IDateTimeProvider.Now"/> and <see cref="Node.DeadUntil"/>
+		/// this property. Taking into account <see cref="DateTimeProvider.Now"/> and <see cref="Node.DeadUntil"/>
 		/// </summary>
 		protected IReadOnlyList<Node> AliveNodes
 		{
@@ -111,8 +111,8 @@ namespace Elastic.Transport
 			}
 		}
 
-		/// <inheritdoc cref="IDateTimeProvider"/>>
-		protected IDateTimeProvider DateTimeProvider { get; private set; }
+		/// <inheritdoc cref="DateTimeProvider"/>>
+		protected DateTimeProvider DateTimeProvider { get; private set; }
 
 		/// <summary>
 		/// The list of nodes we are operating over. This is protected so that subclasses that DO implement <see cref="SupportsReseeding"/>

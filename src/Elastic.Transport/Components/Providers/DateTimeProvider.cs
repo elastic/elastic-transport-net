@@ -6,24 +6,23 @@ using System;
 
 namespace Elastic.Transport
 {
-	/// <inheritdoc cref="IDateTimeProvider"/>
-	public class DateTimeProvider : IDateTimeProvider
+	/// <summary>
+	/// An abstraction to provide access to the current <see cref="DateTime"/>. This abstraction allows time to be tested within
+	/// the transport.
+	/// </summary>
+	public abstract class DateTimeProvider
 	{
-		/// <summary> A static instance to reuse as <see cref="DateTimeProvider"/> is stateless </summary>
-		public static readonly DateTimeProvider Default = new();
-		private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
-		private static readonly TimeSpan MaximumTimeout = TimeSpan.FromMinutes(30);
+		internal DateTimeProvider() { }
 
-		/// <inheritdoc cref="IDateTimeProvider.DeadTime"/>
-		public virtual DateTime DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout)
-		{
-			var timeout = minDeadTimeout.GetValueOrDefault(DefaultTimeout);
-			var maxTimeout = maxDeadTimeout.GetValueOrDefault(MaximumTimeout);
-			var milliSeconds = Math.Min(timeout.TotalMilliseconds * 2 * Math.Pow(2, attempts * 0.5 - 1), maxTimeout.TotalMilliseconds);
-			return Now().AddMilliseconds(milliSeconds);
-		}
+		/// <summary> The current date time </summary>
+		public abstract DateTime Now();
 
-		/// <inheritdoc cref="IDateTimeProvider.Now"/>
-		public virtual DateTime Now() => DateTime.UtcNow;
+		/// <summary>
+		/// Calculate the dead time for a node based on the number of attempts.
+		/// </summary>
+		/// <param name="attempts">The number of attempts on the node</param>
+		/// <param name="minDeadTimeout">The initial dead time as configured by <see cref="ITransportConfiguration.DeadTimeout"/></param>
+		/// <param name="maxDeadTimeout">The configured maximum dead timeout as configured by <see cref="ITransportConfiguration.MaxDeadTimeout"/></param>
+		public abstract DateTime DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout);
 	}
 }
