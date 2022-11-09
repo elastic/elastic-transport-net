@@ -323,7 +323,7 @@ namespace Elastic.Transport
 		private static void ThrowUnexpectedTransportException<TResponse>(Exception killerException,
 			List<PipelineException> seenExceptions,
 			RequestData requestData,
-			TResponse response, IRequestPipeline pipeline
+			TResponse response, RequestPipeline pipeline
 		) where TResponse : TransportResponse, new() =>
 			throw new UnexpectedTransportException(killerException, seenExceptions)
 			{
@@ -331,7 +331,7 @@ namespace Elastic.Transport
 			};
 
 		private static void HandlePipelineException<TResponse>(
-			ref TResponse response, PipelineException ex, IRequestPipeline pipeline, Node node,
+			ref TResponse response, PipelineException ex, RequestPipeline pipeline, Node node,
 			ICollection<PipelineException> seenExceptions
 		)
 			where TResponse : TransportResponse, new()
@@ -341,7 +341,7 @@ namespace Elastic.Transport
 			seenExceptions.Add(ex);
 		}
 
-		private TResponse FinalizeResponse<TResponse>(RequestData requestData, IRequestPipeline pipeline,
+		private TResponse FinalizeResponse<TResponse>(RequestData requestData, RequestPipeline pipeline,
 			List<PipelineException> seenExceptions,
 			TResponse response
 		) where TResponse : TransportResponse, new()
@@ -390,7 +390,7 @@ namespace Elastic.Transport
 			if (data != null && clientException != null && data.ThrowExceptions) throw clientException;
 		}
 
-		private void Ping(IRequestPipeline pipeline, Node node)
+		private void Ping(RequestPipeline pipeline, Node node)
 		{
 			try
 			{
@@ -404,7 +404,7 @@ namespace Elastic.Transport
 			}
 		}
 
-		private async Task PingAsync(IRequestPipeline pipeline, Node node, CancellationToken cancellationToken)
+		private async Task PingAsync(RequestPipeline pipeline, Node node, CancellationToken cancellationToken)
 		{
 			try
 			{

@@ -27,12 +27,12 @@ namespace Elastic.Transport
 		/// <param name="cancellationToken"></param>
 		/// <typeparam name="TResponse">
 		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-		/// for <see cref="IRequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
+		/// for <see cref="RequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </typeparam>
 		/// <returns>
 		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-		/// for <see cref="IRequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
+		/// for <see cref="RequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </returns>
 		public abstract Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
@@ -44,12 +44,12 @@ namespace Elastic.Transport
 		/// <param name="requestData">An object describing where and how to perform the IO call</param>
 		/// <typeparam name="TResponse">
 		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-		/// for <see cref="IRequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
+		/// for <see cref="RequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </typeparam>
 		/// <returns>
 		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-		/// for <see cref="IRequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
+		/// for <see cref="RequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </returns>
 		public abstract TResponse Request<TResponse>(RequestData requestData)

@@ -84,20 +84,20 @@ namespace Elastic.Transport.Diagnostics
 			public string SourceName { get; } = "RequestPipeline";
 
 			/// <summary>
-			/// Start and stop event around <see cref="IRequestPipeline.CallProductEndpoint{TResponse}"/> invocations
+			/// Start and stop event around <see cref="RequestPipeline.CallProductEndpoint{TResponse}"/> invocations
 			/// </summary>
 			public string CallProductEndpoint { get; } = nameof(CallProductEndpoint);
 
-			/// <summary> Start and stop event around <see cref="IRequestPipeline.Ping"/> invocations</summary>
+			/// <summary> Start and stop event around <see cref="RequestPipeline.Ping"/> invocations</summary>
 			public string Ping { get; } = nameof(Ping);
 
-			/// <summary> Start and stop event around <see cref="IRequestPipeline.Sniff"/> invocations</summary>
+			/// <summary> Start and stop event around <see cref="RequestPipeline.Sniff"/> invocations</summary>
 			public string Sniff { get; } = nameof(Sniff);
 		}
 
 		/// <summary>
 		/// Reference to the diagnostic source name that allows you to listen to all decisions that
-		/// <see cref="IRequestPipeline"/> makes. Events it emits are the names on <see cref="AuditEvent"/>
+		/// <see cref="RequestPipeline"/> makes. Events it emits are the names on <see cref="AuditEvent"/>
 		/// </summary>
 		public class AuditDiagnosticKeys : IDiagnosticsKeys
 		{

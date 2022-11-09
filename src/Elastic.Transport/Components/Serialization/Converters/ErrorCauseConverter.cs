@@ -137,7 +137,6 @@ namespace Elastic.Transport
 			return errorCause;
 		}
 
-
 		private static int? ReadIntFromString(ref Utf8JsonReader reader, JsonSerializerOptions options)
 		{
 			reader.Read();

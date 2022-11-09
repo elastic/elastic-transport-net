@@ -9,7 +9,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 {
 	/// <summary> Represents a failure that occurred on a shard involved in the request </summary>
 	[DataContract]
-	public class ShardFailure
+	public sealed class ShardFailure
 	{
 		/// <summary> This index this shard belongs to </summary>
 		[JsonPropertyName("index")]

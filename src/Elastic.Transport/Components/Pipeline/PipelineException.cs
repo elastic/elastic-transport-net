@@ -7,7 +7,7 @@ using System;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A pipeline exception is throw when ever a known failing exit point is reached in <see cref="RequestPipeline{TConfiguration}"/>
+	/// A pipeline exception is throw when ever a known failing exit point is reached in <see cref="DefaultRequestPipeline{TConfiguration}"/>
 	/// <para>See <see cref="PipelineFailure"/> for known exits points</para>
 	/// </summary>
 	public class PipelineException : Exception

@@ -7,7 +7,7 @@ namespace Elastic.Transport.Diagnostics.Auditing
 	/// <summary>
 	/// Enumeration of different auditable events that can occur in the execution of
 	/// <see cref="HttpTransport.RequestAsync{TResponse}"/> as modeled by
-	/// <see cref="IRequestPipeline"/>.
+	/// <see cref="RequestPipeline"/>.
 	/// </summary>
 	public enum AuditEvent
 	{
@@ -42,12 +42,12 @@ namespace Elastic.Transport.Diagnostics.Auditing
 		AllNodesDead,
 
 		/// <summary>
-		/// A call into <see cref="IRequestPipeline.CallProductEndpointAsync{TResponse}"/> resulted in a failure
+		/// A call into <see cref="RequestPipeline.CallProductEndpointAsync{TResponse}"/> resulted in a failure
 		/// </summary>
 		BadResponse,
 
 		/// <summary>
-		/// A call into <see cref="IRequestPipeline.CallProductEndpointAsync{TResponse}"/> resulted in a success
+		/// A call into <see cref="RequestPipeline.CallProductEndpointAsync{TResponse}"/> resulted in a success
 		/// </summary>
 		HealthyResponse,
 
@@ -66,7 +66,7 @@ namespace Elastic.Transport.Diagnostics.Auditing
 		MaxRetriesReached,
 
 		/// <summary>
-		/// A call into <see cref="IRequestPipeline.CallProductEndpointAsync{TResponse}"/> failed before a response was
+		/// A call into <see cref="RequestPipeline.CallProductEndpointAsync{TResponse}"/> failed before a response was
 		/// received.
 		/// </summary>
 		BadRequest,

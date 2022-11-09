@@ -13,7 +13,7 @@ namespace Elastic.Transport
 	public abstract class HttpTransport
 	{
 		/// <summary>
-		/// Perform a request into the products cluster using <see cref="IRequestPipeline" />'s workflow.
+		/// Perform a request into the products cluster using <see cref="RequestPipeline" />'s workflow.
 		/// </summary>
 		public abstract TResponse Request<TResponse>(
 			HttpMethod method,

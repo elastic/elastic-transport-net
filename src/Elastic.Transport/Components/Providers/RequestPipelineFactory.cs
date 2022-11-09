@@ -4,14 +4,14 @@
 
 namespace Elastic.Transport
 {
-	/// <summary> A factory that creates instances of <see cref="IRequestPipeline"/>, this factory exists so that transport can be tested. </summary>
+	/// <summary> A factory that creates instances of <see cref="RequestPipeline"/>, this factory exists so that transport can be tested. </summary>
 	public abstract class RequestPipelineFactory<TConfiguration>
 		where TConfiguration : class, ITransportConfiguration
 	{
 		internal RequestPipelineFactory() { }
 
-		/// <summary> Create an instance of <see cref="IRequestPipeline"/> </summary>
-		public abstract IRequestPipeline Create(TConfiguration configuration, DateTimeProvider dateTimeProvider,
+		/// <summary> Create an instance of <see cref="RequestPipeline"/> </summary>
+		public abstract RequestPipeline Create(TConfiguration configuration, DateTimeProvider dateTimeProvider,
 			MemoryStreamFactory memoryStreamFactory, RequestParameters requestParameters);
 	}
 }

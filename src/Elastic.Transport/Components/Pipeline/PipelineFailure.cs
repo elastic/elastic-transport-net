@@ -7,7 +7,7 @@ using Elastic.Transport.Products;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// A failure in <see cref="RequestPipeline{TConfiguration}"/>'s workflow that caused it to end prematurely.
+	/// A failure in <see cref="DefaultRequestPipeline{TConfiguration}"/>'s workflow that caused it to end prematurely.
 	/// </summary>
 	public enum PipelineFailure
 	{
@@ -43,7 +43,7 @@ namespace Elastic.Transport
 		MaxRetriesReached,
 
 		/// <summary>
-		/// An exception occurred during <see cref="RequestPipeline{TConfiguration}"/> that could not be handled
+		/// An exception occurred during <see cref="DefaultRequestPipeline{TConfiguration}"/> that could not be handled
 		/// </summary>
 		Unexpected,
 
