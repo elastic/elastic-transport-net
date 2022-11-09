@@ -10,32 +10,32 @@ using System.Threading.Tasks;
 namespace Elastic.Transport.Products
 {
 	/// <summary>
-	/// When <see cref="ITransport.Request{TResponse}"/> interfaces with a product some parts are
+	/// When <see cref="HttpTransport.Request{TResponse}"/> interfaces with a product some parts are
 	/// bespoke for each product. This interface defines the contract products will have to implement in order to fill
 	/// in these bespoke parts.
-	/// <para>The expectation is that unless you instantiate <see cref="Transport{TConnectionSettings}"/>
+	/// <para>The expectation is that unless you instantiate <see cref="DefaultHttpTransport{TConnectionSettings}"/>
 	/// directly clients that utilize transport will fill in this dependency
 	/// </para>
 	/// <para>
-	/// If you do want to use a bare-bones <see cref="Transport{TConnectionSettings}"/> you can use
+	/// If you do want to use a bare-bones <see cref="DefaultHttpTransport{TConnectionSettings}"/> you can use
 	/// <see cref="ProductRegistration.Default"/>
 	/// </para>
 	/// </summary>
 	public interface IProductRegistration
 	{
 		/// <summary>
-		/// The name of the current product utilizing <see cref="ITransport{TConnectionSettings}"/>
+		/// The name of the current product utilizing <see cref="HttpTransport{TConnectionSettings}"/>
 		/// <para>This name makes its way into the transport diagnostics sources and the default user agent string</para>
 		/// </summary>
 		string Name { get; }
 
 		/// <summary>
-		/// Whether the product <see cref="ITransport{TConnectionSettings}"/> will call out to supports ping endpoints
+		/// Whether the product <see cref="HttpTransport{TConnectionSettings}"/> will call out to supports ping endpoints
 		/// </summary>
 		bool SupportsPing { get; }
 
 		/// <summary>
-		/// Whether the product <see cref="ITransport{TConnectionSettings}"/> will call out to supports sniff endpoints that return
+		/// Whether the product <see cref="HttpTransport{TConnectionSettings}"/> will call out to supports sniff endpoints that return
 		/// information about available nodes
 		/// </summary>
 		bool SupportsSniff { get; }

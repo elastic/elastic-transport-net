@@ -24,7 +24,7 @@ namespace Elastic.Transport
 		public PipelineFailure FailureReason { get; }
 
 		/// <summary>
-		/// This exception is one the <see cref="ITransport{TConnectionSettings}"/> can handle
+		/// This exception is one the <see cref="HttpTransport{TConnectionSettings}"/> can handle
 		/// <para><see cref="PipelineFailure.BadRequest"/></para>
 		/// <para><see cref="PipelineFailure.BadResponse"/></para>
 		/// <para><see cref="PipelineFailure.PingFailure"/></para>

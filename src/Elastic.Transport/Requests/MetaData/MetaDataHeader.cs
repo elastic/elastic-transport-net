@@ -24,7 +24,7 @@ namespace Elastic.Transport
 		public MetaDataHeader(VersionInfo version, string serviceIdentifier, bool isAsync)
 		{
 			if (serviceIdentifier != "et")
-				TransportVersion = ReflectionVersionInfo.Create<ITransport>().ToString();
+				TransportVersion = ReflectionVersionInfo.Create<HttpTransport>().ToString();
 			
 			ClientVersion = version.ToString();
 			RuntimeVersion = new RuntimeVersionInfo().ToString();

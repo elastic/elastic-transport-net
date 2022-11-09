@@ -14,7 +14,7 @@ using Elastic.Transport.Products;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// All the transport configuration that you as the user can use to steer the behavior of the <see cref="ITransport{TConnectionSettings}"/> and all the components such
+	/// All the transport configuration that you as the user can use to steer the behavior of the <see cref="HttpTransport{TConnectionSettings}"/> and all the components such
 	/// as <see cref="TransportClient"/> <see cref="NodePool"/> and <see cref="Serializer"/>.
 	/// </summary>
 	public interface ITransportConfiguration : IDisposable

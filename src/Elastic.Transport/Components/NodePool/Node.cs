@@ -10,7 +10,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// Represents an endpoint <see cref="Uri"/> with additional associated metadata on which the <see cref="ITransport{TConnectionSettings}"/> can act.
+	/// Represents an endpoint <see cref="Uri"/> with additional associated metadata on which the <see cref="HttpTransport{TConnectionSettings}"/> can act.
 	/// </summary>
 	public sealed class Node : IEquatable<Node>
 	{
@@ -65,7 +65,7 @@ namespace Elastic.Transport
 		public Uri Uri { get; }
 
 		/// <summary>
-		/// Indicates whether the node is alive. <see cref="ITransport{TConnectionSettings}"/> can take nodes out of rotation by calling
+		/// Indicates whether the node is alive. <see cref="HttpTransport{TConnectionSettings}"/> can take nodes out of rotation by calling
 		/// <see cref="MarkDead"/> on <see cref="Node"/>.
 		/// </summary>
 		public bool IsAlive { get; private set; }

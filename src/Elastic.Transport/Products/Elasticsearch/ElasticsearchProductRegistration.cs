@@ -14,7 +14,7 @@ namespace Elastic.Transport.Products.Elasticsearch
 	/// <summary>
 	/// An implementation of <see cref="IProductRegistration"/> that fills in the bespoke implementations
 	/// for Elasticsearch so that <see cref="IRequestPipeline"/> knows how to ping and sniff if we setup
-	/// <see cref="ITransport{TConnectionSettings}"/> to talk to Elasticsearch
+	/// <see cref="HttpTransport{TConnectionSettings}"/> to talk to Elasticsearch
 	/// </summary>
 	public class ElasticsearchProductRegistration : IProductRegistration
 	{

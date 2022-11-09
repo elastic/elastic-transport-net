@@ -16,8 +16,8 @@ using System.Net;
 
 namespace Elastic.Transport
 {
-	/// <inheritdoc cref="ITransport{TConnectionSettings}" />
-	public class Transport : Transport<TransportConfiguration>
+	/// <inheritdoc cref="HttpTransport{TConnectionSettings}" />
+	public sealed class DefaultHttpTransport : DefaultHttpTransport<TransportConfiguration>
 	{
 		/// <summary>
 		///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
@@ -25,7 +25,7 @@ namespace Elastic.Transport
 		///     nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
-		public Transport(TransportConfiguration configurationValues) : base(configurationValues)
+		public DefaultHttpTransport(TransportConfiguration configurationValues) : base(configurationValues)
 		{
 		}
 
@@ -37,7 +37,7 @@ namespace Elastic.Transport
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-		public Transport(TransportConfiguration configurationValues,
+		public DefaultHttpTransport(TransportConfiguration configurationValues,
 			DateTimeProvider dateTimeProvider = null, MemoryStreamFactory memoryStreamFactory = null
 		)
 			: base(configurationValues, null, dateTimeProvider, memoryStreamFactory)
@@ -53,7 +53,7 @@ namespace Elastic.Transport
 		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-		internal Transport(TransportConfiguration configurationValues,
+		internal DefaultHttpTransport(TransportConfiguration configurationValues,
 			RequestPipelineFactory<TransportConfiguration> pipelineProvider = null,
 			DateTimeProvider dateTimeProvider = null, MemoryStreamFactory memoryStreamFactory = null
 		)
@@ -62,8 +62,8 @@ namespace Elastic.Transport
 		}
 	}
 
-	/// <inheritdoc cref="ITransport{TConfiguration}" />
-	public class Transport<TConfiguration> : ITransport<TConfiguration>
+	/// <inheritdoc cref="HttpTransport{TConfiguration}" />
+	public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration>
 		where TConfiguration : class, ITransportConfiguration
 	{
 		private readonly IProductRegistration _productRegistration;
@@ -74,7 +74,7 @@ namespace Elastic.Transport
 		///     nodes
 		/// </summary>
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
-		public Transport(TConfiguration configurationValues) : this(configurationValues, null, null, null)
+		public DefaultHttpTransport(TConfiguration configurationValues) : this(configurationValues, null, null, null)
 		{
 		}
 
@@ -86,7 +86,7 @@ namespace Elastic.Transport
 		/// <param name="configurationValues">The connection settings to use for this transport</param>
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-		public Transport(
+		public DefaultHttpTransport(
 			TConfiguration configurationValues,
 			DateTimeProvider dateTimeProvider = null,
 			MemoryStreamFactory memoryStreamFactory = null)
@@ -101,7 +101,7 @@ namespace Elastic.Transport
 		/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 		/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 		/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-		public Transport(
+		public DefaultHttpTransport(
 			TConfiguration configurationValues,
 			RequestPipelineFactory<TConfiguration> pipelineProvider = null,
 			DateTimeProvider dateTimeProvider = null,
@@ -125,13 +125,22 @@ namespace Elastic.Transport
 		private MemoryStreamFactory MemoryStreamFactory { get; }
 		private RequestPipelineFactory<TConfiguration> PipelineProvider { get; }
 
-		/// <inheritdoc cref="ITransport{TConnectionSettings}.Settings" />
-		public TConfiguration Settings { get; }
+		/// <summary>
+		/// 
+		/// </summary>
+		public override TConfiguration Settings { get; }
 
-		/// <inheritdoc cref="ITransport.Request{TResponse}" />
-		public TResponse Request<TResponse>(HttpMethod method, string path, PostData data = null,
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="TResponse"></typeparam>
+		/// <param name="method"></param>
+		/// <param name="path"></param>
+		/// <param name="data"></param>
+		/// <param name="requestParameters"></param>
+		/// <returns></returns>
+		public override TResponse Request<TResponse>(HttpMethod method, string path, PostData data = null,
 			RequestParameters requestParameters = null)
-			where TResponse : TransportResponse, new()
 		{
 			using var pipeline =
 				PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
@@ -207,12 +216,20 @@ namespace Elastic.Transport
 			return FinalizeResponse(requestData, pipeline, seenExceptions, response);
 		}
 
-		/// <inheritdoc cref="ITransport.RequestAsync{TResponse}" />
-		public async Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path,
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="TResponse"></typeparam>
+		/// <param name="method"></param>
+		/// <param name="path"></param>
+		/// <param name="data"></param>
+		/// <param name="requestParameters"></param>
+		/// <param name="cancellationToken"></param>
+		/// <returns></returns>
+		/// <exception cref="UnexpectedTransportException"></exception>
+		public override async Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path,
 			PostData data = null, RequestParameters requestParameters = null,
-			CancellationToken cancellationToken = default
-		)
-			where TResponse : TransportResponse, new()
+			CancellationToken cancellationToken = default)
 		{
 			using var pipeline =
 				PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);

@@ -14,7 +14,7 @@ namespace Elastic.Transport
 {
 
 	/// <summary>
-	/// Exceptions that occur <see cref="ITransport.Request{TResponse}"/> are wrapped inside
+	/// Exceptions that occur <see cref="HttpTransport.Request{TResponse}"/> are wrapped inside
 	/// this exception. This is done to not lose valuable diagnostic information.
 	///
 	/// <para>
@@ -42,7 +42,7 @@ namespace Elastic.Transport
 
 		/// <summary>
 		/// The audit trail keeping track of what happened during the invocation of
-		/// <see cref="ITransport.Request{TResponse}"/> up until the moment of this exception
+		/// <see cref="HttpTransport.Request{TResponse}"/> up until the moment of this exception
 		/// </summary>
 		public IEnumerable<Audit> AuditTrail { get; internal set; }
 

@@ -8,14 +8,14 @@ using System.Threading.Tasks;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// Represents a transport you can call requests, it is recommended to implement <see cref="ITransport{TSettings}" />
+	/// Represents a transport you can call requests, it is recommended to implement <see cref="HttpTransport{TSettings}" />
 	/// </summary>
-	public interface ITransport
+	public abstract class HttpTransport
 	{
 		/// <summary>
 		/// Perform a request into the products cluster using <see cref="IRequestPipeline" />'s workflow.
 		/// </summary>
-		TResponse Request<TResponse>(
+		public abstract TResponse Request<TResponse>(
 			HttpMethod method,
 			string path,
 			PostData data = null,
@@ -23,7 +23,7 @@ namespace Elastic.Transport
 			where TResponse : TransportResponse, new();
 
 		/// <inheritdoc cref="Request{TResponse}" />
-		Task<TResponse> RequestAsync<TResponse>(
+		public abstract Task<TResponse> RequestAsync<TResponse>(
 			HttpMethod method,
 			string path,
 			PostData data = null,
@@ -36,12 +36,12 @@ namespace Elastic.Transport
 	/// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
 	/// different nodes
 	/// </summary>
-	public interface ITransport<out TConfiguration> : ITransport
-		where TConfiguration : ITransportConfiguration
+	public abstract class HttpTransport<TConfiguration> : HttpTransport
+		where TConfiguration : class, ITransportConfiguration
 	{
 		/// <summary>
 		/// The <see cref="ITransportConfiguration" /> in use by this transport instance
 		/// </summary>
-		TConfiguration Settings { get; }
+		public abstract TConfiguration Settings { get; }
 	}
 }

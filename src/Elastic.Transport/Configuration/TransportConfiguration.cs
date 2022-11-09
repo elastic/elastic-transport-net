@@ -22,7 +22,7 @@ using Elastic.Transport.Products;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// Allows you to control how <see cref="ITransport{TConnectionSettings}"/> behaves and where/how it connects to Elastic Stack products
+	/// Allows you to control how <see cref="HttpTransport{TConnectionSettings}"/> behaves and where/how it connects to Elastic Stack products
 	/// </summary>
 	public class TransportConfiguration : TransportConfigurationBase<TransportConfiguration>
 	{

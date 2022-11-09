@@ -21,7 +21,7 @@ namespace Elastic.Transport;
 /// </summary>
 public class LowLevelRequestResponseSerializer : Serializer
 {
-	//TODO explore removing this or make internal, this provides a path that circumvents the configured ITransportSerializer
+	//TODO explore removing this or make internal, this provides a path that circumvents the configured HttpTransportSerializer
 	/// <summary> Provides a static reusable reference to an instance of <see cref="LowLevelRequestResponseSerializer"/> to promote reuse </summary>
 	public static readonly LowLevelRequestResponseSerializer Instance = new();
 

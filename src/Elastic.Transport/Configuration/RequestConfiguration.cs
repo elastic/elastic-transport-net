@@ -11,7 +11,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// Allows you to inject per <see cref="ITransport.Request{TResponse}"/> overrides to the current <see cref="ITransportConfiguration"/>.
+	/// Allows you to inject per <see cref="HttpTransport.Request{TResponse}"/> overrides to the current <see cref="ITransportConfiguration"/>.
 	/// </summary>
 	public interface IRequestConfiguration
 	{

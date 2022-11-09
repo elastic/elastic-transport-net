@@ -14,7 +14,7 @@ namespace Elastic.Transport
 	/// Unlike the name might suggest this component is not responsible for IO level pooling. For that we rely on <see cref="TransportClient"/> abstracting away
 	/// the connection IO pooling.
 	/// </para>
-	/// <para>This interface signals the current connection strategy to <see cref="ITransport{TConnectionSettings}"/>.</para>
+	/// <para>This interface signals the current connection strategy to <see cref="HttpTransport{TConnectionSettings}"/>.</para>
 	/// </summary>
 	public abstract class NodePool : IDisposable
 	{

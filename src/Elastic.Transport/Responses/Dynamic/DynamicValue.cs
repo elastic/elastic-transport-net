@@ -31,7 +31,7 @@ namespace Elastic.Transport
 	/// <see cref="Get{T}"/> which support an xpath'esque syntax to fish for values in the returned json.
 	/// </para>
 	/// </summary>
-	public class DynamicValue : DynamicObject, IEquatable<DynamicValue>, IConvertible, IReadOnlyCollection<DynamicValue>
+	public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, IConvertible, IReadOnlyCollection<DynamicValue>
 	{
 		private readonly object _value;
 

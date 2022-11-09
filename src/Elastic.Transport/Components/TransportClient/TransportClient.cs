@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 namespace Elastic.Transport
 {
 	/// <summary>
-	/// This interface abstracts the actual IO <see cref="ITransport{TConnectionSettings}"/> performs.
-	/// <para><see cref="ITransport{TConnectionSettings}"/> holds a single instance of this class</para>
+	/// This interface abstracts the actual IO <see cref="HttpTransport{TConnectionSettings}"/> performs.
+	/// <para><see cref="HttpTransport{TConnectionSettings}"/> holds a single instance of this class</para>
 	/// <para>The instance to be used is provided to the constructor of <see cref="ITransportConfiguration"/> implementations</para>
 	/// <para>Where its exposed under <see cref="ITransportConfiguration.Connection"/></para>
 	/// </summary>
@@ -27,12 +27,12 @@ namespace Elastic.Transport
 		/// <param name="cancellationToken"></param>
 		/// <typeparam name="TResponse">
 		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-		/// for <see cref="IRequestPipeline"/> and <see cref="ITransport{TConnectionSettings}"/> to determine what to
+		/// for <see cref="IRequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </typeparam>
 		/// <returns>
 		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-		/// for <see cref="IRequestPipeline"/> and <see cref="ITransport{TConnectionSettings}"/> to determine what to
+		/// for <see cref="IRequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </returns>
 		public abstract Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
@@ -44,12 +44,12 @@ namespace Elastic.Transport
 		/// <param name="requestData">An object describing where and how to perform the IO call</param>
 		/// <typeparam name="TResponse">
 		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-		/// for <see cref="IRequestPipeline"/> and <see cref="ITransport{TConnectionSettings}"/> to determine what to
+		/// for <see cref="IRequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </typeparam>
 		/// <returns>
 		/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-		/// for <see cref="IRequestPipeline"/> and <see cref="ITransport{TConnectionSettings}"/> to determine what to
+		/// for <see cref="IRequestPipeline"/> and <see cref="HttpTransport{TConnectionSettings}"/> to determine what to
 		/// do with the response
 		/// </returns>
 		public abstract TResponse Request<TResponse>(RequestData requestData)

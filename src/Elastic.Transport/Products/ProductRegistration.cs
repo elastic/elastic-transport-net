@@ -22,7 +22,7 @@ namespace Elastic.Transport.Products
 		/// <summary>
 		/// 
 		/// </summary>
-		public ProductRegistration() => _metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(ITransport), "et");
+		public ProductRegistration() => _metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(HttpTransport), "et");
 
 		/// <summary> A static instance of <see cref="ProductRegistration"/> to promote reuse </summary>
 		public static ProductRegistration Default { get; } = new ProductRegistration();
