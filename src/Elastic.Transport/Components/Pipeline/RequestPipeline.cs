@@ -38,7 +38,7 @@ namespace Elastic.Transport
 		private readonly DateTimeProvider _dateTimeProvider;
 		private readonly MemoryStreamFactory _memoryStreamFactory;
 		private readonly Func<Node, bool> _nodePredicate;
-		private readonly IProductRegistration _productRegistration;
+		private readonly ProductRegistration _productRegistration;
 		private readonly TConfiguration _settings;
 		private readonly ResponseBuilder _responseBuilder;
 

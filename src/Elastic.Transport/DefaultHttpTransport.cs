@@ -66,7 +66,7 @@ namespace Elastic.Transport
 	public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration>
 		where TConfiguration : class, ITransportConfiguration
 	{
-		private readonly IProductRegistration _productRegistration;
+		private readonly ProductRegistration _productRegistration;
 
 		/// <summary>
 		///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on

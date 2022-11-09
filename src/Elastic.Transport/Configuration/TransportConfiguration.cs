@@ -80,34 +80,34 @@ namespace Elastic.Transport
 		/// Creates a new instance of <see cref="TransportConfiguration"/>
 		/// </summary>
 		/// <param name="uri">The root of the Elastic stack product node we want to connect to. Defaults to http://localhost:9200</param>
-		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		public TransportConfiguration(Uri uri = null, IProductRegistration productRegistration = null)
+		/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
+		public TransportConfiguration(Uri uri = null, ProductRegistration productRegistration = null)
 			: this(new SingleNodePool(uri ?? new Uri("http://localhost:9200")), productRegistration: productRegistration) { }
 
 		/// <summary>
 		/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
 		/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
 		/// </summary>
-		public TransportConfiguration(string cloudId, BasicAuthentication credentials, IProductRegistration productRegistration = null)
+		public TransportConfiguration(string cloudId, BasicAuthentication credentials, ProductRegistration productRegistration = null)
 			: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
 
 		/// <summary>
 		/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
 		/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
 		/// </summary>
-		public TransportConfiguration(string cloudId, Base64ApiKey credentials, IProductRegistration productRegistration = null)
+		public TransportConfiguration(string cloudId, Base64ApiKey credentials, ProductRegistration productRegistration = null)
 			: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
 
 		/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
 		/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
 		/// <param name="connection"><inheritdoc cref="TransportClient" path="/summary"/></param>
 		/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
-		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
+		/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
 		public TransportConfiguration(
 			NodePool nodePool,
 			TransportClient connection = null,
 			Serializer serializer = null,
-			IProductRegistration productRegistration = null)
+			ProductRegistration productRegistration = null)
 			: base(nodePool, connection, serializer, productRegistration) { }
 
 	}
@@ -120,7 +120,7 @@ namespace Elastic.Transport
 	{
 		private readonly TransportClient _transportClient;
 		private readonly NodePool _nodePool;
-		private readonly IProductRegistration _productRegistration;
+		private readonly ProductRegistration _productRegistration;
 		private readonly NameValueCollection _headers = new NameValueCollection();
 		private readonly NameValueCollection _queryString = new NameValueCollection();
 		private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
@@ -172,12 +172,12 @@ namespace Elastic.Transport
 		/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
 		/// <param name="transportClient"><inheritdoc cref="TransportClient" path="/summary"/></param>
 		/// <param name="requestResponseSerializer"><inheritdoc cref="Serializer" path="/summary"/></param>
-		/// <param name="productRegistration"><inheritdoc cref="IProductRegistration" path="/summary"/></param>
-		protected TransportConfigurationBase(NodePool nodePool, TransportClient transportClient, Serializer requestResponseSerializer, IProductRegistration productRegistration)
+		/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
+		protected TransportConfigurationBase(NodePool nodePool, TransportClient transportClient, Serializer requestResponseSerializer, ProductRegistration productRegistration)
 		{
 			_nodePool = nodePool;
 			_transportClient = transportClient ?? new HttpTransportClient();
-			_productRegistration = productRegistration ?? ProductRegistration.Default;
+			_productRegistration = productRegistration ?? DefaultProductRegistration.Default;
 			var serializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
 			UseThisRequestResponseSerializer = new DiagnosticsSerializerProxy(serializer);
 
@@ -216,7 +216,7 @@ namespace Elastic.Transport
 		SemaphoreSlim ITransportConfiguration.BootstrapLock => _semaphore;
 		X509CertificateCollection ITransportConfiguration.ClientCertificates => _clientCertificates;
 		TransportClient ITransportConfiguration.Connection => _transportClient;
-		IProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
+		ProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
 		int ITransportConfiguration.ConnectionLimit => _transportClientLimit;
 		NodePool ITransportConfiguration.NodePool => _nodePool;
 		TimeSpan? ITransportConfiguration.DeadTimeout => _deadTimeout;

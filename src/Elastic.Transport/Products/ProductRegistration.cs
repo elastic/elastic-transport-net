@@ -10,81 +10,103 @@ using System.Threading.Tasks;
 namespace Elastic.Transport.Products
 {
 	/// <summary>
-	/// A default non-descriptive product registration that does not support sniffing and pinging.
-	/// Can be used to connect to unknown services before they develop their own <see cref="IProductRegistration"/>
-	/// implementations
+	/// When <see cref="HttpTransport.Request{TResponse}"/> interfaces with a product some parts are
+	/// bespoke for each product. This interface defines the contract products will have to implement in order to fill
+	/// in these bespoke parts.
+	/// <para>The expectation is that unless you instantiate <see cref="DefaultHttpTransport{TConnectionSettings}"/>
+	/// directly clients that utilize transport will fill in this dependency
+	/// </para>
+	/// <para>
+	/// If you do want to use a bare-bones <see cref="DefaultHttpTransport{TConnectionSettings}"/> you can use
+	/// <see cref="DefaultProductRegistration.Default"/>
+	/// </para>
 	/// </summary>
-	public sealed class ProductRegistration : IProductRegistration
+	public abstract class ProductRegistration
 	{
-		private readonly HeadersList _headers = new();
-		private readonly MetaHeaderProvider _metaHeaderProvider;
+		/// <summary>
+		/// The name of the current product utilizing <see cref="HttpTransport{TConnectionSettings}"/>
+		/// <para>This name makes its way into the transport diagnostics sources and the default user agent string</para>
+		/// </summary>
+		public abstract string Name { get; }
 
 		/// <summary>
-		/// 
+		/// Whether the product <see cref="HttpTransport{TConnectionSettings}"/> will call out to supports ping endpoints
 		/// </summary>
-		public ProductRegistration() => _metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(HttpTransport), "et");
+		public abstract bool SupportsPing { get; }
 
-		/// <summary> A static instance of <see cref="ProductRegistration"/> to promote reuse </summary>
-		public static ProductRegistration Default { get; } = new ProductRegistration();
+		/// <summary>
+		/// Whether the product <see cref="HttpTransport{TConnectionSettings}"/> will call out to supports sniff endpoints that return
+		/// information about available nodes
+		/// </summary>
+		public abstract bool SupportsSniff { get; }
 
-		/// <inheritdoc cref="IProductRegistration.Name"/>
-		public string Name { get; } = "elastic-transport-net";
+		/// <summary>
+		/// The set of headers to parse from all requests by default. These can be added to any consumer specific requirements.
+		/// </summary>
+		public abstract HeadersList ResponseHeadersToParse { get; }
 
-		/// <inheritdoc cref="IProductRegistration.SupportsPing"/>
-		public bool SupportsPing { get; } = false;
+		/// <summary>
+		/// Create an instance of <see cref="RequestData"/> that describes where and how to ping see <paramref name="node" />
+		/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
+		/// </summary>
+		public abstract RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, MemoryStreamFactory memoryStreamFactory);
 
-		/// <inheritdoc cref="IProductRegistration.SupportsSniff"/>
-		public bool SupportsSniff { get; } = false;
+		/// <summary>
+		/// Provide an implementation that performs the ping directly using <see cref="TransportClient.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
+		/// return by <see cref="CreatePingRequestData"/>
+		/// </summary>
+		public abstract Task<TransportResponse> PingAsync(TransportClient connection, RequestData pingData, CancellationToken cancellationToken);
 
-		/// <inheritdoc cref="IProductRegistration.SniffOrder"/>
-		public int SniffOrder(Node node) => -1;
+		/// <summary>
+		/// Provide an implementation that performs the ping directly using <see cref="TransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
+		/// return by <see cref="CreatePingRequestData"/>
+		/// </summary>
+		public abstract TransportResponse Ping(TransportClient connection, RequestData pingData);
 
-		/// <inheritdoc cref="IProductRegistration.NodePredicate"/>
-		public bool NodePredicate(Node node) => true;
+		/// <summary>
+		/// Create an instance of <see cref="RequestData"/> that describes where and how to sniff the cluster using <paramref name="node" />
+		/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
+		/// </summary>
+		public abstract RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings,
+			MemoryStreamFactory memoryStreamFactory);
 
-		/// <inheritdoc cref="IProductRegistration.ResponseHeadersToParse"/>
-		public HeadersList ResponseHeadersToParse => _headers;
+		/// <summary>
+		/// Provide an implementation that performs the sniff directly using <see cref="TransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
+		/// return by <see cref="CreateSniffRequestData"/>
+		/// </summary>
+		public abstract Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(TransportClient connection, bool forceSsl, RequestData requestData, CancellationToken cancellationToken);
 
-		/// <inheritdoc cref="IProductRegistration.MetaHeaderProvider"/>
-		public MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
+		/// <summary>
+		/// Provide an implementation that performs the sniff directly using <see cref="TransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
+		/// return by <see cref="CreateSniffRequestData"/>
+		/// </summary>
+		public abstract Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(TransportClient connection, bool forceSsl, RequestData requestData);
 
-		/// <inheritdoc cref="IProductRegistration.ResponseBuilder"/>
-		public ResponseBuilder ResponseBuilder => new DefaultResponseBuilder<EmptyError>();
+		/// <summary> Allows certain nodes to be queried first to obtain sniffing information </summary>
+		public abstract int SniffOrder(Node node);
 
-		/// <inheritdoc cref="IProductRegistration.HttpStatusCodeClassifier"/>
-		public bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
-			statusCode >= 200 && statusCode < 300;
+		/// <summary> Predicate indicating a node is allowed to be used for API calls</summary>
+		/// <param name="node">The node to inspect</param>
+		/// <returns>bool, true if node should allows API calls</returns>
+		public abstract bool NodePredicate(Node node);
 
-		/// <inheritdoc cref="IProductRegistration.TryGetServerErrorReason{TResponse}"/>>
-		public bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason)
-			where TResponse : TransportResponse
-		{
-			reason = null;
-			return false;
-		}
+		/// <summary>
+		/// Used by <see cref="ResponseBuilder"/> to determine if it needs to return true or false for
+		/// <see cref="ApiCallDetails.Success"/>
+		/// </summary>
+		public abstract bool HttpStatusCodeClassifier(HttpMethod method, int statusCode);
 
-		/// <inheritdoc cref="IProductRegistration.CreateSniffRequestData"/>
-		public RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings, MemoryStreamFactory memoryStreamFactory) =>
-			throw new NotImplementedException();
+		/// <summary> Try to obtain a server error from the response, this is used for debugging and exception messages </summary>
+		public abstract bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason) where TResponse : TransportResponse;
 
-		/// <inheritdoc cref="IProductRegistration.SniffAsync"/>
-		public Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(TransportClient transportClient, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) =>
-			throw new NotImplementedException();
+		/// <summary>
+		/// TODO
+		/// </summary>
+		public abstract MetaHeaderProvider MetaHeaderProvider { get; }
 
-		/// <inheritdoc cref="IProductRegistration.Sniff"/>
-		public Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(TransportClient connection, bool forceSsl, RequestData requestData) =>
-			throw new NotImplementedException();
-
-		/// <inheritdoc cref="IProductRegistration.CreatePingRequestData"/>
-		public RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, MemoryStreamFactory memoryStreamFactory) =>
-			throw new NotImplementedException();
-
-		/// <inheritdoc cref="IProductRegistration.PingAsync"/>
-		public Task<TransportResponse> PingAsync(TransportClient connection, RequestData pingData, CancellationToken cancellationToken) =>
-			throw new NotImplementedException();
-
-		/// <inheritdoc cref="IProductRegistration.Ping"/>
-		public TransportResponse Ping(TransportClient connection, RequestData pingData) =>
-			throw new NotImplementedException();
+		/// <summary>
+		/// TODO
+		/// </summary>
+		public abstract ResponseBuilder ResponseBuilder { get; }
 	}
 }

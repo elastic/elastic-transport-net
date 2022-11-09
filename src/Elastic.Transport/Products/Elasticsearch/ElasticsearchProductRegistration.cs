@@ -12,11 +12,11 @@ using System.Threading.Tasks;
 namespace Elastic.Transport.Products.Elasticsearch
 {
 	/// <summary>
-	/// An implementation of <see cref="IProductRegistration"/> that fills in the bespoke implementations
+	/// An implementation of <see cref="ProductRegistration"/> that fills in the bespoke implementations
 	/// for Elasticsearch so that <see cref="IRequestPipeline"/> knows how to ping and sniff if we setup
 	/// <see cref="HttpTransport{TConnectionSettings}"/> to talk to Elasticsearch
 	/// </summary>
-	public class ElasticsearchProductRegistration : IProductRegistration
+	public class ElasticsearchProductRegistration : ProductRegistration
 	{
 		private readonly HeadersList _headers;
 		private readonly MetaHeaderProvider _metaHeaderProvider;
@@ -33,25 +33,25 @@ namespace Elastic.Transport.Products.Elasticsearch
 		public ElasticsearchProductRegistration(Type markerType) : this() => _metaHeaderProvider = new DefaultMetaHeaderProvider(markerType, "es");
 
 		/// <summary> A static instance of <see cref="ElasticsearchProductRegistration"/> to promote reuse </summary>
-		public static IProductRegistration Default { get; } = new ElasticsearchProductRegistration();
+		public static ProductRegistration Default { get; } = new ElasticsearchProductRegistration();
 
-		/// <inheritdoc cref="IProductRegistration.Name"/>
-		public string Name { get; } = "elasticsearch-net";
+		/// <inheritdoc cref="ProductRegistration.Name"/>
+		public override string Name { get; } = "elasticsearch-net";
 
-		/// <inheritdoc cref="IProductRegistration.SupportsPing"/>
-		public bool SupportsPing { get; } = true;
+		/// <inheritdoc cref="ProductRegistration.SupportsPing"/>
+		public override bool SupportsPing { get; } = true;
 
-		/// <inheritdoc cref="IProductRegistration.SupportsSniff"/>
-		public bool SupportsSniff { get; } = true;
+		/// <inheritdoc cref="ProductRegistration.SupportsSniff"/>
+		public override bool SupportsSniff { get; } = true;
 
-		/// <inheritdoc cref="IProductRegistration.ResponseHeadersToParse"/>
-		public HeadersList ResponseHeadersToParse => _headers;
+		/// <inheritdoc cref="ProductRegistration.ResponseHeadersToParse"/>
+		public override HeadersList ResponseHeadersToParse => _headers;
 
-		/// <inheritdoc cref="IProductRegistration.MetaHeaderProvider"/>
-		public MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
+		/// <inheritdoc cref="ProductRegistration.MetaHeaderProvider"/>
+		public override MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
 
-		/// <inheritdoc cref="IProductRegistration.ResponseBuilder"/>
-		public ResponseBuilder ResponseBuilder => new ElasticsearchResponseBuilder();
+		/// <inheritdoc cref="ProductRegistration.ResponseBuilder"/>
+		public override ResponseBuilder ResponseBuilder => new ElasticsearchResponseBuilder();
 
 		/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 		public const string SniffPath = "_nodes/http,settings";
@@ -60,25 +60,24 @@ namespace Elastic.Transport.Products.Elasticsearch
 		/// Implements an ordering that prefers master eligible nodes when attempting to sniff the
 		/// <see cref="NodePool.Nodes"/>
 		/// </summary>
-		public int SniffOrder(Node node) =>
+		public override int SniffOrder(Node node) =>
 			node.HasFeature(ElasticsearchNodeFeatures.MasterEligible) ? node.Uri.Port : int.MaxValue;
 
 		/// <summary>
 		/// If we know that a node is a master eligible node that hold no data it is excluded from regular
 		/// API calls. They are considered for ping and sniff requests.
 		/// </summary>
-		public bool NodePredicate(Node node) =>
+		public override bool NodePredicate(Node node) =>
 			// skip master only nodes (holds no data and is master eligible)
 			!(node.HasFeature(ElasticsearchNodeFeatures.MasterEligible) &&
 			  !node.HasFeature(ElasticsearchNodeFeatures.HoldsData));
 
-		/// <inheritdoc cref="IProductRegistration.HttpStatusCodeClassifier"/>
-		public virtual bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
+		/// <inheritdoc cref="ProductRegistration.HttpStatusCodeClassifier"/>
+		public override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
 			statusCode >= 200 && statusCode < 300;
 
-		/// <inheritdoc cref="IProductRegistration.TryGetServerErrorReason{TResponse}"/>>
-		public virtual bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason)
-			where TResponse : TransportResponse
+		/// <inheritdoc cref="ProductRegistration.TryGetServerErrorReason{TResponse}"/>>
+		public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason)
 		{
 			reason = null;
 			if (response is StringResponse s && s.TryGetElasticsearchServerError(out var e)) reason = e.Error?.ToString();
@@ -87,8 +86,8 @@ namespace Elastic.Transport.Products.Elasticsearch
 			return e != null;
 		}
 
-		/// <inheritdoc cref="IProductRegistration.CreateSniffRequestData"/>
-		public RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration,
+		/// <inheritdoc cref="ProductRegistration.CreateSniffRequestData"/>
+		public override RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration,
 			ITransportConfiguration settings,
 			MemoryStreamFactory memoryStreamFactory
 		)
@@ -103,8 +102,8 @@ namespace Elastic.Transport.Products.Elasticsearch
 			};
 		}
 
-		/// <inheritdoc cref="IProductRegistration.SniffAsync"/>
-		public async Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(TransportClient transportClient,
+		/// <inheritdoc cref="ProductRegistration.SniffAsync"/>
+		public override async Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(TransportClient transportClient,
 			bool forceSsl, RequestData requestData, CancellationToken cancellationToken)
 		{
 			var response = await transportClient.RequestAsync<SniffResponse>(requestData, cancellationToken)
@@ -114,8 +113,8 @@ namespace Elastic.Transport.Products.Elasticsearch
 				new ReadOnlyCollection<Node>(nodes.ToArray()));
 		}
 
-		/// <inheritdoc cref="IProductRegistration.Sniff"/>
-		public Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(TransportClient transportClient, bool forceSsl,
+		/// <inheritdoc cref="ProductRegistration.Sniff"/>
+		public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(TransportClient transportClient, bool forceSsl,
 			RequestData requestData)
 		{
 			var response = transportClient.Request<SniffResponse>(requestData);
@@ -124,8 +123,8 @@ namespace Elastic.Transport.Products.Elasticsearch
 				new ReadOnlyCollection<Node>(nodes.ToArray()));
 		}
 
-		/// <inheritdoc cref="IProductRegistration.CreatePingRequestData"/>
-		public RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration,
+		/// <inheritdoc cref="ProductRegistration.CreatePingRequestData"/>
+		public override RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration,
 			ITransportConfiguration global,
 			MemoryStreamFactory memoryStreamFactory
 		)
@@ -140,16 +139,16 @@ namespace Elastic.Transport.Products.Elasticsearch
 			return data;
 		}
 
-		/// <inheritdoc cref="IProductRegistration.PingAsync"/>
-		public async Task<TransportResponse> PingAsync(TransportClient transportClient, RequestData pingData,
+		/// <inheritdoc cref="ProductRegistration.PingAsync"/>
+		public override async Task<TransportResponse> PingAsync(TransportClient transportClient, RequestData pingData,
 			CancellationToken cancellationToken)
 		{
 			var response = await transportClient.RequestAsync<VoidResponse>(pingData, cancellationToken).ConfigureAwait(false);
 			return response;
 		}
 
-		/// <inheritdoc cref="IProductRegistration.Ping"/>
-		public TransportResponse Ping(TransportClient connection, RequestData pingData)
+		/// <inheritdoc cref="ProductRegistration.Ping"/>
+		public override TransportResponse Ping(TransportClient connection, RequestData pingData)
 		{
 			var response = connection.Request<VoidResponse>(pingData);
 			return response;

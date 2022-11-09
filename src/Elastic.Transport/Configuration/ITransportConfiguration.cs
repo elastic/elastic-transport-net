@@ -54,7 +54,7 @@ namespace Elastic.Transport
 		/// <summary>
 		/// Returns information about the current product making use of the transport.
 		/// </summary>
-		IProductRegistration ProductRegistration { get; }
+		ProductRegistration ProductRegistration { get; }
 
 		/// <summary>
 		/// The time to put dead nodes out of rotation (this will be multiplied by the number of times they've been dead)

@@ -18,7 +18,7 @@ namespace Elastic.Transport
 		BadAuthentication,
 
 		/// <summary>
-		/// A bad response as determined by <see cref="IProductRegistration.HttpStatusCodeClassifier"/>
+		/// A bad response as determined by <see cref="ProductRegistration.HttpStatusCodeClassifier"/>
 		/// </summary>
 		BadResponse,
 
