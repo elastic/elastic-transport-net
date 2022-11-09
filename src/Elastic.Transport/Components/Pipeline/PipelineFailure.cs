@@ -4,56 +4,55 @@
 
 using Elastic.Transport.Products;
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+/// <summary>
+/// A failure in <see cref="DefaultRequestPipeline{TConfiguration}"/>'s workflow that caused it to end prematurely.
+/// </summary>
+public enum PipelineFailure
 {
 	/// <summary>
-	/// A failure in <see cref="DefaultRequestPipeline{TConfiguration}"/>'s workflow that caused it to end prematurely.
+	/// The provided credentials were insufficient.
+	/// <para>If this is thrown during an initial sniff or ping it short circuits and returns immediately</para>
 	/// </summary>
-	public enum PipelineFailure
-	{
-		/// <summary>
-		/// The provided credentials were insufficient.
-		/// <para>If this is thrown during an initial sniff or ping it short circuits and returns immediately</para>
-		/// </summary>
-		BadAuthentication,
+	BadAuthentication,
 
-		/// <summary>
-		/// A bad response as determined by <see cref="ProductRegistration.HttpStatusCodeClassifier"/>
-		/// </summary>
-		BadResponse,
+	/// <summary>
+	/// A bad response as determined by <see cref="ProductRegistration.HttpStatusCodeClassifier"/>
+	/// </summary>
+	BadResponse,
 
-		/// <summary> A ping request was unsuccessful</summary>
-		PingFailure,
-		/// <summary> A sniff request was unsuccessful</summary>
-		SniffFailure,
+	/// <summary> A ping request was unsuccessful</summary>
+	PingFailure,
+	/// <summary> A sniff request was unsuccessful</summary>
+	SniffFailure,
 
-		/// <summary>
-		/// See <see cref="ITransportConfiguration.SniffsOnStartup"/> was requested but the first API call failed to sniff
-		/// </summary>
-		CouldNotStartSniffOnStartup,
+	/// <summary>
+	/// See <see cref="ITransportConfiguration.SniffsOnStartup"/> was requested but the first API call failed to sniff
+	/// </summary>
+	CouldNotStartSniffOnStartup,
 
-		/// <summary>
-		/// The overall timeout specified by <see cref="ITransportConfiguration.MaxRetryTimeout"/> was reached
-		/// </summary>
-		MaxTimeoutReached,
+	/// <summary>
+	/// The overall timeout specified by <see cref="ITransportConfiguration.MaxRetryTimeout"/> was reached
+	/// </summary>
+	MaxTimeoutReached,
 
-		/// <summary>
-		/// The overall max retries as specified by <see cref="ITransportConfiguration.MaxRetries"/> was reached
-		/// </summary>
-		MaxRetriesReached,
+	/// <summary>
+	/// The overall max retries as specified by <see cref="ITransportConfiguration.MaxRetries"/> was reached
+	/// </summary>
+	MaxRetriesReached,
 
-		/// <summary>
-		/// An exception occurred during <see cref="DefaultRequestPipeline{TConfiguration}"/> that could not be handled
-		/// </summary>
-		Unexpected,
+	/// <summary>
+	/// An exception occurred during <see cref="DefaultRequestPipeline{TConfiguration}"/> that could not be handled
+	/// </summary>
+	Unexpected,
 
-		/// <summary> An exception happened while sending the request and a response was never fetched </summary>
-		BadRequest,
+	/// <summary> An exception happened while sending the request and a response was never fetched </summary>
+	BadRequest,
 
-		/// <summary>
-		/// Rare but if <see cref="ITransportConfiguration.NodePredicate"/> is too stringent it could mean no
-		/// nodes were considered for the API call
-		/// </summary>
-		NoNodesAttempted
-	}
+	/// <summary>
+	/// Rare but if <see cref="ITransportConfiguration.NodePredicate"/> is too stringent it could mean no
+	/// nodes were considered for the API call
+	/// </summary>
+	NoNodesAttempted
 }

@@ -9,14 +9,13 @@ using Elastic.Transport.Diagnostics;
 //using System.Threading.Tasks.Extensions;
 //#endif
 
-namespace Elastic.Transport
-{
-	internal static class RequestPipelineStatics
-	{
-		public static readonly string NoNodesAttemptedMessage =
-			"No nodes were attempted, this can happen when a node predicate does not match any nodes";
+namespace Elastic.Transport;
 
-		public static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.RequestPipeline.SourceName);
-	}
-#pragma warning restore 1591
+internal static class RequestPipelineStatics
+{
+	public static readonly string NoNodesAttemptedMessage =
+		"No nodes were attempted, this can happen when a node predicate does not match any nodes";
+
+	public static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.RequestPipeline.SourceName);
 }
+#pragma warning restore 1591

@@ -4,29 +4,28 @@
 
 using System;
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+/// <summary>
+/// 
+/// </summary>
+public static class RequestConfigurationExtensions
 {
 	/// <summary>
 	/// 
 	/// </summary>
-	public static class RequestConfigurationExtensions
+	/// <param name="requestConfiguration"></param>
+	/// <param name="requestMetaData"></param>
+	/// <exception cref="ArgumentNullException"></exception>
+	public static void SetRequestMetaData(this IRequestConfiguration requestConfiguration, RequestMetaData requestMetaData)
 	{
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="requestConfiguration"></param>
-		/// <param name="requestMetaData"></param>
-		/// <exception cref="ArgumentNullException"></exception>
-		public static void SetRequestMetaData(this IRequestConfiguration requestConfiguration, RequestMetaData requestMetaData)
-		{
-			if (requestConfiguration is null)
-				throw new ArgumentNullException(nameof(requestConfiguration));
+		if (requestConfiguration is null)
+			throw new ArgumentNullException(nameof(requestConfiguration));
 
-			if (requestMetaData is null)
-				throw new ArgumentNullException(nameof(requestMetaData));
+		if (requestMetaData is null)
+			throw new ArgumentNullException(nameof(requestMetaData));
 
-			requestConfiguration.RequestMetaData = requestMetaData;
-		}
+		requestConfiguration.RequestMetaData = requestMetaData;
 	}
-
 }
+

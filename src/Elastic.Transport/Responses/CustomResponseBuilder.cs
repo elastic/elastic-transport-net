@@ -6,19 +6,18 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Elastic.Transport
-{
-	/// <summary>
-	/// Allows callers of <see cref="HttpTransport.Request{TResponse}"/> to override completely
-	/// how `TResponse` should be deserialized to a `TResponse` that implements <see cref="TransportResponse"/> instance.
-	/// <para>Expert setting only</para>
-	/// </summary>
-	public abstract class CustomResponseBuilder
-	{
-		/// <summary> Custom routine that deserializes from <paramref name="stream"/> to an instance of <see cref="TransportResponse"/>.</summary>
-		public abstract object DeserializeResponse(Serializer serializer, ApiCallDetails response, Stream stream);
+namespace Elastic.Transport;
 
-		/// <inheritdoc cref="DeserializeResponse"/>
-		public abstract Task<object> DeserializeResponseAsync(Serializer serializer, ApiCallDetails response, Stream stream, CancellationToken ctx = default);
-	}
+/// <summary>
+/// Allows callers of <see cref="HttpTransport.Request{TResponse}"/> to override completely
+/// how `TResponse` should be deserialized to a `TResponse` that implements <see cref="TransportResponse"/> instance.
+/// <para>Expert setting only</para>
+/// </summary>
+public abstract class CustomResponseBuilder
+{
+	/// <summary> Custom routine that deserializes from <paramref name="stream"/> to an instance of <see cref="TransportResponse"/>.</summary>
+	public abstract object DeserializeResponse(Serializer serializer, ApiCallDetails response, Stream stream);
+
+	/// <inheritdoc cref="DeserializeResponse"/>
+	public abstract Task<object> DeserializeResponseAsync(Serializer serializer, ApiCallDetails response, Stream stream, CancellationToken ctx = default);
 }

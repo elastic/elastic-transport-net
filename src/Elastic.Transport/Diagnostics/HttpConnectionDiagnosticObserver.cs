@@ -5,18 +5,17 @@
 using System;
 using System.Collections.Generic;
 
-namespace Elastic.Transport.Diagnostics
-{
-	/// <summary> Provides a typed listener to the events that <see cref="HttpTransportClient"/> emits </summary>
-	public sealed class HttpConnectionDiagnosticObserver : TypedDiagnosticObserver<RequestData, int?>
-	{
-		/// <inheritdoc cref="HttpConnectionDiagnosticObserver"/>>
-		public HttpConnectionDiagnosticObserver(
-			Action<KeyValuePair<string, RequestData>> onNextStart,
-			Action<KeyValuePair<string, int?>> onNextEnd,
-			Action<Exception> onError = null,
-			Action onCompleted = null
-		) : base(onNextStart, onNextEnd, onError, onCompleted) { }
+namespace Elastic.Transport.Diagnostics;
 
-	}
+/// <summary> Provides a typed listener to the events that <see cref="HttpTransportClient"/> emits </summary>
+public sealed class HttpConnectionDiagnosticObserver : TypedDiagnosticObserver<RequestData, int?>
+{
+	/// <inheritdoc cref="HttpConnectionDiagnosticObserver"/>>
+	public HttpConnectionDiagnosticObserver(
+		Action<KeyValuePair<string, RequestData>> onNextStart,
+		Action<KeyValuePair<string, int?>> onNextEnd,
+		Action<Exception> onError = null,
+		Action onCompleted = null
+	) : base(onNextStart, onNextEnd, onError, onCompleted) { }
+
 }

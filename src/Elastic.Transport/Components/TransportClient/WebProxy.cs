@@ -6,19 +6,18 @@
 using System;
 using System.Net;
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+internal class WebProxy : IWebProxy
 {
-	internal class WebProxy : IWebProxy
-	{
-		private readonly Uri _uri;
+	private readonly Uri _uri;
 
-		public WebProxy(Uri uri) => _uri = uri;
+	public WebProxy(Uri uri) => _uri = uri;
 
-		public ICredentials Credentials { get; set; }
+	public ICredentials Credentials { get; set; }
 
-		public Uri GetProxy(Uri destination) => _uri;
+	public Uri GetProxy(Uri destination) => _uri;
 
-		public bool IsBypassed(Uri host) => host.IsLoopback;
-	}
+	public bool IsBypassed(Uri host) => host.IsLoopback;
 }
 #endif

@@ -2,90 +2,89 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Transport.Diagnostics.Auditing
+namespace Elastic.Transport.Diagnostics.Auditing;
+
+/// <summary>
+/// Enumeration of different auditable events that can occur in the execution of
+/// <see cref="HttpTransport.RequestAsync{TResponse}"/> as modeled by
+/// <see cref="RequestPipeline"/>.
+/// </summary>
+public enum AuditEvent
 {
+	/// <summary> The request performed the first sniff on startup of the client </summary>
+	SniffOnStartup,
+
+	/// <summary> The request saw a failure on a node and a sniff occurred as a result of it</summary>
+	SniffOnFail,
+
+	/// <summary> The cluster state expired and a sniff occurred as a result of it</summary>
+	SniffOnStaleCluster,
+
+	/// <summary>A sniff that was initiated was successful</summary>
+	SniffSuccess,
+
+	/// <summary>A sniff that was initiated resulted in a failure</summary>
+	SniffFailure,
+
+	/// <summary>A ping that was initiated was successful</summary>
+	PingSuccess,
+
+	/// <summary>A ping that was initiated resulted in a failure</summary>
+	PingFailure,
+
+	/// <summary>A node that was previously marked dead was put back in the regular rotation</summary>
+	Resurrection,
+
 	/// <summary>
-	/// Enumeration of different auditable events that can occur in the execution of
-	/// <see cref="HttpTransport.RequestAsync{TResponse}"/> as modeled by
-	/// <see cref="RequestPipeline"/>.
+	/// All nodes returned by <see cref="NodePool.CreateView"/> are marked dead (see <see cref="Node.IsAlive"/>)
+	/// After this event a random node is resurrected and tried by force
 	/// </summary>
-	public enum AuditEvent
-	{
-		/// <summary> The request performed the first sniff on startup of the client </summary>
-		SniffOnStartup,
+	AllNodesDead,
 
-		/// <summary> The request saw a failure on a node and a sniff occurred as a result of it</summary>
-		SniffOnFail,
+	/// <summary>
+	/// A call into <see cref="RequestPipeline.CallProductEndpointAsync{TResponse}"/> resulted in a failure
+	/// </summary>
+	BadResponse,
 
-		/// <summary> The cluster state expired and a sniff occurred as a result of it</summary>
-		SniffOnStaleCluster,
+	/// <summary>
+	/// A call into <see cref="RequestPipeline.CallProductEndpointAsync{TResponse}"/> resulted in a success
+	/// </summary>
+	HealthyResponse,
 
-		/// <summary>A sniff that was initiated was successful</summary>
-		SniffSuccess,
+	/// <summary>
+	/// The call into <see cref="HttpTransport.Request{TResponse}"/> took too long.
+	/// This could mean the call was retried but retrying was to slow and cumulative this exceeded
+	/// <see cref="ITransportConfiguration.MaxRetryTimeout"/>
+	/// </summary>
+	MaxTimeoutReached,
 
-		/// <summary>A sniff that was initiated resulted in a failure</summary>
-		SniffFailure,
+	/// <summary>
+	/// The call into <see cref="HttpTransport.Request{TResponse}"/> was not able to complete
+	/// successfully and exceeded the available retries as configured on
+	/// <see cref="ITransportConfiguration.MaxRetries"/>.
+	/// </summary>
+	MaxRetriesReached,
 
-		/// <summary>A ping that was initiated was successful</summary>
-		PingSuccess,
+	/// <summary>
+	/// A call into <see cref="RequestPipeline.CallProductEndpointAsync{TResponse}"/> failed before a response was
+	/// received.
+	/// </summary>
+	BadRequest,
 
-		/// <summary>A ping that was initiated resulted in a failure</summary>
-		PingFailure,
+	/// <summary>
+	/// Rare but if <see cref="ITransportConfiguration.NodePredicate"/> is too stringent and node nodes in
+	/// the <see cref="NodePool.Nodes"/> satisfies this predicate this will result in this failure.
+	/// </summary>
+	NoNodesAttempted,
 
-		/// <summary>A node that was previously marked dead was put back in the regular rotation</summary>
-		Resurrection,
+	/// <summary>
+	/// Signals the audit may be incomplete because cancellation was requested on the async paths
+	/// </summary>
+	CancellationRequested,
 
-		/// <summary>
-		/// All nodes returned by <see cref="NodePool.CreateView"/> are marked dead (see <see cref="Node.IsAlive"/>)
-		/// After this event a random node is resurrected and tried by force
-		/// </summary>
-		AllNodesDead,
-
-		/// <summary>
-		/// A call into <see cref="RequestPipeline.CallProductEndpointAsync{TResponse}"/> resulted in a failure
-		/// </summary>
-		BadResponse,
-
-		/// <summary>
-		/// A call into <see cref="RequestPipeline.CallProductEndpointAsync{TResponse}"/> resulted in a success
-		/// </summary>
-		HealthyResponse,
-
-		/// <summary>
-		/// The call into <see cref="HttpTransport.Request{TResponse}"/> took too long.
-		/// This could mean the call was retried but retrying was to slow and cumulative this exceeded
-		/// <see cref="ITransportConfiguration.MaxRetryTimeout"/>
-		/// </summary>
-		MaxTimeoutReached,
-
-		/// <summary>
-		/// The call into <see cref="HttpTransport.Request{TResponse}"/> was not able to complete
-		/// successfully and exceeded the available retries as configured on
-		/// <see cref="ITransportConfiguration.MaxRetries"/>.
-		/// </summary>
-		MaxRetriesReached,
-
-		/// <summary>
-		/// A call into <see cref="RequestPipeline.CallProductEndpointAsync{TResponse}"/> failed before a response was
-		/// received.
-		/// </summary>
-		BadRequest,
-
-		/// <summary>
-		/// Rare but if <see cref="ITransportConfiguration.NodePredicate"/> is too stringent and node nodes in
-		/// the <see cref="NodePool.Nodes"/> satisfies this predicate this will result in this failure.
-		/// </summary>
-		NoNodesAttempted,
-
-		/// <summary>
-		/// Signals the audit may be incomplete because cancellation was requested on the async paths
-		/// </summary>
-		CancellationRequested,
-
-		/// <summary>
-		/// The request failed within the allotted <see cref="ITransportConfiguration.MaxRetryTimeout"/> but failed
-		/// on all the available <see cref="NodePool.Nodes"/>
-		/// </summary>
-		FailedOverAllNodes,
-	}
+	/// <summary>
+	/// The request failed within the allotted <see cref="ITransportConfiguration.MaxRetryTimeout"/> but failed
+	/// on all the available <see cref="NodePool.Nodes"/>
+	/// </summary>
+	FailedOverAllNodes,
 }

@@ -4,61 +4,60 @@
 
 using System;
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+/// <summary>
+/// 
+/// </summary>
+public sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
 {
+	private const string MetaHeaderName = "x-elastic-client-meta";
+
+	private readonly MetaDataHeader _asyncMetaDataHeader;
+	private readonly MetaDataHeader _syncMetaDataHeader;
+
 	/// <summary>
 	/// 
 	/// </summary>
-	public sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
+	public DefaultMetaHeaderProvider(Type clientType, string serviceIdentifier)
 	{
-		private const string MetaHeaderName = "x-elastic-client-meta";
+		var clientVersionInfo = ReflectionVersionInfo.Create(clientType);
+		_asyncMetaDataHeader = new MetaDataHeader(clientVersionInfo, serviceIdentifier, true);
+		_syncMetaDataHeader = new MetaDataHeader(clientVersionInfo, serviceIdentifier, false);
+	}
 
-		private readonly MetaDataHeader _asyncMetaDataHeader;
-		private readonly MetaDataHeader _syncMetaDataHeader;
+	/// <summary>
+	/// 
+	/// </summary>
+	public override string HeaderName => MetaHeaderName;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public DefaultMetaHeaderProvider(Type clientType, string serviceIdentifier)
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="requestData"></param>
+	/// <returns></returns>
+	public override string ProduceHeaderValue(RequestData requestData)
+	{
+		try
 		{
-			var clientVersionInfo = ReflectionVersionInfo.Create(clientType);
-			_asyncMetaDataHeader = new MetaDataHeader(clientVersionInfo, serviceIdentifier, true);
-			_syncMetaDataHeader = new MetaDataHeader(clientVersionInfo, serviceIdentifier, false);
+			if (requestData.ConnectionSettings.DisableMetaHeader)
+				return null;
+
+			var headerValue = requestData.IsAsync
+				? _asyncMetaDataHeader.ToString()
+				: _syncMetaDataHeader.ToString();
+
+			// TODO - Cache values against key to avoid allocating a string each time
+			if (requestData.RequestMetaData.TryGetValue(RequestMetaData.HelperKey, out var helperSuffix))
+				headerValue = $"{headerValue},h={helperSuffix}";
+
+			return headerValue;
+		}
+		catch
+		{
+			// Don't fail the application just because we cannot create this optional header
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public override string HeaderName => MetaHeaderName;
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="requestData"></param>
-		/// <returns></returns>
-		public override string ProduceHeaderValue(RequestData requestData)
-		{
-			try
-			{
-				if (requestData.ConnectionSettings.DisableMetaHeader)
-					return null;
-
-				var headerValue = requestData.IsAsync
-					? _asyncMetaDataHeader.ToString()
-					: _syncMetaDataHeader.ToString();
-
-				// TODO - Cache values against key to avoid allocating a string each time
-				if (requestData.RequestMetaData.TryGetValue(RequestMetaData.HelperKey, out var helperSuffix))
-					headerValue = $"{headerValue},h={helperSuffix}";
-
-				return headerValue;
-			}
-			catch
-			{
-				// Don't fail the application just because we cannot create this optional header
-			}
-
-			return string.Empty;
-		}
+		return string.Empty;
 	}
 }

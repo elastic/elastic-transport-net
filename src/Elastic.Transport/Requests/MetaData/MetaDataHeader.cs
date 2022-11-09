@@ -4,77 +4,76 @@
 
 using System.Text;
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+/// <summary>
+/// 
+/// </summary>
+public sealed class MetaDataHeader
 {
+	private const char _separator = ',';
+
+	private readonly string _headerValue;
+
 	/// <summary>
 	/// 
 	/// </summary>
-	public sealed class MetaDataHeader
+	/// <param name="version"></param>
+	/// <param name="serviceIdentifier"></param>
+	/// <param name="isAsync"></param>
+	public MetaDataHeader(VersionInfo version, string serviceIdentifier, bool isAsync)
 	{
-		private const char _separator = ',';
+		if (serviceIdentifier != "et")
+			TransportVersion = ReflectionVersionInfo.Create<HttpTransport>().ToString();
+		
+		ClientVersion = version.ToString();
+		RuntimeVersion = new RuntimeVersionInfo().ToString();
+		ServiceIdentifier = serviceIdentifier;
 
-		private readonly string _headerValue;
+		// This code is expected to be called infrequently so we're not concerned with over optimising this
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="version"></param>
-		/// <param name="serviceIdentifier"></param>
-		/// <param name="isAsync"></param>
-		public MetaDataHeader(VersionInfo version, string serviceIdentifier, bool isAsync)
-		{
-			if (serviceIdentifier != "et")
-				TransportVersion = ReflectionVersionInfo.Create<HttpTransport>().ToString();
-			
-			ClientVersion = version.ToString();
-			RuntimeVersion = new RuntimeVersionInfo().ToString();
-			ServiceIdentifier = serviceIdentifier;
+		var builder = new StringBuilder(64)
+			.Append(serviceIdentifier).Append("=").Append(ClientVersion).Append(_separator)
+			.Append("a=").Append(isAsync ? "1" : "0").Append(_separator)
+			.Append("net=").Append(RuntimeVersion).Append(_separator)
+			.Append(_httpClientIdentifier).Append("=").Append(RuntimeVersion);
 
-			// This code is expected to be called infrequently so we're not concerned with over optimising this
+		if (!string.IsNullOrEmpty(TransportVersion))
+			builder.Append(_separator).Append("t=").Append(TransportVersion);
 
-			var builder = new StringBuilder(64)
-				.Append(serviceIdentifier).Append("=").Append(ClientVersion).Append(_separator)
-				.Append("a=").Append(isAsync ? "1" : "0").Append(_separator)
-				.Append("net=").Append(RuntimeVersion).Append(_separator)
-				.Append(_httpClientIdentifier).Append("=").Append(RuntimeVersion);
+		_headerValue = builder.ToString();
+	}
 
-			if (!string.IsNullOrEmpty(TransportVersion))
-				builder.Append(_separator).Append("t=").Append(TransportVersion);
-
-			_headerValue = builder.ToString();
-		}
-
-		private static readonly string _httpClientIdentifier =
+	private static readonly string _httpClientIdentifier =
 #if DOTNETCORE
-			ConnectionInfo.UsingCurlHandler ? "cu" : "so";
+		ConnectionInfo.UsingCurlHandler ? "cu" : "so";
 #else
-			"wr";
+		"wr";
 #endif
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public string ServiceIdentifier { get; private set; }
+	/// <summary>
+	/// 
+	/// </summary>
+	public string ServiceIdentifier { get; private set; }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public string ClientVersion { get; private set; }
+	/// <summary>
+	/// 
+	/// </summary>
+	public string ClientVersion { get; private set; }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public string TransportVersion { get; private set; }
+	/// <summary>
+	/// 
+	/// </summary>
+	public string TransportVersion { get; private set; }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public string RuntimeVersion { get; private set; }
+	/// <summary>
+	/// 
+	/// </summary>
+	public string RuntimeVersion { get; private set; }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <returns></returns>
-		public override string ToString() => _headerValue;
-	}
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <returns></returns>
+	public override string ToString() => _headerValue;
 }

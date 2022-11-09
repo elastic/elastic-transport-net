@@ -6,48 +6,47 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Elastic.Transport.Diagnostics.Auditing
+namespace Elastic.Transport.Diagnostics.Auditing;
+
+internal class Auditable : IDisposable
 {
-	internal class Auditable : IDisposable
+	private readonly Audit _audit;
+	private readonly IDisposable _activity;
+	private readonly DateTimeProvider _dateTimeProvider;
+	private static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.AuditTrailEvents.SourceName);
+
+	public Auditable(AuditEvent type, List<Audit> auditTrail, DateTimeProvider dateTimeProvider, Node node)
 	{
-		private readonly Audit _audit;
-		private readonly IDisposable _activity;
-		private readonly DateTimeProvider _dateTimeProvider;
-		private static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.AuditTrailEvents.SourceName);
+		_dateTimeProvider = dateTimeProvider;
+		var started = _dateTimeProvider.Now();
 
-		public Auditable(AuditEvent type, List<Audit> auditTrail, DateTimeProvider dateTimeProvider, Node node)
+		_audit = new Audit(type, started)
 		{
-			_dateTimeProvider = dateTimeProvider;
-			var started = _dateTimeProvider.Now();
+			Node = node
+		};
+		auditTrail.Add(_audit);
+		var diagnosticName = type.GetAuditDiagnosticEventName();
+		_activity = diagnosticName != null ? DiagnosticSource.Diagnose(diagnosticName, _audit) : null;
+	}
 
-			_audit = new Audit(type, started)
-			{
-				Node = node
-			};
-			auditTrail.Add(_audit);
-			var diagnosticName = type.GetAuditDiagnosticEventName();
-			_activity = diagnosticName != null ? DiagnosticSource.Diagnose(diagnosticName, _audit) : null;
-		}
+	public AuditEvent Event
+	{
+		set => _audit.Event = value;
+	}
 
-		public AuditEvent Event
-		{
-			set => _audit.Event = value;
-		}
+	public Exception Exception
+	{
+		set => _audit.Exception = value;
+	}
 
-		public Exception Exception
-		{
-			set => _audit.Exception = value;
-		}
+	public string Path
+	{
+		set => _audit.Path = value;
+	}
 
-		public string Path
-		{
-			set => _audit.Path = value;
-		}
-
-		public void Dispose()
-		{
-			_audit.Ended = _dateTimeProvider.Now();
-			_activity?.Dispose();
-		}
+	public void Dispose()
+	{
+		_audit.Ended = _dateTimeProvider.Now();
+		_activity?.Dispose();
 	}
 }

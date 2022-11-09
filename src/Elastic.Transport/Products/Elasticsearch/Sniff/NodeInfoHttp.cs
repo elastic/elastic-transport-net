@@ -4,11 +4,10 @@
 
 using System.Collections.Generic;
 
-namespace Elastic.Transport.Products.Elasticsearch
+namespace Elastic.Transport.Products.Elasticsearch;
+
+internal sealed class NodeInfoHttp
 {
-	internal sealed class NodeInfoHttp
-	{
-		public IList<string> bound_address { get; set; }
-		public string publish_address { get; set; }
-	}
+	public IList<string> bound_address { get; set; }
+	public string publish_address { get; set; }
 }

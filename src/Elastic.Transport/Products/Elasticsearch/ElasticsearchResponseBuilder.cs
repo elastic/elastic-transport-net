@@ -6,43 +6,42 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 
-namespace Elastic.Transport.Products.Elasticsearch
+namespace Elastic.Transport.Products.Elasticsearch;
+
+internal sealed class ElasticsearchResponseBuilder : DefaultResponseBuilder<ElasticsearchServerError>
 {
-	internal sealed class ElasticsearchResponseBuilder : DefaultResponseBuilder<ElasticsearchServerError>
+	protected override void SetErrorOnResponse<TResponse>(TResponse response, ElasticsearchServerError error)
 	{
-		protected override void SetErrorOnResponse<TResponse>(TResponse response, ElasticsearchServerError error)
+		if (response is ElasticsearchResponse elasticResponse)
 		{
-			if (response is ElasticsearchResponse elasticResponse)
-			{
-				elasticResponse.ServerError = error;
-			}
+			elasticResponse.ServerError = error;
 		}
-
-		protected override bool TryGetError(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, out ElasticsearchServerError error)
-		{
-			error = null;
-			
-			Debug.Assert(responseStream.CanSeek);
-
-			var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
-
-			try
-			{
-				error = serializer.Deserialize<ElasticsearchServerError>(responseStream);
-				return error is not null;
-			}
-			catch (JsonException)
-			{
-				// Empty catch as we'll try the original response type if the error serialization fails
-			}
-			finally
-			{
-				responseStream.Position = 0;
-			}
-
-			return false;
-		}
-
-		protected sealed override bool RequiresErrorDeserialization(ApiCallDetails apiCallDetails, RequestData requestData) => apiCallDetails.HttpStatusCode > 399;
 	}
+
+	protected override bool TryGetError(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, out ElasticsearchServerError error)
+	{
+		error = null;
+		
+		Debug.Assert(responseStream.CanSeek);
+
+		var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
+
+		try
+		{
+			error = serializer.Deserialize<ElasticsearchServerError>(responseStream);
+			return error is not null;
+		}
+		catch (JsonException)
+		{
+			// Empty catch as we'll try the original response type if the error serialization fails
+		}
+		finally
+		{
+			responseStream.Position = 0;
+		}
+
+		return false;
+	}
+
+	protected sealed override bool RequiresErrorDeserialization(ApiCallDetails apiCallDetails, RequestData requestData) => apiCallDetails.HttpStatusCode > 399;
 }

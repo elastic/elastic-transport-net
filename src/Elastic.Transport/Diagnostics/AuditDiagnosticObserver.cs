@@ -6,16 +6,15 @@ using System;
 using System.Collections.Generic;
 using Elastic.Transport.Diagnostics.Auditing;
 
-namespace Elastic.Transport.Diagnostics
+namespace Elastic.Transport.Diagnostics;
+
+/// <summary> Provides a typed listener to <see cref="AuditEvent"/> events that <see cref="DefaultRequestPipeline{TConfiguration}"/> emits </summary>
+public sealed class AuditDiagnosticObserver : TypedDiagnosticObserver<Audit>
 {
-	/// <summary> Provides a typed listener to <see cref="AuditEvent"/> events that <see cref="DefaultRequestPipeline{TConfiguration}"/> emits </summary>
-	public sealed class AuditDiagnosticObserver : TypedDiagnosticObserver<Audit>
-	{
-		/// <inheritdoc cref="AuditDiagnosticObserver"/>
-		public AuditDiagnosticObserver(
-			Action<KeyValuePair<string, Audit>> onNext,
-			Action<Exception> onError = null,
-			Action onCompleted = null
-		) : base(onNext, onError, onCompleted) { }
-	}
+	/// <inheritdoc cref="AuditDiagnosticObserver"/>
+	public AuditDiagnosticObserver(
+		Action<KeyValuePair<string, Audit>> onNext,
+		Action<Exception> onError = null,
+		Action onCompleted = null
+	) : base(onNext, onError, onCompleted) { }
 }

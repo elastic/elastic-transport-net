@@ -4,28 +4,27 @@
 
 using System.IO;
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+/// <summary>
+/// A factory for creating memory streams
+/// </summary>
+public abstract class MemoryStreamFactory
 {
+	internal MemoryStreamFactory() { }
+
 	/// <summary>
-	/// A factory for creating memory streams
+	/// Creates a memory stream
 	/// </summary>
-	public abstract class MemoryStreamFactory
-	{
-		internal MemoryStreamFactory() { }
+	public abstract MemoryStream Create();
 
-		/// <summary>
-		/// Creates a memory stream
-		/// </summary>
-		public abstract MemoryStream Create();
+	/// <summary>
+	/// Creates a memory stream with the bytes written to the stream
+	/// </summary>
+	public abstract MemoryStream Create(byte[] bytes);
 
-		/// <summary>
-		/// Creates a memory stream with the bytes written to the stream
-		/// </summary>
-		public abstract MemoryStream Create(byte[] bytes);
-
-		/// <summary>
-		/// Creates a memory stream with the bytes written to the stream
-		/// </summary>
-		public abstract MemoryStream Create(byte[] bytes, int index, int count);
-	}
+	/// <summary>
+	/// Creates a memory stream with the bytes written to the stream
+	/// </summary>
+	public abstract MemoryStream Create(byte[] bytes, int index, int count);
 }

@@ -7,65 +7,64 @@ using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Extensions;
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+public abstract partial class PostData
 {
-	public abstract partial class PostData
+	/// <summary>
+	/// Create a <see cref="PostData"/> instance that will write <paramref name="serializedString"/> to the output <see cref="Stream"/>
+	/// </summary>
+	// ReSharper disable once MemberCanBePrivate.Global
+	public static PostData String(string serializedString) => new PostDataString(serializedString);
+
+	/// <summary>
+	/// string implicitly converts to <see cref="PostData"/> so you do not have to use the static <see cref="String"/>
+	/// factory method
+	/// </summary>
+	public static implicit operator PostData(string literalString) => String(literalString);
+
+	private class PostDataString : PostData
 	{
-		/// <summary>
-		/// Create a <see cref="PostData"/> instance that will write <paramref name="serializedString"/> to the output <see cref="Stream"/>
-		/// </summary>
-		// ReSharper disable once MemberCanBePrivate.Global
-		public static PostData String(string serializedString) => new PostDataString(serializedString);
+		private readonly string _literalString;
 
-		/// <summary>
-		/// string implicitly converts to <see cref="PostData"/> so you do not have to use the static <see cref="String"/>
-		/// factory method
-		/// </summary>
-		public static implicit operator PostData(string literalString) => String(literalString);
-
-		private class PostDataString : PostData
+		protected internal PostDataString(string item)
 		{
-			private readonly string _literalString;
+			_literalString = item;
+			Type = PostType.LiteralString;
+		}
 
-			protected internal PostDataString(string item)
-			{
-				_literalString = item;
-				Type = PostType.LiteralString;
-			}
+		public override void Write(Stream writableStream, ITransportConfiguration settings)
+		{
+			if (string.IsNullOrEmpty(_literalString)) return;
 
-			public override void Write(Stream writableStream, ITransportConfiguration settings)
-			{
-				if (string.IsNullOrEmpty(_literalString)) return;
+			var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
 
-				var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
+			var stringBytes = WrittenBytes ?? _literalString.Utf8Bytes();
+			WrittenBytes ??= stringBytes;
+			if (!disableDirectStreaming)
+				stream.Write(stringBytes, 0, stringBytes.Length);
+			else
+				buffer = settings.MemoryStreamFactory.Create(stringBytes);
 
-				var stringBytes = WrittenBytes ?? _literalString.Utf8Bytes();
-				WrittenBytes ??= stringBytes;
-				if (!disableDirectStreaming)
-					stream.Write(stringBytes, 0, stringBytes.Length);
-				else
-					buffer = settings.MemoryStreamFactory.Create(stringBytes);
+			FinishStream(writableStream, buffer, settings);
+		}
 
-				FinishStream(writableStream, buffer, settings);
-			}
+		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
+			CancellationToken cancellationToken)
+		{
+			if (string.IsNullOrEmpty(_literalString)) return;
 
-			public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
-				CancellationToken cancellationToken)
-			{
-				if (string.IsNullOrEmpty(_literalString)) return;
+			var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
 
-				var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
+			var stringBytes = WrittenBytes ?? _literalString.Utf8Bytes();
+			WrittenBytes ??= stringBytes;
+			if (!disableDirectStreaming)
+				await stream.WriteAsync(stringBytes, 0, stringBytes.Length, cancellationToken)
+					.ConfigureAwait(false);
+			else
+				buffer = settings.MemoryStreamFactory.Create(stringBytes);
 
-				var stringBytes = WrittenBytes ?? _literalString.Utf8Bytes();
-				WrittenBytes ??= stringBytes;
-				if (!disableDirectStreaming)
-					await stream.WriteAsync(stringBytes, 0, stringBytes.Length, cancellationToken)
-						.ConfigureAwait(false);
-				else
-					buffer = settings.MemoryStreamFactory.Create(stringBytes);
-
-				await FinishStreamAsync(writableStream, buffer, settings, cancellationToken).ConfigureAwait(false);
-			}
+			await FinishStreamAsync(writableStream, buffer, settings, cancellationToken).ConfigureAwait(false);
 		}
 	}
 }

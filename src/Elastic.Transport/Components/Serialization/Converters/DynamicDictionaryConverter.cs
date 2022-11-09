@@ -9,40 +9,39 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+internal class DynamicDictionaryConverter : JsonConverter<DynamicDictionary>
 {
-	internal class DynamicDictionaryConverter : JsonConverter<DynamicDictionary>
+	public override DynamicDictionary Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
-		public override DynamicDictionary Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+		if (reader.TokenType == JsonTokenType.StartArray)
 		{
-			if (reader.TokenType == JsonTokenType.StartArray)
-			{
-				var array = JsonSerializer.Deserialize<object[]>(ref reader, options);
-				var arrayDict = new Dictionary<string, object>();
-				for (var i = 0; i < array.Length; i++)
-					arrayDict[i.ToString(CultureInfo.InvariantCulture)] = new DynamicValue(array[i]);
-				return DynamicDictionary.Create(arrayDict);
-			}
-			if (reader.TokenType != JsonTokenType.StartObject) throw new JsonException();
+			var array = JsonSerializer.Deserialize<object[]>(ref reader, options);
+			var arrayDict = new Dictionary<string, object>();
+			for (var i = 0; i < array.Length; i++)
+				arrayDict[i.ToString(CultureInfo.InvariantCulture)] = new DynamicValue(array[i]);
+			return DynamicDictionary.Create(arrayDict);
+		}
+		if (reader.TokenType != JsonTokenType.StartObject) throw new JsonException();
 
-			var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(ref reader, options);
-			return DynamicDictionary.Create(dict);
+		var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(ref reader, options);
+		return DynamicDictionary.Create(dict);
+	}
+
+	public override void Write(Utf8JsonWriter writer, DynamicDictionary dictionary, JsonSerializerOptions options)
+	{
+		writer.WriteStartObject();
+
+		foreach (var kvp in dictionary)
+		{
+			if (kvp.Value == null) continue;
+
+			writer.WritePropertyName(kvp.Key);
+
+			JsonSerializer.Serialize(writer, kvp.Value?.Value, options);
 		}
 
-		public override void Write(Utf8JsonWriter writer, DynamicDictionary dictionary, JsonSerializerOptions options)
-		{
-			writer.WriteStartObject();
-
-			foreach (var kvp in dictionary)
-			{
-				if (kvp.Value == null) continue;
-
-				writer.WritePropertyName(kvp.Key);
-
-				JsonSerializer.Serialize(writer, kvp.Value?.Value, options);
-			}
-
-			writer.WriteEndObject();
-		}
+		writer.WriteEndObject();
 	}
 }

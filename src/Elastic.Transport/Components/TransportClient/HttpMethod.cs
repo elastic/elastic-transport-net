@@ -6,27 +6,26 @@ using System.Runtime.Serialization;
 
 // ReSharper disable InconsistentNaming
 
-namespace Elastic.Transport
+namespace Elastic.Transport;
+
+/// <summary> Http Method of the API call to be performed </summary>
+public enum HttpMethod
 {
-	/// <summary> Http Method of the API call to be performed </summary>
-	public enum HttpMethod
-	{
-		[EnumMember(Value = "GET")]
+	[EnumMember(Value = "GET")]
 // These really do not need xmldocs, leave it to the reader if they feel inspired :)
 #pragma warning disable 1591
-		GET,
+	GET,
 
-		[EnumMember(Value = "POST")]
-		POST,
+	[EnumMember(Value = "POST")]
+	POST,
 
-		[EnumMember(Value = "PUT")]
-		PUT,
+	[EnumMember(Value = "PUT")]
+	PUT,
 
-		[EnumMember(Value = "DELETE")]
-		DELETE,
+	[EnumMember(Value = "DELETE")]
+	DELETE,
 
-		[EnumMember(Value = "HEAD")]
-		HEAD
+	[EnumMember(Value = "HEAD")]
+	HEAD
 #pragma warning restore 1591
-	}
 }

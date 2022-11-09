@@ -7,43 +7,42 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using static Elastic.Transport.Products.Elasticsearch.ElasticsearchNodeFeatures;
 
-namespace Elastic.Transport.Products.Elasticsearch
+namespace Elastic.Transport.Products.Elasticsearch;
+
+internal sealed class SniffResponse : TransportResponse
 {
-	internal sealed class SniffResponse : TransportResponse
+	// ReSharper disable InconsistentNaming
+	public string cluster_name { get; set; }
+
+	public Dictionary<string, NodeInfo> nodes { get; set; }
+
+	public IEnumerable<Node> ToNodes(bool forceHttp = false)
 	{
-		// ReSharper disable InconsistentNaming
-		public string cluster_name { get; set; }
-
-		public Dictionary<string, NodeInfo> nodes { get; set; }
-
-		public IEnumerable<Node> ToNodes(bool forceHttp = false)
+		foreach (var kv in nodes.Where(n => n.Value.HttpEnabled))
 		{
-			foreach (var kv in nodes.Where(n => n.Value.HttpEnabled))
+			var info = kv.Value;
+			var httpEndpoint = info.http?.publish_address;
+			if (string.IsNullOrWhiteSpace(httpEndpoint))
+				httpEndpoint = kv.Value.http?.bound_address.FirstOrDefault();
+			if (string.IsNullOrWhiteSpace(httpEndpoint))
+				continue;
+
+			var uri = SniffParser.ParseToUri(httpEndpoint, forceHttp);
+			var features = new List<string>();
+			if (info.MasterEligible)
+				features.Add(MasterEligible);
+			if (info.HoldsData)
+				features.Add(HoldsData);
+			if (info.IngestEnabled)
+				features.Add(IngestEnabled);
+			if (info.HttpEnabled)
+				features.Add(HttpEnabled);
+
+			var node = new Node(uri, features)
 			{
-				var info = kv.Value;
-				var httpEndpoint = info.http?.publish_address;
-				if (string.IsNullOrWhiteSpace(httpEndpoint))
-					httpEndpoint = kv.Value.http?.bound_address.FirstOrDefault();
-				if (string.IsNullOrWhiteSpace(httpEndpoint))
-					continue;
-
-				var uri = SniffParser.ParseToUri(httpEndpoint, forceHttp);
-				var features = new List<string>();
-				if (info.MasterEligible)
-					features.Add(MasterEligible);
-				if (info.HoldsData)
-					features.Add(HoldsData);
-				if (info.IngestEnabled)
-					features.Add(IngestEnabled);
-				if (info.HttpEnabled)
-					features.Add(HttpEnabled);
-
-				var node = new Node(uri, features)
-				{
-					Name = info.name, Id = kv.Key, Settings = new ReadOnlyDictionary<string, object>(info.settings)
-				};
-				yield return node;
-			}
+				Name = info.name, Id = kv.Key, Settings = new ReadOnlyDictionary<string, object>(info.settings)
+			};
+			yield return node;
 		}
 	}
 }
