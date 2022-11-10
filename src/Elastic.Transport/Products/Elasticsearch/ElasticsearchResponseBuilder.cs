@@ -14,7 +14,7 @@ internal sealed class ElasticsearchResponseBuilder : DefaultResponseBuilder<Elas
 	{
 		if (response is ElasticsearchResponse elasticResponse)
 		{
-			elasticResponse.ServerError = error;
+			elasticResponse.ElasticsearchServerError = error;
 		}
 	}
 

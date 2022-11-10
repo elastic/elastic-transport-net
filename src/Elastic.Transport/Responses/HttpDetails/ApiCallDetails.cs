@@ -87,13 +87,13 @@ public sealed class ApiCallDetails
 	/// <summary>
 	/// 
 	/// </summary>
-	public bool Success { get; internal set; }
+	public bool HasSuccessfulStatusCode { get; internal set; }
 
 	/// <summary>
 	/// 
 	/// </summary>
 	internal bool SuccessOrKnownError =>
-		Success || HttpStatusCode >= 400
+		HasSuccessfulStatusCode || HttpStatusCode >= 400
 		&& HttpStatusCode < 599
 		&& HttpStatusCode != 504 //Gateway timeout needs to be retried
 		&& HttpStatusCode != 503 //service unavailable needs to be retried
@@ -134,5 +134,5 @@ public sealed class ApiCallDetails
 	/// A string summarising the API call.
 	/// </summary>
 	public override string ToString() =>
-		$"{(Success ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on {HttpMethod.GetStringValue()}: {(Uri is not null ? Uri.PathAndQuery: "UNKNOWN URI")}";
+		$"{(HasSuccessfulStatusCode ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on {HttpMethod.GetStringValue()}: {(Uri is not null ? Uri.PathAndQuery: "UNKNOWN URI")}";
 }

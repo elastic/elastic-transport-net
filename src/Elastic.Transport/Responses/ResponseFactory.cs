@@ -7,39 +7,16 @@ namespace Elastic.Transport;
 /// <summary>
 /// TODO
 /// </summary>
-public static class ResponseFactory
+public static class TestableResponseFactory
 {
 	/// <summary>
 	/// 
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	/// <returns></returns>
-	public static T CreateResponse<T>(T response, int statusCode) where T : TransportResponse =>
-		CreateResponse<T>(response, statusCode, true);
-
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="response"></param>
-	/// <param name="statusCode"></param>
-	/// <param name="success"></param>
-	/// <returns></returns>
-	public static T CreateResponse<T>(T response, int statusCode, bool success) where T : TransportResponse =>
-		CreateResponse<T>(response, statusCode, HttpMethod.GET, success);
-
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="response"></param>
-	/// <param name="statusCode"></param>
-	/// <param name="httpMethod"></param>
-	/// <param name="success"></param>
-	/// <returns></returns>
-	public static T CreateResponse<T>(T response, int statusCode, HttpMethod httpMethod, bool success) where T : TransportResponse
+	public static T CreateResponse<T>(T response, int httpStatusCode) where T : TransportResponse
 	{
-		var apiCallDetails = new ApiCallDetails { HttpStatusCode = statusCode, Success = success, HttpMethod = httpMethod };
+		var apiCallDetails = new ApiCallDetails { HttpStatusCode = httpStatusCode };
 		return CreateResponse<T>(response, apiCallDetails);
 	}
 
