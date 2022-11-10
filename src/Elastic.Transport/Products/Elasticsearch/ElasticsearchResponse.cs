@@ -34,17 +34,16 @@ public abstract class ElasticsearchResponse : TransportResponse
 	/// <summary>
 	/// 
 	/// </summary>
-	/// <returns></returns>
 	[JsonIgnore]
 	public string DebugInformation
 	{
 		get
 		{
 			var sb = new StringBuilder();
-			sb.Append($"{(!IsValid ? "Inv" : "V")}alid Elastic.Clients.Elasticsearch response built from a ");
+			sb.Append($"{(!IsValidResponse ? "Inv" : "V")}alid Elasticsearch response built from a ");
 			sb.AppendLine(ApiCallDetails?.ToString().ToCamelCase() ??
 						"null ApiCall which is highly exceptional, please open a bug if you see this");
-			if (!IsValid)
+			if (!IsValidResponse)
 				DebugIsValid(sb);
 
 			if (ApiCallDetails.ParsedHeaders is not null && ApiCallDetails.ParsedHeaders.TryGetValue("warning", out var warnings))
@@ -57,26 +56,26 @@ public abstract class ElasticsearchResponse : TransportResponse
 
 			if (ApiCallDetails != null)
 				Diagnostics.ResponseStatics.DebugInformationBuilder(ApiCallDetails, sb);
+
 			return sb.ToString();
 		}
 	}
 
 	/// <summary>
-	/// 
+	/// Shortcut to test if the response is considered to be successful.
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>A <see cref="bool"/> indicating success or failure.</returns>
 	[JsonIgnore]
-	public virtual bool IsValid
+	public virtual bool IsValidResponse
 	{
 		get
 		{
 			var statusCode = ApiCallDetails?.HttpStatusCode;
 
-			// TODO - Review this on a request by reqeust basis
 			if (statusCode == 404)
 				return false;
 
-			return (ApiCallDetails?.Success ?? false) && (!ServerError?.HasError() ?? true);
+			return (ApiCallDetails?.HasSuccessfulStatusCode ?? false) && (!ElasticsearchServerError?.HasError() ?? true);
 		}
 	}
 
@@ -84,7 +83,7 @@ public abstract class ElasticsearchResponse : TransportResponse
 	/// 
 	/// </summary>
 	[JsonIgnore]
-	public ElasticsearchServerError ServerError { get; internal set; }
+	public ElasticsearchServerError ElasticsearchServerError { get; internal set; }
 
 	/// <summary>
 	/// 
@@ -112,5 +111,5 @@ public abstract class ElasticsearchResponse : TransportResponse
 	/// </summary>
 	/// <returns></returns>
 	public override string ToString() =>
-		$"{(!IsValid ? "Inv" : "V")}alid Elastic.Clients.Elasticsearch response built from a {ApiCallDetails?.ToString().ToCamelCase()}";
+		$"{(!IsValidResponse ? "Inv" : "V")}alid Elastic.Clients.Elasticsearch response built from a {ApiCallDetails?.ToString().ToCamelCase()}";
 }

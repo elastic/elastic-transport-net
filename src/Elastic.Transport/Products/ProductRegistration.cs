@@ -92,7 +92,7 @@ public abstract class ProductRegistration
 
 	/// <summary>
 	/// Used by <see cref="ResponseBuilder"/> to determine if it needs to return true or false for
-	/// <see cref="ApiCallDetails.Success"/>
+	/// <see cref="ApiCallDetails.HasSuccessfulStatusCode"/>
 	/// </summary>
 	public abstract bool HttpStatusCodeClassifier(HttpMethod method, int statusCode);
 

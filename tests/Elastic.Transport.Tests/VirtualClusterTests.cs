@@ -41,7 +41,7 @@ namespace Elastic.Transport.Tests
 
 					{ HealthyResponse, 9200, response =>
 					{
-						response.ApiCallDetails.Success.Should().BeTrue();
+						response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 						response.ApiCallDetails.HttpStatusCode.Should().Be(200);
 						response.ApiCallDetails.DebugInformation.Should().Contain("x\":1");
 					} },
@@ -86,7 +86,7 @@ namespace Elastic.Transport.Tests
 
 					{ HealthyResponse, 9200, response =>
 					{
-						response.ApiCallDetails.Success.Should().BeTrue();
+						response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 						response.ApiCallDetails.HttpStatusCode.Should().Be(200);
 						response.ApiCallDetails.DebugInformation.Should().Contain("x\":1");
 					} },
@@ -95,7 +95,7 @@ namespace Elastic.Transport.Tests
 
 					{ BadResponse, 9200, response =>
 					{
-						response.ApiCallDetails.Success.Should().BeFalse();
+						response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeFalse();
 						response.ApiCallDetails.HttpStatusCode.Should().Be(500);
 						response.ApiCallDetails.DebugInformation.Should().Contain("x\":2");
 					} },

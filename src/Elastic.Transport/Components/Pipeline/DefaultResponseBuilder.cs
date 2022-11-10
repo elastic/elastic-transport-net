@@ -131,7 +131,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 
 		var details = new ApiCallDetails
 		{
-			Success = success,
+			HasSuccessfulStatusCode = success,
 			OriginalException = exception,
 			HttpStatusCode = statusCode,
 			RequestBodyInBytes = requestData.PostData?.WrittenBytes,

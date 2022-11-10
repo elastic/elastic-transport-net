@@ -27,7 +27,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing.Examples
 		public async Task CanCallIntoController()
 		{
 			var response = await Transport.GetAsync<StringResponse>("/dummy/20");
-			response.ApiCallDetails.Success.Should().BeTrue("{0}", response.ApiCallDetails.DebugInformation);
+			response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue("{0}", response.ApiCallDetails.DebugInformation);
 		}
 	}
 

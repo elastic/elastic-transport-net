@@ -247,7 +247,7 @@ public interface ITransportConfiguration : IDisposable
 	UserAgent UserAgent { get; }
 
 	/// <summary>
-	/// Allow you to override the status code inspection that sets <see cref="ApiCallDetails.Success"/>
+	/// Allow you to override the status code inspection that sets <see cref="ApiCallDetails.HasSuccessfulStatusCode"/>
 	/// <para>
 	/// Defaults to validating the statusCode is greater or equal to 200 and less then 300
 	/// </para>
