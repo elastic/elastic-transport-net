@@ -181,7 +181,6 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			activity?.AddTag("db.system", "elasticsearch");
 			activity?.AddTag("http.method", requestData.Method);
 
-
 			activity?.AddTag("http.url", requestData.Uri.AbsoluteUri);
 			activity?.AddTag("net.peer.name", requestData.Uri.Host);
 			activity?.AddTag("net.peer.port", requestData.Uri.Port);
@@ -219,7 +218,6 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		{
 			activity?.AddTag("db.system", "elasticsearch");
 			activity?.AddTag("http.method", requestData.Method);
-
 
 			activity?.AddTag("http.url", requestData.Uri.AbsoluteUri);
 			activity?.AddTag("net.peer.name", requestData.Uri.Host);
