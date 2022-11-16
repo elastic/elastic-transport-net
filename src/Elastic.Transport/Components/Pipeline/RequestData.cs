@@ -39,7 +39,7 @@ public sealed class RequestData
 	)
 		: this(method, data, global, local?.RequestConfiguration, memoryStreamFactory)
 	{
-		_path = path;
+		Path = path;
 		CustomResponseBuilder = local?.CustomResponseBuilder;
 		PathAndQuery = CreatePathWithQueryStrings(path, ConnectionSettings, local);
 	}
@@ -121,7 +121,7 @@ public sealed class RequestData
 		}
 	}
 
-	private readonly string _path;
+	public string Path { get; }
 
 	public string Accept { get; }
 	public IReadOnlyCollection<int> AllowedStatusCodes { get; }
@@ -193,7 +193,7 @@ public sealed class RequestData
 
 	public bool IsAsync { get; internal set; }
 
-	public override string ToString() => $"{Method.GetStringValue()} {_path}";
+	public override string ToString() => $"{Method.GetStringValue()} {Path}";
 
 	// TODO This feels like its in the wrong place
 	private string CreatePathWithQueryStrings(string path, ITransportConfiguration global, RequestParameters request)

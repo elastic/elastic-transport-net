@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -32,8 +33,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	private readonly ProductRegistration _productRegistration;
 	private readonly TConfiguration _settings;
 	private readonly ResponseBuilder _responseBuilder;
+	private readonly ActivitySource _activitySource = new ActivitySource("Elastic.Transport.RequestPipeline");
 
-	private RequestConfiguration _pingAndSniffRequestConfiguration;		
+	private RequestConfiguration _pingAndSniffRequestConfiguration;
 
 	/// <inheritdoc cref="RequestPipeline" />
 	internal DefaultRequestPipeline(
@@ -174,14 +176,25 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	public override TResponse CallProductEndpoint<TResponse>(RequestData requestData)
 	{
 		using (var audit = Audit(HealthyResponse, requestData.Node))
-		using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(
-			DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
+		using (var activity = _activitySource.StartActivity($"Elasticsearch: {requestData.Method} {requestData.Path}", ActivityKind.Client))
 		{
+			activity?.AddTag("db.system", "elasticsearch");
+			activity?.AddTag("http.method", requestData.Method);
+
+
+			activity?.AddTag("http.url", requestData.Uri.AbsoluteUri);
+			activity?.AddTag("net.peer.name", requestData.Uri.Host);
+			activity?.AddTag("net.peer.port", requestData.Uri.Port);
 			audit.Path = requestData.PathAndQuery;
 			try
 			{
 				var response = _transportClient.Request<TResponse>(requestData);
-				d.EndState = response.ApiCallDetails;
+
+#if NET6_0_OR_GREATER
+
+				activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCode ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
+#endif
+				activity?.AddTag("db.statement", System.Text.Encoding.UTF8.GetString(response.ApiCallDetails.RequestBodyInBytes));
 
 				if (response.ApiCallDetails is ApiCallDetails apiCallDetails)
 					apiCallDetails.AuditTrail = AuditTrail;
@@ -202,14 +215,24 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	public override async Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 	{
 		using (var audit = Audit(HealthyResponse, requestData.Node))
-		using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(
-			DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
+		using (var activity = _activitySource.StartActivity($"Elasticsearch: {requestData.Method} {requestData.Path}", ActivityKind.Client))
 		{
+			activity?.AddTag("db.system", "elasticsearch");
+			activity?.AddTag("http.method", requestData.Method);
+
+
+			activity?.AddTag("http.url", requestData.Uri.AbsoluteUri);
+			activity?.AddTag("net.peer.name", requestData.Uri.Host);
+			activity?.AddTag("net.peer.port", requestData.Uri.Port);
 			audit.Path = requestData.PathAndQuery;
 			try
 			{
 				var response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
-				d.EndState = response.ApiCallDetails;
+#if NET6_0_OR_GREATER
+
+				activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCode ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
+#endif
+				activity?.AddTag("db.statement", System.Text.Encoding.UTF8.GetString(response.ApiCallDetails.RequestBodyInBytes));
 
 				if (response.ApiCallDetails is ApiCallDetails apiCallDetails)
 					apiCallDetails.AuditTrail = AuditTrail;
