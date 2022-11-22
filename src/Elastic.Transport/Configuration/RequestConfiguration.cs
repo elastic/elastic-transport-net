@@ -46,6 +46,11 @@ public interface IRequestConfiguration
 	bool? DisableDirectStreaming { get; set; }
 
 	/// <summary>
+	/// Whether to disable the audit trail for the request.
+	/// </summary>
+	bool? DisableAuditTrail { get; set; }
+
+	/// <summary>
 	/// Under no circumstance do a ping before the actual call. If a node was previously dead a small ping with
 	/// low connect timeout will be tried first in normal circumstances
 	/// </summary>
@@ -145,6 +150,8 @@ public class RequestConfiguration : IRequestConfiguration
 	/// <inheritdoc />
 	public bool? DisableDirectStreaming { get; set; }
 	/// <inheritdoc />
+	public bool? DisableAuditTrail { get; set; }
+	/// <inheritdoc />
 	public bool? DisablePing { get; set; }
 	/// <inheritdoc />
 	public bool? DisableSniff { get; set; }
@@ -196,6 +203,7 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 		Self.DisableSniff = config?.DisableSniff;
 		Self.DisablePing = config?.DisablePing;
 		Self.DisableDirectStreaming = config?.DisableDirectStreaming;
+		Self.DisableAuditTrail = config?.DisableAuditTrail;
 		Self.AllowedStatusCodes = config?.AllowedStatusCodes;
 		Self.AuthenticationHeader = config?.AuthenticationHeader;
 		Self.EnableHttpPipelining = config?.EnableHttpPipelining ?? true;
@@ -219,6 +227,7 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 	X509CertificateCollection IRequestConfiguration.ClientCertificates { get; set; }
 	string IRequestConfiguration.ContentType { get; set; }
 	bool? IRequestConfiguration.DisableDirectStreaming { get; set; }
+	bool? IRequestConfiguration.DisableAuditTrail { get; set; }
 	bool? IRequestConfiguration.DisablePing { get; set; }
 	bool? IRequestConfiguration.DisableSniff { get; set; }
 	bool? IRequestConfiguration.EnableHttpPipelining { get; set; } = true;
@@ -320,6 +329,13 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 	public RequestConfigurationDescriptor DisableDirectStreaming(bool? disable = true)
 	{
 		Self.DisableDirectStreaming = disable;
+		return this;
+	}
+
+	/// <inheritdoc cref="IRequestConfiguration.DisableAuditTrail"/>
+	public RequestConfigurationDescriptor DisableAuditTrail(bool? disable = true)
+	{
+		Self.DisableAuditTrail = disable;
 		return this;
 	}
 

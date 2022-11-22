@@ -21,7 +21,7 @@ public class SingleNodePool : NodePool
 	}
 
 	/// <inheritdoc />
-	public override DateTime LastUpdate { get; protected set; }
+	public override DateTimeOffset LastUpdate { get; protected set; }
 
 	/// <inheritdoc />
 	public override int MaxRetries => 0;

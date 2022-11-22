@@ -39,7 +39,7 @@ public class TransportConfiguration : TransportConfigurationBase<TransportConfig
 	/// <summary>
 	/// The default memory stream factory if none is configured on <see cref="ITransportConfiguration.MemoryStreamFactory"/>
 	/// </summary>
-	public static MemoryStreamFactory DefaultMemoryStreamFactory { get; } = Elastic.Transport.DefaultMemoryStreamFactory.Default;
+	public static MemoryStreamFactory DefaultMemoryStreamFactory { get; } = Transport.DefaultMemoryStreamFactory.Default;
 
 	/// <summary>
 	/// The default ping timeout. Defaults to 2 seconds
@@ -133,6 +133,7 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 	private TimeSpan? _deadTimeout;
 	private bool _disableAutomaticProxyDetection;
 	private bool _disableDirectStreaming;
+	private bool _disableAuditTrail;
 	private bool _disablePings;
 	private bool _enableHttpCompression;
 	private bool _enableHttpPipelining = true;
@@ -178,8 +179,8 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 		_nodePool = nodePool;
 		_transportClient = transportClient ?? new HttpTransportClient();
 		_productRegistration = productRegistration ?? DefaultProductRegistration.Default;
-		var serializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
-		UseThisRequestResponseSerializer = new DiagnosticsSerializerProxy(serializer);
+
+		UseThisRequestResponseSerializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
 
 		_transportClientLimit = TransportConfiguration.DefaultConnectionLimit;
 		_requestTimeout = TransportConfiguration.DefaultTimeout;
@@ -193,7 +194,7 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 
 		_urlFormatter = new UrlFormatter(this);
 		_statusCodeToResponseSuccess = (m, i) => _productRegistration.HttpStatusCodeClassifier(m, i);
-		_userAgent = Elastic.Transport.UserAgent.Create(_productRegistration.Name, _productRegistration.GetType());
+		_userAgent = Transport.UserAgent.Create(_productRegistration.Name, _productRegistration.GetType());
 
 		if (nodePool is CloudNodePool cloudPool)
 		{
@@ -222,6 +223,7 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 	TimeSpan? ITransportConfiguration.DeadTimeout => _deadTimeout;
 	bool ITransportConfiguration.DisableAutomaticProxyDetection => _disableAutomaticProxyDetection;
 	bool ITransportConfiguration.DisableDirectStreaming => _disableDirectStreaming;
+	bool ITransportConfiguration.DisableAuditTrail => _disableAuditTrail;
 	bool ITransportConfiguration.DisablePings => _disablePings;
 	bool ITransportConfiguration.EnableHttpCompression => _enableHttpCompression;
 	NameValueCollection ITransportConfiguration.Headers => _headers;
@@ -354,6 +356,9 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 	/// <inheritdoc cref="ITransportConfiguration.DisableDirectStreaming"/>
 	// ReSharper disable once MemberCanBePrivate.Global
 	public T DisableDirectStreaming(bool b = true) => Assign(b, (a, v) => a._disableDirectStreaming = v);
+
+	/// <inheritdoc cref="ITransportConfiguration.DisableAuditTrail"/>
+	public T DisableAuditTrail(bool b = true) => Assign(b, (a, v) => a._disableAuditTrail = v);
 
 	/// <inheritdoc cref="ITransportConfiguration.OnRequestCompleted"/>
 	public T OnRequestCompleted(Action<ApiCallDetails> handler) =>

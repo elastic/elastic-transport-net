@@ -10,44 +10,45 @@ namespace Elastic.Transport.Diagnostics.Auditing;
 /// <summary> An audit of the request made </summary>
 public sealed class Audit
 {
-	/// <inheritdoc cref="Audit"/>>
-	public Audit(AuditEvent type, DateTime started)
+	internal Audit(AuditEvent type, DateTimeOffset started)
 	{
 		Event = type;
 		Started = started;
 	}
 
 	/// <summary>
-	/// The type of audit event
+	/// The type of audit event.
 	/// </summary>
 	public AuditEvent Event { get; internal set; }
 
 	/// <summary>
-	/// The node on which the request was made
+	/// The node on which the request was made.
 	/// </summary>
 	public Node Node { get; internal set; }
 
 	/// <summary>
-	/// The path of the request
+	/// The path of the request.
 	/// </summary>
-	public string Path { get; internal set; }
+	public string PathAndQuery { get; internal set; }
 
 	/// <summary>
-	/// The end date and time of the audit
+	/// The end date and time of the audit.
 	/// </summary>
-	public DateTime Ended { get; internal set; }
+	public DateTimeOffset Ended { get; internal set; }
 
 	/// <summary>
-	/// The start date and time of the audit
+	/// The start date and time of the audit.
 	/// </summary>
-	public DateTime Started { get; }
+	public DateTimeOffset Started { get; }
 
 	/// <summary>
 	/// The exception for the audit, if there was one.
 	/// </summary>
 	public Exception Exception { get; internal set; }
 
-	/// <summary> Returns a string representation of the this audit</summary>
+	/// <summary>
+	/// Returns a string representation of the this audit.
+	/// </summary>
 	public override string ToString()
 	{
 		var took = Ended - Started;

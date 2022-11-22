@@ -12,7 +12,7 @@ namespace Elastic.Transport.Diagnostics;
 /// Provides a base implementation of <see cref="IObserver{T}"/> that makes it easier to consume
 /// the <see cref="DiagnosticSource"/>'s exposed in this library
 /// </summary>
-public abstract class TypedDiagnosticObserver<TOnNext> : IObserver<KeyValuePair<string, object>>
+internal abstract class TypedDiagnosticObserver<TOnNext> : IObserver<KeyValuePair<string, object>>
 {
 	private readonly Action<KeyValuePair<string, TOnNext>> _onNext;
 	private readonly Action<Exception> _onError;

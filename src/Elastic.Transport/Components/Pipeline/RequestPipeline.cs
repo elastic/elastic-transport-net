@@ -19,12 +19,11 @@ public abstract class RequestPipeline : IDisposable
 
 	internal RequestPipeline() { }
 
-	//TODO should not be List but requires a refactor
 	/// <summary>
 	/// An audit trail that can be used for logging and debugging purposes. Giving insights into how
 	/// the request made its way through the workflow
 	/// </summary>
-	public abstract List<Audit> AuditTrail { get; }
+	public abstract IEnumerable<Audit> AuditTrail { get; }
 
 	/// <summary>
 	/// Should the workflow attempt the initial sniff as requested by
@@ -44,7 +43,7 @@ public abstract class RequestPipeline : IDisposable
 
 	public abstract bool StaleClusterState { get; }
 
-	public abstract DateTime StartedOn { get; }
+	public abstract DateTimeOffset StartedOn { get; }
 
 	public abstract TResponse CallProductEndpoint<TResponse>(RequestData requestData)
 		where TResponse : TransportResponse, new();

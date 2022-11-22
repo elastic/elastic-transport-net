@@ -18,19 +18,31 @@ namespace Elastic.Transport.Diagnostics;
 internal static class ResponseStatics
 {
 	private static readonly string RequestAlreadyCaptured =
-		"<Request stream not captured or already read to completion by serializer. Set DisableDirectStreaming() on ConnectionSettings to force it to be set on the response.>";
+		"<Request stream not captured or already read to completion by serializer. Set DisableDirectStreaming() on TransportConfiguration to force it to be set on the response.>";
 
 	private static readonly string ResponseAlreadyCaptured =
-		"<Response stream not captured or already read to completion by serializer. Set DisableDirectStreaming() on ConnectionSettings to force it to be set on the response.>";
+		"<Response stream not captured or already read to completion by serializer. Set DisableDirectStreaming() on TransportConfiguration to force it to be set on the response.>";
 
 	/// <inheritdoc cref="ResponseStatics"/>
 	public static string DebugInformationBuilder(ApiCallDetails r, StringBuilder sb)
 	{
 		sb.AppendLine($"# Audit trail of this API call:");
+
 		var auditTrail = (r.AuditTrail ?? Enumerable.Empty<Audit>()).ToList();
-		DebugAuditTrail(auditTrail, sb);
+
+		if (!r.TransportConfiguration.DisableAuditTrail)
+		{			
+			DebugAuditTrail(auditTrail, sb);
+		}
+		else
+		{
+			sb.AppendLine("<Audit trail not captured. Set DisableAuditTrail(false) on TransportConfiguration to capture it.>");
+		}
+
 		if (r.OriginalException != null) sb.AppendLine($"# OriginalException: {r.OriginalException}");
-		DebugAuditTrailExceptions(auditTrail, sb);
+
+		if (!r.TransportConfiguration.DisableAuditTrail)
+			DebugAuditTrailExceptions(auditTrail, sb);
 
 		var response = r.ResponseBodyInBytes?.Utf8String() ?? ResponseAlreadyCaptured;
 		var request = r.RequestBodyInBytes?.Utf8String() ?? RequestAlreadyCaptured;
@@ -104,7 +116,7 @@ internal static class ResponseStatics
 			if (audit.Exception != null) sb.Append($" Exception: {audit.Exception.GetType().Name}");
 			if (audit.Ended == default)
 				sb.AppendLine();
-			else sb.AppendLine($" Took: {(audit.Ended - audit.Started).ToString()}");
+			else sb.AppendLine($" Took: {audit.Ended - audit.Started}");
 		}
 	}
 

@@ -41,7 +41,7 @@ public class TransportException : Exception
 
 	/// <summary>
 	/// The audit trail keeping track of what happened during the invocation of
-	/// <see cref="HttpTransport.Request{TResponse}"/> up until the moment of this exception
+	/// <see cref="HttpTransport.Request{TResponse}"/> up until the moment of this exception.
 	/// </summary>
 	public IEnumerable<Audit> AuditTrail { get; internal set; }
 

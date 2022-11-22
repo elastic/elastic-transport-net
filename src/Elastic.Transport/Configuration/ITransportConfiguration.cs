@@ -75,6 +75,11 @@ public interface ITransportConfiguration : IDisposable
 	bool DisableDirectStreaming { get; }
 
 	/// <summary>
+	/// When set to true will disable capturing an audit trail for requests.
+	/// </summary>
+	bool DisableAuditTrail { get; }
+
+	/// <summary>
 	/// This signals that we do not want to send initial pings to unknown/previously dead nodes
 	/// and just send the call straightaway
 	/// </summary>

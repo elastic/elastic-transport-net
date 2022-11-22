@@ -4,11 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Elastic.Transport.Diagnostics;
 using Elastic.Transport.Diagnostics.Auditing;
 using Elastic.Transport.Extensions;
 using Elastic.Transport.Products;
@@ -33,7 +33,10 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	private readonly TConfiguration _settings;
 	private readonly ResponseBuilder _responseBuilder;
 
-	private RequestConfiguration _pingAndSniffRequestConfiguration;		
+	private readonly ActivitySource _activitySource = new("Elastic.Transport.RequestPipeline");
+
+	private RequestConfiguration _pingAndSniffRequestConfiguration;
+	private List<Audit> _auditTrail = null;
 
 	/// <inheritdoc cref="RequestPipeline" />
 	internal DefaultRequestPipeline(
@@ -56,7 +59,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	}
 
 	/// <inheritdoc cref="RequestPipeline.AuditTrail" />
-	public override List<Audit> AuditTrail { get; } = new();
+	public override IEnumerable<Audit> AuditTrail => _auditTrail ?? (IEnumerable<Audit>)Array.Empty<Audit>();
 
 	private RequestConfiguration PingAndSniffRequestConfiguration
 	{
@@ -142,7 +145,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		}
 	}
 
-	public override DateTime StartedOn { get; }
+	public override DateTimeOffset StartedOn { get; }
 
 	private TimeSpan PingTimeout =>
 		RequestConfiguration?.PingTimeout
@@ -167,63 +170,110 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			response = _responseBuilder.ToResponse<TResponse>(data, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
 		}
 
-		if (response.ApiCallDetails is ApiCallDetails apiCallDetails)
-			apiCallDetails.AuditTrail = AuditTrail;
+		response.ApiCallDetails.AuditTrail = AuditTrail;
 	}
 
 	public override TResponse CallProductEndpoint<TResponse>(RequestData requestData)
 	{
-		using (var audit = Audit(HealthyResponse, requestData.Node))
-		using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(
-			DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
+		using var audit = Audit(HealthyResponse, requestData.Node);
+
+		if (audit is not null)
+			audit.PathAndQuery = requestData.PathAndQuery;
+
+		var activity = Activity.Current;
+		var isElasticClient = activity is not null && activity.GetCustomProperty("elastic.transport.client") is not null;
+
+		if (!isElasticClient)
 		{
-			audit.Path = requestData.PathAndQuery;
-			try
-			{
-				var response = _transportClient.Request<TResponse>(requestData);
-				d.EndState = response.ApiCallDetails;
+			activity = _activitySource.StartActivity($"Elastic.Transport: HTTP {requestData.Method}", ActivityKind.Client);
+		}
 
-				if (response.ApiCallDetails is ApiCallDetails apiCallDetails)
-					apiCallDetails.AuditTrail = AuditTrail;
+		activity?.AddTag("http.method", requestData.Method);
+		activity?.AddTag("http.url", requestData.Uri.AbsoluteUri);
+		activity?.AddTag("net.peer.name", requestData.Uri.Host);
+		activity?.AddTag("net.peer.port", requestData.Uri.Port);
 
-				ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
-				if (!response.ApiCallDetails.HasSuccessfulStatusCode) audit.Event = requestData.OnFailureAuditEvent;
-				return response;
-			}
-			catch (Exception e)
-			{
+		try
+		{
+			var response = _transportClient.Request<TResponse>(requestData);
+
+#if NET6_0_OR_GREATER
+			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCode ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
+#endif
+
+			activity?.AddTag("http.status_code", response.ApiCallDetails.HttpStatusCode);
+
+			response.ApiCallDetails.AuditTrail = AuditTrail;
+
+			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
+
+			if (!response.ApiCallDetails.HasSuccessfulStatusCode && audit is not null)
 				audit.Event = requestData.OnFailureAuditEvent;
-				audit.Exception = e;
-				throw;
-			}
+
+			return response;
+		}
+		catch (Exception e) when (audit is not null)
+		{
+			audit.Event = requestData.OnFailureAuditEvent;
+			audit.Exception = e;
+			throw;
+		}
+		finally
+		{
+			if (!isElasticClient)
+				activity?.Dispose();
 		}
 	}
 
 	public override async Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 	{
-		using (var audit = Audit(HealthyResponse, requestData.Node))
-		using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(
-			DiagnosticSources.RequestPipeline.CallProductEndpoint, requestData))
+		using var audit = Audit(HealthyResponse, requestData.Node);
+
+		if (audit is not null)
+			audit.PathAndQuery = requestData.PathAndQuery;
+
+		var activity = Activity.Current;
+		var isElasticClient = activity is not null && activity.GetCustomProperty("elastic.transport.client") is not null;
+
+		if (!isElasticClient)
 		{
-			audit.Path = requestData.PathAndQuery;
-			try
-			{
-				var response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
-				d.EndState = response.ApiCallDetails;
+			activity = _activitySource.StartActivity($"Elastic.Transport: HTTP {requestData.Method}", ActivityKind.Client);
+		}
 
-				if (response.ApiCallDetails is ApiCallDetails apiCallDetails)
-					apiCallDetails.AuditTrail = AuditTrail;
+		activity?.AddTag("http.method", requestData.Method);
+		activity?.AddTag("http.url", requestData.Uri.AbsoluteUri);
+		activity?.AddTag("net.peer.name", requestData.Uri.Host);
+		activity?.AddTag("net.peer.port", requestData.Uri.Port);
 
-				ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
-				if (!response.ApiCallDetails.HasSuccessfulStatusCode) audit.Event = requestData.OnFailureAuditEvent;
-				return response;
-			}
-			catch (Exception e)
-			{
+		try
+		{
+			var response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
+
+#if NET6_0_OR_GREATER
+			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCode ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
+#endif
+
+			activity?.AddTag("http.status_code", response.ApiCallDetails.HttpStatusCode);
+
+			response.ApiCallDetails.AuditTrail = AuditTrail;
+
+			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
+
+			if (!response.ApiCallDetails.HasSuccessfulStatusCode && audit is not null)
 				audit.Event = requestData.OnFailureAuditEvent;
-				audit.Exception = e;
-				throw;
-			}
+
+			return response;
+		}
+		catch (Exception e) when (audit is not null)
+		{
+			audit.Event = requestData.OnFailureAuditEvent;
+			audit.Exception = e;
+			throw;
+		}
+		finally
+		{
+			if (!isElasticClient)
+				activity?.Dispose();
 		}
 	}
 
@@ -274,7 +324,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 		var clientException = new TransportException(pipelineFailure, exceptionMessage, innerException)
 		{
-			Request = data, ApiCallDetails = callDetails, AuditTrail = AuditTrail
+			Request = data,
+			ApiCallDetails = callDetails,
+			AuditTrail = AuditTrail
 		};
 
 		return clientException;
@@ -413,27 +465,32 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		if (PingDisabled(node)) return;
 
 		var pingData = _productRegistration.CreatePingRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
-		using (var audit = Audit(PingSuccess, node))
-		using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(DiagnosticSources.RequestPipeline.Ping,
-			pingData))
+
+		using var audit = Audit(PingSuccess, node);
+
+		if (audit is not null)
+			audit.PathAndQuery = pingData.PathAndQuery;
+
+		try
 		{
-			audit.Path = pingData.PathAndQuery;
-			try
+			var response = _productRegistration.Ping(_transportClient, pingData);
+
+			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
+
+			//ping should not silently accept bad but valid http responses
+			if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+				throw new PipelineException(pingData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+		}
+		catch (Exception e)
+		{
+			var response = (e as PipelineException)?.Response;
+
+			if (audit is not null)
 			{
-				var response = _productRegistration.Ping(_transportClient, pingData);
-				d.EndState = response.ApiCallDetails;
-				ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
-				//ping should not silently accept bad but valid http responses
-				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-					throw new PipelineException(pingData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
-			}
-			catch (Exception e)
-			{
-				var response = (e as PipelineException)?.Response;
 				audit.Event = PingFailure;
 				audit.Exception = e;
-				throw new PipelineException(PipelineFailure.PingFailure, e) { Response = response };
 			}
+			throw new PipelineException(PipelineFailure.PingFailure, e) { Response = response };
 		}
 	}
 
@@ -443,27 +500,31 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		if (PingDisabled(node)) return;
 
 		var pingData = _productRegistration.CreatePingRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
-		using (var audit = Audit(PingSuccess, node))
-		using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(DiagnosticSources.RequestPipeline.Ping,
-			pingData))
+
+		using var audit = Audit(PingSuccess, node);
+
+		if (audit is not null)
+			audit.PathAndQuery = pingData.PathAndQuery;
+
+		try
 		{
-			audit.Path = pingData.PathAndQuery;
-			try
+			var response = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
+
+			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
+
+			//ping should not silently accept bad but valid http responses
+			if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+				throw new PipelineException(pingData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+		}
+		catch (Exception e)
+		{
+			var response = (e as PipelineException)?.Response;
+			if (audit is not null)
 			{
-				var response = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
-				d.EndState = response.ApiCallDetails;
-				ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
-				//ping should not silently accept bad but valid http responses
-				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-					throw new PipelineException(pingData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
-			}
-			catch (Exception e)
-			{
-				var response = (e as PipelineException)?.Response;
 				audit.Event = PingFailure;
 				audit.Exception = e;
-				throw new PipelineException(PipelineFailure.PingFailure, e) { Response = response };
 			}
+			throw new PipelineException(PipelineFailure.PingFailure, e) { Response = response };
 		}
 	}
 
@@ -472,35 +533,40 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		if (!_productRegistration.SupportsSniff) return;
 
 		var exceptions = new List<Exception>();
+
 		foreach (var node in SniffNodes)
 		{
 			var requestData =
 				_productRegistration.CreateSniffRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
-			using (var audit = Audit(SniffSuccess, node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff,
-				requestData))
-			using (RequestPipelineStatics.DiagnosticSource.Diagnose(DiagnosticSources.RequestPipeline.Sniff, requestData))
-				try
-				{
-					audit.Path = requestData.PathAndQuery;
-					var (response, nodes) = _productRegistration.Sniff(_transportClient, _nodePool.UsingSsl, requestData);
-					d.EndState = response.ApiCallDetails;
 
-					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
-					//sniff should not silently accept bad but valid http responses
-					if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-						throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+			using var audit = Audit(SniffSuccess, node);
 
-					_nodePool.Reseed(nodes);
-					Refresh = true;
-					return;
-				}
-				catch (Exception e)
+			if (audit is not null)
+				audit.PathAndQuery = requestData.PathAndQuery;
+
+			try
+			{
+				var (response, nodes) = _productRegistration.Sniff(_transportClient, _nodePool.UsingSsl, requestData);
+
+				ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
+
+				//sniff should not silently accept bad but valid http responses
+				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+					throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+
+				_nodePool.Reseed(nodes);
+				Refresh = true;
+				return;
+			}
+			catch (Exception e)
+			{
+				if (audit is not null)
 				{
 					audit.Event = SniffFailure;
 					audit.Exception = e;
-					exceptions.Add(e);
 				}
+				exceptions.Add(e);
+			}
 		}
 
 		throw new PipelineException(PipelineFailure.SniffFailure, exceptions.AsAggregateOrFirst());
@@ -511,36 +577,42 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		if (!_productRegistration.SupportsSniff) return;
 
 		var exceptions = new List<Exception>();
+
 		foreach (var node in SniffNodes)
 		{
 			var requestData =
 				_productRegistration.CreateSniffRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
-			using (var audit = Audit(SniffSuccess, node))
-			using (var d = RequestPipelineStatics.DiagnosticSource.Diagnose<RequestData, ApiCallDetails>(DiagnosticSources.RequestPipeline.Sniff,
-				requestData))
-				try
-				{
-					audit.Path = requestData.PathAndQuery;
-					var (response, nodes) = await _productRegistration
-						.SniffAsync(_transportClient, _nodePool.UsingSsl, requestData, cancellationToken)
-						.ConfigureAwait(false);
-					d.EndState = response.ApiCallDetails;
 
-					ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
-					//sniff should not silently accept bad but valid http responses
-					if (!response.ApiCallDetails.HasSuccessfulStatusCode)
-						throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+			using var audit = Audit(SniffSuccess, node);
 
-					_nodePool.Reseed(nodes);
-					Refresh = true;
-					return;
-				}
-				catch (Exception e)
+			if (audit is not null)
+				audit.PathAndQuery = requestData.PathAndQuery;
+
+			try
+			{
+				var (response, nodes) = await _productRegistration
+					.SniffAsync(_transportClient, _nodePool.UsingSsl, requestData, cancellationToken)
+					.ConfigureAwait(false);
+
+				ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
+
+				//sniff should not silently accept bad but valid http responses
+				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+					throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+
+				_nodePool.Reseed(nodes);
+				Refresh = true;
+				return;
+			}
+			catch (Exception e)
+			{
+				if (audit is not null)
 				{
 					audit.Event = SniffFailure;
 					audit.Exception = e;
-					exceptions.Add(e);
 				}
+				exceptions.Add(e);
+			}
 		}
 
 		throw new PipelineException(PipelineFailure.SniffFailure, exceptions.AsAggregateOrFirst());
@@ -596,7 +668,8 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		(RequestConfiguration?.DisablePing).GetValueOrDefault(false)
 		|| _settings.DisablePings || !_nodePool.SupportsPinging || !node.IsResurrected;
 
-	private Auditable Audit(AuditEvent type, Node node = null) => new(type, AuditTrail, _dateTimeProvider, node);
+	private Auditable Audit(AuditEvent type, Node node = null) =>
+		!_settings.DisableAuditTrail ? (new(type, ref _auditTrail, _dateTimeProvider, node)) : null;
 
 	private static void ThrowBadAuthPipelineExceptionWhenNeeded(ApiCallDetails details, TransportResponse response = null)
 	{
@@ -606,7 +679,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 	private void LazyAuditable(AuditEvent e, Node n)
 	{
-		using (new Auditable(e, AuditTrail, _dateTimeProvider, n)) { }
+		using (new Auditable(e, ref _auditTrail, _dateTimeProvider, n)) { }
 	}
 }
 #pragma warning restore 1591

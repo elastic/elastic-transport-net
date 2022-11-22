@@ -12,7 +12,7 @@ namespace Elastic.Transport.Diagnostics;
 /// Provides public access to the strings used while emitting diagnostics.
 /// This makes wiring up <see cref="DiagnosticListener"/>'s less error prone and eliminates magic strings
 /// </summary>
-public static class DiagnosticSources
+internal static class DiagnosticSources
 {
 	/// <summary>
 	/// When subscribing to <see cref="AuditDiagnosticKeys.SourceName"/> you will be notified of all decisions in the request pipeline
@@ -60,8 +60,7 @@ public static class DiagnosticSources
 	}
 
 	/// <summary>
-	/// Provides access to the string event names related to <see cref="DiagnosticsSerializerProxy"/> which
-	/// internally wraps any configured <see cref="Elastic.Transport.Serializer"/>
+	/// Provides access to the string event names related to serialization.
 	/// </summary>
 	public class SerializerDiagnosticKeys : IDiagnosticsKeys
 	{
@@ -111,30 +110,4 @@ public static class DiagnosticSources
 	}
 
 	internal static EmptyDisposable SingletonDisposable { get; } = new EmptyDisposable();
-
-	internal static IDisposable Diagnose<TState>(this DiagnosticSource source, string operationName, TState state)
-	{
-		if (!source.IsEnabled(operationName)) return SingletonDisposable;
-
-		return new Diagnostic<TState>(operationName, source, state);
-	}
-
-	internal static Diagnostic<TState, TStateStop> Diagnose<TState, TStateStop>(this DiagnosticSource source, string operationName, TState state)
-	{
-		if (!source.IsEnabled(operationName)) return Diagnostic<TState, TStateStop>.Default;
-
-		return new Diagnostic<TState, TStateStop>(operationName, source, state);
-	}
-
-	internal static Diagnostic<TState, TEndState> Diagnose<TState, TEndState>(this DiagnosticSource source, string operationName, TState state, TEndState endState)
-	{
-		if (!source.IsEnabled(operationName)) return Diagnostic<TState, TEndState>.Default;
-
-		return new Diagnostic<TState, TEndState>(operationName, source, state)
-		{
-			EndState = endState
-		};
-
-	}
-
 }

@@ -15,7 +15,7 @@ public abstract class DateTimeProvider
 	internal DateTimeProvider() { }
 
 	/// <summary> The current date time </summary>
-	public abstract DateTime Now();
+	public abstract DateTimeOffset Now();
 
 	/// <summary>
 	/// Calculate the dead time for a node based on the number of attempts.
@@ -23,5 +23,5 @@ public abstract class DateTimeProvider
 	/// <param name="attempts">The number of attempts on the node</param>
 	/// <param name="minDeadTimeout">The initial dead time as configured by <see cref="ITransportConfiguration.DeadTimeout"/></param>
 	/// <param name="maxDeadTimeout">The configured maximum dead timeout as configured by <see cref="ITransportConfiguration.MaxDeadTimeout"/></param>
-	public abstract DateTime DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout);
+	public abstract DateTimeOffset DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout);
 }
