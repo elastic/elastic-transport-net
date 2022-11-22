@@ -79,7 +79,7 @@ public class StaticNodePool : NodePool
 	}
 
 	/// <inheritdoc />
-	public override DateTime LastUpdate { get; protected set; }
+	public override DateTimeOffset LastUpdate { get; protected set; }
 
 	/// <inheritdoc />
 	public override int MaxRetries => InternalNodes.Count - 1;

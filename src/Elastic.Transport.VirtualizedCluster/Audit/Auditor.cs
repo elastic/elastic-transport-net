@@ -41,7 +41,7 @@ public sealed class Auditor
 
 	private bool StartedUp { get; }
 
-	public void ChangeTime(Func<DateTime, DateTime> selector)
+	public void ChangeTime(Func<DateTimeOffset, DateTimeOffset> selector)
 	{
 		_cluster ??= Cluster();
 		_clusterAsync ??= Cluster();

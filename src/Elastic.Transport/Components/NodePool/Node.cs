@@ -71,7 +71,7 @@ public sealed class Node : IEquatable<Node>
 	public bool IsAlive { get; private set; }
 
 	/// <summary> When marked dead this reflects the date that the node has to be taken out of rotation till</summary>
-	public DateTime DeadUntil { get; private set; }
+	public DateTimeOffset DeadUntil { get; private set; }
 
 	/// <summary> The number of failed attempts trying to use this node, resets when a node is marked alive</summary>
 	public int FailedAttempts { get; private set; }
@@ -85,17 +85,16 @@ public sealed class Node : IEquatable<Node>
 	/// </summary>
 	public bool HasFeature(string feature) => _features.Count == 0 || _featureSet.Contains(feature);
 
-
 	/// <summary>
-	/// Marks this node as dead and set the date (see <paramref name="untill"/>) after which we want it to come back alive
+	/// Marks this node as dead and set the date (see <paramref name="until"/>) after which we want it to come back alive
 	/// </summary>
-	/// <param name="untill">The <see cref="DateTime"/> after which this node should be considered alive again</param>
-	public void MarkDead(DateTime untill)
+	/// <param name="until">The <see cref="DateTime"/> after which this node should be considered alive again</param>
+	public void MarkDead(DateTimeOffset until)
 	{
 		FailedAttempts++;
 		IsAlive = false;
 		IsResurrected = false;
-		DeadUntil = untill;
+		DeadUntil = until;
 	}
 
 	/// <summary> Mark the node alive explicitly </summary>
@@ -104,20 +103,20 @@ public sealed class Node : IEquatable<Node>
 		FailedAttempts = 0;
 		IsAlive = true;
 		IsResurrected = false;
-		DeadUntil = default(DateTime);
+		DeadUntil = default;
 	}
 
 	/// <summary>
 	/// Use the nodes uri as root to create a <see cref="Uri"/> with <paramref name="path"/>
 	/// </summary>
-	public Uri CreatePath(string path) => new Uri(Uri, path);
+	public Uri CreatePath(string path) => new(Uri, path);
 
 	/// <summary>
 	/// Create a clone of the current node. This is used by <see cref="NodePool"/> implementations that supports reseeding the
 	/// list of nodes through <see cref="NodePool.Reseed"/>
 	/// </summary>
 	public Node Clone() =>
-		new Node(Uri, Features)
+		new(Uri, Features)
 		{
 			IsResurrected = IsResurrected,
 			Id = Id,
@@ -146,7 +145,7 @@ public sealed class Node : IEquatable<Node>
 	public static bool operator !=(Node left, Node right) => !(left == right);
 
 	/// <inheritdoc cref="Equals(Node)"/>
-	public static implicit operator Node(Uri uri) => new Node(uri);
+	public static implicit operator Node(Uri uri) => new(uri);
 
 	/// <inheritdoc cref="Equals(Node)"/>
 	public override bool Equals(object obj)

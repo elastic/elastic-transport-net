@@ -68,7 +68,7 @@ public class VirtualizedCluster
 	public async Task<TransportResponse> ClientCallAsync(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null) =>
 		await _asyncCall(Transport, requestOverrides).ConfigureAwait(false);
 
-	public void ChangeTime(Func<DateTime, DateTime> change) => _dateTimeProvider.ChangeTime(change);
+	public void ChangeTime(Func<DateTimeOffset, DateTimeOffset> change) => _dateTimeProvider.ChangeTime(change);
 
 	public void ClientThrows(bool throws) => _settings.ThrowExceptions(throws);
 }

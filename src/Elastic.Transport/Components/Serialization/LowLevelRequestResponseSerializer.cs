@@ -19,17 +19,18 @@ namespace Elastic.Transport;
 /// <summary>
 /// Default implementation for <see cref="Serializer"/>. This uses <see cref="JsonSerializer"/> from <code>System.Text.Json</code>.
 /// </summary>
-public class LowLevelRequestResponseSerializer : Serializer
+internal sealed class LowLevelRequestResponseSerializer : Serializer
 {
-	//TODO explore removing this or make internal, this provides a path that circumvents the configured HttpTransportSerializer
-	/// <summary> Provides a static reusable reference to an instance of <see cref="LowLevelRequestResponseSerializer"/> to promote reuse </summary>
-	public static readonly LowLevelRequestResponseSerializer Instance = new();
+	/// <summary>
+	/// Provides a static reusable reference to an instance of <see cref="LowLevelRequestResponseSerializer"/> to promote reuse.
+	/// </summary>
+	internal static readonly LowLevelRequestResponseSerializer Instance = new();
 
 	private readonly Lazy<JsonSerializerOptions> _indented;
 	private readonly Lazy<JsonSerializerOptions> _none;
+
 	private IReadOnlyCollection<JsonConverter> AdditionalConverters { get; }
 
-	// ReSharper disable once ReturnTypeCanBeEnumerable.Local
 	private IList<JsonConverter> BakedInConverters { get; } = new List<JsonConverter>
 		{
 			{ new ExceptionConverter() },
@@ -58,7 +59,7 @@ public class LowLevelRequestResponseSerializer : Serializer
 	/// Creates <see cref="JsonSerializerOptions"/> used for serialization.
 	/// Override on a derived serializer to change serialization.
 	/// </summary>
-	protected virtual JsonSerializerOptions CreateSerializerOptions(SerializationFormatting formatting)
+	public JsonSerializerOptions CreateSerializerOptions(SerializationFormatting formatting)
 	{
 		var options = new JsonSerializerOptions
 		{

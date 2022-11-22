@@ -17,7 +17,7 @@ public class UnexpectedTransportException : TransportException
 	/// <inheritdoc cref="UnexpectedTransportException"/>
 	public UnexpectedTransportException(Exception killerException, IReadOnlyCollection<PipelineException> seenExceptions)
 		: base(PipelineFailure.Unexpected, killerException?.Message ?? "An unexpected exception occurred.", killerException) =>
-		SeenExceptions = seenExceptions ?? EmptyReadOnly<PipelineException>.Collection;
+			SeenExceptions = seenExceptions ?? EmptyReadOnly<PipelineException>.Collection;
 
 	/// <summary>
 	/// Seen Exceptions that we try to failover on before this <see cref="UnexpectedTransportException"/> was thrown.

@@ -9,16 +9,16 @@ namespace Elastic.Transport.VirtualizedCluster.Providers;
 /// <inheritdoc cref="DateTimeProvider"/>
 public sealed class TestableDateTimeProvider : DateTimeProvider
 {
-	private DateTime MutableNow { get; set; } = DateTime.UtcNow;
+	private DateTimeOffset MutableNow { get; set; } = DateTimeOffset.UtcNow;
 
 	/// <inheritdoc cref="DateTimeProvider.Now"/>
-	public override DateTime Now() => MutableNow;
+	public override DateTimeOffset Now() => MutableNow;
 
 	/// <summary>
 	/// Advance the time <see cref="Now"/> returns
 	/// </summary>
 	/// <param name="change">A fun that gets passed the current <see cref="Now"/> and needs to return the new value</param>
-	public void ChangeTime(Func<DateTime, DateTime> change) => MutableNow = change(MutableNow);
+	public void ChangeTime(Func<DateTimeOffset, DateTimeOffset> change) => MutableNow = change(MutableNow);
 
-	public override DateTime DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout) => throw new NotImplementedException();
+	public override DateTimeOffset DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout) => throw new NotImplementedException();
 }

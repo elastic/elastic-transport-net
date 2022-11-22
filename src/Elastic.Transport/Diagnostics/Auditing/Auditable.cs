@@ -4,29 +4,29 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Elastic.Transport.Diagnostics.Auditing;
 
 internal class Auditable : IDisposable
 {
 	private readonly Audit _audit;
-	private readonly IDisposable _activity;
-	private readonly DateTimeProvider _dateTimeProvider;
-	private static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.AuditTrailEvents.SourceName);
 
-	public Auditable(AuditEvent type, List<Audit> auditTrail, DateTimeProvider dateTimeProvider, Node node)
+	private readonly DateTimeProvider _dateTimeProvider;
+
+	public Auditable(AuditEvent type, ref List<Audit> auditTrail, DateTimeProvider dateTimeProvider, Node node)
 	{
+		auditTrail ??= new List<Audit>();
+
 		_dateTimeProvider = dateTimeProvider;
+
 		var started = _dateTimeProvider.Now();
 
 		_audit = new Audit(type, started)
 		{
 			Node = node
 		};
+
 		auditTrail.Add(_audit);
-		var diagnosticName = type.GetAuditDiagnosticEventName();
-		_activity = diagnosticName != null ? DiagnosticSource.Diagnose(diagnosticName, _audit) : null;
 	}
 
 	public AuditEvent Event
@@ -39,14 +39,10 @@ internal class Auditable : IDisposable
 		set => _audit.Exception = value;
 	}
 
-	public string Path
+	public string PathAndQuery
 	{
-		set => _audit.Path = value;
+		set => _audit.PathAndQuery = value;
 	}
 
-	public void Dispose()
-	{
-		_audit.Ended = _dateTimeProvider.Now();
-		_activity?.Dispose();
-	}
+	public void Dispose() => _audit.Ended = _dateTimeProvider.Now();
 }

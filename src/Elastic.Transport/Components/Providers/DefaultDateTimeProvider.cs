@@ -15,7 +15,7 @@ public sealed class DefaultDateTimeProvider : DateTimeProvider
 	private static readonly TimeSpan MaximumTimeout = TimeSpan.FromMinutes(30);
 
 	/// <inheritdoc cref="DateTimeProvider.DeadTime"/>
-	public override DateTime DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout)
+	public override DateTimeOffset DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout)
 	{
 		var timeout = minDeadTimeout.GetValueOrDefault(DefaultTimeout);
 		var maxTimeout = maxDeadTimeout.GetValueOrDefault(MaximumTimeout);
@@ -24,5 +24,5 @@ public sealed class DefaultDateTimeProvider : DateTimeProvider
 	}
 
 	/// <inheritdoc cref="DateTimeProvider.Now"/>
-	public override DateTime Now() => DateTime.UtcNow;
+	public override DateTimeOffset Now() => DateTimeOffset.UtcNow;
 }

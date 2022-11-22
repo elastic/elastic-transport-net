@@ -68,7 +68,6 @@ public class HttpTransportClient : TransportClient
 				SetContent(requestMessage, requestData);
 
 			using (requestMessage?.Content ?? (IDisposable)Stream.Null)
-			using (var d = DiagnosticSource.Diagnose<RequestData, int?>(DiagnosticSources.HttpConnection.SendAndReceiveHeaders, requestData))
 			{
 				if (requestData.TcpStats)
 					tcpStats = TcpStats.GetStates();
@@ -77,12 +76,11 @@ public class HttpTransportClient : TransportClient
 					threadPoolStats = ThreadPoolStats.GetStats();
 
 #if NET5_0_OR_GREATER
-				responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
+			responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
 #else
 				responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
 #endif
 				statusCode = (int)responseMessage.StatusCode;
-				d.EndState = statusCode;
 			}
 
 			requestData.MadeItToResponse = true;
@@ -92,8 +90,6 @@ public class HttpTransportClient : TransportClient
 
 			if (responseMessage.Content != null)
 			{
-				receive = DiagnosticSource.Diagnose(DiagnosticSources.HttpConnection.ReceiveBody, requestData, statusCode);
-
 #if NET5_0_OR_GREATER
 				responseStream = responseMessage.Content.ReadAsStream();
 #else
@@ -143,7 +139,6 @@ public class HttpTransportClient : TransportClient
 				await SetContentAsync(requestMessage, requestData, cancellationToken).ConfigureAwait(false);
 
 			using (requestMessage?.Content ?? (IDisposable)Stream.Null)
-			using (var d = DiagnosticSource.Diagnose<RequestData, int?>(DiagnosticSources.HttpConnection.SendAndReceiveHeaders, requestData))
 			{
 				if (requestData.TcpStats)
 					tcpStats = TcpStats.GetStates();
@@ -154,17 +149,15 @@ public class HttpTransportClient : TransportClient
 				responseMessage = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
 					.ConfigureAwait(false);
 				statusCode = (int)responseMessage.StatusCode;
-				d.EndState = statusCode;
 			}
-
+				
 			requestData.MadeItToResponse = true;
 			mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
 			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 
 			if (responseMessage.Content != null)
-			{
-				receive = DiagnosticSource.Diagnose(DiagnosticSources.HttpConnection.ReceiveBody, requestData, statusCode);
+			{				
 				responseStream = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
 			}
 		}

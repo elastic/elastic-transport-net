@@ -20,10 +20,12 @@ public abstract class NodePool : IDisposable
 {
 	private bool _disposed;
 
+	internal NodePool() { }
+
 	/// <summary>
 	/// The last time that this instance was updated.
 	/// </summary>
-	public abstract DateTime LastUpdate { get; protected set; }
+	public abstract DateTimeOffset LastUpdate { get; protected set; }
 
 	/// <summary>
 	/// Returns the default maximum retries for the connection pool implementation.
