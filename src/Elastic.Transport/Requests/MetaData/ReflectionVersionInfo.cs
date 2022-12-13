@@ -37,7 +37,7 @@ internal sealed class ReflectionVersionInfo : VersionInfo
 	{
 		try
 		{
-			var productVersion = "8.0.0-alpha.8+02b315d290415a4eb153beb827a879d037e904f6 (Microsoft Windows 10.0.19044; .NET 6.0.4; Elastic.Clients.Elasticsearch)"; //FileVersionInfo.GetVersionInfo(type.GetTypeInfo().Assembly.Location)?.ProductVersion ?? EmptyVersion;
+			var productVersion = FileVersionInfo.GetVersionInfo(type.GetTypeInfo().Assembly.Location)?.ProductVersion ?? EmptyVersion;
 
 			if (productVersion == EmptyVersion)
 				productVersion = Assembly.GetAssembly(type).GetName().Version.ToString();
