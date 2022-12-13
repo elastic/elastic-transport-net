@@ -29,6 +29,15 @@ public sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
 	/// <summary>
 	/// 
 	/// </summary>
+	internal DefaultMetaHeaderProvider(ReflectionVersionInfo reflectionVersionInfo, string serviceIdentifier)
+	{
+		_asyncMetaDataHeader = new MetaDataHeader(reflectionVersionInfo, serviceIdentifier, true);
+		_syncMetaDataHeader = new MetaDataHeader(reflectionVersionInfo, serviceIdentifier, false);
+	}
+
+	/// <summary>
+	/// 
+	/// </summary>
 	public override string HeaderName => MetaHeaderName;
 
 	/// <summary>

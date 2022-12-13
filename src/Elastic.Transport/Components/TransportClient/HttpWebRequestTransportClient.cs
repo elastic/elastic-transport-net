@@ -288,7 +288,7 @@ public class HttpWebRequestTransportClient : TransportClient
 		var request = (HttpWebRequest)WebRequest.Create(requestData.Uri);
 
 		request.Accept = requestData.Accept;
-		request.ContentType = requestData.RequestMimeType;
+		request.ContentType = requestData.ContentType;
 #if !DOTNETCORE
 		// on netstandard/netcoreapp2.0 this throws argument exception
 		request.MaximumResponseHeadersLength = -1;

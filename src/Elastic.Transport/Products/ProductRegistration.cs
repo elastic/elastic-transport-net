@@ -24,6 +24,11 @@ namespace Elastic.Transport.Products;
 public abstract class ProductRegistration
 {
 	/// <summary>
+	/// The default MIME type used for Accept and Content-Type headers for requests.
+	/// </summary>
+	public abstract string DefaultMimeType { get; }
+
+	/// <summary>
 	/// The name of the current product utilizing <see cref="HttpTransport{TConnectionSettings}"/>
 	/// <para>This name makes its way into the transport diagnostics sources and the default user agent string</para>
 	/// </summary>

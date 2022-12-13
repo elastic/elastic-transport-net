@@ -61,8 +61,8 @@ public sealed class RequestData
 
 		Pipelined = local?.EnableHttpPipelining ?? global.HttpPipeliningEnabled;
 		HttpCompression = global.EnableHttpCompression;
-		RequestMimeType = local?.ContentType ?? MimeType;
-		Accept = local?.Accept ?? MimeType;
+		ContentType = local?.ContentType ?? global.ProductRegistration.DefaultMimeType ?? MimeType;
+		Accept = local?.Accept ?? global.ProductRegistration.DefaultMimeType ?? MimeType;
 
 		if (global.Headers != null)
 			Headers = new NameValueCollection(global.Headers);
@@ -160,8 +160,7 @@ public sealed class RequestData
 	public string ProxyAddress { get; }
 	public string ProxyPassword { get; }
 	public string ProxyUsername { get; }
-	// TODO: rename to ContentType in 8.0.0
-	public string RequestMimeType { get; }
+	public string ContentType { get; }
 	public TimeSpan RequestTimeout { get; }
 	public string RunAs { get; }
 	public IReadOnlyCollection<int> SkipDeserializationForStatusCodes { get; }

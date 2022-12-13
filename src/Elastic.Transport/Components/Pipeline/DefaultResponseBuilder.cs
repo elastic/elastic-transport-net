@@ -125,8 +125,12 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 					.StatusCodeToResponseSuccess(requestData.Method, statusCode.Value);
 		}
 
+		// TODO: Perf - avoid extra allocation by comparing spans.
+		var trimmedMimeType = mimeType?.Replace(" ", "");
+		var trimmedAccept = requestData.Accept.Replace(" ", ""); 
+
 		//mimeType can include charset information on .NET full framework
-		if (!string.IsNullOrEmpty(mimeType) && !mimeType.StartsWith(requestData.Accept))
+		if (!string.IsNullOrEmpty(trimmedMimeType) && !trimmedMimeType.StartsWith(trimmedAccept))
 			success = false;
 
 		var details = new ApiCallDetails
@@ -191,7 +195,11 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 					return response;
 				}
 
-				return mimeType == null || !mimeType.StartsWith(requestData.Accept, StringComparison.Ordinal)
+				// TODO: Perf - avoid extra allocation by comparing spans.
+				var trimmedMimeType = mimeType?.Replace(" ", "");
+				var trimmedAccept = requestData.Accept.Replace(" ", "");
+
+				return trimmedMimeType == null || !trimmedMimeType.StartsWith(trimmedAccept, StringComparison.Ordinal)
 					? null
 					: serializer.Deserialize<TResponse>(responseStream);
 			}
@@ -283,7 +291,11 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 					return response;
 				}
 
-				return mimeType == null || !mimeType.StartsWith(requestData.Accept, StringComparison.Ordinal)
+				// TODO: Perf - avoid extra allocation by comparing spans.
+				var trimmedMimeType = mimeType?.Replace(" ", "");
+				var trimmedAccept = requestData.Accept.Replace(" ", "");
+
+				return trimmedMimeType == null || !trimmedMimeType.StartsWith(trimmedAccept, StringComparison.Ordinal)
 					? default
 					: await serializer
 						.DeserializeAsync<TResponse>(responseStream, cancellationToken)
