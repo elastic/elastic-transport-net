@@ -26,26 +26,29 @@ public class MetaHeaderTests : AssemblyServerTestsBase
 	{
 		var connection = new TestableHttpConnection(responseMessage =>
 		{
-			responseMessage.RequestMessage.Content.Headers.ContentType.ToString().Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
+			responseMessage.RequestMessage.Content.Headers.ContentType.MediaType.Should().Be("application/vnd.elasticsearch+json");
+			var parameter = responseMessage.RequestMessage.Content.Headers.ContentType.Parameters.Single();
+			parameter.Name.Should().Be("compatible-with");
+			parameter.Value.Should().Be("8");
 
 			var acceptValues = responseMessage.RequestMessage.Headers.GetValues("Accept");
-			acceptValues.Single().Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
+			acceptValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
 
 			var contentTypeValues = responseMessage.RequestMessage.Content.Headers.GetValues("Content-Type");
-			contentTypeValues.Single().Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
+			contentTypeValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
 		});
 
 		var connectionPool = new SingleNodePool(Server.Uri);
 		var config = new TransportConfiguration(connectionPool, connection, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
 		var transport = new DefaultHttpTransport(config);
 
-		var response = await transport.PostAsync<StringResponse>("/dummy/20", PostData.String("{}"));
+		var response = await transport.PostAsync<StringResponse>("/metaheader", PostData.String("{}"));
 	}
 }
 
 [ApiController, Route("[controller]")]
-public class DummyController : ControllerBase
+public class MetaHeaderController : ControllerBase
 {
-	[HttpGet("{id}")]
-	public async Task<int> Get(int id) => await Task.FromResult(id * 3);
+	[HttpPost()]
+	public async Task<int> Post() => await Task.FromResult(100);
 }

@@ -371,7 +371,7 @@ public class HttpTransportClient : TransportClient
 
 		requestMessage.Headers.Connection.Clear();
 		requestMessage.Headers.ConnectionClose = false;
-		requestMessage.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(requestData.Accept));
+		requestMessage.Headers.TryAddWithoutValidation("Accept", requestData.Accept);
 
 		var userAgent = requestData.UserAgent?.ToString();
 		if (!string.IsNullOrWhiteSpace(userAgent))
@@ -424,7 +424,7 @@ public class HttpTransportClient : TransportClient
 			if (requestData.HttpCompression)
 				message.Content.Headers.ContentEncoding.Add("gzip");
 
-			message.Content.Headers.ContentType = new MediaTypeHeaderValue(requestData.RequestMimeType);
+			message.Content.Headers.TryAddWithoutValidation("Content-Type", requestData.ContentType);
 		}
 	}
 
@@ -462,7 +462,7 @@ public class HttpTransportClient : TransportClient
 			if (requestData.HttpCompression)
 				message.Content.Headers.ContentEncoding.Add("gzip");
 
-			message.Content.Headers.ContentType = new MediaTypeHeaderValue(requestData.RequestMimeType);
+			message.Content.Headers.TryAddWithoutValidation("Content-Type", requestData.ContentType);
 		}
 	}
 

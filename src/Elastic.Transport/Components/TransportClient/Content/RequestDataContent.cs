@@ -41,7 +41,9 @@ internal sealed class RequestDataContent : HttpContent
 	{
 		_requestData = requestData;
 		_token = default;
-		Headers.ContentType = new MediaTypeHeaderValue(requestData.RequestMimeType);
+
+		Headers.TryAddWithoutValidation("Content-Type", requestData.ContentType);
+
 		if (requestData.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
 
@@ -61,7 +63,9 @@ internal sealed class RequestDataContent : HttpContent
 	{
 		_requestData = requestData;
 		_token = token;
-		Headers.ContentType = new MediaTypeHeaderValue(requestData.RequestMimeType);
+
+		Headers.TryAddWithoutValidation("Content-Type", requestData.ContentType);
+
 		if (requestData.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
 

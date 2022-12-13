@@ -20,6 +20,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 {
 	private readonly HeadersList _headers;
 	private readonly MetaHeaderProvider _metaHeaderProvider;
+	private readonly int? _clientMajorVersion;
 
 	/// <summary>
 	/// Create a new instance of the Elasticsearch product registration.
@@ -30,7 +31,12 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	/// 
 	/// </summary>
 	/// <param name="markerType"></param>
-	public ElasticsearchProductRegistration(Type markerType) : this() => _metaHeaderProvider = new DefaultMetaHeaderProvider(markerType, "es");
+	public ElasticsearchProductRegistration(Type markerType) : this()
+	{
+		var clientVersionInfo = ReflectionVersionInfo.Create(markerType);
+		_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, "es");
+		_clientMajorVersion = clientVersionInfo.Version.Major;
+	}
 
 	/// <summary> A static instance of <see cref="ElasticsearchProductRegistration"/> to promote reuse </summary>
 	public static ProductRegistration Default { get; } = new ElasticsearchProductRegistration();
@@ -52,6 +58,9 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.ResponseBuilder"/>
 	public override ResponseBuilder ResponseBuilder => new ElasticsearchResponseBuilder();
+
+	/// <inheritdoc cref="ProductRegistration.DefaultMimeType"/>
+	public override string DefaultMimeType => _clientMajorVersion.HasValue ? $"application/vnd.elasticsearch+json;compatible-with={_clientMajorVersion.Value}" : null;
 
 	/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 	public const string SniffPath = "_nodes/http,settings";

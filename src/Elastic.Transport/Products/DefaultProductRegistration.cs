@@ -51,6 +51,9 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	/// <inheritdoc cref="ProductRegistration.ResponseBuilder"/>
 	public override ResponseBuilder ResponseBuilder => new DefaultResponseBuilder<EmptyError>();
 
+	/// <inheritdoc cref="ProductRegistration.DefaultMimeType"/>
+	public override string DefaultMimeType => null;
+
 	/// <inheritdoc cref="ProductRegistration.HttpStatusCodeClassifier"/>
 	public override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
 		statusCode >= 200 && statusCode < 300;
