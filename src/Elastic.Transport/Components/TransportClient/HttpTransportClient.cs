@@ -86,7 +86,7 @@ public class HttpTransportClient : TransportClient
 			requestData.MadeItToResponse = true;
 			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
-			mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
+			mimeType = responseMessage.Content.Headers.ContentType.ToString();
 
 			if (responseMessage.Content != null)
 			{
@@ -152,7 +152,7 @@ public class HttpTransportClient : TransportClient
 			}
 				
 			requestData.MadeItToResponse = true;
-			mimeType = responseMessage.Content.Headers.ContentType?.MediaType;
+			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
 			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 

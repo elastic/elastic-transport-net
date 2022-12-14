@@ -62,7 +62,7 @@ public abstract class ElasticsearchResponse : TransportResponse
 	}
 
 	/// <summary>
-	/// Shortcut to test if the response is considered to be successful.
+	/// Shortcut to test if the response is considered successful.
 	/// </summary>
 	/// <returns>A <see cref="bool"/> indicating success or failure.</returns>
 	[JsonIgnore]
@@ -75,7 +75,7 @@ public abstract class ElasticsearchResponse : TransportResponse
 			if (statusCode == 404)
 				return false;
 
-			return (ApiCallDetails?.HasSuccessfulStatusCode ?? false) && (!ElasticsearchServerError?.HasError() ?? true);
+			return (ApiCallDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false) && (!ElasticsearchServerError?.HasError() ?? true);
 		}
 	}
 
