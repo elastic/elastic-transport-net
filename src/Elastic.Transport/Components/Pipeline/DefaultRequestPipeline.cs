@@ -166,7 +166,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		{
 			//make sure we copy over the error body in case we disabled direct streaming.
 			var s = callDetails?.ResponseBodyInBytes == null ? Stream.Null : _memoryStreamFactory.Create(callDetails.ResponseBodyInBytes);
-			var m = callDetails?.ResponseMimeType ?? RequestData.MimeType;
+			var m = callDetails?.ResponseMimeType ?? RequestData.DefaultMimeType;
 			response = _responseBuilder.ToResponse<TResponse>(data, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
 		}
 
@@ -198,7 +198,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			var response = _transportClient.Request<TResponse>(requestData);
 
 #if NET6_0_OR_GREATER
-			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCode ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
+			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
 #endif
 
 			activity?.AddTag("http.status_code", response.ApiCallDetails.HttpStatusCode);
@@ -207,7 +207,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
 
-			if (!response.ApiCallDetails.HasSuccessfulStatusCode && audit is not null)
+			if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType && audit is not null)
 				audit.Event = requestData.OnFailureAuditEvent;
 
 			return response;
@@ -250,7 +250,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			var response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
 
 #if NET6_0_OR_GREATER
-			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCode ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
+			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
 #endif
 
 			activity?.AddTag("http.status_code", response.ApiCallDetails.HttpStatusCode);
@@ -259,7 +259,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
 
-			if (!response.ApiCallDetails.HasSuccessfulStatusCode && audit is not null)
+			if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType && audit is not null)
 				audit.Event = requestData.OnFailureAuditEvent;
 
 			return response;
@@ -280,7 +280,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	public override TransportException CreateClientException<TResponse>(
 		TResponse response, ApiCallDetails callDetails, RequestData data, List<PipelineException> pipelineExceptions)
 	{
-		if (callDetails?.HasSuccessfulStatusCode ?? false) return null;
+		if (callDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false) return null;
 
 		var pipelineFailure = data.OnFailurePipelineFailure;
 		var innerException = callDetails?.OriginalException;
@@ -478,7 +478,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
 			//ping should not silently accept bad but valid http responses
-			if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+			if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
 				throw new PipelineException(pingData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
 		}
 		catch (Exception e)
@@ -513,7 +513,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
 			//ping should not silently accept bad but valid http responses
-			if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+			if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
 				throw new PipelineException(pingData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
 		}
 		catch (Exception e)
@@ -551,7 +551,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 				ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
 				//sniff should not silently accept bad but valid http responses
-				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+				if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
 					throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
 
 				_nodePool.Reseed(nodes);
@@ -597,7 +597,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 				ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
 				//sniff should not silently accept bad but valid http responses
-				if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+				if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
 					throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
 
 				_nodePool.Reseed(nodes);

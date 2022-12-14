@@ -22,7 +22,7 @@ public sealed class RequestData
 {
 //TODO add xmldocs and clean up this class
 #pragma warning disable 1591
-	public const string MimeType = "application/json";
+	public const string DefaultMimeType = "application/json";
 	public const string MimeTypeTextPlain = "text/plain";
 	public const string OpaqueIdHeader = "X-Opaque-Id";
 	public const string RunAsSecurityHeader = "es-security-runas-user";
@@ -61,8 +61,8 @@ public sealed class RequestData
 
 		Pipelined = local?.EnableHttpPipelining ?? global.HttpPipeliningEnabled;
 		HttpCompression = global.EnableHttpCompression;
-		ContentType = local?.ContentType ?? global.ProductRegistration.DefaultMimeType ?? MimeType;
-		Accept = local?.Accept ?? global.ProductRegistration.DefaultMimeType ?? MimeType;
+		ContentType = local?.ContentType ?? global.ProductRegistration.DefaultMimeType ?? DefaultMimeType;
+		Accept = local?.Accept ?? global.ProductRegistration.DefaultMimeType ?? DefaultMimeType;
 
 		if (global.Headers != null)
 			Headers = new NameValueCollection(global.Headers);
@@ -220,6 +220,27 @@ public sealed class RequestData
 		var queryString = ToQueryString(nv);
 		path += queryString;
 		return path;
+	}
+
+	internal bool ValidateResponseContentType(string responseMimeType)
+	{
+		if (string.IsNullOrEmpty(responseMimeType)) return false;
+
+		if (Accept == responseMimeType)
+			return true;
+
+		// TODO - Performance: Review options to avoid the replace here and compare more efficiently.
+		var trimmedAccept = Accept.Replace(" ", "");
+		var trimmedResponseMimeType = responseMimeType.Replace(" ", "");
+
+		return trimmedResponseMimeType.Equals(trimmedAccept, StringComparison.OrdinalIgnoreCase)
+			|| trimmedResponseMimeType.StartsWith(trimmedAccept, StringComparison.OrdinalIgnoreCase)
+
+			// ES specific fallback required because:
+			// - 404 responses from ES8 don't include the vendored header
+			// - ES8 EQL responses don't include vendored type
+
+			|| trimmedAccept.Contains("application/vnd.elasticsearch+json") && trimmedResponseMimeType.StartsWith(DefaultMimeType, StringComparison.OrdinalIgnoreCase); 
 	}
 
 	public static string ToQueryString(NameValueCollection collection) => collection.ToQueryString();

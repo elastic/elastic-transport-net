@@ -52,7 +52,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	{
 		responseStream.ThrowIfNull(nameof(responseStream));
 
-		var details = Initialize(requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats);
+		var details = Initialize(requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats, contentLength);
 
 		TResponse response = null;
 
@@ -86,7 +86,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	{
 		responseStream.ThrowIfNull(nameof(responseStream));
 
-		var details = Initialize(requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats);
+		var details = Initialize(requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats, contentLength);
 
 		TResponse response = null;
 
@@ -103,39 +103,34 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		return response;
 	}
 
-	/// <summary>
-	///     A helper which returns true if the response could potentially have a body.
-	/// </summary>
+	// A helper which returns true if the response could potentially have a body.
+	// We check for content-length != 0 rather than > 0 as we may not have a content-length header and the length may be -1.
+	// In that case, we may have a body and can only use the status code and method conditions to rule out a potential body.
 	private static bool MayHaveBody(int? statusCode, HttpMethod httpMethod, long contentLength) =>
 		contentLength != 0 && (!statusCode.HasValue || statusCode.Value != 204 && httpMethod != HttpMethod.HEAD);
 
-	private static ApiCallDetails Initialize(
-		RequestData requestData, Exception exception, int? statusCode, Dictionary<string, IEnumerable<string>> headers, string mimeType, IReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats,
-		IReadOnlyDictionary<TcpState, int> tcpStats
-	)
+	private static ApiCallDetails Initialize(RequestData requestData, Exception exception, int? statusCode, Dictionary<string, IEnumerable<string>> headers, string mimeType, IReadOnlyDictionary<string,
+		ThreadPoolStatistics> threadPoolStats, IReadOnlyDictionary<TcpState, int> tcpStats, long contentLength)
 	{
-		var success = false;
+		var hasSuccessfulStatusCode = false;
 		var allowedStatusCodes = requestData.AllowedStatusCodes;
 		if (statusCode.HasValue)
 		{
 			if (allowedStatusCodes.Contains(-1) || allowedStatusCodes.Contains(statusCode.Value))
-				success = true;
+				hasSuccessfulStatusCode = true;
 			else
-				success = requestData.ConnectionSettings
+				hasSuccessfulStatusCode = requestData.ConnectionSettings
 					.StatusCodeToResponseSuccess(requestData.Method, statusCode.Value);
 		}
 
-		// TODO: Perf - avoid extra allocation by comparing spans.
-		var trimmedMimeType = mimeType?.Replace(" ", "");
-		var trimmedAccept = requestData.Accept.Replace(" ", ""); 
-
-		//mimeType can include charset information on .NET full framework
-		if (!string.IsNullOrEmpty(trimmedMimeType) && !trimmedMimeType.StartsWith(trimmedAccept))
-			success = false;
+		// We don't validate the content-type (MIME type) for HEAD requests or responses that have no content (204 status code).
+		// Elastic Cloud responses to HEAD requests strip the content-type header so we want to avoid validation in that case.
+		var hasExpectedContentType = !MayHaveBody(statusCode, requestData.Method, contentLength) || requestData.ValidateResponseContentType(mimeType);
 
 		var details = new ApiCallDetails
 		{
-			HasSuccessfulStatusCode = success,
+			HasSuccessfulStatusCode = hasSuccessfulStatusCode,
+			HasExpectedContentType = hasExpectedContentType,
 			OriginalException = exception,
 			HttpStatusCode = statusCode,
 			RequestBodyInBytes = requestData.PostData?.WrittenBytes,
@@ -195,13 +190,9 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 					return response;
 				}
 
-				// TODO: Perf - avoid extra allocation by comparing spans.
-				var trimmedMimeType = mimeType?.Replace(" ", "");
-				var trimmedAccept = requestData.Accept.Replace(" ", "");
-
-				return trimmedMimeType == null || !trimmedMimeType.StartsWith(trimmedAccept, StringComparison.Ordinal)
-					? null
-					: serializer.Deserialize<TResponse>(responseStream);
+				return requestData.ValidateResponseContentType(mimeType)
+					? serializer.Deserialize<TResponse>(responseStream)
+					: null;
 			}
 			catch (JsonException ex) when (ex.Message.Contains("The input does not contain any JSON tokens"))
 			{
@@ -291,15 +282,9 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 					return response;
 				}
 
-				// TODO: Perf - avoid extra allocation by comparing spans.
-				var trimmedMimeType = mimeType?.Replace(" ", "");
-				var trimmedAccept = requestData.Accept.Replace(" ", "");
-
-				return trimmedMimeType == null || !trimmedMimeType.StartsWith(trimmedAccept, StringComparison.Ordinal)
-					? default
-					: await serializer
-						.DeserializeAsync<TResponse>(responseStream, cancellationToken)
-						.ConfigureAwait(false);
+				return requestData.ValidateResponseContentType(mimeType)
+					? await serializer.DeserializeAsync<TResponse>(responseStream, cancellationToken).ConfigureAwait(false)
+					: default;
 			}
 			catch (JsonException ex) when (ex.Message.Contains("The input does not contain any JSON tokens"))
 			{
@@ -326,7 +311,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		else if (responseType == typeof(DynamicResponse))
 		{
 			//if not json store the result under "body"
-			if (mimeType == null || !mimeType.StartsWith(RequestData.MimeType))
+			if (mimeType == null || !mimeType.StartsWith(RequestData.DefaultMimeType))
 			{
 				var dictionary = new DynamicDictionary
 				{

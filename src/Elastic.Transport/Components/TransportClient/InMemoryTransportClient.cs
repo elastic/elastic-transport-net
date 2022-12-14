@@ -31,7 +31,7 @@ public class InMemoryConnection : TransportClient
 	public InMemoryConnection() => _statusCode = 200;
 
 	/// <inheritdoc cref="InMemoryConnection"/>
-	public InMemoryConnection(byte[] responseBody, int statusCode = 200, Exception exception = null, string contentType = RequestData.MimeType, Dictionary<string, IEnumerable<string>> headers = null)
+	public InMemoryConnection(byte[] responseBody, int statusCode = 200, Exception exception = null, string contentType = RequestData.DefaultMimeType, Dictionary<string, IEnumerable<string>> headers = null)
 	{
 		_responseBody = responseBody;
 		_statusCode = statusCode;
@@ -79,7 +79,7 @@ public class InMemoryConnection : TransportClient
 
 		var sc = statusCode ?? _statusCode;
 		Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
-		return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.MimeType, body?.Length ?? 0, null, null);
+		return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.DefaultMimeType, body?.Length ?? 0, null, null);
 	}
 
 	/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>

@@ -128,7 +128,7 @@ public sealed class Auditor
 		Action call = () => { Response = _cluster.ClientCall(callTrace?.RequestOverrides); };
 		call();
 
-		if (Response.ApiCallDetails.HasSuccessfulStatusCode) throw new Exception("Expected call to not be valid");
+		if (Response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType) throw new Exception("Expected call to not be valid");
 
 		if (Response.ApiCallDetails.OriginalException is not TransportException exception)
 			throw new Exception("OriginalException on response is not expected TransportException");
@@ -142,7 +142,7 @@ public sealed class Auditor
 		_clusterAsync.ClientThrows(false);
 		Func<Task> callAsync = async () => { ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false); };
 		await callAsync().ConfigureAwait(false);
-		if (Response.ApiCallDetails.HasSuccessfulStatusCode) throw new Exception("Expected call to not be valid");
+		if (Response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType) throw new Exception("Expected call to not be valid");
 		exception = ResponseAsync.ApiCallDetails.OriginalException as TransportException;
 		if (exception == null) throw new Exception("OriginalException on response is not expected TransportException");
 		assert(exception);

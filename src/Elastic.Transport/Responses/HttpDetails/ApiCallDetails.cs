@@ -92,12 +92,21 @@ public sealed class ApiCallDetails
 	/// <summary>
 	/// 
 	/// </summary>
+	public bool HasExpectedContentType { get; internal set; }
+
+	internal bool HasSuccessfulStatusCodeAndExpectedContentType => HasSuccessfulStatusCode && HasExpectedContentType;
+
+	/// <summary>
+	/// 
+	/// </summary>
 	internal bool SuccessOrKnownError =>
-		HasSuccessfulStatusCode || HttpStatusCode >= 400
-		&& HttpStatusCode < 599
-		&& HttpStatusCode != 504 //Gateway timeout needs to be retried
-		&& HttpStatusCode != 503 //service unavailable needs to be retried
-		&& HttpStatusCode != 502;
+		HasSuccessfulStatusCodeAndExpectedContentType
+			|| HttpStatusCode >= 400
+				&& HttpStatusCode < 599
+				&& HttpStatusCode != 504 //Gateway timeout needs to be retried
+				&& HttpStatusCode != 503 //service unavailable needs to be retried
+				&& HttpStatusCode != 502
+				&& HasExpectedContentType;
 
 	/// <summary>
 	/// 
@@ -134,5 +143,5 @@ public sealed class ApiCallDetails
 	/// A string summarising the API call.
 	/// </summary>
 	public override string ToString() =>
-		$"{(HasSuccessfulStatusCode ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on {HttpMethod.GetStringValue()}: {(Uri is not null ? Uri.PathAndQuery: "UNKNOWN URI")}";
+		$"{(HasSuccessfulStatusCodeAndExpectedContentType ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on {HttpMethod.GetStringValue()}: {(Uri is not null ? Uri.PathAndQuery: "UNKNOWN URI")}";
 }
