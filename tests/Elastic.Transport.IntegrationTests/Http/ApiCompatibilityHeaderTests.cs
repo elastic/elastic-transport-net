@@ -13,16 +13,12 @@ using Xunit;
 
 namespace Elastic.Transport.IntegrationTests.Http;
 
-/// <summary>
-/// Tests that the test framework loads a controller and the exposed transport can talk to its endpoints.
-/// Tests runs against a server that started up once and its server instance shared among many test classes
-/// </summary>
-public class MetaHeaderTests : AssemblyServerTestsBase
+public class ApiCompatibilityHeaderTests : AssemblyServerTestsBase
 {
-	public MetaHeaderTests(TransportTestServer instance) : base(instance) { }
+	public ApiCompatibilityHeaderTests(TransportTestServer instance) : base(instance) { }
 
 	[Fact]
-	public async Task AddsExpectedMetaHeader()
+	public async Task AddsExpectedVendorInformationForRestApiCompaitbility()
 	{
 		var connection = new TestableHttpConnection(responseMessage =>
 		{
