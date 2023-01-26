@@ -35,25 +35,42 @@ internal sealed class ReflectionVersionInfo : VersionInfo
 
 	private static string DetermineVersionFromType(Type type)
 	{
+		var productVersion = EmptyVersion;
+
 		try
 		{
-			var productVersion = type.Assembly?.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? EmptyVersion;
-
-			if (productVersion == EmptyVersion)
-				productVersion = FileVersionInfo.GetVersionInfo(type.Assembly.Location)?.ProductVersion ?? EmptyVersion;
-
-			if (productVersion == EmptyVersion)
-				productVersion = Assembly.GetAssembly(type).GetName().Version.ToString();
-
-			var match = VersionRegex.Match(productVersion);
-
-			return match.Success ? match.Value : EmptyVersion;
+			productVersion = type.Assembly?.GetCustomAttribute<AssemblyVersionAttribute>()?.Version ?? EmptyVersion;
 		}
 		catch
 		{
 			// ignore failures and fall through
 		}
 
-		return EmptyVersion;
+		try
+		{
+			if (productVersion == EmptyVersion)
+				productVersion = FileVersionInfo.GetVersionInfo(type.Assembly.Location)?.ProductVersion ?? EmptyVersion;
+		}
+		catch
+		{
+			// ignore failures and fall through
+		}
+
+		try
+		{
+			// This fallback may not include the minor version numbers
+			if (productVersion == EmptyVersion)
+				productVersion = type.Assembly.GetName()?.Version?.ToString() ?? EmptyVersion;
+		}
+		catch
+		{
+			// ignore failures and fall through
+		}
+
+		if (productVersion == EmptyVersion) return EmptyVersion;
+
+		var match = VersionRegex.Match(productVersion);
+
+		return match.Success ? match.Value : EmptyVersion;
 	}
 }
