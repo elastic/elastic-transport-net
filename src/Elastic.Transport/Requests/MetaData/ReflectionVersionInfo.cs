@@ -37,7 +37,7 @@ internal sealed class ReflectionVersionInfo : VersionInfo
 	{
 		try
 		{
-			var productVersion = type.Assembly?.GetCustomAttribute<AssemblyFileVersionAttribute>().Version ?? EmptyVersion;
+			var productVersion = type.Assembly?.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? EmptyVersion;
 
 			if (productVersion == EmptyVersion)
 				productVersion = FileVersionInfo.GetVersionInfo(type.Assembly.Location)?.ProductVersion ?? EmptyVersion;
