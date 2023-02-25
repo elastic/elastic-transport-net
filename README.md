@@ -128,7 +128,19 @@ what happened.
 
 Further more `DiagnosticSources` exists for various purposes e.g (de)serialization times, time to first byte & various counters
 
+## Mocking response objects for testing
 
+`TestableResponseFactory` can be used to create response objects for use in unit tests.
+
+Example code using the [Moq](https://github.com/moq/moq) library:
+
+```cs
+var response = TestableResponseFactory.CreateSuccessfulResponse<SearchResponse<Document>>(new(), 200);
+var mock = new Mock<ElasticsearchClient>();
+mock
+  .Setup(m => m.SearchAsync<Document>(It.IsAny<SearchRequest>(), It.IsAny<CancellationToken>()))
+  .ReturnsAsync(response);
+```
 
 
 
