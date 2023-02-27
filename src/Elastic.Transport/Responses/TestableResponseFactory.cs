@@ -29,7 +29,14 @@ public static class TestableResponseFactory
 	/// <returns>The <typeparamref name="T"/> response configured with the provided status code where <see cref="ApiCallDetails.HasSuccessfulStatusCode"/> will be set using <paramref name="statusCodeRepresentsSuccess"/>.</returns>
 	public static T CreateResponse<T>(T response, int httpStatusCode, bool statusCodeRepresentsSuccess) where T : TransportResponse
 	{
-		var apiCallDetails = new ApiCallDetails { HttpStatusCode = httpStatusCode, HasSuccessfulStatusCode = statusCodeRepresentsSuccess };
+		var apiCallDetails = new ApiCallDetails
+		{
+			HttpStatusCode = httpStatusCode,
+			HasSuccessfulStatusCode = statusCodeRepresentsSuccess,
+			HasExpectedContentType = true,
+			TransportConfiguration = new TransportConfiguration()
+		};
+
 		return CreateResponse<T>(response, apiCallDetails);
 	}
 
