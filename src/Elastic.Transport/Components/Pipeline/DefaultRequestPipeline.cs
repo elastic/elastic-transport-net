@@ -33,7 +33,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	private readonly TConfiguration _settings;
 	private readonly ResponseBuilder _responseBuilder;
 
-	private readonly ActivitySource _activitySource = new("Elastic.Transport.RequestPipeline");
+	private static readonly ActivitySource _activitySource = new("Elastic.Transport.RequestPipeline");
 
 	private RequestConfiguration _pingAndSniffRequestConfiguration;
 	private List<Audit> _auditTrail = null;
