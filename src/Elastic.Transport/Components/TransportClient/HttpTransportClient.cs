@@ -150,14 +150,14 @@ public class HttpTransportClient : TransportClient
 					.ConfigureAwait(false);
 				statusCode = (int)responseMessage.StatusCode;
 			}
-				
+
 			requestData.MadeItToResponse = true;
 			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
 			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 
 			if (responseMessage.Content != null)
-			{				
+			{
 				responseStream = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
 			}
 		}
@@ -273,7 +273,7 @@ public class HttpTransportClient : TransportClient
 				}
 
 				// Otherwise, check the certificate
-				return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
+				return CertificateHelpers.ValidateCertificateFingerprint(certificate, `_expectedCertificateFingerprint);
 			};
 		}
 
