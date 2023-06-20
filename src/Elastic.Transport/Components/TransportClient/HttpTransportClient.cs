@@ -273,7 +273,7 @@ public class HttpTransportClient : TransportClient
 				}
 
 				// Otherwise, check the certificate
-				return CertificateHelpers.ValidateCertificateFingerprint(certificate, `_expectedCertificateFingerprint);
+				return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
 			};
 		}
 
