@@ -86,7 +86,7 @@ public class HttpTransportClient : TransportClient
 			requestData.MadeItToResponse = true;
 			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
-			mimeType = responseMessage.Content.Headers.ContentType.ToString();
+			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
 
 			if (responseMessage.Content != null)
 			{
