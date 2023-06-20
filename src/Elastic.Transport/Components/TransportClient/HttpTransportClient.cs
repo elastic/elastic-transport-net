@@ -86,7 +86,7 @@ public class HttpTransportClient : TransportClient
 			requestData.MadeItToResponse = true;
 			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
-			mimeType = responseMessage.Content.Headers.ContentType.ToString();
+			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
 
 			if (responseMessage.Content != null)
 			{
@@ -150,14 +150,14 @@ public class HttpTransportClient : TransportClient
 					.ConfigureAwait(false);
 				statusCode = (int)responseMessage.StatusCode;
 			}
-				
+
 			requestData.MadeItToResponse = true;
 			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
 			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 
 			if (responseMessage.Content != null)
-			{				
+			{
 				responseStream = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
 			}
 		}
