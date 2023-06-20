@@ -18,7 +18,8 @@ public abstract class TransportClient : IDisposable
 {
 	private bool _disposed = false;
 
-	internal TransportClient() { }
+	/// <inheritdoc cref="TransportClient"/>
+	protected TransportClient() { }
 
 	/// <summary>
 	/// Perform a request to the endpoint described by <paramref name="requestData"/> using its associated configuration.
@@ -56,7 +57,7 @@ public abstract class TransportClient : IDisposable
 		where TResponse : TransportResponse, new();
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public void Dispose()
 	{
@@ -65,7 +66,7 @@ public abstract class TransportClient : IDisposable
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <param name="disposing"></param>
 	protected virtual void Dispose(bool disposing)
@@ -82,7 +83,7 @@ public abstract class TransportClient : IDisposable
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	protected virtual void DisposeManagedResources() { }
 }

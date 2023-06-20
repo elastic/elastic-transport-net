@@ -41,7 +41,8 @@ public class HttpWebRequestTransportClient : TransportClient
 		if (!IsMono) HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
 	}
 
-	internal HttpWebRequestTransportClient() { }
+	/// <inheritdoc cref="HttpWebRequestTransportClient"/>>
+	public HttpWebRequestTransportClient() { }
 
 	internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
 
@@ -212,7 +213,7 @@ public class HttpWebRequestTransportClient : TransportClient
 	/// Allows subclasses to modify the <see cref="HttpWebRequest"/> instance that is going to be used for the API call
 	/// </summary>
 	/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
-	internal HttpWebRequest CreateHttpWebRequest(RequestData requestData)
+	protected virtual HttpWebRequest CreateHttpWebRequest(RequestData requestData)
 	{
 		var request = CreateWebRequest(requestData);
 		SetAuthenticationIfNeeded(requestData, request);
@@ -224,7 +225,7 @@ public class HttpWebRequestTransportClient : TransportClient
 	}
 
 	/// <summary> Hook for subclasses to set additional client certificates on <paramref name="request"/> </summary>
-	internal void SetClientCertificates(HttpWebRequest request, RequestData requestData)
+	protected virtual void SetClientCertificates(HttpWebRequest request, RequestData requestData)
 	{
 		if (requestData.ClientCertificates != null)
 			request.ClientCertificates.AddRange(requestData.ClientCertificates);
@@ -245,7 +246,7 @@ public class HttpWebRequestTransportClient : TransportClient
 	}
 
 	/// <summary> Hook for subclasses override the certificate validation on <paramref name="request"/> </summary>
-	internal void SetServerCertificateValidationCallBackIfNeeded(HttpWebRequest request, RequestData requestData)
+	protected virtual void SetServerCertificateValidationCallBackIfNeeded(HttpWebRequest request, RequestData requestData)
 	{
 		var callback = requestData?.ConnectionSettings?.ServerCertificateValidationCallback;
 #if !__MonoCS__
@@ -339,7 +340,7 @@ public class HttpWebRequestTransportClient : TransportClient
 	}
 
 	/// <summary> Hook for subclasses override <see cref="ServicePoint"/> behavior</summary>
-	internal void AlterServicePoint(ServicePoint requestServicePoint, RequestData requestData)
+	protected virtual void AlterServicePoint(ServicePoint requestServicePoint, RequestData requestData)
 	{
 		requestServicePoint.UseNagleAlgorithm = false;
 		requestServicePoint.Expect100Continue = false;
@@ -353,7 +354,7 @@ public class HttpWebRequestTransportClient : TransportClient
 	}
 
 	/// <summary> Hook for subclasses to set proxy on <paramref name="request"/> </summary>
-	internal void SetProxyIfNeeded(HttpWebRequest request, RequestData requestData)
+	protected virtual void SetProxyIfNeeded(HttpWebRequest request, RequestData requestData)
 	{
 		if (!string.IsNullOrWhiteSpace(requestData.ProxyAddress))
 		{
@@ -369,7 +370,7 @@ public class HttpWebRequestTransportClient : TransportClient
 	}
 
 	/// <summary> Hook for subclasses to set authentication on <paramref name="request"/></summary>
-	internal void SetAuthenticationIfNeeded(RequestData requestData, HttpWebRequest request)
+	protected virtual void SetAuthenticationIfNeeded(RequestData requestData, HttpWebRequest request)
 	{
 		//If user manually specifies an Authorization Header give it preference
 		if (requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
