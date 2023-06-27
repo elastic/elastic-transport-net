@@ -443,11 +443,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	/// GetBuffer has no failure modes (it always returns something, even if it's an empty buffer), therefore this method
 	/// always returns a valid ArraySegment to the same buffer returned by GetBuffer.
 	/// </remarks>
-#if NET45
-	public bool TryGetBuffer(out ArraySegment<byte> buffer)
-#else
 	public override bool TryGetBuffer(out ArraySegment<byte> buffer)
-#endif
 	{
 		CheckDisposed();
 		buffer = new ArraySegment<byte>(GetBuffer(), 0, (int)Length);
