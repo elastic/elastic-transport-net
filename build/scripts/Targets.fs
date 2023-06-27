@@ -27,7 +27,8 @@ let getOS =
 let execWithTimeout binary args timeout =
     let opts =
         ExecArguments(binary, args |> List.map (sprintf "\"%s\"") |> List.toArray)
-        
+    let options = args |> String.concat " "
+    printfn ":: Running command: %s %s" binary options
     let r = Proc.Exec(opts, timeout)
 
     match r.HasValue with
