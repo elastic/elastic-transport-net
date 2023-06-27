@@ -34,7 +34,9 @@ public class ActivityTest
 				activity.OperationName.Should().Be("Elastic.Transport: HTTP GET");
 				activity.Tags.Should().Contain(n => n.Key == "http.url" && n.Value == "http://localhost:9200/");
 				activity.Tags.Should().Contain(n => n.Key == "net.peer.name" && n.Value == "localhost");
+#if !NETFRAMEWORK
 				activity.Status.Should().Be(ActivityStatusCode.Ok);
+#endif
 			},
 			ShouldListenTo = activitySource => activitySource.Name == "Elastic.Transport.RequestPipeline",
 			Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData

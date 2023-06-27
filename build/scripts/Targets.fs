@@ -11,7 +11,18 @@ open Bullseye
 open CommandLine
 open Fake.Tools.Git
 open ProcNet
+open System
 
+type OS =
+    | OSX
+    | Windows
+    | Linux
+
+let getOS = 
+    match int Environment.OSVersion.Platform with
+    | 4 | 128 -> Linux
+    | 6       -> OSX
+    | _       -> Windows
     
 let exec binary args =
     let r = Proc.Exec (binary, args |> List.map (fun a -> sprintf "\"%s\"" a) |> List.toArray)
@@ -49,7 +60,9 @@ let private test (arguments:ParseResults<Arguments>) =
     let junitOutput = Path.Combine(Paths.Output.FullName, "junit-{assembly}-{framework}-test-results.xml")
     let loggerPathArgs = sprintf "LogFilePath=%s" junitOutput
     let loggerArg = sprintf "--logger:\"junit;%s\"" loggerPathArgs
-    exec "dotnet" ["test"; "-c"; "RELEASE"; loggerArg] |> ignore
+    let tfmArgs =
+        if getOS = OS.Windows then [] else ["-f"; "net6.0"]
+    exec "dotnet" (["test"; "-c"; "Release"; loggerArg] @ tfmArgs)  |> ignore
 
 let private generatePackages (arguments:ParseResults<Arguments>) =
     let output = Paths.RootRelative Paths.Output.FullName
@@ -66,7 +79,6 @@ let private validatePackages (arguments:ParseResults<Arguments>) =
     
     let args = ["-v"; currentVersionInformational.Value; "-k"; Paths.SignKey; "-t"; output] @ jenkinsOnWindowsArgs
     nugetPackages |> Seq.iter (fun p -> exec "dotnet" (["nupkg-validator"; p] @ args) |> ignore)
-    
 
 let private generateApiChanges (arguments:ParseResults<Arguments>) =
     let output = Paths.RootRelative <| Paths.Output.FullName
