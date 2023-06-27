@@ -7,7 +7,7 @@
 
 // modified to be dedicated for RequestData only
 
-#if DOTNETCORE
+#if !NETFRAMEWORK
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;

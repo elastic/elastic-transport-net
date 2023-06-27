@@ -32,7 +32,7 @@ using System.Threading;
 
 namespace Elastic.Transport;
 
-#if !DOTNETCORE
+#if NETFRAMEWORK
 /// <summary>
 /// Stub for System.Diagnostics.Tracing.EventCounter which is not available on .NET 4.6.1
 /// </summary>

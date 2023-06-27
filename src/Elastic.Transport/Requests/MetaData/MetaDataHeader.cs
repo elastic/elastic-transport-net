@@ -33,10 +33,10 @@ public sealed class MetaDataHeader
 		// This code is expected to be called infrequently so we're not concerned with over optimising this
 
 		var builder = new StringBuilder(64)
-			.Append(serviceIdentifier).Append("=").Append(ClientVersion).Append(_separator)
-			.Append("a=").Append(isAsync ? "1" : "0").Append(_separator)
+			.Append(serviceIdentifier).Append('=').Append(ClientVersion).Append(_separator)
+			.Append("a=").Append(isAsync ? '1' : '0').Append(_separator)
 			.Append("net=").Append(RuntimeVersion).Append(_separator)
-			.Append(_httpClientIdentifier).Append("=").Append(RuntimeVersion);
+			.Append(_httpClientIdentifier).Append('=').Append(RuntimeVersion);
 
 		if (!string.IsNullOrEmpty(TransportVersion))
 			builder.Append(_separator).Append("t=").Append(TransportVersion);
@@ -45,7 +45,7 @@ public sealed class MetaDataHeader
 	}
 
 	private static readonly string _httpClientIdentifier =
-#if DOTNETCORE
+#if !NETFRAMEWORK
 		ConnectionInfo.UsingCurlHandler ? "cu" : "so";
 #else
 		"wr";

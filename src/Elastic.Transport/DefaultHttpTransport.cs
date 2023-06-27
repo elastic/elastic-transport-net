@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Elastic.Transport.Extensions;
 using Elastic.Transport.Products;
 
-#if !DOTNETCORE
+#if NETFRAMEWORK
 using System.Net;
 #endif
 
@@ -380,7 +380,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 			//This causes it to behave differently to .NET FULL. We already wrapped the WebException
 			//under TransportException and it exposes way more information as part of it's
 			//exception message e.g the the root cause of the server error body.
-#if !DOTNETCORE
+#if NETFRAMEWORK
 			if (a.OriginalException is WebException)
 				a.OriginalException = clientException;
 #endif
