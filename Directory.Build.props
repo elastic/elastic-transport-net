@@ -13,9 +13,6 @@
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionRoot)\build\keys\keypair.snk</AssemblyOriginatorKeyFile>
-    
-    <DefineConstants Condition="'$(TargetFramework)'=='net461'">$(DefineConstants);FULLFRAMEWORK</DefineConstants>
-    <DefineConstants Condition="$(DefineConstants.Contains(FULLFRAMEWORK)) == False">$(DefineConstants);DOTNETCORE</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="">
   </PropertyGroup>
