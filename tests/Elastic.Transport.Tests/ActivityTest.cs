@@ -4,51 +4,48 @@
 
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Elastic.Transport.Diagnostics.Auditing;
-using Elastic.Transport.VirtualizedCluster;
-using Elastic.Transport.VirtualizedCluster.Audit;
-using Elastic.Transport.VirtualizedCluster.Rules;
+using Elastic.Transport.Tests.Plumbing;
 using FluentAssertions;
 using Xunit;
 
 namespace Elastic.Transport.Tests;
 
+// We cannot allow this test to run in parellel with other tests as the listener may pick up other activities
+[Collection(nameof(NonParallelCollection))]
 public class ActivityTest
 {
 	[Fact]
 	public async Task BasicOpenTelemetryTest()
 	{
-		Activity oTelActivity = null;
+		var callCounter = 0;
 		var listener = new ActivityListener
 		{
 			ActivityStarted = _ => { },
-			ActivityStopped = activity => oTelActivity = activity,
+			ActivityStopped = activity =>
+			{
+				callCounter++;
+
+				if (callCounter > 1)
+					Assert.Fail("Expected one activity, but received multiple stop events.");
+
+				activity.Should().NotBeNull();
+				activity.Kind.Should().Be(ActivityKind.Client);
+				activity.DisplayName.Should().Be("Elastic.Transport: HTTP GET");
+				activity.OperationName.Should().Be("Elastic.Transport: HTTP GET");
+				activity.Tags.Should().Contain(n => n.Key == "http.url" && n.Value == "http://localhost:9200/");
+				activity.Tags.Should().Contain(n => n.Key == "net.peer.name" && n.Value == "localhost");
+				activity.Status.Should().Be(ActivityStatusCode.Ok);
+			},
 			ShouldListenTo = activitySource => activitySource.Name == "Elastic.Transport.RequestPipeline",
 			Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData
 		};
 		ActivitySource.AddActivityListener(listener);
 
-		var audit =
-			new Auditor(() => Virtual.Elasticsearch
-				.Bootstrap(1)
-				.ClientCalls(r => r.Succeeds(TimesHelper.Once).ReturnResponse(new { x = 1 }))
-				.StaticNodePool()
-				.Settings(s => s.DisablePing().EnableDebugMode())
-			);
-		_ = await audit.TraceCalls(
-			new ClientCall { { AuditEvent.HealthyResponse, 9200, response => { } }, }
-		);
+		var transport = new DefaultHttpTransport(InMemoryConnectionFactory.Create());
 
-		oTelActivity.Should().NotBeNull();
-
-		oTelActivity.Kind.Should().Be(ActivityKind.Client);
-
-		oTelActivity.DisplayName.Should().Be("Elastic.Transport: HTTP GET");
-		oTelActivity.OperationName.Should().Be("Elastic.Transport: HTTP GET");
-
-		oTelActivity.Tags.Should().Contain(n => n.Key == "http.url" && n.Value == "http://localhost:9200/");
-		oTelActivity.Tags.Should().Contain(n => n.Key == "net.peer.name" && n.Value == "localhost");
-
-		oTelActivity.Status.Should().Be(ActivityStatusCode.Ok);
+		_ = await transport.RequestAsync<StringResponse>(HttpMethod.GET, "/");
 	}
 }
+
+[CollectionDefinition(nameof(NonParallelCollection), DisableParallelization = true)]
+public class NonParallelCollection { }

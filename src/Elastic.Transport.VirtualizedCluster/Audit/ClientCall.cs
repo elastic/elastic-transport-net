@@ -18,7 +18,7 @@ public sealed class ClientCall : List<CallTraceState>
 	public Action<TransportResponse> AssertResponse { get; private set; }
 	public Func<RequestConfigurationDescriptor, IRequestConfiguration> RequestOverrides { get; }
 
-	public void Add(AuditEvent key, Action<Elastic.Transport.Diagnostics.Auditing.Audit> value) => Add(new CallTraceState(key) { SimpleAssert = value });
+	public void Add(AuditEvent key, Action<Diagnostics.Auditing.Audit> value) => Add(new CallTraceState(key) { SimpleAssert = value });
 
 	public void Add(AuditEvent key, int port) => Add(new CallTraceState(key) { Port = port });
 
