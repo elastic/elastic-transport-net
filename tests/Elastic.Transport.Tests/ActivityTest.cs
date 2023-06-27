@@ -43,7 +43,7 @@ public class ActivityTest
 
 		var transport = new DefaultHttpTransport(InMemoryConnectionFactory.Create());
 
-		_ = await transport.RequestAsync<StringResponse>(HttpMethod.GET, "/");
+		_ = await transport.RequestAsync<VoidResponse>(HttpMethod.GET, "/");
 	}
 }
 
