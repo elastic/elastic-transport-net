@@ -59,8 +59,11 @@ jobs:
           dotnet-version: |
             6.0.x
 
+      - run: ./build.bat build -s true
+        name: Build
+
       - run: ./build.bat test -s true
-        name: Tests
+        name: Test
 
       - name: Test Results
         if: success() || failure()
