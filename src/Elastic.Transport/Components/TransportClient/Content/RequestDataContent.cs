@@ -7,7 +7,7 @@
 
 // modified to be dedicated for RequestData only
 
-#if DOTNETCORE
+#if !NETFRAMEWORK
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
@@ -77,7 +77,7 @@ internal sealed class RequestDataContent : HttpContent
 	{
 		if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
-#if NET5_0_OR_GREATER
+#if NET6_0_OR_GREATER
 		await using (stream.ConfigureAwait(false))
 #else
 		using (stream)
@@ -98,7 +98,7 @@ internal sealed class RequestDataContent : HttpContent
 		SerializeToStreamAsync(stream, context, default);
 
 
-#if NET5_0_OR_GREATER
+#if NET6_0_OR_GREATER
 	protected override
 #else
 	private
@@ -112,7 +112,7 @@ internal sealed class RequestDataContent : HttpContent
 		await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 
-#if NET5_0_OR_GREATER
+#if NET6_0_OR_GREATER
 	protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken _)
 	{
 		var serializeToStreamTask = new TaskCompletionSource<bool>();

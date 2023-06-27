@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
-#if DOTNETCORE
+#if !NETFRAMEWORK
 using System.Net.Http;
 #endif
 
@@ -16,7 +16,7 @@ internal static class ConnectionInfo
 		get
 		{
 			// Not available after .NET 5.0
-#if NET5_0_OR_GREATER || !DOTNETCORE
+#if NET6_0_OR_GREATER || NETFRAMEWORK
 #pragma warning disable IDE0025 // Use expression body for properties
 			return false;
 #pragma warning restore IDE0025 // Use expression body for properties

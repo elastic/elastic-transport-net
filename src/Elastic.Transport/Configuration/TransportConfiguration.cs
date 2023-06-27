@@ -9,7 +9,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-#if DOTNETCORE
+#if !NETFRAMEWORK
 using System.Net.Http;
 #endif
 using System.Net.Security;
@@ -68,8 +68,7 @@ public class TransportConfiguration : TransportConfigurationBase<TransportConfig
 #pragma warning disable 1570
 	/// <summary>
 	/// The default concurrent connection limit for outgoing http requests. Defaults to <c>80</c>
-#if DOTNETCORE
-	/// <para>Except for <see cref="HttpClientHandler"/> implementations based on curl, which defaults to <see cref="Environment.ProcessorCount"/></para>
+#if !NETFRAMEWORK	/// <para>Except for <see cref="HttpClientHandler"/> implementations based on curl, which defaults to <see cref="Environment.ProcessorCount"/></para>
 #endif
 	/// </summary>
 #pragma warning restore 1570

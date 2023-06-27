@@ -12,7 +12,7 @@ using Elastic.Transport.VirtualizedCluster.Products;
 using Elastic.Transport.VirtualizedCluster.Products.Elasticsearch;
 using Elastic.Transport.VirtualizedCluster.Providers;
 using Elastic.Transport.VirtualizedCluster.Rules;
-#if DOTNETCORE
+#if !NETFRAMEWORK
 using TheException = System.Net.Http.HttpRequestException;
 #else
 using TheException = System.Net.WebException;

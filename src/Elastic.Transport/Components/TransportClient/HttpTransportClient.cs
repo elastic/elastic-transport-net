@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-#if DOTNETCORE
+#if !NETFRAMEWORK
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -75,8 +75,8 @@ public class HttpTransportClient : TransportClient
 				if (requestData.ThreadPoolStats)
 					threadPoolStats = ThreadPoolStats.GetStats();
 
-#if NET5_0_OR_GREATER
-			responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
+#if NET6_0_OR_GREATER
+				responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
 #else
 				responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
 #endif
@@ -90,7 +90,7 @@ public class HttpTransportClient : TransportClient
 
 			if (responseMessage.Content != null)
 			{
-#if NET5_0_OR_GREATER
+#if NET6_0_OR_GREATER
 				responseStream = responseMessage.Content.ReadAsStream();
 #else
 				responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();

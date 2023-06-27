@@ -25,7 +25,7 @@
 
 using System;
 using Elastic.Transport.Extensions;
-#if DOTNETCORE
+#if !NETFRAMEWORK
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -42,18 +42,18 @@ namespace Elastic.Transport;
 /// </summary>
 internal sealed class RuntimeVersionInfo : VersionInfo
 {
-	public static readonly RuntimeVersionInfo Default = new RuntimeVersionInfo { Version = new Version(0, 0, 0), IsPrerelease = false };
+	public static readonly RuntimeVersionInfo Default = new() { Version = new Version(0, 0, 0), IsPrerelease = false };
 
 	public RuntimeVersionInfo() => StoreVersion(GetRuntimeVersion());
 
 	private static string GetRuntimeVersion() =>
-#if !DOTNETCORE
+#if NETFRAMEWORK
 		GetFullFrameworkRuntime();
 #else
 		GetNetCoreVersion();
 #endif
 
-#if DOTNETCORE
+#if !NETFRAMEWORK
 	private static string GetNetCoreVersion()
 	{
 		// for .NET 5+ we can use Environment.Version
@@ -172,7 +172,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 	private static bool IsRunningInContainer => string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true");
 #endif
 
-#if !DOTNETCORE
+#if NETFRAMEWORK
 	private static string GetFullFrameworkRuntime()
 	{
 		const string subkey = @"SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full\";

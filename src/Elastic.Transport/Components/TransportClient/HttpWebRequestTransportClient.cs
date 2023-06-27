@@ -28,7 +28,7 @@ namespace Elastic.Transport;
 /// over HttpClient and does not reuse its instances of HttpClient
 /// </para>
 /// </summary>
-#if DOTNETCORE
+#if !NETFRAMEWORK
 [Obsolete("CoreFX HttpWebRequest uses HttpClient under the covers but does not reuse HttpClient instances, do NOT use on .NET core only used as the default on Full Framework")]
 #endif
 public class HttpWebRequestTransportClient : TransportClient
@@ -290,7 +290,7 @@ public class HttpWebRequestTransportClient : TransportClient
 
 		request.Accept = requestData.Accept;
 		request.ContentType = requestData.ContentType;
-#if !DOTNETCORE
+#if NETFRAMEWORK
 		// on netstandard/netcoreapp2.0 this throws argument exception
 		request.MaximumResponseHeadersLength = -1;
 #endif
