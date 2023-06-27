@@ -24,9 +24,18 @@ let getOS =
     | 6       -> OSX
     | _       -> Windows
     
+let execWithTimeout binary args timeout =
+    let opts =
+        ExecArguments(binary, args |> List.map (sprintf "\"%s\"") |> List.toArray)
+        
+    let r = Proc.Exec(opts, timeout)
+
+    match r.HasValue with
+    | true -> r.Value
+    | false -> failwithf "invocation of `%s` timed out" binary
+
 let exec binary args =
-    let r = Proc.Exec (binary, args |> List.map (fun a -> sprintf "\"%s\"" a) |> List.toArray)
-    match r.HasValue with | true -> r.Value | false -> failwithf "invocation of `%s` timed out" binary
+    execWithTimeout binary args (TimeSpan.FromMinutes 10)
     
 let private restoreTools = lazy(exec "dotnet" ["tool"; "restore"])
 let private currentVersion =
@@ -62,7 +71,7 @@ let private test (arguments:ParseResults<Arguments>) =
     let loggerArg = sprintf "--logger:\"junit;%s\"" loggerPathArgs
     let tfmArgs =
         if getOS = OS.Windows then [] else ["-f"; "net6.0"]
-    exec "dotnet" (["test"; "-c"; "Release"; loggerArg] @ tfmArgs)  |> ignore
+    exec "dotnet" (["test"; "-c"; "Release"; loggerArg] @ tfmArgs) |> ignore
 
 let private generatePackages (arguments:ParseResults<Arguments>) =
     let output = Paths.RootRelative Paths.Output.FullName
