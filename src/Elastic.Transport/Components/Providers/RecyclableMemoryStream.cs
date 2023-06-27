@@ -283,17 +283,6 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 
 			RecyclableMemoryStreamManager.EventsWriter.MemoryStreamFinalized(_id, _tag, AllocationStack);
 
-#if !NETSTANDARD1_4
-			if (AppDomain.CurrentDomain.IsFinalizingForUnload())
-			{
-				// If we're being finalized because of a shutdown, don't go any further.
-				// We have no idea what's already been cleaned up. Triggering events may cause
-				// a crash.
-				base.Dispose(false);
-				return;
-			}
-#endif
-
 			_memoryManager.ReportStreamFinalized();
 		}
 
@@ -314,13 +303,9 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	/// <summary>
 	/// Equivalent to Dispose
 	/// </summary>
-#if NETSTANDARD1_4
-        public void Close() => Dispose(true);
-#else
 	public override void Close() => Dispose(true);
-#endif
 
-#endregion
+	#endregion
 
 	#region MemoryStream overrides
 
@@ -421,11 +406,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	/// until Dispose is called, but the next time GetBuffer() is called, a new buffer from the pool will be required.
 	/// </remarks>
 	/// <exception cref="ObjectDisposedException">Object has been disposed</exception>
-#if NETSTANDARD1_4
-        public byte[] GetBuffer()
-#else
 	public override byte[] GetBuffer()
-#endif
 	{
 		CheckDisposed();
 
@@ -462,8 +443,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	/// GetBuffer has no failure modes (it always returns something, even if it's an empty buffer), therefore this method
 	/// always returns a valid ArraySegment to the same buffer returned by GetBuffer.
 	/// </remarks>
-#if NET40 || NET45
-        public bool TryGetBuffer(out ArraySegment<byte> buffer)
+#if NET45
+	public bool TryGetBuffer(out ArraySegment<byte> buffer)
 #else
 	public override bool TryGetBuffer(out ArraySegment<byte> buffer)
 #endif
@@ -538,7 +519,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		return amountRead;
 	}
 
-#if NETCOREAPP2_1 || NETSTANDARD2_1
+#if NETSTANDARD2_1
         /// <summary>
         /// Reads from the current position into the provided buffer
         /// </summary>
@@ -622,7 +603,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		_length = Math.Max(_position, _length);
 	}
 
-#if NETCOREAPP2_1 || NETSTANDARD2_1
+#if NETSTANDARD2_1
         /// <summary>
         /// Writes the buffer to the stream
         /// </summary>
@@ -839,7 +820,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		return amountToCopy;
 	}
 
-#if NETCOREAPP2_1 || NETSTANDARD2_1
+#if NETSTANDARD2_1
         private int InternalRead(Span<byte> buffer, int fromPosition)
         {
             if (_length - fromPosition <= 0) return 0;
