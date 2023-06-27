@@ -283,6 +283,15 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 
 			RecyclableMemoryStreamManager.EventsWriter.MemoryStreamFinalized(_id, _tag, AllocationStack);
 
+			if (AppDomain.CurrentDomain.IsFinalizingForUnload())
+			{
+				// If we're being finalized because of a shutdown, don't go any further.
+				// We have no idea what's already been cleaned up. Triggering events may cause
+				// a crash.
+				base.Dispose(false);
+				return;
+			}
+
 			_memoryManager.ReportStreamFinalized();
 		}
 
