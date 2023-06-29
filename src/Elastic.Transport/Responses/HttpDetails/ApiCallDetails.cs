@@ -17,7 +17,7 @@ namespace Elastic.Transport;
 /// </summary>
 public sealed class ApiCallDetails
 {
-	private string _debugInformation;
+	private string? _debugInformation;
 
 	internal ApiCallDetails() { }
 

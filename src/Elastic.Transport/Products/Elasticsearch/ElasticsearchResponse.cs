@@ -83,7 +83,7 @@ public abstract class ElasticsearchResponse : TransportResponse
 	///
 	/// </summary>
 	[JsonIgnore]
-	public ElasticsearchServerError ElasticsearchServerError { get; internal set; }
+	public ElasticsearchServerError? ElasticsearchServerError { get; internal set; }
 
 	/// <summary>
 	///
@@ -107,9 +107,7 @@ public abstract class ElasticsearchResponse : TransportResponse
 	protected virtual void DebugIsValid(StringBuilder sb) { }
 
 	/// <summary>
-	///
+	/// A custom <see cref="ToString"/> implementation that returns <see cref="DebugInformation"/>
 	/// </summary>
-	/// <returns></returns>
-	public override string ToString() =>
-		$"{(!IsValidResponse ? "Inv" : "V")}alid response built from a {ApiCallDetails?.ToString().ToCamelCase()}";
+	public override string ToString() => DebugInformation;
 }
