@@ -32,7 +32,7 @@ public abstract class ElasticsearchResponse : TransportResponse
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	[JsonIgnore]
 	public string DebugInformation
@@ -46,7 +46,7 @@ public abstract class ElasticsearchResponse : TransportResponse
 			if (!IsValidResponse)
 				DebugIsValid(sb);
 
-			if (ApiCallDetails.ParsedHeaders is not null && ApiCallDetails.ParsedHeaders.TryGetValue("warning", out var warnings))
+			if (ApiCallDetails?.ParsedHeaders is not null && ApiCallDetails.ParsedHeaders.TryGetValue("warning", out var warnings))
 			{
 				sb.AppendLine($"# Server indicated warnings:");
 
@@ -80,20 +80,20 @@ public abstract class ElasticsearchResponse : TransportResponse
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	[JsonIgnore]
 	public ElasticsearchServerError ElasticsearchServerError { get; internal set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <param name="exception"></param>
 	/// <returns></returns>
 	// TODO: We need nullable annotations here ideally as exception is not null when the return value is true.
 	public bool TryGetOriginalException(out Exception? exception)
 	{
-		if (ApiCallDetails.OriginalException is not null)
+		if (ApiCallDetails?.OriginalException is not null)
 		{
 			exception = ApiCallDetails.OriginalException;
 			return true;
@@ -107,9 +107,9 @@ public abstract class ElasticsearchResponse : TransportResponse
 	protected virtual void DebugIsValid(StringBuilder sb) { }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <returns></returns>
 	public override string ToString() =>
-		$"{(!IsValidResponse ? "Inv" : "V")}alid Elastic.Clients.Elasticsearch response built from a {ApiCallDetails?.ToString().ToCamelCase()}";
+		$"{(!IsValidResponse ? "Inv" : "V")}alid response built from a {ApiCallDetails?.ToString().ToCamelCase()}";
 }

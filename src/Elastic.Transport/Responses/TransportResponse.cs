@@ -29,3 +29,4 @@ public abstract class TransportResponse
 	[JsonIgnore]
 	public ApiCallDetails ApiCallDetails { get; internal set; }
 }
+
