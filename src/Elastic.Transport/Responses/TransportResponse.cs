@@ -24,8 +24,12 @@ public abstract class TransportResponse<T> : TransportResponse
 public abstract class TransportResponse
 {
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	[JsonIgnore]
-	public ApiCallDetails ApiCallDetails { get; internal set; }
+	public ApiCallDetails? ApiCallDetails { get; internal set; }
+
+	/// <inheritdoc cref="object.ToString"/>
+	public override string ToString() => ApiCallDetails?.DebugInformation
+		?? $"{nameof(ApiCallDetails)} not set reverting to default ToString(): {base.ToString()}";
 }
