@@ -33,3 +33,4 @@ public abstract class TransportResponse
 	public override string ToString() => ApiCallDetails?.DebugInformation
 		?? $"{nameof(ApiCallDetails)} not set reverting to default ToString(): {base.ToString()}";
 }
+

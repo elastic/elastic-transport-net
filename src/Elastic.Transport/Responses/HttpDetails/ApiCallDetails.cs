@@ -13,31 +13,31 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport;
 
 /// <summary>
-/// 
+///
 /// </summary>
 public sealed class ApiCallDetails
 {
-	private string _debugInformation;
+	private string? _debugInformation;
 
 	internal ApiCallDetails() { }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>>
 	public IEnumerable<Audit> AuditTrail { get; internal set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	internal IReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	internal IReadOnlyDictionary<TcpState, int> TcpStats { get; set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public string DebugInformation
 	{
@@ -55,49 +55,49 @@ public sealed class ApiCallDetails
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public HttpMethod HttpMethod { get; internal set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public int? HttpStatusCode { get; internal set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
-	public Exception OriginalException { get; internal set; }
+	public Exception? OriginalException { get; internal set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public byte[] RequestBodyInBytes { get; internal set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public byte[] ResponseBodyInBytes { get; internal set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	internal string ResponseMimeType { get; set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public bool HasSuccessfulStatusCode { get; internal set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public bool HasExpectedContentType { get; internal set; }
 
 	internal bool HasSuccessfulStatusCodeAndExpectedContentType => HasSuccessfulStatusCode && HasExpectedContentType;
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	internal bool SuccessOrKnownError =>
 		HasSuccessfulStatusCodeAndExpectedContentType
@@ -109,23 +109,23 @@ public sealed class ApiCallDetails
 				&& HasExpectedContentType;
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
-	public Uri Uri { get; internal set; }
+	public Uri? Uri { get; internal set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	internal ITransportConfiguration TransportConfiguration { get; set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	internal IReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; set; }
 		= EmptyReadOnly<string, IEnumerable<string>>.Dictionary;
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <param name="key"></param>
 	/// <param name="headerValues"></param>
@@ -142,6 +142,13 @@ public sealed class ApiCallDetails
 	/// <summary>
 	/// A string summarising the API call.
 	/// </summary>
-	public override string ToString() =>
-		$"{(HasSuccessfulStatusCodeAndExpectedContentType ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on {HttpMethod.GetStringValue()}: {(Uri is not null ? Uri.PathAndQuery: "UNKNOWN URI")}";
+	public override string ToString()
+	{
+		var sb = new StringBuilder();
+		sb.Append($"{(HasSuccessfulStatusCodeAndExpectedContentType ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on ");
+		sb.AppendLine($"{HttpMethod.GetStringValue()}: {(Uri is not null ? Uri.PathAndQuery : "UNKNOWN URI")}");
+		if (OriginalException is not null)
+			sb.AppendLine($" Exception: {OriginalException.Message}");
+		return sb.ToString();
+	}
 }

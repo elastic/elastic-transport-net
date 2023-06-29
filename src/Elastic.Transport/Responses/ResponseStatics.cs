@@ -26,12 +26,13 @@ internal static class ResponseStatics
 	/// <inheritdoc cref="ResponseStatics"/>
 	public static string DebugInformationBuilder(ApiCallDetails r, StringBuilder sb)
 	{
+
 		sb.AppendLine($"# Audit trail of this API call:");
 
 		var auditTrail = (r.AuditTrail ?? Enumerable.Empty<Audit>()).ToList();
 
 		if (!r.TransportConfiguration.DisableAuditTrail)
-		{			
+		{
 			DebugAuditTrail(auditTrail, sb);
 		}
 		else
