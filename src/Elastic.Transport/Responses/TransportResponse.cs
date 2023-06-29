@@ -23,14 +23,16 @@ public abstract class TransportResponse<T> : TransportResponse
 /// </summary>
 public abstract class TransportResponse
 {
-	/// <summary>
-	///
-	/// </summary>
+	/// <summary> Returns details about the API call that created this response. </summary>
 	[JsonIgnore]
-	public ApiCallDetails? ApiCallDetails { get; internal set; }
+	// TODO: ApiCallDetails is always set, but nothing enforces it
+	// since we use new() generic constraint we can not enforce a protected constructor.
+	// ReSharper disable once NotNullOrRequiredMemberIsNotInitialized
+	public ApiCallDetails ApiCallDetails { get; internal set; }
 
 	/// <inheritdoc cref="object.ToString"/>
 	public override string ToString() => ApiCallDetails?.DebugInformation
-		?? $"{nameof(ApiCallDetails)} not set reverting to default ToString(): {base.ToString()}";
+		// ReSharper disable once ConstantNullCoalescingCondition
+		?? $"{nameof(ApiCallDetails)} not set, likely a bug, reverting to default ToString(): {base.ToString()}";
 }
 
