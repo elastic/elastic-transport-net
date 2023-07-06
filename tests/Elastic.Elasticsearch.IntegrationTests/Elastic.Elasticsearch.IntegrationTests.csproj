@@ -21,6 +21,8 @@
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
       <PackageReference Include="FluentAssertions" Version="5.10.3" />
+      <PackageReference Include="Nullean.VsTest.Pretty.TestLogger" Version="0.3.0" />
+      <PackageReference Include="JunitXml.TestLogger" Version="2.1.81" />
     </ItemGroup>
 
     <ItemGroup>
