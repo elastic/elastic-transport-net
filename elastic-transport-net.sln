@@ -42,6 +42,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Elastic.Transport.Profiling
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playground", "Playground\Playground.csproj", "{5EE4DC72-B337-448B-802A-6158F4D90667}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Elasticsearch.IntegrationTests", "tests\Elastic.Elasticsearch.IntegrationTests\Elastic.Elasticsearch.IntegrationTests.csproj", "{317C118F-FA1E-499A-B7F2-DC932DE66CB8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -80,6 +82,10 @@ Global
 		{5EE4DC72-B337-448B-802A-6158F4D90667}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5EE4DC72-B337-448B-802A-6158F4D90667}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5EE4DC72-B337-448B-802A-6158F4D90667}.Release|Any CPU.Build.0 = Release|Any CPU
+		{317C118F-FA1E-499A-B7F2-DC932DE66CB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{317C118F-FA1E-499A-B7F2-DC932DE66CB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{317C118F-FA1E-499A-B7F2-DC932DE66CB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{317C118F-FA1E-499A-B7F2-DC932DE66CB8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -93,6 +99,7 @@ Global
 		{3B27DE76-1188-4078-8828-67AFD39BAC10} = {3582B07D-C2B0-49CC-B676-EAF806EB010E}
 		{ED4E89BE-FBE9-4876-979C-63A0E3BC5419} = {BBB0AC81-F09D-4895-84E2-7E933D608E78}
 		{5EE4DC72-B337-448B-802A-6158F4D90667} = {7610B796-BB3E-4CB2-8296-79BBFF6D23FC}
+		{317C118F-FA1E-499A-B7F2-DC932DE66CB8} = {3582B07D-C2B0-49CC-B676-EAF806EB010E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7F60C4BB-6216-4E50-B1E4-9C38EB484843}
