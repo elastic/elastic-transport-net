@@ -126,12 +126,12 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	private RequestPipelineFactory<TConfiguration> PipelineProvider { get; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public override TConfiguration Settings { get; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <typeparam name="TResponse"></typeparam>
 	/// <param name="method"></param>
@@ -139,8 +139,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	/// <param name="data"></param>
 	/// <param name="requestParameters"></param>
 	/// <returns></returns>
-	public override TResponse Request<TResponse>(HttpMethod method, string path, PostData data = null,
-		RequestParameters requestParameters = null)
+	public override TResponse Request<TResponse>(HttpMethod method, string path, PostData? data = null, RequestParameters? requestParameters = null)
 	{
 		using var pipeline =
 			PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
@@ -217,7 +216,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <typeparam name="TResponse"></typeparam>
 	/// <param name="method"></param>
@@ -228,7 +227,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	/// <returns></returns>
 	/// <exception cref="UnexpectedTransportException"></exception>
 	public override async Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path,
-		PostData data = null, RequestParameters requestParameters = null,
+		PostData? data = null, RequestParameters? requestParameters = null,
 		CancellationToken cancellationToken = default)
 	{
 		using var pipeline =
@@ -343,7 +342,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 
 	private TResponse FinalizeResponse<TResponse>(RequestData requestData, RequestPipeline pipeline,
 		List<PipelineException> seenExceptions,
-		TResponse response
+		TResponse? response
 	) where TResponse : TransportResponse, new()
 	{
 		if (requestData.Node == null) //foreach never ran
@@ -359,11 +358,11 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		return response;
 	}
 
-	private static ApiCallDetails GetMostRecentCallDetails<TResponse>(TResponse response,
+	private static ApiCallDetails? GetMostRecentCallDetails<TResponse>(TResponse? response,
 		IEnumerable<PipelineException> seenExceptions)
 		where TResponse : TransportResponse, new()
 	{
-		var callDetails = response?.ApiCallDetails ?? seenExceptions.LastOrDefault(e => e.Response.ApiCallDetails != null)?.Response.ApiCallDetails;
+		var callDetails = response?.ApiCallDetails ?? seenExceptions.LastOrDefault(e => e.Response?.ApiCallDetails != null)?.Response?.ApiCallDetails;
 		return callDetails;
 	}
 

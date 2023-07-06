@@ -140,7 +140,7 @@ public sealed class RequestData
 	public MemoryStreamFactory MemoryStreamFactory { get; }
 	public HttpMethod Method { get; }
 
-	public Node Node
+	public Node? Node
 	{
 		get => _node;
 		set
@@ -240,7 +240,7 @@ public sealed class RequestData
 			// - 404 responses from ES8 don't include the vendored header
 			// - ES8 EQL responses don't include vendored type
 
-			|| trimmedAccept.Contains("application/vnd.elasticsearch+json") && trimmedResponseMimeType.StartsWith(DefaultMimeType, StringComparison.OrdinalIgnoreCase); 
+			|| trimmedAccept.Contains("application/vnd.elasticsearch+json") && trimmedResponseMimeType.StartsWith(DefaultMimeType, StringComparison.OrdinalIgnoreCase);
 	}
 
 	public static string ToQueryString(NameValueCollection collection) => collection.ToQueryString();

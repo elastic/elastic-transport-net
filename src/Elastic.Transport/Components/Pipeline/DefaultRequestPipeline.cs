@@ -35,7 +35,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 	private static readonly ActivitySource _activitySource = new("Elastic.Transport.RequestPipeline");
 
-	private RequestConfiguration _pingAndSniffRequestConfiguration;
+	private RequestConfiguration? _pingAndSniffRequestConfiguration;
 	private List<Audit> _auditTrail = null;
 
 	/// <inheritdoc cref="RequestPipeline" />
@@ -73,7 +73,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			{
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
-				AuthenticationHeader = _settings.Authentication,
+				AuthenticationHeader = RequestConfiguration?.AuthenticationHeader ?? _settings.Authentication,
 				EnableHttpPipelining = RequestConfiguration?.EnableHttpPipelining ?? _settings.HttpPipeliningEnabled,
 				ForceNode = RequestConfiguration?.ForceNode
 			};
@@ -277,14 +277,14 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		}
 	}
 
-	public override TransportException CreateClientException<TResponse>(
-		TResponse response, ApiCallDetails callDetails, RequestData data, List<PipelineException> pipelineExceptions)
+	public override TransportException? CreateClientException<TResponse>(TResponse response, ApiCallDetails? callDetails,
+		RequestData data, List<PipelineException> seenExceptions)
 	{
 		if (callDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false) return null;
 
 		var pipelineFailure = data.OnFailurePipelineFailure;
 		var innerException = callDetails?.OriginalException;
-		if (pipelineExceptions.HasAny(out var exs))
+		if (seenExceptions.HasAny(out var exs))
 		{
 			pipelineFailure = exs.Last().FailureReason;
 			innerException = exs.AsAggregateOrFirst();
