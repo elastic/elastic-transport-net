@@ -5,6 +5,7 @@
 using Elastic.Elasticsearch.Ephemeral;
 using Elastic.Elasticsearch.Xunit;
 using Elastic.Transport;
+using Elastic.Transport.Products.Elasticsearch;
 using Xunit;
 using Xunit.Abstractions;
 using static Elastic.Elasticsearch.Ephemeral.ClusterAuthentication;
@@ -28,7 +29,7 @@ public class DefaultCluster : XunitClusterBase
 				: "localhost");
 			var nodes = NodesUris(hostName);
 			var connectionPool = new StaticNodePool(nodes);
-			var settings = new TransportConfiguration(connectionPool)
+			var settings = new TransportConfiguration(connectionPool, productRegistration: ElasticsearchProductRegistration.Default)
 				.Proxy(new Uri("http://ipv4.fiddler:8080"), null!, null!)
 				.RequestTimeout(TimeSpan.FromSeconds(5))
 				.ServerCertificateValidationCallback(CertificateValidations.AllowAll)

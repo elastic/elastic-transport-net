@@ -35,7 +35,7 @@ public class PipelineException : Exception
 		|| FailureReason == PipelineFailure.PingFailure;
 
 	/// <summary> The response that triggered this exception </summary>
-	public TransportResponse Response { get; internal set; }
+	public TransportResponse? Response { get; internal set; }
 
 	private static string GetMessage(PipelineFailure failure) =>
 		failure switch

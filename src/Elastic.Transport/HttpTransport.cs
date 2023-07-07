@@ -18,16 +18,16 @@ public abstract class HttpTransport
 	public abstract TResponse Request<TResponse>(
 		HttpMethod method,
 		string path,
-		PostData data = null,
-		RequestParameters requestParameters = null)
+		PostData? data = null,
+		RequestParameters? requestParameters = null)
 		where TResponse : TransportResponse, new();
 
 	/// <inheritdoc cref="Request{TResponse}" />
 	public abstract Task<TResponse> RequestAsync<TResponse>(
 		HttpMethod method,
 		string path,
-		PostData data = null,
-		RequestParameters requestParameters = null,
+		PostData? data = null,
+		RequestParameters? requestParameters = null,
 		CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new();
 }

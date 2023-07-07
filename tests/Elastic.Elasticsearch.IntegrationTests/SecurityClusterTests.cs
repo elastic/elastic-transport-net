@@ -29,4 +29,18 @@ public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
 		response.ApiCallDetails.Should().NotBeNull();
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
+
+	[Fact]
+	public void SyncRequestDoesNotThrowOnBadAuth()
+	{
+		var response = Transport.Request<StringResponse>(GET, "/", null, new DefaultRequestParameters
+		{
+			RequestConfiguration = new RequestConfiguration
+			{
+				AuthenticationHeader = new BasicAuthentication("unknown-user", "bad-password")
+			}
+		});
+		response.ApiCallDetails.Should().NotBeNull();
+		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeFalse();
+	}
 }

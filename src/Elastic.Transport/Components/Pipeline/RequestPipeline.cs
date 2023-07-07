@@ -94,13 +94,13 @@ public abstract class RequestPipeline : IDisposable
 
 	public abstract void AuditCancellationRequested();
 
-	public abstract TransportException CreateClientException<TResponse>(TResponse response, ApiCallDetails callDetails, RequestData data,
-		List<PipelineException> seenExceptions)
+	public abstract TransportException? CreateClientException<TResponse>(TResponse? response, ApiCallDetails? callDetails,
+		RequestData data, List<PipelineException> seenExceptions)
 		where TResponse : TransportResponse, new();
 #pragma warning restore 1591
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public void Dispose()
 	{
@@ -109,7 +109,7 @@ public abstract class RequestPipeline : IDisposable
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <param name="disposing"></param>
 	protected virtual void Dispose(bool disposing)
@@ -126,7 +126,7 @@ public abstract class RequestPipeline : IDisposable
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	protected virtual void DisposeManagedResources() { }
 }
