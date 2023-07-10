@@ -18,6 +18,6 @@ internal class WebProxy : IWebProxy
 
 	public Uri GetProxy(Uri destination) => _uri;
 
-	public bool IsBypassed(Uri host) => host.IsLoopback;
+	public bool IsBypassed(Uri host) => false;
 }
 #endif
