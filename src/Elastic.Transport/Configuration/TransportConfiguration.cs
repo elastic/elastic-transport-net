@@ -352,6 +352,12 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 			.Assign(username, (a, v) => a._proxyUsername = v)
 			.Assign(password, (a, v) => a._proxyPassword = v);
 
+	/// <summary>
+	/// If your connection has to go through proxy, use this method to specify the proxy url
+	/// </summary>
+	public T Proxy(Uri proxyAddress) =>
+		Assign(proxyAddress.ToString(), (a, v) => a._proxyAddress = v);
+
 	/// <inheritdoc cref="ITransportConfiguration.DisableDirectStreaming"/>
 	// ReSharper disable once MemberCanBePrivate.Global
 	public T DisableDirectStreaming(bool b = true) => Assign(b, (a, v) => a._disableDirectStreaming = v);
