@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Elasticsearch.Ephemeral;
+using Elastic.Elasticsearch.Managed;
 using Elastic.Elasticsearch.Xunit;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -29,9 +30,7 @@ public class DefaultCluster : XunitClusterBase
 			var nodes = NodesUris();
 			var connectionPool = new StaticNodePool(nodes);
 			var settings = new TransportConfiguration(connectionPool, productRegistration: ElasticsearchProductRegistration.Default)
-				.Proxy(new Uri("http://localhost:8080"))
 				.RequestTimeout(TimeSpan.FromSeconds(5))
-				.ServerCertificateValidationCallback(CertificateValidations.AllowAll)
 				.OnRequestCompleted(d =>
 				{
 					try
@@ -46,6 +45,10 @@ public class DefaultCluster : XunitClusterBase
 				.EnableDebugMode();
 			if (ClusterConfiguration.Features.HasFlag(ClusterFeatures.Security))
 				settings = settings.Authentication(new BasicAuthentication(Admin.Username, Admin.Password));
+			if (cluster.DetectedProxy != DetectedProxySoftware.None)
+				settings = settings.Proxy(new Uri("http://localhost:8080"));
+			if (ClusterConfiguration.Features.HasFlag(ClusterFeatures.SSL))
+				settings = settings.ServerCertificateValidationCallback(CertificateValidations.AllowAll);
 
 			return new DefaultHttpTransport(settings);
 		});
