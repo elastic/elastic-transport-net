@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Elasticsearch.Ephemeral;
+using Elastic.Elasticsearch.Managed;
 using Elastic.Elasticsearch.Xunit;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -18,24 +19,24 @@ namespace Elastic.Elasticsearch.IntegrationTests;
 public class DefaultCluster : XunitClusterBase
 {
 	protected static string Version = "8.7.0";
-	public DefaultCluster() : this(new XunitClusterConfiguration(Version) { StartingPortNumber = 9202 }) { }
+
+	public DefaultCluster() : this(new XunitClusterConfiguration(Version) { StartingPortNumber = 9202, AutoWireKnownProxies = true }) { }
+
 	public DefaultCluster(XunitClusterConfiguration xunitClusterConfiguration) : base(xunitClusterConfiguration) { }
 
 	public DefaultHttpTransport CreateClient(ITestOutputHelper output) =>
-		this.GetOrAddClient(_ =>
+		this.GetOrAddClient(cluster =>
 		{
-			var hostName = (System.Diagnostics.Process.GetProcessesByName("mitmproxy").Any()
-				? "ipv4.fiddler"
-				: "localhost");
-			var nodes = NodesUris(hostName);
+			var nodes = NodesUris();
 			var connectionPool = new StaticNodePool(nodes);
 			var settings = new TransportConfiguration(connectionPool, productRegistration: ElasticsearchProductRegistration.Default)
-				.Proxy(new Uri("http://ipv4.fiddler:8080"), null!, null!)
 				.RequestTimeout(TimeSpan.FromSeconds(5))
-				.ServerCertificateValidationCallback(CertificateValidations.AllowAll)
 				.OnRequestCompleted(d =>
 				{
-					try { output.WriteLine(d.DebugInformation);}
+					try
+					{
+						output.WriteLine(d.DebugInformation);
+					}
 					catch
 					{
 						// ignored
@@ -44,6 +45,11 @@ public class DefaultCluster : XunitClusterBase
 				.EnableDebugMode();
 			if (ClusterConfiguration.Features.HasFlag(ClusterFeatures.Security))
 				settings = settings.Authentication(new BasicAuthentication(Admin.Username, Admin.Password));
+			if (cluster.DetectedProxy != DetectedProxySoftware.None)
+				settings = settings.Proxy(new Uri("http://localhost:8080"));
+			if (ClusterConfiguration.Features.HasFlag(ClusterFeatures.SSL))
+				settings = settings.ServerCertificateValidationCallback(CertificateValidations.AllowAll);
+
 			return new DefaultHttpTransport(settings);
 		});
 }
