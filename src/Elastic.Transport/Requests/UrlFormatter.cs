@@ -53,9 +53,19 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 			case DateTimeOffset offset: return offset.ToString("o");
 			case IEnumerable<object> pns:
 				return string.Join(",", pns.Select(o => ResolveUrlParameterOrDefault(o, settings)));
+			case Array pns:
+				return CreateString(ConvertArrayToEnumerable(pns), settings);
 			case TimeSpan timeSpan: return timeSpan.ToTimeUnit();
 			default:
 				return ResolveUrlParameterOrDefault(value, settings);
+		}
+	}
+
+	private static IEnumerable<object> ConvertArrayToEnumerable(Array array)
+	{
+		for (var i = array.GetLowerBound(0); i <= array.GetUpperBound(0); i++)
+		{
+			yield return array.GetValue(i);
 		}
 	}
 
