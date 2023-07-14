@@ -41,7 +41,7 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 	public string CreateString(object value) => CreateString(value, _settings);
 
 	/// <summary> Creates a query string representation for <paramref name="value"/> </summary>
-	public static string CreateString(object value, ITransportConfiguration settings)
+	public static string? CreateString(object? value, ITransportConfiguration settings)
 	{
 		switch (value)
 		{
@@ -52,21 +52,22 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 			case bool b: return b ? "true" : "false";
 			case DateTimeOffset offset: return offset.ToString("o");
 			case IEnumerable<object> pns:
-				return string.Join(",", pns.Select(o => ResolveUrlParameterOrDefault(o, settings)));
+				return CreateStringFromIEnumerable(pns, settings);
 			case Array pns:
-				return CreateString(ConvertArrayToEnumerable(pns), settings);
+				return CreateStringFromIEnumerable(ConvertArrayToEnumerable(pns), settings);
 			case TimeSpan timeSpan: return timeSpan.ToTimeUnit();
 			default:
 				return ResolveUrlParameterOrDefault(value, settings);
 		}
 	}
 
+	private static string CreateStringFromIEnumerable(IEnumerable<object> value, ITransportConfiguration settings) =>
+		string.Join(",", value.Select(o => ResolveUrlParameterOrDefault(o, settings)));
+
 	private static IEnumerable<object> ConvertArrayToEnumerable(Array array)
 	{
 		for (var i = array.GetLowerBound(0); i <= array.GetUpperBound(0); i++)
-		{
 			yield return array.GetValue(i);
-		}
 	}
 
 	private static string ResolveUrlParameterOrDefault(object value, ITransportConfiguration settings) =>
