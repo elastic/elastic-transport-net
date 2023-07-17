@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
@@ -53,8 +54,10 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 			case DateTimeOffset offset: return offset.ToString("o");
 			case IEnumerable<object> pns:
 				return CreateStringFromIEnumerable(pns, settings);
+
 			case Array pns:
 				return CreateStringFromIEnumerable(ConvertArrayToEnumerable(pns), settings);
+
 			case TimeSpan timeSpan: return timeSpan.ToTimeUnit();
 			default:
 				return ResolveUrlParameterOrDefault(value, settings);
@@ -71,5 +74,24 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 	}
 
 	private static string ResolveUrlParameterOrDefault(object value, ITransportConfiguration settings) =>
-		value is IUrlParameter urlParam ? urlParam.GetString(settings) : value.ToString();
+		value is IUrlParameter urlParam ? urlParam.GetString(settings) : GetEnumMemberName(value) ?? value.ToString();
+
+	private static string? GetEnumMemberName(object value)
+	{
+		var type = value.GetType();
+		if (!type.IsEnum)
+			return null;
+
+		var name = Enum.GetName(type, value);
+		if (name is null)
+			return null;
+
+		var field = type.GetField(name);
+		if (field is null)
+			return null;
+
+		return Attribute.GetCustomAttribute(field, typeof(EnumMemberAttribute)) is EnumMemberAttribute attribute
+			? attribute.Value
+			: null;
+	}
 }
