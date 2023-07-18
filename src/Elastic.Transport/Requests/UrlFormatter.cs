@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
@@ -41,7 +42,7 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 	public string CreateString(object value) => CreateString(value, _settings);
 
 	/// <summary> Creates a query string representation for <paramref name="value"/> </summary>
-	public static string CreateString(object value, ITransportConfiguration settings)
+	public static string? CreateString(object? value, ITransportConfiguration settings)
 	{
 		switch (value)
 		{
@@ -52,13 +53,45 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 			case bool b: return b ? "true" : "false";
 			case DateTimeOffset offset: return offset.ToString("o");
 			case IEnumerable<object> pns:
-				return string.Join(",", pns.Select(o => ResolveUrlParameterOrDefault(o, settings)));
+				return CreateStringFromIEnumerable(pns, settings);
+
+			case Array pns:
+				return CreateStringFromIEnumerable(ConvertArrayToEnumerable(pns), settings);
+
 			case TimeSpan timeSpan: return timeSpan.ToTimeUnit();
 			default:
 				return ResolveUrlParameterOrDefault(value, settings);
 		}
 	}
 
+	private static string CreateStringFromIEnumerable(IEnumerable<object> value, ITransportConfiguration settings) =>
+		string.Join(",", value.Select(o => ResolveUrlParameterOrDefault(o, settings)));
+
+	private static IEnumerable<object> ConvertArrayToEnumerable(Array array)
+	{
+		for (var i = array.GetLowerBound(0); i <= array.GetUpperBound(0); i++)
+			yield return array.GetValue(i);
+	}
+
 	private static string ResolveUrlParameterOrDefault(object value, ITransportConfiguration settings) =>
-		value is IUrlParameter urlParam ? urlParam.GetString(settings) : value.ToString();
+		value is IUrlParameter urlParam ? urlParam.GetString(settings) : GetEnumMemberName(value) ?? value.ToString();
+
+	private static string? GetEnumMemberName(object value)
+	{
+		var type = value.GetType();
+		if (!type.IsEnum)
+			return null;
+
+		var name = Enum.GetName(type, value);
+		if (name is null)
+			return null;
+
+		var field = type.GetField(name);
+		if (field is null)
+			return null;
+
+		return Attribute.GetCustomAttribute(field, typeof(EnumMemberAttribute)) is EnumMemberAttribute attribute
+			? attribute.Value
+			: null;
+	}
 }
