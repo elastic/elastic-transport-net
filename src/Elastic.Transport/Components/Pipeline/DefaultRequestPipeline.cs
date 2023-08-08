@@ -97,7 +97,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			var timeout = _settings.MaxRetryTimeout.GetValueOrDefault(RequestTimeout);
 			var now = _dateTimeProvider.Now();
 
-			//we apply a soft margin so that if a request timesout at 59 seconds when the maximum is 60 we also abort.
+			//we apply a soft margin so that if a request times out at 59 seconds when the maximum is 60 we also abort.
 			var margin = timeout.TotalMilliseconds / 100.0 * 98;
 			var marginTimeSpan = TimeSpan.FromMilliseconds(margin);
 			var timespanCall = now - StartedOn;
