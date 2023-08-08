@@ -193,7 +193,6 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 				{
-					seenExceptions ??= new List<PipelineException>();
 					HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
 					break;
 				}
