@@ -90,12 +90,12 @@ public abstract class RequestPipeline : IDisposable
 	public abstract void BadResponse<TResponse>(ref TResponse response, ApiCallDetails callDetails, RequestData data, TransportException exception)
 		where TResponse : TransportResponse, new();
 
-	public abstract void ThrowNoNodesAttempted(RequestData requestData, List<PipelineException> seenExceptions);
+	public abstract void ThrowNoNodesAttempted(RequestData requestData, List<PipelineException>? seenExceptions);
 
 	public abstract void AuditCancellationRequested();
 
 	public abstract TransportException? CreateClientException<TResponse>(TResponse? response, ApiCallDetails? callDetails,
-		RequestData data, List<PipelineException> seenExceptions)
+		RequestData data, List<PipelineException>? seenExceptions)
 		where TResponse : TransportResponse, new();
 #pragma warning restore 1591
 

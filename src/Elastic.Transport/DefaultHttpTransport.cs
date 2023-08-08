@@ -150,7 +150,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		Settings.OnRequestDataCreated?.Invoke(requestData);
 		TResponse response = null;
 
-		var seenExceptions = new List<PipelineException>();
+		List<PipelineException>? seenExceptions = null;
 
 		if (pipeline.TryGetSingleNode(out var singleNode))
 		{
@@ -164,11 +164,11 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 			}
 			catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 			{
-				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
 			}
 			catch (PipelineException pipelineException)
 			{
-				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
 			}
 			catch (Exception killerException)
 			{
@@ -193,17 +193,17 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 				{
-					HandlePipelineException(ref response, pipelineException, pipeline, node, seenExceptions);
+					seenExceptions ??= new List<PipelineException>();
+					HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
 					break;
 				}
 				catch (PipelineException pipelineException)
 				{
-					HandlePipelineException(ref response, pipelineException, pipeline, node, seenExceptions);
+					HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
 				}
 				catch (Exception killerException)
 				{
-					ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response,
-						pipeline);
+					ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
 				}
 
 				if (response == null || !response.ApiCallDetails.SuccessOrKnownError) continue; // try the next node
@@ -239,7 +239,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		Settings.OnRequestDataCreated?.Invoke(requestData);
 		TResponse response = null;
 
-		var seenExceptions = new List<PipelineException>();
+		List<PipelineException>? seenExceptions = null;
 
 		if (pipeline.TryGetSingleNode(out var singleNode))
 		{
@@ -254,11 +254,11 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 			}
 			catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 			{
-				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
 			}
 			catch (PipelineException pipelineException)
 			{
-				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, seenExceptions);
+				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
 			}
 			catch (Exception killerException)
 			{
@@ -287,12 +287,12 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 				{
-					HandlePipelineException(ref response, pipelineException, pipeline, node, seenExceptions);
+					HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
 					break;
 				}
 				catch (PipelineException pipelineException)
 				{
-					HandlePipelineException(ref response, pipelineException, pipeline, node, seenExceptions);
+					HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
 				}
 				catch (Exception killerException)
 				{
@@ -331,17 +331,18 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 
 	private static void HandlePipelineException<TResponse>(
 		ref TResponse response, PipelineException ex, RequestPipeline pipeline, Node node,
-		ICollection<PipelineException> seenExceptions
+		ref List<PipelineException> seenExceptions
 	)
 		where TResponse : TransportResponse, new()
 	{
 		response ??= ex.Response as TResponse;
 		pipeline.MarkDead(node);
+		seenExceptions ??= new List<PipelineException>(1);
 		seenExceptions.Add(ex);
 	}
 
 	private TResponse FinalizeResponse<TResponse>(RequestData requestData, RequestPipeline pipeline,
-		List<PipelineException> seenExceptions,
+		List<PipelineException>? seenExceptions,
 		TResponse? response
 	) where TResponse : TransportResponse, new()
 	{
@@ -359,10 +360,10 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	}
 
 	private static ApiCallDetails? GetMostRecentCallDetails<TResponse>(TResponse? response,
-		IEnumerable<PipelineException> seenExceptions)
+		IEnumerable<PipelineException>? seenExceptions)
 		where TResponse : TransportResponse, new()
 	{
-		var callDetails = response?.ApiCallDetails ?? seenExceptions.LastOrDefault(e => e.Response?.ApiCallDetails != null)?.Response?.ApiCallDetails;
+		var callDetails = response?.ApiCallDetails ?? seenExceptions?.LastOrDefault(e => e.Response?.ApiCallDetails != null)?.Response?.ApiCallDetails;
 		return callDetails;
 	}
 
