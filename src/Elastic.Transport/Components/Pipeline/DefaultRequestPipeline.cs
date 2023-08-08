@@ -278,13 +278,13 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	}
 
 	public override TransportException? CreateClientException<TResponse>(TResponse response, ApiCallDetails? callDetails,
-		RequestData data, List<PipelineException> seenExceptions)
+		RequestData data, List<PipelineException>? seenExceptions)
 	{
 		if (callDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false) return null;
 
 		var pipelineFailure = data.OnFailurePipelineFailure;
 		var innerException = callDetails?.OriginalException;
-		if (seenExceptions.HasAny(out var exs))
+		if (seenExceptions is not null && seenExceptions.HasAny(out var exs))
 		{
 			pipelineFailure = exs.Last().FailureReason;
 			innerException = exs.AsAggregateOrFirst();
@@ -656,7 +656,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		}
 	}
 
-	public override void ThrowNoNodesAttempted(RequestData requestData, List<PipelineException> seenExceptions)
+	public override void ThrowNoNodesAttempted(RequestData requestData, List<PipelineException>? seenExceptions)
 	{
 		var clientException = new TransportException(PipelineFailure.NoNodesAttempted, RequestPipelineStatics.NoNodesAttemptedMessage,
 			(Exception)null);

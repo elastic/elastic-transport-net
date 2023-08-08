@@ -19,23 +19,20 @@ namespace Elastic.Transport.Profiling
 			var config = new TransportConfiguration(new Uri("http://localhost:9200"), new ElasticsearchProductRegistration());
 			var transport = new DefaultHttpTransport(config);
 
-			_ = await transport.GetAsync<VoidResponse>("/");
+			// WARMUP
+			for (var i = 0; i < 50; i++) _ = await transport.GetAsync<VoidResponse>("/");
 
-			MemoryProfiler.GetSnapshot("before-many-requests");
-
-			for (var i = 0; i < 1_000; i++) _ = await transport.GetAsync<VoidResponse>("/");
-
-			MemoryProfiler.GetSnapshot("after-many-requests");
-			//MeasureProfiler.StopCollectingData();
+			MemoryProfiler.GetSnapshot("before-100-requests");
+			for (var i = 0; i < 100; i++) _ = await transport.GetAsync<VoidResponse>("/");
+			MemoryProfiler.GetSnapshot("after-100-requests");
 
 			await Task.Delay(1000);
-
 			MemoryProfiler.ForceGc();
+
 			MemoryProfiler.GetSnapshot("before-final-request");
 			_ = await transport.GetAsync<VoidResponse>("/");
 			MemoryProfiler.GetSnapshot("after-final-request");
 
-			MemoryProfiler.ForceGc();
 			MemoryProfiler.GetSnapshot("end");
 		}
 	}

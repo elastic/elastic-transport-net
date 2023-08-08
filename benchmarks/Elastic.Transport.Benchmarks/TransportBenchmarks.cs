@@ -23,16 +23,9 @@ namespace Elastic.Transport.Benchmarks
 		}
 
 		[Benchmark]
-		public void TransportSuccessfulRequestBenchmark() => _transport.Get<EmptyResponse>("/");
+		public void TransportSuccessfulRequestBenchmark() => _transport.Get<VoidResponse>("/");
 
 		[Benchmark]
-		public async Task TransportSuccessfulAsyncRequestBenchmark() => await _transport.GetAsync<EmptyResponse>("/");
-
-		private class EmptyResponse : TransportResponse
-		{
-			public EmptyResponse() : base() { }
-
-			public ApiCallDetails ApiCall { get; set; }
-		}
+		public async Task TransportSuccessfulAsyncRequestBenchmark() => await _transport.GetAsync<VoidResponse>("/");
 	}
 }

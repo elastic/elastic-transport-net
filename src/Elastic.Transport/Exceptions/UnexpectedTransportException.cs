@@ -15,7 +15,7 @@ namespace Elastic.Transport;
 public class UnexpectedTransportException : TransportException
 {
 	/// <inheritdoc cref="UnexpectedTransportException"/>
-	public UnexpectedTransportException(Exception killerException, IReadOnlyCollection<PipelineException> seenExceptions)
+	public UnexpectedTransportException(Exception killerException, IReadOnlyCollection<PipelineException>? seenExceptions)
 		: base(PipelineFailure.Unexpected, killerException?.Message ?? "An unexpected exception occurred.", killerException) =>
 			SeenExceptions = seenExceptions ?? EmptyReadOnly<PipelineException>.Collection;
 
