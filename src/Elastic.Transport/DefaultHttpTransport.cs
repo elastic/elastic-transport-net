@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Elastic.Transport.Diagnostics;
 using Elastic.Transport.Extensions;
 using Elastic.Transport.Products;
 
@@ -117,7 +118,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		_productRegistration = configurationValues.ProductRegistration;
 		Settings = configurationValues;
 		PipelineProvider = pipelineProvider ?? new DefaultRequestPipelineFactory<TConfiguration>();
-		DateTimeProvider = dateTimeProvider ?? Elastic.Transport.DefaultDateTimeProvider.Default;
+		DateTimeProvider = dateTimeProvider ?? DefaultDateTimeProvider.Default;
 		MemoryStreamFactory = memoryStreamFactory ?? configurationValues.MemoryStreamFactory;
 	}
 
@@ -130,16 +131,13 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	/// </summary>
 	public override TConfiguration Settings { get; }
 
-	/// <summary>
-	///
-	/// </summary>
-	/// <typeparam name="TResponse"></typeparam>
-	/// <param name="method"></param>
-	/// <param name="path"></param>
-	/// <param name="data"></param>
-	/// <param name="requestParameters"></param>
-	/// <returns></returns>
-	public override TResponse Request<TResponse>(HttpMethod method, string path, PostData? data = null, RequestParameters? requestParameters = null)
+	/// <inheritdoc cref="HttpTransport.Request{TResponse}(HttpMethod, string, PostData?, RequestParameters?, OpenTelemetryData)"/>
+	public override TResponse Request<TResponse>(
+		HttpMethod method,
+		string path,
+		PostData? data,
+		RequestParameters? requestParameters,
+		OpenTelemetryData openTelemetryData)
 	{
 		using var pipeline =
 			PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
@@ -214,19 +212,13 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		return FinalizeResponse(requestData, pipeline, seenExceptions, response);
 	}
 
-	/// <summary>
-	///
-	/// </summary>
-	/// <typeparam name="TResponse"></typeparam>
-	/// <param name="method"></param>
-	/// <param name="path"></param>
-	/// <param name="data"></param>
-	/// <param name="requestParameters"></param>
-	/// <param name="cancellationToken"></param>
-	/// <returns></returns>
-	/// <exception cref="UnexpectedTransportException"></exception>
-	public override async Task<TResponse> RequestAsync<TResponse>(HttpMethod method, string path,
-		PostData? data = null, RequestParameters? requestParameters = null,
+	/// <inheritdoc cref="HttpTransport.RequestAsync{TResponse}(HttpMethod, string, PostData?, RequestParameters?, OpenTelemetryData, CancellationToken)"/>
+	public override async Task<TResponse> RequestAsync<TResponse>(
+		HttpMethod method,
+		string path,
+		PostData? data,
+		RequestParameters? requestParameters,
+		OpenTelemetryData openTelemetryData,
 		CancellationToken cancellationToken = default)
 	{
 		using var pipeline =
@@ -318,6 +310,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 
 		return FinalizeResponse(requestData, pipeline, seenExceptions, response);
 	}
+
 	private static void ThrowUnexpectedTransportException<TResponse>(Exception killerException,
 		List<PipelineException> seenExceptions,
 		RequestData requestData,

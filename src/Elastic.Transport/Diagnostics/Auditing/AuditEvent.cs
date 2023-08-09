@@ -6,8 +6,7 @@ namespace Elastic.Transport.Diagnostics.Auditing;
 
 /// <summary>
 /// Enumeration of different auditable events that can occur in the execution of
-/// <see cref="HttpTransport.RequestAsync{TResponse}"/> as modeled by
-/// <see cref="RequestPipeline"/>.
+/// requests as modelled by <see cref="RequestPipeline"/>.
 /// </summary>
 public enum AuditEvent
 {
@@ -52,14 +51,14 @@ public enum AuditEvent
 	HealthyResponse,
 
 	/// <summary>
-	/// The call into <see cref="HttpTransport.Request{TResponse}"/> took too long.
-	/// This could mean the call was retried but retrying was to slow and cumulative this exceeded
+	/// The request took too long.
+	/// This could mean the call was retried but retrying was to slow and cumulatively this exceeded
 	/// <see cref="ITransportConfiguration.MaxRetryTimeout"/>
 	/// </summary>
 	MaxTimeoutReached,
 
 	/// <summary>
-	/// The call into <see cref="HttpTransport.Request{TResponse}"/> was not able to complete
+	/// The request was not able to complete
 	/// successfully and exceeded the available retries as configured on
 	/// <see cref="ITransportConfiguration.MaxRetries"/>.
 	/// </summary>

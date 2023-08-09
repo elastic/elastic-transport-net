@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Elastic.Transport.Products;
 
 /// <summary>
-/// When <see cref="HttpTransport.Request{TResponse}"/> interfaces with a product some parts are
+/// When a request interfaces with a product, some parts are
 /// bespoke for each product. This interface defines the contract products will have to implement in order to fill
 /// in these bespoke parts.
 /// <para>The expectation is that unless you instantiate <see cref="DefaultHttpTransport{TConnectionSettings}"/>

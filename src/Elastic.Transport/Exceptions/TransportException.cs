@@ -13,9 +13,7 @@ using static Elastic.Transport.Diagnostics.ResponseStatics;
 namespace Elastic.Transport;
 
 /// <summary>
-/// Exceptions that occur <see cref="HttpTransport.Request{TResponse}"/> are wrapped inside
-/// this exception. This is done to not lose valuable diagnostic information.
-///
+/// Exceptions that occur are wrapped inside this exception. This is done to not lose valuable diagnostic information.
 /// <para>
 /// When <see cref="ITransportConfiguration.ThrowExceptions"/> is set these exceptions are rethrown and need
 /// to be caught
@@ -41,7 +39,7 @@ public class TransportException : Exception
 
 	/// <summary>
 	/// The audit trail keeping track of what happened during the invocation of
-	/// <see cref="HttpTransport.Request{TResponse}"/> up until the moment of this exception.
+	/// a request, up until the moment of this exception.
 	/// </summary>
 	public IEnumerable<Audit> AuditTrail { get; internal set; }
 
