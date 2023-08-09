@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Security.Cryptography.X509Certificates;
+using Elastic.Transport.Diagnostics;
 using Elastic.Transport.Diagnostics.Auditing;
 using Elastic.Transport.Extensions;
 
@@ -35,11 +36,13 @@ public sealed class RequestData
 		PostData data,
 		ITransportConfiguration global,
 		RequestParameters local,
-		MemoryStreamFactory memoryStreamFactory
+		MemoryStreamFactory memoryStreamFactory,
+		OpenTelemetryData openTelemetryData
 	)
 		: this(method, data, global, local?.RequestConfiguration, memoryStreamFactory)
 	{
 		_path = path;
+		OpenTelemetryData = openTelemetryData;
 		CustomResponseBuilder = local?.CustomResponseBuilder;
 		PathAndQuery = CreatePathWithQueryStrings(path, ConnectionSettings, local);
 	}
@@ -191,6 +194,7 @@ public sealed class RequestData
 	public IReadOnlyDictionary<string, string> RequestMetaData { get; }
 
 	public bool IsAsync { get; internal set; }
+	internal OpenTelemetryData OpenTelemetryData { get; }
 
 	public override string ToString() => $"{Method.GetStringValue()} {_path}";
 

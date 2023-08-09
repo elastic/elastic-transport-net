@@ -168,7 +168,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		else
 			pipeline.FirstPoolUsage(Settings.BootstrapLock);
 
-		var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory);
+		var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory, openTelemetryData);
 		Settings.OnRequestDataCreated?.Invoke(requestData);
 		TResponse response = null;
 

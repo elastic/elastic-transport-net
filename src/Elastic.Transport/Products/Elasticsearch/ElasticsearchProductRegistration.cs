@@ -115,7 +115,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		{
 			QueryString = {{"timeout", requestConfiguration.PingTimeout}, {"flat_settings", true},}
 		};
-		return new RequestData(HttpMethod.GET, SniffPath, null, settings, requestParameters, memoryStreamFactory)
+		return new RequestData(HttpMethod.GET, SniffPath, null, settings, requestParameters, memoryStreamFactory, default)
 		{
 			Node = node
 		};
@@ -153,8 +153,11 @@ public class ElasticsearchProductRegistration : ProductRegistration
 			RequestConfiguration = requestConfiguration
 		};
 
-		var data = new RequestData(HttpMethod.HEAD, string.Empty, null, global, requestParameters,
-			memoryStreamFactory) {Node = node};
+		var data = new RequestData(HttpMethod.HEAD, string.Empty, null, global, requestParameters, memoryStreamFactory, default)
+		{
+			Node = node
+		};
+
 		return data;
 	}
 
