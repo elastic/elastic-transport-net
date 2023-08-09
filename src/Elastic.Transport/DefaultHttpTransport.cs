@@ -138,93 +138,35 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		PostData? data,
 		RequestParameters? requestParameters,
 		OpenTelemetryData openTelemetryData)
-	{
-		using var pipeline =
-			PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
-
-		pipeline.FirstPoolUsage(Settings.BootstrapLock);
-
-		var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory);
-		Settings.OnRequestDataCreated?.Invoke(requestData);
-		TResponse response = null;
-
-		List<PipelineException>? seenExceptions = null;
-
-		if (pipeline.TryGetSingleNode(out var singleNode))
-		{
-			// No value in marking a single node as dead. We have no other options!
-
-			requestData.Node = singleNode;
-
-			try
-			{
-				response = pipeline.CallProductEndpoint<TResponse>(requestData);
-			}
-			catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
-			{
-				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
-			}
-			catch (PipelineException pipelineException)
-			{
-				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
-			}
-			catch (Exception killerException)
-			{
-				ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
-			}
-		}
-		else
-			foreach (var node in pipeline.NextNode())
-			{
-				requestData.Node = node;
-				try
-				{
-					if (_productRegistration.SupportsSniff) pipeline.SniffOnStaleCluster();
-					if (_productRegistration.SupportsPing) Ping(pipeline, node);
-
-					response = pipeline.CallProductEndpoint<TResponse>(requestData);
-					if (!response.ApiCallDetails.SuccessOrKnownError)
-					{
-						pipeline.MarkDead(node);
-						if (_productRegistration.SupportsSniff) pipeline.SniffOnConnectionFailure();
-					}
-				}
-				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
-				{
-					HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
-					break;
-				}
-				catch (PipelineException pipelineException)
-				{
-					HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
-				}
-				catch (Exception killerException)
-				{
-					ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
-				}
-
-				if (response == null || !response.ApiCallDetails.SuccessOrKnownError) continue; // try the next node
-
-				pipeline.MarkAlive(node);
-				break;
-			}
-
-		return FinalizeResponse(requestData, pipeline, seenExceptions, response);
-	}
+			=> RequestCoreAsync<TResponse>(false, method, path, data, requestParameters, openTelemetryData).EnsureCompleted();
 
 	/// <inheritdoc cref="HttpTransport.RequestAsync{TResponse}(HttpMethod, string, PostData?, RequestParameters?, OpenTelemetryData, CancellationToken)"/>
-	public override async Task<TResponse> RequestAsync<TResponse>(
+	public override Task<TResponse> RequestAsync<TResponse>(
 		HttpMethod method,
 		string path,
 		PostData? data,
 		RequestParameters? requestParameters,
 		OpenTelemetryData openTelemetryData,
 		CancellationToken cancellationToken = default)
+			=> RequestCoreAsync<TResponse>(true, method, path, data, requestParameters, openTelemetryData, cancellationToken).AsTask();
+	
+	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(
+		bool isAsync,
+		HttpMethod method,
+		string path,
+		PostData? data,
+		RequestParameters? requestParameters,
+		OpenTelemetryData openTelemetryData,
+		CancellationToken cancellationToken = default)
+			where TResponse : TransportResponse, new()
 	{
 		using var pipeline =
 			PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
 
-		await pipeline.FirstPoolUsageAsync(Settings.BootstrapLock, cancellationToken).ConfigureAwait(false);
+		if (isAsync)
+			await pipeline.FirstPoolUsageAsync(Settings.BootstrapLock, cancellationToken).ConfigureAwait(false);
+		else
+			pipeline.FirstPoolUsage(Settings.BootstrapLock);
 
 		var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory);
 		Settings.OnRequestDataCreated?.Invoke(requestData);
@@ -240,8 +182,11 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 
 			try
 			{
-				response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
-					.ConfigureAwait(false);
+				if (isAsync)
+					response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
+						.ConfigureAwait(false);
+				else
+					response = pipeline.CallProductEndpoint<TResponse>(requestData);
 			}
 			catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 			{
@@ -263,17 +208,37 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 				try
 				{
 					if (_productRegistration.SupportsSniff)
-						await pipeline.SniffOnStaleClusterAsync(cancellationToken).ConfigureAwait(false);
+					{
+						if (isAsync)
+							await pipeline.SniffOnStaleClusterAsync(cancellationToken).ConfigureAwait(false);
+						else
+							pipeline.SniffOnStaleCluster();
+					}
 					if (_productRegistration.SupportsPing)
-						await PingAsync(pipeline, node, cancellationToken).ConfigureAwait(false);
+					{
+						if (isAsync)
+							await PingAsync(pipeline, node, cancellationToken).ConfigureAwait(false);
+						else
+							Ping(pipeline, node);
+					}
 
-					response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
-						.ConfigureAwait(false);
+					if (isAsync)
+						response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
+							.ConfigureAwait(false);
+					else
+						response = pipeline.CallProductEndpoint<TResponse>(requestData);
+
 					if (!response.ApiCallDetails.SuccessOrKnownError)
 					{
 						pipeline.MarkDead(node);
+
 						if (_productRegistration.SupportsSniff)
-							await pipeline.SniffOnConnectionFailureAsync(cancellationToken).ConfigureAwait(false);
+						{
+							if (isAsync)
+								await pipeline.SniffOnConnectionFailureAsync(cancellationToken).ConfigureAwait(false);
+							else
+								pipeline.SniffOnConnectionFailure();
+						}							
 					}
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
@@ -292,7 +257,9 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 
 					throw new UnexpectedTransportException(killerException, seenExceptions)
 					{
-						Request = requestData, ApiCallDetails = response?.ApiCallDetails, AuditTrail = pipeline.AuditTrail
+						Request = requestData,
+						ApiCallDetails = response?.ApiCallDetails,
+						AuditTrail = pipeline.AuditTrail
 					};
 				}
 
