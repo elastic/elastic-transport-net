@@ -11,10 +11,10 @@ namespace Elastic.Transport;
 /// <summary>
 /// A node pool is responsible for maintaining a read only collection of <see cref="Node"/>(s) under <see cref="Nodes"/>.
 /// <para>
-/// Unlike the name might suggest this component is not responsible for IO level pooling. For that we rely on <see cref="TransportClient"/> abstracting away
+/// Unlike the name might suggest this component is not responsible for IO level pooling. For that we rely on <see cref="IRequestInvoker"/> abstracting away
 /// the connection IO pooling.
 /// </para>
-/// <para>This interface signals the current connection strategy to <see cref="HttpTransport{TConnectionSettings}"/>.</para>
+/// <para>This interface signals the current connection strategy to <see cref="ITransport{TConfiguration}"/>.</para>
 /// </summary>
 public abstract class NodePool : IDisposable
 {
@@ -68,7 +68,7 @@ public abstract class NodePool : IDisposable
 	public abstract bool UsingSsl { get; protected set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public void Dispose()
 	{
@@ -77,7 +77,7 @@ public abstract class NodePool : IDisposable
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <param name="disposing"></param>
 	protected virtual void Dispose(bool disposing)

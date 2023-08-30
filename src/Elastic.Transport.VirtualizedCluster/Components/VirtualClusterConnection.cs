@@ -30,7 +30,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components;
 /// <see cref="SealedVirtualCluster.VirtualClusterConnection"/> becomes available
 /// </pre>
 /// </summary>
-public class VirtualClusterTransportClient : InMemoryTransportClient
+public class VirtualClusterTransport : IRequestInvoker
 {
 	private static readonly object Lock = new();
 
@@ -41,18 +41,23 @@ public class VirtualClusterTransportClient : InMemoryTransportClient
 	private MockProductRegistration _productRegistration;
 	private IDictionary<int, State> _calls = new Dictionary<int, State>();
 
-	internal VirtualClusterTransportClient(VirtualCluster cluster, TestableDateTimeProvider dateTimeProvider)
+	private readonly InMemoryRequestInvoker _inMemoryRequestInvoker;
+
+	internal VirtualClusterTransport(VirtualCluster cluster, TestableDateTimeProvider dateTimeProvider)
 	{
 		UpdateCluster(cluster);
 		_dateTimeProvider = dateTimeProvider;
 		_productRegistration = cluster.ProductRegistration;
+		_inMemoryRequestInvoker = new InMemoryRequestInvoker();
 	}
 
+	void IDisposable.Dispose() { }
+
 	/// <summary>
-	/// Create a <see cref="VirtualClusterTransportClient"/> instance that always returns a successful response.
+	/// Create a <see cref="VirtualClusterTransport"/> instance that always returns a successful response.
 	/// </summary>
 	/// <param name="response">The bytes to be returned on every API call invocation</param>
-	public static VirtualClusterTransportClient Success(byte[] response) =>
+	public static VirtualClusterTransport Success(byte[] response) =>
 		Virtual.Elasticsearch
 			.Bootstrap(1)
 			.ClientCalls(r => r.SucceedAlways().ReturnByteResponse(response))
@@ -61,9 +66,9 @@ public class VirtualClusterTransportClient : InMemoryTransportClient
 			.Connection;
 
 	/// <summary>
-	/// Create a <see cref="VirtualClusterTransportClient"/> instance that always returns a failed response.
+	/// Create a <see cref="VirtualClusterTransport"/> instance that always returns a failed response.
 	/// </summary>
-	public static VirtualClusterTransportClient Error() =>
+	public static VirtualClusterTransport Error() =>
 		Virtual.Elasticsearch
 			.Bootstrap(1)
 			.ClientCalls(r => r.FailAlways(400))
@@ -109,12 +114,14 @@ public class VirtualClusterTransportClient : InMemoryTransportClient
 
 	private bool IsPingRequest(RequestData requestData) => _productRegistration.IsPingRequest(requestData);
 
-	/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}"/>>
-	public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) =>
+	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
+	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+		where TResponse : TransportResponse, new() =>
 		Task.FromResult(Request<TResponse>(requestData));
 
-	/// <inheritdoc cref="TransportClient.Request{TResponse}"/>>
-	public override TResponse Request<TResponse>(RequestData requestData)
+	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
+	public TResponse Request<TResponse>(RequestData requestData)
+		where TResponse : TransportResponse, new()
 	{
 		if (!_calls.ContainsKey(requestData.Uri.Port))
 			throw new Exception($"Expected a call to happen on port {requestData.Uri.Port} but received none");
@@ -265,7 +272,7 @@ public class VirtualClusterTransportClient : InMemoryTransportClient
 
 		return ret.Match(
 			(e) => throw e,
-			(statusCode) => ReturnConnectionStatus<TResponse>(requestData, CallResponse(rule),
+			(statusCode) => _inMemoryRequestInvoker.BuildResponse<TResponse>(requestData, CallResponse(rule),
 				//make sure we never return a valid status code in Fail responses because of a bad rule.
 				statusCode >= 200 && statusCode < 300 ? 502 : statusCode, rule.ReturnContentType)
 		);
@@ -282,7 +289,7 @@ public class VirtualClusterTransportClient : InMemoryTransportClient
 		rule.RecordExecuted();
 
 		beforeReturn?.Invoke(rule);
-		return ReturnConnectionStatus<TResponse>(requestData, successResponse(rule), contentType: rule.ReturnContentType);
+		return _inMemoryRequestInvoker.BuildResponse<TResponse>(requestData, successResponse(rule), contentType: rule.ReturnContentType);
 	}
 
 	private static byte[] CallResponse<TRule>(TRule rule)

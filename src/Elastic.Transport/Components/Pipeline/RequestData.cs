@@ -13,7 +13,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport;
 
 /// <summary>
-/// Where and how <see cref="TransportClient.Request{TResponse}" /> should connect to.
+/// Where and how <see cref="IRequestInvoker.Request{TResponse}" /> should connect to.
 /// <para>
 /// Represents the cumulative configuration from <see cref="ITransportConfiguration" />
 /// and <see cref="IRequestConfiguration" />.

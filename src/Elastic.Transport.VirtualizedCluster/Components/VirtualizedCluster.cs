@@ -15,8 +15,8 @@ public class VirtualizedCluster
 	private readonly TestableDateTimeProvider _dateTimeProvider;
 	private readonly TransportConfiguration _settings;
 
-	private Func<HttpTransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<TransportResponse>> _asyncCall;
-	private Func<HttpTransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> _syncCall;
+	private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<TransportResponse>> _asyncCall;
+	private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> _syncCall;
 
 	private class VirtualResponse : TransportResponse { }
 
@@ -48,13 +48,13 @@ public class VirtualizedCluster
 		};
 	}
 
-	public VirtualClusterTransportClient Connection => Transport.Settings.Connection as VirtualClusterTransportClient;
-	public NodePool ConnectionPool => Transport.Settings.NodePool;
-	public HttpTransport<ITransportConfiguration> Transport => _exposingRequestPipeline?.Transport;
+	public VirtualClusterTransport Connection => RequestHandler.Configuration.Connection as VirtualClusterTransport;
+	public NodePool ConnectionPool => RequestHandler.Configuration.NodePool;
+	public ITransport<ITransportConfiguration> RequestHandler => _exposingRequestPipeline?.RequestHandler;
 
 	public VirtualizedCluster TransportProxiesTo(
-		Func<HttpTransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> sync,
-		Func<HttpTransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<TransportResponse>> async
+		Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> sync,
+		Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<TransportResponse>> async
 	)
 	{
 		_syncCall = sync;
@@ -63,10 +63,10 @@ public class VirtualizedCluster
 	}
 
 	public TransportResponse ClientCall(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null) =>
-		_syncCall(Transport, requestOverrides);
+		_syncCall(RequestHandler, requestOverrides);
 
 	public async Task<TransportResponse> ClientCallAsync(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null) =>
-		await _asyncCall(Transport, requestOverrides).ConfigureAwait(false);
+		await _asyncCall(RequestHandler, requestOverrides).ConfigureAwait(false);
 
 	public void ChangeTime(Func<DateTimeOffset, DateTimeOffset> change) => _dateTimeProvider.ChangeTime(change);
 

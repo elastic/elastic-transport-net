@@ -16,12 +16,12 @@ public abstract class IntegrationTestBase<TCluster> : IClusterFixture<TCluster>
 	where TCluster : DefaultCluster, new()
 {
 	protected TCluster Cluster { get; }
-	protected DefaultHttpTransport Transport { get; }
+	protected DistributedTransport RequestHandler { get; }
 
 
 	protected IntegrationTestBase(TCluster cluster, ITestOutputHelper output)
 	{
 		Cluster = cluster;
-		Transport = cluster.CreateClient(output);
+		RequestHandler = cluster.CreateClient(output);
 	}
 }

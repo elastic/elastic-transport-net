@@ -25,7 +25,7 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	/// </summary>
 	public DefaultProductRegistration()
 	{
-		_metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(HttpTransport), ServiceIdentifier);
+		_metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(ITransport), ServiceIdentifier);
 
 		ProductAssemblyVersion = typeof(ProductRegistration).Assembly
 			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
@@ -84,11 +84,11 @@ public sealed class DefaultProductRegistration : ProductRegistration
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.SniffAsync"/>
-	public override Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(TransportClient transportClient, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) =>
+	public override Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.Sniff"/>
-	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(TransportClient connection, bool forceSsl, RequestData requestData) =>
+	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker connection, bool forceSsl, RequestData requestData) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.CreatePingRequestData"/>
@@ -96,11 +96,11 @@ public sealed class DefaultProductRegistration : ProductRegistration
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.PingAsync"/>
-	public override Task<TransportResponse> PingAsync(TransportClient connection, RequestData pingData, CancellationToken cancellationToken) =>
+	public override Task<TransportResponse> PingAsync(IRequestInvoker connection, RequestData pingData, CancellationToken cancellationToken) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.Ping"/>
-	public override TransportResponse Ping(TransportClient connection, RequestData pingData) =>
+	public override TransportResponse Ping(IRequestInvoker connection, RequestData pingData) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc/>

@@ -9,39 +9,41 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport.IntegrationTests.Plumbing.Stubs
 {
-	public class TestableHttpConnection : HttpTransportClient
+	public class TestableHttpConnection : IRequestInvoker
 	{
 		private readonly Action<HttpResponseMessage> _response;
 		private TestableClientHandler _handler;
 		public int CallCount { get; private set; }
 		public HttpClientHandler LastHttpClientHandler => (HttpClientHandler)_handler.InnerHandler;
+		private readonly HttpRequestInvoker _requestInvoker;
 
 		public TestableHttpConnection(Action<HttpResponseMessage> response) => _response = response;
 
-		public TestableHttpConnection() { }
+		public TestableHttpConnection() =>
+			_requestInvoker = new HttpRequestInvoker(((defaultHandler, data) =>
+			{
+				_handler = new TestableClientHandler(defaultHandler(data), _response);
+				return _handler;
+			}));
 
-		public override TResponse Request<TResponse>(RequestData requestData)
+		public TResponse Request<TResponse>(RequestData requestData)
+			where TResponse : TransportResponse, new()
 		{
 			CallCount++;
-			return base.Request<TResponse>(requestData);
+			return _requestInvoker.Request<TResponse>(requestData);
 		}
 
-		public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+		public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+			where TResponse : TransportResponse, new()
 		{
 			CallCount++;
-			return base.RequestAsync<TResponse>(requestData, cancellationToken);
+			return _requestInvoker.RequestAsync<TResponse>(requestData, cancellationToken);
 		}
 
-		protected override HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
-		{
-			_handler = new TestableClientHandler(base.CreateHttpClientHandler(requestData), _response);
-			return _handler;
-		}
-
-		protected override void DisposeManagedResources()
+		public void Dispose()
 		{
 			_handler?.Dispose();
-			base.DisposeManagedResources();
+			_requestInvoker?.Dispose();
 		}
 	}
 }

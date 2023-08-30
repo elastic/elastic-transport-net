@@ -15,7 +15,7 @@ public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFac
 		MemoryStreamFactory = TransportConfiguration.DefaultMemoryStreamFactory;
 		Settings = connectionSettings;
 		Pipeline = Create(Settings, DateTimeProvider, MemoryStreamFactory, new DefaultRequestParameters());
-		Transport = new DefaultHttpTransport<TConfiguration>(Settings, this, DateTimeProvider, MemoryStreamFactory);
+		RequestHandler = new DistributedTransport<TConfiguration>(Settings, this, DateTimeProvider, MemoryStreamFactory);
 	}
 
 	// ReSharper disable once MemberCanBePrivate.Global
@@ -23,7 +23,7 @@ public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFac
 	private DateTimeProvider DateTimeProvider { get; }
 	private MemoryStreamFactory MemoryStreamFactory { get; }
 	private TConfiguration Settings { get; }
-	public HttpTransport<TConfiguration> Transport { get; }
+	public ITransport<TConfiguration> RequestHandler { get; }
 
 	public override RequestPipeline Create(TConfiguration configurationValues, DateTimeProvider dateTimeProvider,
 		MemoryStreamFactory memoryStreamFactory, RequestParameters requestParameters) =>

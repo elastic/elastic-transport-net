@@ -9,9 +9,9 @@ using Elastic.Transport.Diagnostics;
 namespace Elastic.Transport;
 
 /// <summary>
-/// Represents a transport you can call requests, it is recommended to implement <see cref="HttpTransport{TSettings}" />
+/// Represents a transport you can call requests, it is recommended to reference <see cref="ITransport{TConfiguration}" />
 /// </summary>
-public abstract class HttpTransport
+public interface ITransport
 {
 	/// <summary>
 	/// Orchestrate a request synchronously into a <see cref="NodePool"/> using the workflow defined in the <see cref="RequestPipeline"/>.
@@ -49,7 +49,7 @@ public abstract class HttpTransport
 
 	/// <inheritdoc cref="Request{TResponse}(HttpMethod, string, PostData?, RequestParameters?)"/>
 	/// <param name="openTelemetryData">Data to be used to control the OpenTelemetry instrumentation.</param>
-	public abstract TResponse Request<TResponse>(
+	public TResponse Request<TResponse>(
 		HttpMethod method,
 		string path,
 		PostData? postData,
@@ -97,7 +97,7 @@ public abstract class HttpTransport
 
 	/// <inheritdoc cref="RequestAsync{TResponse}(HttpMethod, string, PostData?, RequestParameters?, CancellationToken)"/>
 	/// <param name="openTelemetryData">Data to be used to control the OpenTelemetry instrumentation.</param>
-	public abstract Task<TResponse> RequestAsync<TResponse>(
+	public Task<TResponse> RequestAsync<TResponse>(
 		HttpMethod method,
 		string path,
 		PostData? postData,
@@ -112,11 +112,11 @@ public abstract class HttpTransport
 /// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
 /// different nodes
 /// </summary>
-public abstract class HttpTransport<TConfiguration> : HttpTransport
+public interface ITransport<out TConfiguration> : ITransport
 	where TConfiguration : class, ITransportConfiguration
 {
 	/// <summary>
 	/// The <see cref="ITransportConfiguration" /> in use by this transport instance
 	/// </summary>
-	public abstract TConfiguration Settings { get; }
+	public TConfiguration Configuration { get; }
 }

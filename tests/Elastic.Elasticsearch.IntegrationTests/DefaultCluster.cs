@@ -24,7 +24,7 @@ public class DefaultCluster : XunitClusterBase
 
 	public DefaultCluster(XunitClusterConfiguration xunitClusterConfiguration) : base(xunitClusterConfiguration) { }
 
-	public DefaultHttpTransport CreateClient(ITestOutputHelper output) =>
+	public DistributedTransport CreateClient(ITestOutputHelper output) =>
 		this.GetOrAddClient(cluster =>
 		{
 			var nodes = NodesUris();
@@ -50,7 +50,7 @@ public class DefaultCluster : XunitClusterBase
 			if (ClusterConfiguration.Features.HasFlag(ClusterFeatures.SSL))
 				settings = settings.ServerCertificateValidationCallback(CertificateValidations.AllowAll);
 
-			return new DefaultHttpTransport(settings);
+			return new DistributedTransport(settings);
 		});
 }
 

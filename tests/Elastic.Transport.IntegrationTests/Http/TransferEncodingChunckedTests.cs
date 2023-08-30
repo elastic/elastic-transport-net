@@ -30,7 +30,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 		private static readonly PostData Body = PostData.String(BodyString);
 		private const string Path = "/chunked";
 
-		private HttpTransport Setup(
+		private ITransport Setup(
 			TestableHttpConnection connection,
 			Uri proxyAddress = null,
 			bool? disableAutomaticProxyDetection = null,
@@ -47,7 +47,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 				//make sure we the requests in debugging proxy
 				: TransportTestServer.RerouteToProxyIfNeeded(config);
 
-			return new DefaultHttpTransport(config);
+			return new DistributedTransport(config);
 		}
 
 		/// <summary>

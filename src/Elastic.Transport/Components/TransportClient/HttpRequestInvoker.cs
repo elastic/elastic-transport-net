@@ -23,7 +23,7 @@ using static System.Net.DecompressionMethods;
 namespace Elastic.Transport;
 
 /// <summary> The default TransportClient implementation. Uses <see cref="HttpClient" />.</summary>
-public class HttpTransportClient : TransportClient
+public class HttpRequestInvoker : IRequestInvoker
 {
 	private static readonly string MissingConnectionLimitMethodError =
 		$"Your target platform does not support {nameof(TransportConfiguration.ConnectionLimit)}"
@@ -32,8 +32,14 @@ public class HttpTransportClient : TransportClient
 
 	private string _expectedCertificateFingerprint;
 
-	/// <inheritdoc cref="HttpTransportClient" />
-	public HttpTransportClient() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
+	/// <inheritdoc cref="HttpRequestInvoker" />
+	public HttpRequestInvoker() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
+
+	/// <summary>
+	/// Allows users to inject their own HttpMessageHandler, and optionally call our default implementation
+	/// </summary>
+	public HttpRequestInvoker(Func<Func<RequestData, HttpMessageHandler>, RequestData, HttpMessageHandler> createHttpHandler) =>
+		HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
 
 	/// <inheritdoc cref="RequestDataHttpClientFactory.InUseHandlers" />
 	public int InUseHandlers => HttpClientFactory.InUseHandlers;
@@ -45,11 +51,11 @@ public class HttpTransportClient : TransportClient
 
 	private RequestDataHttpClientFactory HttpClientFactory { get; }
 
-	/// <inheritdoc cref="TransportClient.Request{TResponse}" />
+	/// <inheritdoc cref="HttpRequestInvoker.Request{TResponse}" />
 	public override TResponse Request<TResponse>(RequestData requestData) =>
 		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
 
-	/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}" />
+	/// <inheritdoc cref="HttpRequestInvoker.RequestAsync{TResponse}" />
 	public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) =>
 		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
 
@@ -210,14 +216,14 @@ public class HttpTransportClient : TransportClient
 
 	/// <summary>
 	/// Creates an instance of <see cref="HttpMessageHandler" /> using the <paramref name="requestData" />.
-	/// This method is virtual so subclasses of <see cref="HttpTransportClient" /> can modify the instance if needed.
+	/// This method is virtual so subclasses of <see cref="HttpRequestInvoker" /> can modify the instance if needed.
 	/// </summary>
 	/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
 	/// <exception cref="Exception">
 	/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
 	/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 	/// </exception>
-	protected virtual HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
+	protected HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
 	{
 		var handler = new HttpClientHandler { AutomaticDecompression = requestData.HttpCompression ? GZip | Deflate : None, };
 
@@ -300,7 +306,7 @@ public class HttpTransportClient : TransportClient
 
 	/// <summary>
 	/// Creates an instance of <see cref="HttpRequestMessage" /> using the <paramref name="requestData" />.
-	/// This method is virtual so subclasses of <see cref="HttpTransportClient" /> can modify the instance if needed.
+	/// This method is virtual so subclasses of <see cref="HttpRequestInvoker" /> can modify the instance if needed.
 	/// </summary>
 	/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
 	/// <exception cref="Exception">
@@ -489,7 +495,13 @@ public class HttpTransportClient : TransportClient
 		}
 	}
 
+	/// <summary> Allows subclasses to dispose of managed resources </summary>
+	public virtual void DisposeManagedResources() {}
 	/// <inheritdoc />
-	protected override void DisposeManagedResources() => HttpClientFactory.Dispose();
+	public void Dispose()
+	{
+		HttpClientFactory.Dispose();
+		DisposeManagedResources();
+	}
 }
 #endif

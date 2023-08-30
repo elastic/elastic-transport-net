@@ -9,17 +9,17 @@ using Elastic.Transport.VirtualizedCluster.Components;
 namespace Elastic.Transport.VirtualizedCluster.Products;
 
 /// <summary>
-/// Makes sure <see cref="VirtualClusterTransportClient"/> is mockable by providing a different sniff response based on the current <see cref="ProductRegistration"/>
+/// Makes sure <see cref="VirtualClusterTransport"/> is mockable by providing a different sniff response based on the current <see cref="ProductRegistration"/>
 /// </summary>
 public abstract class MockProductRegistration
 {
 	/// <summary>
-	/// Information about the current product we are injecting into <see cref="HttpTransport{TConnectionSettings}"/>
+	/// Information about the current product we are injecting into <see cref="ITransport{TConfiguration}"/>
 	/// </summary>
 	public abstract ProductRegistration ProductRegistration { get; }
 
 	/// <summary>
-	/// Return the sniff response for the product as raw bytes for <see cref="TransportClient.Request{TResponse}"/> to return.
+	/// Return the sniff response for the product as raw bytes for <see cref="IRequestInvoker.Request{TResponse}"/> to return.
 	/// </summary>
 	/// <param name="nodes">The nodes we expect to be returned in the response</param>
 	/// <param name="stackVersion">The current version under test</param>
@@ -28,7 +28,7 @@ public abstract class MockProductRegistration
 	public abstract byte[] CreateSniffResponseBytes(IReadOnlyList<Node> nodes, string stackVersion, string publishAddressOverride, bool returnFullyQualifiedDomainNames);
 
 	/// <summary>
-	/// see <see cref="VirtualClusterTransportClient.Request{TResponse}"/> uses this to determine if the current request is a sniff request and should follow
+	/// see <see cref="VirtualClusterTransport.Request{TResponse}"/> uses this to determine if the current request is a sniff request and should follow
 	/// the sniffing rules
 	/// </summary>
 	public abstract bool IsSniffRequest(RequestData requestData);

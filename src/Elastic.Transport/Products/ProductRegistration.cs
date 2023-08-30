@@ -13,11 +13,11 @@ namespace Elastic.Transport.Products;
 /// When a request interfaces with a product, some parts are
 /// bespoke for each product. This interface defines the contract products will have to implement in order to fill
 /// in these bespoke parts.
-/// <para>The expectation is that unless you instantiate <see cref="DefaultHttpTransport{TConnectionSettings}"/>
+/// <para>The expectation is that unless you instantiate <see cref="DistributedTransport{TConfiguration}"/>
 /// directly clients that utilize transport will fill in this dependency
 /// </para>
 /// <para>
-/// If you do want to use a bare-bones <see cref="DefaultHttpTransport{TConnectionSettings}"/> you can use
+/// If you do want to use a bare-bones <see cref="DistributedTransport{TConfiguration}"/> you can use
 /// <see cref="DefaultProductRegistration.Default"/>
 /// </para>
 /// </summary>
@@ -29,7 +29,7 @@ public abstract class ProductRegistration
 	public abstract string DefaultMimeType { get; }
 
 	/// <summary>
-	/// The name of the current product utilizing <see cref="HttpTransport{TConnectionSettings}"/>
+	/// The name of the current product utilizing <see cref="ITransport{TConfiguration}"/>
 	/// <para>This name makes its way into the transport diagnostics sources and the default user agent string</para>
 	/// </summary>
 	public abstract string Name { get; }
@@ -40,12 +40,12 @@ public abstract class ProductRegistration
 	public abstract string? ServiceIdentifier { get; }
 
 	/// <summary>
-	/// Whether the product <see cref="HttpTransport{TConnectionSettings}"/> will call out to supports ping endpoints
+	/// Whether the product <see cref="ITransport{TConfiguration}"/> will call out to supports ping endpoints
 	/// </summary>
 	public abstract bool SupportsPing { get; }
 
 	/// <summary>
-	/// Whether the product <see cref="HttpTransport{TConnectionSettings}"/> will call out to supports sniff endpoints that return
+	/// Whether the product <see cref="ITransport{TConfiguration}"/> will call out to supports sniff endpoints that return
 	/// information about available nodes
 	/// </summary>
 	public abstract bool SupportsSniff { get; }
@@ -62,16 +62,16 @@ public abstract class ProductRegistration
 	public abstract RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, MemoryStreamFactory memoryStreamFactory);
 
 	/// <summary>
-	/// Provide an implementation that performs the ping directly using <see cref="TransportClient.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
+	/// Provide an implementation that performs the ping directly using <see cref="IRequestInvoker.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
 	/// return by <see cref="CreatePingRequestData"/>
 	/// </summary>
-	public abstract Task<TransportResponse> PingAsync(TransportClient connection, RequestData pingData, CancellationToken cancellationToken);
+	public abstract Task<TransportResponse> PingAsync(IRequestInvoker connection, RequestData pingData, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Provide an implementation that performs the ping directly using <see cref="TransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
+	/// Provide an implementation that performs the ping directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
 	/// return by <see cref="CreatePingRequestData"/>
 	/// </summary>
-	public abstract TransportResponse Ping(TransportClient connection, RequestData pingData);
+	public abstract TransportResponse Ping(IRequestInvoker connection, RequestData pingData);
 
 	/// <summary>
 	/// Create an instance of <see cref="RequestData"/> that describes where and how to sniff the cluster using <paramref name="node" />
@@ -81,16 +81,16 @@ public abstract class ProductRegistration
 		MemoryStreamFactory memoryStreamFactory);
 
 	/// <summary>
-	/// Provide an implementation that performs the sniff directly using <see cref="TransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
+	/// Provide an implementation that performs the sniff directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
 	/// return by <see cref="CreateSniffRequestData"/>
 	/// </summary>
-	public abstract Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(TransportClient connection, bool forceSsl, RequestData requestData, CancellationToken cancellationToken);
+	public abstract Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker connection, bool forceSsl, RequestData requestData, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Provide an implementation that performs the sniff directly using <see cref="TransportClient.Request{TResponse}"/> and the <see cref="RequestData"/>
+	/// Provide an implementation that performs the sniff directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
 	/// return by <see cref="CreateSniffRequestData"/>
 	/// </summary>
-	public abstract Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(TransportClient connection, bool forceSsl, RequestData requestData);
+	public abstract Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker connection, bool forceSsl, RequestData requestData);
 
 	/// <summary> Allows certain nodes to be queried first to obtain sniffing information </summary>
 	public abstract int SniffOrder(Node node);

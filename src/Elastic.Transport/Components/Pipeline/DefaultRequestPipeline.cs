@@ -19,7 +19,7 @@ namespace Elastic.Transport;
 public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	where TConfiguration : class, ITransportConfiguration
 {
-	private readonly TransportClient _transportClient;
+	private readonly IRequestInvoker _requestInvoker;
 	private readonly NodePool _nodePool;
 	private readonly DateTimeProvider _dateTimeProvider;
 	private readonly MemoryStreamFactory _memoryStreamFactory;
@@ -29,7 +29,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	private readonly ResponseBuilder _responseBuilder;
 
 	private RequestConfiguration? _pingAndSniffRequestConfiguration;
-	private List<Audit> _auditTrail = null;	
+	private List<Audit> _auditTrail = null;
 
 	/// <inheritdoc cref="RequestPipeline" />
 	internal DefaultRequestPipeline(
@@ -41,7 +41,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	{
 		_settings = configurationValues;
 		_nodePool = _settings.NodePool;
-		_transportClient = _settings.Connection;
+		_requestInvoker = _settings.Connection;
 		_dateTimeProvider = dateTimeProvider;
 		_memoryStreamFactory = memoryStreamFactory;
 		_productRegistration = configurationValues.ProductRegistration;
@@ -185,9 +185,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			TResponse response;
 
 			if (isAsync)
-				response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
+				response = await _requestInvoker.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
 			else
-				response = _transportClient.Request<TResponse>(requestData);
+				response = _requestInvoker.Request<TResponse>(requestData);
 
 			response.ApiCallDetails.AuditTrail = AuditTrail;
 
@@ -410,9 +410,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		try
 		{
 			if (isAsync)
-				response = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
+				response = await _productRegistration.PingAsync(_requestInvoker, pingData, cancellationToken).ConfigureAwait(false);
 			else
-				response = _productRegistration.Ping(_transportClient, pingData);
+				response = _productRegistration.Ping(_requestInvoker, pingData);
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
@@ -459,11 +459,11 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			{
 				if (isAsync)
 					result = await _productRegistration
-						.SniffAsync(_transportClient, _nodePool.UsingSsl, requestData, cancellationToken)
+						.SniffAsync(_requestInvoker, _nodePool.UsingSsl, requestData, cancellationToken)
 						.ConfigureAwait(false);
 				else
 					result = _productRegistration
-						.Sniff(_transportClient, _nodePool.UsingSsl, requestData);
+						.Sniff(_requestInvoker, _nodePool.UsingSsl, requestData);
 
 				ThrowBadAuthPipelineExceptionWhenNeeded(result.Item1.ApiCallDetails);
 

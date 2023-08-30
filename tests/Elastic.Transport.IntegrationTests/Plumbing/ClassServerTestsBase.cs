@@ -12,6 +12,6 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 
 		protected TServer Server { get; }
 
-		protected HttpTransport Transport => Server.DefaultTransport;
+		protected ITransport RequestHandler => Server.DefaultRequestHandler;
 	}
 }

@@ -17,7 +17,7 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <summary>
 /// An implementation of <see cref="ProductRegistration"/> that fills in the bespoke implementations
 /// for Elasticsearch so that <see cref="RequestPipeline"/> knows how to ping and sniff if we setup
-/// <see cref="HttpTransport{TConnectionSettings}"/> to talk to Elasticsearch
+/// <see cref="ITransport{TConfiguration}"/> to talk to Elasticsearch
 /// </summary>
 public class ElasticsearchProductRegistration : ProductRegistration
 {
@@ -136,10 +136,10 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	}
 
 	/// <inheritdoc cref="ProductRegistration.SniffAsync"/>
-	public override async Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(TransportClient transportClient,
+	public override async Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker,
 		bool forceSsl, RequestData requestData, CancellationToken cancellationToken)
 	{
-		var response = await transportClient.RequestAsync<SniffResponse>(requestData, cancellationToken)
+		var response = await requestInvoker.RequestAsync<SniffResponse>(requestData, cancellationToken)
 			.ConfigureAwait(false);
 		var nodes = response.ToNodes(forceSsl);
 		return Tuple.Create<TransportResponse, IReadOnlyCollection<Node>>(response,
@@ -147,10 +147,10 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	}
 
 	/// <inheritdoc cref="ProductRegistration.Sniff"/>
-	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(TransportClient transportClient, bool forceSsl,
+	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl,
 		RequestData requestData)
 	{
-		var response = transportClient.Request<SniffResponse>(requestData);
+		var response = requestInvoker.Request<SniffResponse>(requestData);
 		var nodes = response.ToNodes(forceSsl);
 		return Tuple.Create<TransportResponse, IReadOnlyCollection<Node>>(response,
 			new ReadOnlyCollection<Node>(nodes.ToArray()));
@@ -176,15 +176,15 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	}
 
 	/// <inheritdoc cref="ProductRegistration.PingAsync"/>
-	public override async Task<TransportResponse> PingAsync(TransportClient transportClient, RequestData pingData,
+	public override async Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, RequestData pingData,
 		CancellationToken cancellationToken)
 	{
-		var response = await transportClient.RequestAsync<VoidResponse>(pingData, cancellationToken).ConfigureAwait(false);
+		var response = await requestInvoker.RequestAsync<VoidResponse>(pingData, cancellationToken).ConfigureAwait(false);
 		return response;
 	}
 
 	/// <inheritdoc cref="ProductRegistration.Ping"/>
-	public override TransportResponse Ping(TransportClient connection, RequestData pingData)
+	public override TransportResponse Ping(IRequestInvoker connection, RequestData pingData)
 	{
 		var response = connection.Request<VoidResponse>(pingData);
 		return response;

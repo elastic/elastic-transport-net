@@ -24,7 +24,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing.Examples
 		[Fact]
 		public async Task CanCallIntoEndpoint()
 		{
-			var response = await Transport.GetAsync<StringResponse>(DummyStartup.Endpoint);
+			var response = await RequestHandler.GetAsync<StringResponse>(DummyStartup.Endpoint);
 			response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue("{0}", response.ApiCallDetails.DebugInformation);
 		}
 	}

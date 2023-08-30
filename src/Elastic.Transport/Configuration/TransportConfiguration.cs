@@ -22,7 +22,7 @@ using Elastic.Transport.Products;
 namespace Elastic.Transport;
 
 /// <summary>
-/// Allows you to control how <see cref="HttpTransport{TConnectionSettings}"/> behaves and where/how it connects to Elastic Stack products
+/// Allows you to control how <see cref="ITransport{TConfiguration}"/> behaves and where/how it connects to Elastic Stack products
 /// </summary>
 public class TransportConfiguration : TransportConfigurationBase<TransportConfiguration>
 {
@@ -99,12 +99,12 @@ public class TransportConfiguration : TransportConfigurationBase<TransportConfig
 
 	/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
 	/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
-	/// <param name="connection"><inheritdoc cref="TransportClient" path="/summary"/></param>
+	/// <param name="connection"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
 	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
 	public TransportConfiguration(
 		NodePool nodePool,
-		TransportClient connection = null,
+		IRequestInvoker connection = null,
 		Serializer serializer = null,
 		ProductRegistration productRegistration = null)
 		: base(nodePool, connection, serializer, productRegistration) { }
@@ -117,7 +117,7 @@ public class TransportConfiguration : TransportConfigurationBase<TransportConfig
 public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 	where T : TransportConfigurationBase<T>
 {
-	private readonly TransportClient _transportClient;
+	private readonly IRequestInvoker _requestInvoker;
 	private readonly NodePool _nodePool;
 	private readonly ProductRegistration _productRegistration;
 	private readonly NameValueCollection _headers = new NameValueCollection();
@@ -170,13 +170,13 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 	/// <inheritdoc cref="TransportConfiguration"/>
 	/// </summary>
 	/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
-	/// <param name="transportClient"><inheritdoc cref="TransportClient" path="/summary"/></param>
+	/// <param name="requestInvoker"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
 	/// <param name="requestResponseSerializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
-	protected TransportConfigurationBase(NodePool nodePool, TransportClient transportClient, Serializer requestResponseSerializer, ProductRegistration productRegistration)
+	protected TransportConfigurationBase(NodePool nodePool, IRequestInvoker requestInvoker, Serializer requestResponseSerializer, ProductRegistration productRegistration)
 	{
 		_nodePool = nodePool;
-		_transportClient = transportClient ?? new HttpTransportClient();
+		_requestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		_productRegistration = productRegistration ?? DefaultProductRegistration.Default;
 
 		UseThisRequestResponseSerializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
@@ -215,7 +215,7 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 	AuthorizationHeader ITransportConfiguration.Authentication => _authenticationHeader;
 	SemaphoreSlim ITransportConfiguration.BootstrapLock => _semaphore;
 	X509CertificateCollection ITransportConfiguration.ClientCertificates => _clientCertificates;
-	TransportClient ITransportConfiguration.Connection => _transportClient;
+	IRequestInvoker ITransportConfiguration.Connection => _requestInvoker;
 	ProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
 	int ITransportConfiguration.ConnectionLimit => _transportClientLimit;
 	NodePool ITransportConfiguration.NodePool => _nodePool;
@@ -475,7 +475,7 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 	protected virtual void DisposeManagedResources()
 	{
 		_nodePool?.Dispose();
-		_transportClient?.Dispose();
+		_requestInvoker?.Dispose();
 		_semaphore?.Dispose();
 	}
 

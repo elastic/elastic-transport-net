@@ -19,8 +19,8 @@ using System.Net;
 
 namespace Elastic.Transport;
 
-/// <inheritdoc cref="HttpTransport{TConnectionSettings}" />
-public sealed class DefaultHttpTransport : DefaultHttpTransport<TransportConfiguration>
+/// <inheritdoc cref="ITransport{TConfiguration}" />
+public sealed class DistributedTransport : DistributedTransport<TransportConfiguration>
 {
 	/// <summary>
 	///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
@@ -28,7 +28,7 @@ public sealed class DefaultHttpTransport : DefaultHttpTransport<TransportConfigu
 	///     nodes
 	/// </summary>
 	/// <param name="configurationValues">The connection settings to use for this transport</param>
-	public DefaultHttpTransport(TransportConfiguration configurationValues) : base(configurationValues)
+	public DistributedTransport(TransportConfiguration configurationValues) : base(configurationValues)
 	{
 	}
 
@@ -40,7 +40,7 @@ public sealed class DefaultHttpTransport : DefaultHttpTransport<TransportConfigu
 	/// <param name="configurationValues">The connection settings to use for this transport</param>
 	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-	public DefaultHttpTransport(TransportConfiguration configurationValues,
+	public DistributedTransport(TransportConfiguration configurationValues,
 		DateTimeProvider dateTimeProvider = null, MemoryStreamFactory memoryStreamFactory = null
 	)
 		: base(configurationValues, null, dateTimeProvider, memoryStreamFactory)
@@ -56,7 +56,7 @@ public sealed class DefaultHttpTransport : DefaultHttpTransport<TransportConfigu
 	/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-	internal DefaultHttpTransport(TransportConfiguration configurationValues,
+	internal DistributedTransport(TransportConfiguration configurationValues,
 		RequestPipelineFactory<TransportConfiguration> pipelineProvider = null,
 		DateTimeProvider dateTimeProvider = null, MemoryStreamFactory memoryStreamFactory = null
 	)
@@ -65,11 +65,11 @@ public sealed class DefaultHttpTransport : DefaultHttpTransport<TransportConfigu
 	}
 }
 
-/// <inheritdoc cref="HttpTransport{TConfiguration}" />
-public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration>
+/// <inheritdoc cref="ITransport{TConfiguration}" />
+public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	where TConfiguration : class, ITransportConfiguration
 {
-	private static readonly string TransportVersion = typeof(DefaultHttpTransport).Assembly
+	private static readonly string TransportVersion = typeof(DistributedTransport).Assembly
 			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
 			.InformationalVersion;
 
@@ -81,7 +81,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	///     nodes
 	/// </summary>
 	/// <param name="configurationValues">The connection settings to use for this transport</param>
-	public DefaultHttpTransport(TConfiguration configurationValues) : this(configurationValues, null, null, null)
+	public DistributedTransport(TConfiguration configurationValues) : this(configurationValues, null, null, null)
 	{
 	}
 
@@ -93,7 +93,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	/// <param name="configurationValues">The connection settings to use for this transport</param>
 	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-	public DefaultHttpTransport(
+	public DistributedTransport(
 		TConfiguration configurationValues,
 		DateTimeProvider dateTimeProvider = null,
 		MemoryStreamFactory memoryStreamFactory = null)
@@ -108,7 +108,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-	public DefaultHttpTransport(
+	public DistributedTransport(
 		TConfiguration configurationValues,
 		RequestPipelineFactory<TConfiguration> pipelineProvider = null,
 		DateTimeProvider dateTimeProvider = null,
@@ -122,7 +122,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 			.RequestResponseSerializer));
 
 		_productRegistration = configurationValues.ProductRegistration;
-		Settings = configurationValues;
+		Configuration = configurationValues;
 		PipelineProvider = pipelineProvider ?? new DefaultRequestPipelineFactory<TConfiguration>();
 		DateTimeProvider = dateTimeProvider ?? DefaultDateTimeProvider.Default;
 		MemoryStreamFactory = memoryStreamFactory ?? configurationValues.MemoryStreamFactory;
@@ -135,7 +135,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	/// <summary>
 	///
 	/// </summary>
-	public override TConfiguration Settings { get; }
+	public TConfiguration Configuration { get; }
 
 	/// <inheritdoc cref="HttpTransport.Request{TResponse}(HttpMethod, string, PostData?, RequestParameters?, in OpenTelemetryData)"/>
 	public override TResponse Request<TResponse>(
@@ -155,7 +155,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		in OpenTelemetryData openTelemetryData,
 		CancellationToken cancellationToken = default)
 			=> RequestCoreAsync<TResponse>(true, method, path, data, requestParameters, openTelemetryData, cancellationToken).AsTask();
-	
+
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(
 		bool isAsync,
 		HttpMethod method,
@@ -174,29 +174,29 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		try
 		{
 			using var pipeline =
-				PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
+				PipelineProvider.Create(Configuration, DateTimeProvider, MemoryStreamFactory, requestParameters);
 
 			if (isAsync)
-				await pipeline.FirstPoolUsageAsync(Settings.BootstrapLock, cancellationToken).ConfigureAwait(false);
+				await pipeline.FirstPoolUsageAsync(Configuration.BootstrapLock, cancellationToken).ConfigureAwait(false);
 			else
-				pipeline.FirstPoolUsage(Settings.BootstrapLock);
+				pipeline.FirstPoolUsage(Configuration.BootstrapLock);
 
-			var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory, openTelemetryData);
-			Settings.OnRequestDataCreated?.Invoke(requestData);
+			var requestData = new RequestData(method, path, data, Configuration, requestParameters, MemoryStreamFactory, openTelemetryData);
+			Configuration.OnRequestDataCreated?.Invoke(requestData);
 			TResponse response = null;
 
 			if (OpenTelemetry.ElasticTransportActivitySource.HasListeners() && activity.IsAllDataRequested)
 			{
 				if (activity.IsAllDataRequested)
-					OpenTelemetry.SetCommonAttributes(activity, openTelemetryData, Settings);
+					OpenTelemetry.SetCommonAttributes(activity, openTelemetryData, Configuration);
 
-				if (Settings.Authentication is BasicAuthentication basicAuthentication)
+				if (Configuration.Authentication is BasicAuthentication basicAuthentication)
 					activity?.SetTag(SemanticConventions.DbUser, basicAuthentication.Username);
 
-				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportProductName, Settings.ProductRegistration.Name);
-				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportProductVersion, Settings.ProductRegistration.ProductAssemblyVersion);
+				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportProductName, Configuration.ProductRegistration.Name);
+				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportProductVersion, Configuration.ProductRegistration.ProductAssemblyVersion);
 				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, TransportVersion);
-				activity?.SetTag(SemanticConventions.UserAgentOriginal, Settings.UserAgent.ToString());
+				activity?.SetTag(SemanticConventions.UserAgentOriginal, Configuration.UserAgent.ToString());
 
 				if (openTelemetryData.SpanAttributes is not null)
 				{
@@ -406,7 +406,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 #endif
 		}
 
-		Settings.OnRequestCompleted?.Invoke(response.ApiCallDetails);
+		Configuration.OnRequestCompleted?.Invoke(response.ApiCallDetails);
 		if (data != null && clientException != null && data.ThrowExceptions) throw clientException;
 	}
 

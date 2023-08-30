@@ -11,11 +11,11 @@ namespace Elastic.Transport.VirtualizedCluster.Components;
 /// <summary>
 /// A continuation of <see cref="VirtualCluster"/>'s builder methods that creates
 /// an instance of <see cref="TransportConfiguration"/> for the cluster after which the components such as
-/// <see cref="TransportClient"/> and <see cref="NodePool"/> can no longer be updated.
+/// <see cref="IRequestInvoker"/> and <see cref="NodePool"/> can no longer be updated.
 /// </summary>
 public sealed class SealedVirtualCluster
 {
-	private readonly TransportClient _connection;
+	private readonly IRequestInvoker _connection;
 	private readonly NodePool _connectionPool;
 	private readonly TestableDateTimeProvider _dateTimeProvider;
 	private readonly MockProductRegistration _productRegistration;
@@ -23,7 +23,7 @@ public sealed class SealedVirtualCluster
 	internal SealedVirtualCluster(VirtualCluster cluster, NodePool pool, TestableDateTimeProvider dateTimeProvider, MockProductRegistration productRegistration)
 	{
 		_connectionPool = pool;
-		_connection = new VirtualClusterTransportClient(cluster, dateTimeProvider);
+		_connection = new VirtualClusterTransport(cluster, dateTimeProvider);
 		_dateTimeProvider = dateTimeProvider;
 		_productRegistration = productRegistration;
 	}
@@ -44,7 +44,7 @@ public sealed class SealedVirtualCluster
 	/// Allows you to create an instance of `<see cref="VirtualClusterConnection"/> using the DSL provided by <see cref="Virtual"/>
 	/// </summary>
 	/// <param name="selector">Provide custom configuration options</param>
-	public VirtualClusterTransportClient VirtualClusterConnection(Func<TransportConfiguration, TransportConfiguration> selector = null) =>
+	public VirtualClusterTransport VirtualClusterConnection(Func<TransportConfiguration, TransportConfiguration> selector = null) =>
 		new VirtualizedCluster(_dateTimeProvider, selector == null ? CreateSettings() : selector(CreateSettings()))
 			.Connection;
 }

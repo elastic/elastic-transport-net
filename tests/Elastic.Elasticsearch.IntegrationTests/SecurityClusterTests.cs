@@ -17,7 +17,7 @@ public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
 	[Fact]
 	public async Task AsyncRequestDoesNotThrow()
 	{
-		var response = await Transport.RequestAsync<StringResponse>(GET, "/");
+		var response = await RequestHandler.RequestAsync<StringResponse>(GET, "/");
 		response.ApiCallDetails.Should().NotBeNull();
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
@@ -25,7 +25,7 @@ public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
 	[Fact]
 	public void SyncRequestDoesNotThrow()
 	{
-		var response = Transport.Request<StringResponse>(GET, "/");
+		var response = RequestHandler.Request<StringResponse>(GET, "/");
 		response.ApiCallDetails.Should().NotBeNull();
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
@@ -33,7 +33,7 @@ public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
 	[Fact]
 	public void SyncRequestDoesNotThrowOnBadAuth()
 	{
-		var response = Transport.Request<StringResponse>(GET, "/", null, new DefaultRequestParameters
+		var response = RequestHandler.Request<StringResponse>(GET, "/", null, new DefaultRequestParameters
 		{
 			RequestConfiguration = new RequestConfiguration
 			{
