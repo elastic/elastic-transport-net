@@ -12,7 +12,7 @@ namespace Elastic.Transport.Tests.Plumbing
 		{
 			var invoker = new InMemoryRequestInvoker();
 			var pool = new SingleNodePool(new Uri("http://localhost:9200"));
-			var settings = new TransportConfiguration(pool, transport);
+			var settings = new TransportConfiguration(pool, invoker);
 			return settings;
 		}
 	}

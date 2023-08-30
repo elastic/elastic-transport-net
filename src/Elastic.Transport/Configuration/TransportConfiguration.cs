@@ -99,15 +99,15 @@ public class TransportConfiguration : TransportConfigurationBase<TransportConfig
 
 	/// <summary> <inheritdoc cref="TransportConfiguration" path="/summary"/></summary>
 	/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
-	/// <param name="connection"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
+	/// <param name="invoker"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
 	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
 	public TransportConfiguration(
 		NodePool nodePool,
-		IRequestInvoker connection = null,
+		IRequestInvoker invoker = null,
 		Serializer serializer = null,
 		ProductRegistration productRegistration = null)
-		: base(nodePool, connection, serializer, productRegistration) { }
+		: base(nodePool, invoker, serializer, productRegistration) { }
 
 }
 
