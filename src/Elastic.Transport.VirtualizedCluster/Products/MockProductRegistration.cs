@@ -9,7 +9,7 @@ using Elastic.Transport.VirtualizedCluster.Components;
 namespace Elastic.Transport.VirtualizedCluster.Products;
 
 /// <summary>
-/// Makes sure <see cref="VirtualClusterConnection"/> is mockable by providing a different sniff response based on the current <see cref="ProductRegistration"/>
+/// Makes sure <see cref="VirtualClusterTransportClient"/> is mockable by providing a different sniff response based on the current <see cref="ProductRegistration"/>
 /// </summary>
 public abstract class MockProductRegistration
 {
@@ -28,7 +28,7 @@ public abstract class MockProductRegistration
 	public abstract byte[] CreateSniffResponseBytes(IReadOnlyList<Node> nodes, string stackVersion, string publishAddressOverride, bool returnFullyQualifiedDomainNames);
 
 	/// <summary>
-	/// see <see cref="VirtualClusterConnection.Request{TResponse}"/> uses this to determine if the current request is a sniff request and should follow
+	/// see <see cref="VirtualClusterTransportClient.Request{TResponse}"/> uses this to determine if the current request is a sniff request and should follow
 	/// the sniffing rules
 	/// </summary>
 	public abstract bool IsSniffRequest(RequestData requestData);

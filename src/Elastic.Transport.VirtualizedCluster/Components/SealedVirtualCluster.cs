@@ -23,7 +23,7 @@ public sealed class SealedVirtualCluster
 	internal SealedVirtualCluster(VirtualCluster cluster, NodePool pool, TestableDateTimeProvider dateTimeProvider, MockProductRegistration productRegistration)
 	{
 		_connectionPool = pool;
-		_connection = new VirtualClusterConnection(cluster, dateTimeProvider);
+		_connection = new VirtualClusterTransportClient(cluster, dateTimeProvider);
 		_dateTimeProvider = dateTimeProvider;
 		_productRegistration = productRegistration;
 	}
@@ -44,7 +44,7 @@ public sealed class SealedVirtualCluster
 	/// Allows you to create an instance of `<see cref="VirtualClusterConnection"/> using the DSL provided by <see cref="Virtual"/>
 	/// </summary>
 	/// <param name="selector">Provide custom configuration options</param>
-	public VirtualClusterConnection VirtualClusterConnection(Func<TransportConfiguration, TransportConfiguration> selector = null) =>
+	public VirtualClusterTransportClient VirtualClusterConnection(Func<TransportConfiguration, TransportConfiguration> selector = null) =>
 		new VirtualizedCluster(_dateTimeProvider, selector == null ? CreateSettings() : selector(CreateSettings()))
 			.Connection;
 }

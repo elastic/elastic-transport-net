@@ -26,7 +26,7 @@ namespace Elastic.Transport.Tests
 			var uris = Enumerable.Range(9200, _numberOfNodes).Select(p => new Uri("http://localhost:" + p));
 			var sniffingPool = new SniffingNodePool(uris, false);
 
-			Action callSniffing = () => AssertCreateView(sniffingPool);
+			var callSniffing = () => AssertCreateView(sniffingPool);
 
 			callSniffing.Should().NotThrow();
 		}
@@ -36,7 +36,7 @@ namespace Elastic.Transport.Tests
 			var uris = Enumerable.Range(9200, _numberOfNodes).Select(p => new Uri("http://localhost:" + p));
 			var staticPool = new StaticNodePool(uris, false);
 
-			Action callStatic = () => AssertCreateView(staticPool);
+			var callStatic = () => AssertCreateView(staticPool);
 
 			callStatic.Should().NotThrow();
 		}
@@ -54,13 +54,9 @@ namespace Elastic.Transport.Tests
 		private Thread CreateReadAndUpdateThread(NodePool pool) => new Thread(() =>
 		{
 			for (var i = 0; i < 1000; i++)
-			{
 				foreach (var _ in CallGetNext(pool))
-				{
 					if (_random.Next(10) % 2 == 0)
 						pool.Reseed(_update);
-				}
-			}
 		});
 
 		private IEnumerable<int> CallGetNext(NodePool pool)

@@ -15,7 +15,7 @@ namespace Elastic.Transport;
 /// <summary>
 /// An implementation of <see cref="TransportClient"/> designed to not actually do any IO and services requests from an in memory byte buffer
 /// </summary>
-public class InMemoryConnection : TransportClient
+public class InMemoryTransportClient : TransportClient
 {
 	private static readonly byte[] EmptyBody = Encoding.UTF8.GetBytes("");
 	private readonly string _contentType;
@@ -28,10 +28,10 @@ public class InMemoryConnection : TransportClient
 	/// Every request will succeed with this overload, note that it won't actually return mocked responses
 	/// so using this overload might fail if you are using it to test high level bits that need to deserialize the response.
 	/// </summary>
-	public InMemoryConnection() => _statusCode = 200;
+	public InMemoryTransportClient() => _statusCode = 200;
 
-	/// <inheritdoc cref="InMemoryConnection"/>
-	public InMemoryConnection(byte[] responseBody, int statusCode = 200, Exception exception = null, string contentType = RequestData.DefaultMimeType, Dictionary<string, IEnumerable<string>> headers = null)
+	/// <inheritdoc cref="InMemoryTransportClient"/>
+	public InMemoryTransportClient(byte[] responseBody, int statusCode = 200, Exception exception = null, string contentType = RequestData.DefaultMimeType, Dictionary<string, IEnumerable<string>> headers = null)
 	{
 		_responseBody = responseBody;
 		_statusCode = statusCode;

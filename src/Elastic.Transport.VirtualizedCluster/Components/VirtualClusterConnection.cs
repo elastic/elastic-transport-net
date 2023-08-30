@@ -30,7 +30,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components;
 /// <see cref="SealedVirtualCluster.VirtualClusterConnection"/> becomes available
 /// </pre>
 /// </summary>
-public class VirtualClusterConnection : InMemoryConnection
+public class VirtualClusterTransportClient : InMemoryTransportClient
 {
 	private static readonly object Lock = new();
 
@@ -41,7 +41,7 @@ public class VirtualClusterConnection : InMemoryConnection
 	private MockProductRegistration _productRegistration;
 	private IDictionary<int, State> _calls = new Dictionary<int, State>();
 
-	internal VirtualClusterConnection(VirtualCluster cluster, TestableDateTimeProvider dateTimeProvider)
+	internal VirtualClusterTransportClient(VirtualCluster cluster, TestableDateTimeProvider dateTimeProvider)
 	{
 		UpdateCluster(cluster);
 		_dateTimeProvider = dateTimeProvider;
@@ -49,10 +49,10 @@ public class VirtualClusterConnection : InMemoryConnection
 	}
 
 	/// <summary>
-	/// Create a <see cref="VirtualClusterConnection"/> instance that always returns a successful response.
+	/// Create a <see cref="VirtualClusterTransportClient"/> instance that always returns a successful response.
 	/// </summary>
 	/// <param name="response">The bytes to be returned on every API call invocation</param>
-	public static VirtualClusterConnection Success(byte[] response) =>
+	public static VirtualClusterTransportClient Success(byte[] response) =>
 		Virtual.Elasticsearch
 			.Bootstrap(1)
 			.ClientCalls(r => r.SucceedAlways().ReturnByteResponse(response))
@@ -61,9 +61,9 @@ public class VirtualClusterConnection : InMemoryConnection
 			.Connection;
 
 	/// <summary>
-	/// Create a <see cref="VirtualClusterConnection"/> instance that always returns a failed response.
+	/// Create a <see cref="VirtualClusterTransportClient"/> instance that always returns a failed response.
 	/// </summary>
-	public static VirtualClusterConnection Error() =>
+	public static VirtualClusterTransportClient Error() =>
 		Virtual.Elasticsearch
 			.Bootstrap(1)
 			.ClientCalls(r => r.FailAlways(400))
