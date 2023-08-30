@@ -10,7 +10,7 @@ namespace Elastic.Transport.Tests.Plumbing
 	{
 		public static TransportConfiguration Create()
 		{
-			var connection = new InMemoryConnection();
+			var connection = new InMemoryTransportClient();
 			var pool = new SingleNodePool(new Uri("http://localhost:9200"));
 			var settings = new TransportConfiguration(pool, connection);
 			return settings;

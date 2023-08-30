@@ -48,7 +48,7 @@ public class VirtualizedCluster
 		};
 	}
 
-	public VirtualClusterConnection Connection => Transport.Settings.Connection as VirtualClusterConnection;
+	public VirtualClusterTransportClient Connection => Transport.Settings.Connection as VirtualClusterTransportClient;
 	public NodePool ConnectionPool => Transport.Settings.NodePool;
 	public HttpTransport<ITransportConfiguration> Transport => _exposingRequestPipeline?.Transport;
 
