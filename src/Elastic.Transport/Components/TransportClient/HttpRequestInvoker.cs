@@ -38,8 +38,12 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// <summary>
 	/// Allows users to inject their own HttpMessageHandler, and optionally call our default implementation
 	/// </summary>
-	public HttpRequestInvoker(Func<Func<RequestData, HttpMessageHandler>, RequestData, HttpMessageHandler> createHttpHandler) =>
-		HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
+	public HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler) =>
+		HttpClientFactory = new RequestDataHttpClientFactory(r =>
+		{
+			var defaultHandler = CreateHttpClientHandler(r);
+			return wrappingHandler(defaultHandler, r) ?? defaultHandler;
+		});
 
 	/// <inheritdoc cref="RequestDataHttpClientFactory.InUseHandlers" />
 	public int InUseHandlers => HttpClientFactory.InUseHandlers;
