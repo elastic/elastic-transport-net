@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -47,67 +48,15 @@ public class HttpWebRequestTransportClient : TransportClient
 	internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
 
 	/// <inheritdoc cref="TransportClient.Request{TResponse}"/>>
-	public override TResponse Request<TResponse>(RequestData requestData)
-	{
-		int? statusCode = null;
-		Stream responseStream = null;
-		Exception ex = null;
-		string mimeType = null;
-		long contentLength = -1;
-		ReadOnlyDictionary<TcpState, int> tcpStats = null;
-		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
-		Dictionary<string, IEnumerable<string>> responseHeaders = null;
-
-		try
-		{
-			var request = CreateHttpWebRequest(requestData);
-			var data = requestData.PostData;
-
-			if (data != null)
-			{
-				using (var stream = request.GetRequestStream())
-				{
-					if (requestData.HttpCompression)
-					{
-						using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-						data.Write(zipStream, requestData.ConnectionSettings);
-					}
-					else
-						data.Write(stream, requestData.ConnectionSettings);
-				}
-			}
-			requestData.MadeItToResponse = true;
-
-			if (requestData.TcpStats)
-				tcpStats = TcpStats.GetStates();
-
-			if (requestData.ThreadPoolStats)
-				threadPoolStats = ThreadPoolStats.GetStats();
-
-			//http://msdn.microsoft.com/en-us/library/system.net.httpwebresponse.getresponsestream.aspx
-			//Either the stream or the response object needs to be closed but not both although it won't
-			//throw any errors if both are closed atleast one of them has to be Closed.
-			//Since we expose the stream we let closing the stream determining when to close the connection
-			var httpWebResponse = (HttpWebResponse)request.GetResponse();
-			HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
-			responseHeaders = ParseHeaders(requestData, httpWebResponse, responseHeaders);
-			contentLength = httpWebResponse.ContentLength;
-		}
-		catch (WebException e)
-		{
-			ex = e;
-			if (e.Response is HttpWebResponse httpWebResponse)
-				HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
-		}
-
-		responseStream ??= Stream.Null;
-		var response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
-		return response;
-	}
+	public override TResponse Request<TResponse>(RequestData requestData) =>
+		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
 
 	/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}"/>>
-	public override async Task<TResponse> RequestAsync<TResponse>(RequestData requestData,
-		CancellationToken cancellationToken)
+	public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken = default) =>
+		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
+
+	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)
+		where TResponse : TransportResponse, new()
 	{
 		Action unregisterWaitHandle = null;
 		int? statusCode = null;
@@ -120,46 +69,79 @@ public class HttpWebRequestTransportClient : TransportClient
 		Dictionary<string, IEnumerable<string>> responseHeaders = null;
 		requestData.IsAsync = true;
 
+		var beforeTicks = Stopwatch.GetTimestamp();
+
 		try
 		{
 			var data = requestData.PostData;
 			var request = CreateHttpWebRequest(requestData);
 			using (cancellationToken.Register(() => request.Abort()))
 			{
-				if (data != null)
+				if (data is not null)
 				{
-					var apmGetRequestStreamTask =
-						Task.Factory.FromAsync(request.BeginGetRequestStream, r => request.EndGetRequestStream(r), null);
-					unregisterWaitHandle = RegisterApmTaskTimeout(apmGetRequestStreamTask, request, requestData);
-
-					using (var stream = await apmGetRequestStreamTask.ConfigureAwait(false))
+					if (isAsync)
 					{
+						var apmGetRequestStreamTask =
+						Task.Factory.FromAsync(request.BeginGetRequestStream, request.EndGetRequestStream, null);
+						unregisterWaitHandle = RegisterApmTaskTimeout(apmGetRequestStreamTask, request, requestData);
+
+						using (var stream = await apmGetRequestStreamTask.ConfigureAwait(false))
+						{
+							if (requestData.HttpCompression)
+							{
+								using var zipStream = new GZipStream(stream, CompressionMode.Compress);
+								await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+							}
+							else
+								await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+						}
+						unregisterWaitHandle?.Invoke();
+					}
+					else
+					{
+						using var stream = request.GetRequestStream();
+
 						if (requestData.HttpCompression)
 						{
 							using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-							await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+							data.Write(zipStream, requestData.ConnectionSettings);
 						}
 						else
-							await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+							data.Write(stream, requestData.ConnectionSettings);
 					}
-					unregisterWaitHandle?.Invoke();
 				}
+
+				var prepareRequestMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
+
+				if (prepareRequestMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
+					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs);
+
 				requestData.MadeItToResponse = true;
+
 				//http://msdn.microsoft.com/en-us/library/system.net.httpwebresponse.getresponsestream.aspx
 				//Either the stream or the response object needs to be closed but not both although it won't
 				//throw any errors if both are closed atleast one of them has to be Closed.
 				//Since we expose the stream we let closing the stream determining when to close the connection
-
-				var apmGetResponseTask = Task.Factory.FromAsync(request.BeginGetResponse, r => request.EndGetResponse(r), null);
-				unregisterWaitHandle = RegisterApmTaskTimeout(apmGetResponseTask, request, requestData);
-
+		
 				if (requestData.TcpStats)
 					tcpStats = TcpStats.GetStates();
 
 				if (requestData.ThreadPoolStats)
 					threadPoolStats = ThreadPoolStats.GetStats();
 
-				var httpWebResponse = (HttpWebResponse)await apmGetResponseTask.ConfigureAwait(false);
+				HttpWebResponse httpWebResponse;
+
+				if (isAsync)
+				{
+					var apmGetResponseTask = Task.Factory.FromAsync(request.BeginGetResponse, r => request.EndGetResponse(r), null);
+					unregisterWaitHandle = RegisterApmTaskTimeout(apmGetResponseTask, request, requestData);
+					httpWebResponse = (HttpWebResponse)await apmGetResponseTask.ConfigureAwait(false);
+				}
+				else
+				{
+					httpWebResponse = (HttpWebResponse)request.GetResponse();
+				}
+
 				HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
 				responseHeaders = ParseHeaders(requestData, httpWebResponse, responseHeaders);
 				contentLength = httpWebResponse.ContentLength;
@@ -176,15 +158,42 @@ public class HttpWebRequestTransportClient : TransportClient
 			unregisterWaitHandle?.Invoke();
 		}
 		responseStream ??= Stream.Null;
-		var response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+
+		TResponse response;
+
+		if (isAsync)
+			response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
 				(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-			.ConfigureAwait(false);
+					.ConfigureAwait(false);
+		else
+			response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
+					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+
+		if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
+		{
+			var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+			foreach (var attribute in attributes)
+			{
+				Activity.Current?.SetTag(attribute.Key, attribute.Value);
+			}
+		}
+
 		return response;
 	}
 
 	private static Dictionary<string, IEnumerable<string>> ParseHeaders(RequestData requestData, HttpWebResponse responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
 	{
 		if (!responseMessage.SupportsHeaders && !responseMessage.Headers.HasKeys()) return null;
+
+		var defaultHeadersForProduct = requestData.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
+		foreach (var headerToParse in defaultHeadersForProduct)
+		{
+			if (responseMessage.Headers.AllKeys.Contains(headerToParse, StringComparer.OrdinalIgnoreCase))
+			{
+				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+				responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse));
+			}
+		}
 
 		if (requestData.ParseAllHeaders)
 		{

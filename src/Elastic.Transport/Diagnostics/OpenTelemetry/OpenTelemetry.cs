@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 
 namespace Elastic.Transport.Diagnostics;
@@ -7,6 +8,12 @@ namespace Elastic.Transport.Diagnostics;
 /// </summary>
 public static class OpenTelemetry
 {
+	// This should be updated if any of the code uses semantic conventions defined in newer schema versions.
+	internal const string OpenTelemetrySchemaVersion = "https://opentelemetry.io/schemas/1.21.0";
+
+	// This is hard-coded, for now, but could later be exposed as a configuration, if required.
+	internal const int MinimumMillisecondsToEmitTimingSpanAttribute = 20;
+
 	/// <summary>
 	/// The name of the primary <see cref="ActivitySource"/> for the transport. 
 	/// </summary>
@@ -19,4 +26,43 @@ public static class OpenTelemetry
 	/// Allows derived clients to avoid overhead to collect attributes when there are no listeners.
 	/// </summary>
 	public static bool ElasticTransportActivitySourceHasListeners => ElasticTransportActivitySource.HasListeners();
+
+	internal static bool CurrentSpanIsElasticTransportOwnedAndHasListeners => ElasticTransportActivitySource.HasListeners() &&
+		(Activity.Current?.Source.Name.Equals(ElasticTransportActivitySourceName, StringComparison.Ordinal) ?? false);
+
+	internal static bool CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested => ElasticTransportActivitySource.HasListeners() &&
+		((Activity.Current?.Source.Name.Equals(ElasticTransportActivitySourceName, StringComparison.Ordinal) ?? false) && (Activity.Current?.IsAllDataRequested ?? false));
+
+	internal static void SetCommonAttributes(Activity? activity, OpenTelemetryData openTelemetryData, ITransportConfiguration settings)
+	{
+		if (activity is null)
+			return;
+
+		if (settings.ProductRegistration.DefaultOpenTelemetryAttributes is not null)
+		{
+			foreach (var attribute in settings.ProductRegistration.DefaultOpenTelemetryAttributes)
+			{
+				activity?.SetTag(attribute.Key, attribute.Value);
+			}
+		}
+
+		var productSchemaVersion = string.Empty;
+		if (openTelemetryData.SpanAttributes is not null)
+		{
+			foreach (var attribute in openTelemetryData.SpanAttributes)
+			{
+				activity?.SetTag(attribute.Key, attribute.Value);
+
+				if (attribute.Key.Equals(OpenTelemetryAttributes.DbElasticsearchSchemaUrl, StringComparison.Ordinal))
+				{
+					if (attribute.Value is string schemaVersion)
+						productSchemaVersion = schemaVersion;
+				}
+			}
+		}
+
+		// We add the client schema version only when it differs from the product schema version
+		if (!productSchemaVersion.Equals(OpenTelemetrySchemaVersion, StringComparison.Ordinal))
+			activity?.SetTag(OpenTelemetryAttributes.OpenTelemetrySchemaVersion, OpenTelemetrySchemaVersion);
+	}
 }

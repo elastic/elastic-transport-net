@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -67,6 +69,10 @@ public sealed class DefaultHttpTransport : DefaultHttpTransport<TransportConfigu
 public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration>
 	where TConfiguration : class, ITransportConfiguration
 {
+	private static readonly string TransportVersion = typeof(DefaultHttpTransport).Assembly
+			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+			.InformationalVersion;
+
 	private readonly ProductRegistration _productRegistration;
 
 	/// <summary>
@@ -131,22 +137,22 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	/// </summary>
 	public override TConfiguration Settings { get; }
 
-	/// <inheritdoc cref="HttpTransport.Request{TResponse}(HttpMethod, string, PostData?, RequestParameters?, OpenTelemetryData)"/>
+	/// <inheritdoc cref="HttpTransport.Request{TResponse}(HttpMethod, string, PostData?, RequestParameters?, in OpenTelemetryData)"/>
 	public override TResponse Request<TResponse>(
 		HttpMethod method,
 		string path,
 		PostData? data,
 		RequestParameters? requestParameters,
-		OpenTelemetryData openTelemetryData)
+		in OpenTelemetryData openTelemetryData)
 			=> RequestCoreAsync<TResponse>(false, method, path, data, requestParameters, openTelemetryData).EnsureCompleted();
 
-	/// <inheritdoc cref="HttpTransport.RequestAsync{TResponse}(HttpMethod, string, PostData?, RequestParameters?, OpenTelemetryData, CancellationToken)"/>
+	/// <inheritdoc cref="HttpTransport.RequestAsync{TResponse}(HttpMethod, string, PostData?, RequestParameters?, in OpenTelemetryData, CancellationToken)"/>
 	public override Task<TResponse> RequestAsync<TResponse>(
 		HttpMethod method,
 		string path,
 		PostData? data,
 		RequestParameters? requestParameters,
-		OpenTelemetryData openTelemetryData,
+		in OpenTelemetryData openTelemetryData,
 		CancellationToken cancellationToken = default)
 			=> RequestCoreAsync<TResponse>(true, method, path, data, requestParameters, openTelemetryData, cancellationToken).AsTask();
 	
@@ -160,122 +166,177 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		CancellationToken cancellationToken = default)
 			where TResponse : TransportResponse, new()
 	{
-		using var pipeline =
-			PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
+		Activity activity = null;
 
-		if (isAsync)
-			await pipeline.FirstPoolUsageAsync(Settings.BootstrapLock, cancellationToken).ConfigureAwait(false);
-		else
-			pipeline.FirstPoolUsage(Settings.BootstrapLock);
+		if (OpenTelemetry.ElasticTransportActivitySource.HasListeners())
+			activity = OpenTelemetry.ElasticTransportActivitySource.StartActivity(openTelemetryData.SpanName ?? method.GetStringValue(), ActivityKind.Client);
 
-		var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory, openTelemetryData);
-		Settings.OnRequestDataCreated?.Invoke(requestData);
-		TResponse response = null;
-
-		List<PipelineException>? seenExceptions = null;
-
-		if (pipeline.TryGetSingleNode(out var singleNode))
+		try
 		{
-			// No value in marking a single node as dead. We have no other options!
+			using var pipeline =
+				PipelineProvider.Create(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters);
 
-			requestData.Node = singleNode;
+			if (isAsync)
+				await pipeline.FirstPoolUsageAsync(Settings.BootstrapLock, cancellationToken).ConfigureAwait(false);
+			else
+				pipeline.FirstPoolUsage(Settings.BootstrapLock);
 
-			try
+			var requestData = new RequestData(method, path, data, Settings, requestParameters, MemoryStreamFactory, openTelemetryData);
+			Settings.OnRequestDataCreated?.Invoke(requestData);
+			TResponse response = null;
+
+			if (OpenTelemetry.ElasticTransportActivitySource.HasListeners() && activity.IsAllDataRequested)
 			{
-				if (isAsync)
-					response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
-						.ConfigureAwait(false);
-				else
-					response = pipeline.CallProductEndpoint<TResponse>(requestData);
+				if (activity.IsAllDataRequested)
+					OpenTelemetry.SetCommonAttributes(activity, openTelemetryData, Settings);
+
+				if (Settings.Authentication is BasicAuthentication basicAuthentication)
+					activity?.SetTag(SemanticConventions.DbUser, basicAuthentication.Username);
+
+				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportProductName, Settings.ProductRegistration.Name);
+				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportProductVersion, Settings.ProductRegistration.ProductAssemblyVersion);
+				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, TransportVersion);
+				activity?.SetTag(SemanticConventions.UserAgentOriginal, Settings.UserAgent.ToString());
+
+				if (openTelemetryData.SpanAttributes is not null)
+				{
+					foreach (var attribute in requestData.OpenTelemetryData.SpanAttributes)
+					{
+						activity?.SetTag(attribute.Key, attribute.Value);
+					}
+				}
+
+				activity?.SetTag(SemanticConventions.HttpRequestMethod, requestData.Method.GetStringValue());
 			}
-			catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
+
+			List<PipelineException>? seenExceptions = null;
+			var attemptedNodes = 0;
+
+			if (pipeline.TryGetSingleNode(out var singleNode))
 			{
-				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
-			}
-			catch (PipelineException pipelineException)
-			{
-				HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
-			}
-			catch (Exception killerException)
-			{
-				ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
-			}
-		}
-		else
-			foreach (var node in pipeline.NextNode())
-			{
-				requestData.Node = node;
+				// No value in marking a single node as dead. We have no other options!
+				attemptedNodes = 1;
+				requestData.Node = singleNode;
+				activity?.SetTag(SemanticConventions.UrlFull, requestData.Uri.AbsoluteUri);
+				activity?.SetTag(SemanticConventions.ServerAddress, requestData.Uri.Host);
+				activity?.SetTag(SemanticConventions.ServerPort, requestData.Uri.Port);
+
 				try
 				{
-					if (_productRegistration.SupportsSniff)
-					{
-						if (isAsync)
-							await pipeline.SniffOnStaleClusterAsync(cancellationToken).ConfigureAwait(false);
-						else
-							pipeline.SniffOnStaleCluster();
-					}
-					if (_productRegistration.SupportsPing)
-					{
-						if (isAsync)
-							await PingAsync(pipeline, node, cancellationToken).ConfigureAwait(false);
-						else
-							Ping(pipeline, node);
-					}
-
 					if (isAsync)
 						response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
 							.ConfigureAwait(false);
 					else
 						response = pipeline.CallProductEndpoint<TResponse>(requestData);
-
-					if (!response.ApiCallDetails.SuccessOrKnownError)
-					{
-						pipeline.MarkDead(node);
-
-						if (_productRegistration.SupportsSniff)
-						{
-							if (isAsync)
-								await pipeline.SniffOnConnectionFailureAsync(cancellationToken).ConfigureAwait(false);
-							else
-								pipeline.SniffOnConnectionFailure();
-						}							
-					}
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 				{
-					HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
-					break;
+					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
 				}
 				catch (PipelineException pipelineException)
 				{
-					HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
+					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
 				}
 				catch (Exception killerException)
 				{
-					if (killerException is OperationCanceledException && cancellationToken.IsCancellationRequested)
-						pipeline.AuditCancellationRequested();
-
-					throw new UnexpectedTransportException(killerException, seenExceptions)
-					{
-						Request = requestData,
-						ApiCallDetails = response?.ApiCallDetails,
-						AuditTrail = pipeline.AuditTrail
-					};
+					ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
 				}
-
-				if (cancellationToken.IsCancellationRequested)
+			}
+			else
+				foreach (var node in pipeline.NextNode())
 				{
-					pipeline.AuditCancellationRequested();
+					attemptedNodes++;
+					requestData.Node = node;
+
+					// If multiple nodes are attempted, the final node attempted will be used to set the operation span attributes.
+					// Each physical node attempt in CallProductEndpoint will also record these attributes.
+					activity?.SetTag(SemanticConventions.UrlFull, requestData.Uri.AbsoluteUri);
+					activity?.SetTag(SemanticConventions.ServerAddress, requestData.Uri.Host);
+					activity?.SetTag(SemanticConventions.ServerPort, requestData.Uri.Port);
+
+					try
+					{
+						if (_productRegistration.SupportsSniff)
+						{
+							if (isAsync)
+								await pipeline.SniffOnStaleClusterAsync(cancellationToken).ConfigureAwait(false);
+							else
+								pipeline.SniffOnStaleCluster();
+						}
+						if (_productRegistration.SupportsPing)
+						{
+							if (isAsync)
+								await PingAsync(pipeline, node, cancellationToken).ConfigureAwait(false);
+							else
+								Ping(pipeline, node);
+						}
+
+						if (isAsync)
+							response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
+								.ConfigureAwait(false);
+						else
+							response = pipeline.CallProductEndpoint<TResponse>(requestData);
+
+						if (!response.ApiCallDetails.SuccessOrKnownError)
+						{
+							pipeline.MarkDead(node);
+
+							if (_productRegistration.SupportsSniff)
+							{
+								if (isAsync)
+									await pipeline.SniffOnConnectionFailureAsync(cancellationToken).ConfigureAwait(false);
+								else
+									pipeline.SniffOnConnectionFailure();
+							}
+						}
+					}
+					catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
+					{
+						HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
+						break;
+					}
+					catch (PipelineException pipelineException)
+					{
+						HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
+					}
+					catch (Exception killerException)
+					{
+						if (killerException is OperationCanceledException && cancellationToken.IsCancellationRequested)
+							pipeline.AuditCancellationRequested();
+
+						throw new UnexpectedTransportException(killerException, seenExceptions)
+						{
+							Request = requestData,
+							ApiCallDetails = response?.ApiCallDetails,
+							AuditTrail = pipeline.AuditTrail
+						};
+					}
+
+					if (cancellationToken.IsCancellationRequested)
+					{
+						pipeline.AuditCancellationRequested();
+						break;
+					}
+
+					if (response == null || !response.ApiCallDetails.SuccessOrKnownError) continue;
+
+					pipeline.MarkAlive(node);
 					break;
 				}
 
-				if (response == null || !response.ApiCallDetails.SuccessOrKnownError) continue;
+#if NET6_0_OR_GREATER
+			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
+#endif
 
-				pipeline.MarkAlive(node);
-				break;
-			}
+			activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
+			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportAttemptedNodes, attemptedNodes);
 
-		return FinalizeResponse(requestData, pipeline, seenExceptions, response);
+			return FinalizeResponse(requestData, pipeline, seenExceptions, response);
+		}
+		finally
+		{
+			activity?.Dispose();
+		}
 	}
 
 	private static void ThrowUnexpectedTransportException<TResponse>(Exception killerException,

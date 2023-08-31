@@ -54,7 +54,7 @@ public abstract class HttpTransport
 		string path,
 		PostData? postData,
 		RequestParameters? requestParameters,
-		OpenTelemetryData openTelemetryData)
+		in OpenTelemetryData openTelemetryData)
 		where TResponse : TransportResponse, new();
 #pragma warning restore 1573
 
@@ -102,7 +102,7 @@ public abstract class HttpTransport
 		string path,
 		PostData? postData,
 		RequestParameters? requestParameters,
-		OpenTelemetryData openTelemetryData,
+		in OpenTelemetryData openTelemetryData,
 		CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new();
 #pragma warning restore 1573

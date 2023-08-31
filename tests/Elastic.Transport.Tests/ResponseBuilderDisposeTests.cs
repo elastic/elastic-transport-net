@@ -33,7 +33,7 @@ namespace Elastic.Transport.Tests
 		{
 			var settings = disableDirectStreaming ? _settingsDisableDirectStream : _settings;
 			var memoryStreamFactory = new TrackMemoryStreamFactory();
-			var requestData = new RequestData(HttpMethod.GET, "/", null, settings, null, memoryStreamFactory)
+			var requestData = new RequestData(HttpMethod.GET, "/", null, settings, null, memoryStreamFactory, default)
 			{
 				Node = new Node(new Uri("http://localhost:9200"))
 			};
@@ -80,7 +80,7 @@ namespace Elastic.Transport.Tests
 			var settings = disableDirectStreaming ? _settingsDisableDirectStream : _settings;
 			var memoryStreamFactory = new TrackMemoryStreamFactory();
 
-			var requestData = new RequestData(HttpMethod.GET, "/", null, settings, null, memoryStreamFactory)
+			var requestData = new RequestData(HttpMethod.GET, "/", null, settings, null, memoryStreamFactory, default)
 			{
 				Node = new Node(new Uri("http://localhost:9200"))
 			};

@@ -46,77 +46,15 @@ public class HttpTransportClient : TransportClient
 	private RequestDataHttpClientFactory HttpClientFactory { get; }
 
 	/// <inheritdoc cref="TransportClient.Request{TResponse}" />
-	public override TResponse Request<TResponse>(RequestData requestData)
-	{
-		var client = GetClient(requestData);
-		HttpResponseMessage responseMessage;
-		int? statusCode = null;
-		Stream responseStream = null;
-		Exception ex = null;
-		string mimeType = null;
-		long contentLength = -1;
-		IDisposable receive = DiagnosticSources.SingletonDisposable;
-		ReadOnlyDictionary<TcpState, int> tcpStats = null;
-		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
-		Dictionary<string, IEnumerable<string>> responseHeaders = null;
-
-		try
-		{
-			var requestMessage = CreateHttpRequestMessage(requestData);
-
-			if (requestData.PostData != null)
-				SetContent(requestMessage, requestData);
-
-			using (requestMessage?.Content ?? (IDisposable)Stream.Null)
-			{
-				if (requestData.TcpStats)
-					tcpStats = TcpStats.GetStates();
-
-				if (requestData.ThreadPoolStats)
-					threadPoolStats = ThreadPoolStats.GetStats();
-
-#if NET6_0_OR_GREATER
-				responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead);
-#else
-				responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult();
-#endif
-				statusCode = (int)responseMessage.StatusCode;
-			}
-
-			requestData.MadeItToResponse = true;
-			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
-			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
-			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
-
-			if (responseMessage.Content != null)
-			{
-#if NET6_0_OR_GREATER
-				responseStream = responseMessage.Content.ReadAsStream();
-#else
-				responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
-#endif
-			}
-		}
-		catch (TaskCanceledException e)
-		{
-			ex = e;
-		}
-		catch (HttpRequestException e)
-		{
-			ex = e;
-		}
-		using (receive)
-		using (responseStream ??= Stream.Null)
-		{
-			var response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, ex, statusCode, responseHeaders, responseStream, mimeType,
-				contentLength, threadPoolStats, tcpStats);
-
-			return response;
-		}
-	}
+	public override TResponse Request<TResponse>(RequestData requestData) =>
+		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
 
 	/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}" />
-	public override async Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+	public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) =>
+		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
+
+	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)
+		where TResponse : TransportResponse, new()
 	{
 		var client = GetClient(requestData);
 		HttpResponseMessage responseMessage;
@@ -129,14 +67,21 @@ public class HttpTransportClient : TransportClient
 		ReadOnlyDictionary<TcpState, int> tcpStats = null;
 		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 		Dictionary<string, IEnumerable<string>> responseHeaders = null;
-		requestData.IsAsync = true;
+		requestData.IsAsync = isAsync;
+
+		var beforeTicks = Stopwatch.GetTimestamp();
 
 		try
 		{
 			var requestMessage = CreateHttpRequestMessage(requestData);
 
-			if (requestData.PostData != null)
-				await SetContentAsync(requestMessage, requestData, cancellationToken).ConfigureAwait(false);
+			if (requestData.PostData is not null)
+			{
+				if (isAsync)
+					await SetContentAsync(requestMessage, requestData, cancellationToken).ConfigureAwait(false);
+				else
+					SetContent(requestMessage, requestData);
+			}
 
 			using (requestMessage?.Content ?? (IDisposable)Stream.Null)
 			{
@@ -146,20 +91,46 @@ public class HttpTransportClient : TransportClient
 				if (requestData.ThreadPoolStats)
 					threadPoolStats = ThreadPoolStats.GetStats();
 
-				responseMessage = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-					.ConfigureAwait(false);
+				var prepareRequestMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
+
+				if (prepareRequestMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
+					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs);
+
+				if (isAsync)
+					responseMessage = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+						.ConfigureAwait(false);
+				else
+#if NET6_0_OR_GREATER
+					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+#else
+					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
+#endif
+
 				statusCode = (int)responseMessage.StatusCode;
 			}
 
 			requestData.MadeItToResponse = true;
 			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
-			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
 
 			if (responseMessage.Content != null)
 			{
-				responseStream = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
+				if (isAsync)
+#if NET6_0_OR_GREATER
+					responseStream = await responseMessage.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+#else
+					responseStream = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
+#endif
+				else
+#if NET6_0_OR_GREATER
+					responseStream = responseMessage.Content.ReadAsStream(cancellationToken);
+#else
+					responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
+#endif
 			}
+
+			// We often won't have the content length as responses are GZip compressed and the HttpContent ditches this when AutomaticDecompression is enabled.
+			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 		}
 		catch (TaskCanceledException e)
 		{
@@ -172,15 +143,42 @@ public class HttpTransportClient : TransportClient
 		using (receive)
 		using (responseStream ??= Stream.Null)
 		{
-			var response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+			TResponse response;
+
+			if (isAsync)
+				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
 					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-				.ConfigureAwait(false);
+						.ConfigureAwait(false);
+			else
+				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
+						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+
+			if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
+			{
+				var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+				foreach (var attribute in attributes)
+				{
+					Activity.Current?.SetTag(attribute.Key, attribute.Value);
+				}
+			}
+
 			return response;
 		}
 	}
 
-	private static Dictionary<string, IEnumerable<string>> ParseHeaders(RequestData requestData, HttpResponseMessage responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
+	private static Dictionary<string, IEnumerable<string>> ParseHeaders(RequestData requestData,
+		HttpResponseMessage responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
 	{
+		var defaultHeadersForProduct = requestData.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
+		foreach (var headerToParse in defaultHeadersForProduct)
+		{
+			if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
+			{
+				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+				responseHeaders.Add(headerToParse, values);
+			}
+		}
+
 		if (requestData.ParseAllHeaders)
 		{
 			foreach (var header in responseMessage.Headers)

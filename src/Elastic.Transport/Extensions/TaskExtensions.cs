@@ -38,4 +38,14 @@ internal static class TaskExtensions
 		return task.GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
 	}
+
+	public static void EnsureCompleted(this ValueTask task)
+	{
+#if DEBUG
+		VerifyTaskCompleted(task.IsCompleted);
+#endif
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+		task.GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+	}
 }
