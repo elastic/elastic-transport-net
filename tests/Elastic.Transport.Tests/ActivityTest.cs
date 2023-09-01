@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -15,26 +18,72 @@ namespace Elastic.Transport.Tests;
 
 // We cannot allow these tests to run in parellel with other tests as the listener may pick up other activities.
 [Collection(nameof(NonParallelCollection))]
-public class ActivityTests
+public class OpenTelemetryTests
 {
 	[Fact]
-	public async Task BasicOpenTelemetryTest()
+	public async Task DefaultTagsShouldBeSet()
 	{
-		await ExecuteTestAsync(Assertions);
+		await TestCoreAsync(Assertions);
 
 		static void Assertions(Activity activity)
 		{
+			var informationalVersion = (typeof(HttpTransport)
+				.Assembly
+				.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false)
+				as AssemblyInformationalVersionAttribute[]).FirstOrDefault()?.InformationalVersion;
+
 			activity.Should().NotBeNull();
 			activity.Kind.Should().Be(ActivityKind.Client);
 			activity.DisplayName.Should().Be("GET");
 			activity.OperationName.Should().Be("GET");
-			activity.TagObjects.Should().Contain(t => t.Key == SemanticConventions.UrlFull && (string)t.Value == "http://localhost:9200/");
-			activity.TagObjects.Should().Contain(n => n.Key == SemanticConventions.ServerAddress && (string)n.Value == "localhost");
+
+			activity.TagObjects.Should().Contain(t => t.Key == SemanticConventions.UrlFull)
+				.Subject.Value.Should().BeOfType<string>()
+				.Subject.Should().Be("http://localhost:9200/");
+
+			activity.TagObjects.Should().Contain(t => t.Key == SemanticConventions.ServerAddress)
+				.Subject.Value.Should().BeOfType<string>()
+				.Subject.Should().Be("localhost");
+
+			activity.TagObjects.Should().Contain(t => t.Key == SemanticConventions.ServerPort)
+				.Subject.Value.Should().BeOfType<int>()
+				.Subject.Should().Be(9200);
+
+			activity.TagObjects.Should().Contain(t => t.Key == SemanticConventions.HttpRequestMethod)
+				.Subject.Value.Should().BeOfType<string>()
+				.Subject.Should().Be("GET");
+
+			activity.TagObjects.Should().Contain(t => t.Key == SemanticConventions.HttpResponseStatusCode)
+				.Subject.Value.Should().BeOfType<int>()
+				.Subject.Should().Be(200);
+
+			activity.TagObjects.Should().Contain(t => t.Key == SemanticConventions.UserAgentOriginal)
+				.Subject.Value.Should().BeOfType<string>()
+				.Subject.Should().StartWith($"elastic-transport-net/{informationalVersion}");
+
+			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportAttemptedNodes)
+				.Subject.Value.Should().BeOfType<int>()
+				.Subject.Should().Be(1);
+
+			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportVersion)
+				.Subject.Value.Should().BeOfType<string>()
+				.Subject.Should().Be(informationalVersion);
+
+			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportProductVersion)
+				.Subject.Value.Should().BeOfType<string>()
+				.Subject.Should().Be(informationalVersion);
+
+			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportProductName)
+				.Subject.Value.Should().BeOfType<string>()
+				.Subject.Should().Be("elastic-transport-net");
+
+			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportSchemaVersion)
+				.Subject.Value.Should().BeOfType<string>()
+				.Subject.Should().Be(OpenTelemetry.OpenTelemetrySchemaVersion);
+
 #if !NETFRAMEWORK
 			activity.Status.Should().Be(ActivityStatusCode.Ok);
 #endif
-
-			// TODO - Other assertions
 		}
 	}
 
@@ -43,7 +92,7 @@ public class ActivityTests
 	{
 		const string spanName = "Overridden span name";
 
-		await ExecuteTestAsync(new OpenTelemetryData { SpanName = spanName }, Assertions);
+		await TestCoreAsync(Assertions, new OpenTelemetryData { SpanName = spanName });
 
 		static void Assertions(Activity activity)
 		{
@@ -57,13 +106,15 @@ public class ActivityTests
 		const string attributeName = "test.attribute";
 		const string attributeValue = "test-value";
 
-		await ExecuteTestAsync(new OpenTelemetryData
+		var otel = new OpenTelemetryData
 		{
-			SpanAttributes = new System.Collections.Generic.Dictionary<string, object>
+			SpanAttributes = new Dictionary<string, object>
 			{
 				[attributeName] = attributeValue
 			}
-		}, Assertions);
+		};
+
+		await TestCoreAsync(Assertions, otel);
 
 		static void Assertions(Activity activity)
 		{
@@ -71,9 +122,9 @@ public class ActivityTests
 		}
 	}
 
-	private Task ExecuteTestAsync(Action<Activity> assertion) => ExecuteTestAsync(default, assertion);
+	private Task TestCoreAsync(Action<Activity> assertion) => TestCoreAsync(assertion, default);
 
-	private async Task ExecuteTestAsync(OpenTelemetryData openTelemetryData, Action<Activity> assertions)
+	private async Task TestCoreAsync(Action<Activity> assertions, OpenTelemetryData openTelemetryData, HttpTransport transport = null)
 	{
 		var mre = new ManualResetEvent(false);
 
@@ -96,7 +147,8 @@ public class ActivityTests
 		};
 		ActivitySource.AddActivityListener(listener);
 
-		var transport = new DefaultHttpTransport(InMemoryConnectionFactory.Create());
+		transport ??= new DefaultHttpTransport(InMemoryConnectionFactory.Create());
+
 		_ = await transport.RequestAsync<VoidResponse>(HttpMethod.GET, "/", null, null, openTelemetryData);
 
 		mre.WaitOne(TimeSpan.FromSeconds(1)).Should().BeTrue();

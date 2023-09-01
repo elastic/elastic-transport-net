@@ -21,18 +21,21 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// </summary>
 public class ElasticsearchProductRegistration : ProductRegistration
 {
+	internal const string XFoundHandlingClusterHeader = "X-Found-Handling-Cluster";
+	internal const string XFoundHandlingInstanceHeader = "X-Found-Handling-Instance";
+
 	private readonly HeadersList _headers;
 	private readonly MetaHeaderProvider _metaHeaderProvider;
 	private readonly int? _clientMajorVersion;
 
 	private static string _clusterName;
-	private static readonly string[] _all = new[] { "X-Found-Handling-Cluster", "X-Found-Handling-Instance" };
-	private static readonly string[] _instanceHeader = new[] { "X-Found-Handling-Instance" };
+	private static readonly string[] _all = new[] { XFoundHandlingClusterHeader, XFoundHandlingInstanceHeader };
+	private static readonly string[] _instanceHeader = new[] { XFoundHandlingInstanceHeader };
 
 	/// <summary>
 	/// Create a new instance of the Elasticsearch product registration.
 	/// </summary>
-	public ElasticsearchProductRegistration() => _headers = new HeadersList("warning");
+	internal ElasticsearchProductRegistration() => _headers = new HeadersList("warning");
 
 	/// <summary>
 	/// 
@@ -206,7 +209,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	{
 		Dictionary<string, object>? attributes = null;
 
-		if (string.IsNullOrEmpty(_clusterName) && callDetails.TryGetHeader("X-Found-Handling-Cluster", out var clusterValues))
+		if (string.IsNullOrEmpty(_clusterName) && callDetails.TryGetHeader(XFoundHandlingClusterHeader, out var clusterValues))
 		{
 			_clusterName = clusterValues.FirstOrDefault();
 		}
@@ -214,16 +217,16 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		if (!string.IsNullOrEmpty(_clusterName))
 		{
 			attributes ??= new Dictionary<string, object>();
-			attributes.Add("db.elasticsearch.cluster.name", _clusterName);
+			attributes.Add(OpenTelemetryAttributes.DbElasticsearchClusterName, _clusterName);
 		}
 
-		if (callDetails.TryGetHeader("X-Found-Handling-Instance", out var instanceValues))
+		if (callDetails.TryGetHeader(XFoundHandlingInstanceHeader, out var instanceValues))
 		{
 			var instance = instanceValues.FirstOrDefault();
 			if (!string.IsNullOrEmpty(instance))
 			{
 				attributes ??= new Dictionary<string, object>();
-				attributes.Add("db.elasticsearch.node.name", instance);
+				attributes.Add(OpenTelemetryAttributes.DbElasticsearchNodeName, instance);
 			}
 		}
 

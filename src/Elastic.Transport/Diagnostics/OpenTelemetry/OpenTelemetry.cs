@@ -63,6 +63,6 @@ public static class OpenTelemetry
 
 		// We add the client schema version only when it differs from the product schema version
 		if (!productSchemaVersion.Equals(OpenTelemetrySchemaVersion, StringComparison.Ordinal))
-			activity?.SetTag(OpenTelemetryAttributes.OpenTelemetrySchemaVersion, OpenTelemetrySchemaVersion);
+			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportSchemaVersion, OpenTelemetrySchemaVersion);
 	}
 }

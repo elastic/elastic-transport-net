@@ -23,7 +23,7 @@ internal static class OpenTelemetryAttributes
 	/// <summary>
 	/// The URL for the implemented OpenTelemetry schema version for attributes added by the transport layer.
 	/// </summary>
-	public const string OpenTelemetrySchemaVersion = "elastic.transport.schema_url";
+	public const string ElasticTransportSchemaVersion = "elastic.transport.schema_url";
 
 	/// <summary>
 	/// May be included by the Elasticsearch client to communicate the schema version it conforms to.
@@ -44,4 +44,14 @@ internal static class OpenTelemetryAttributes
 	/// The measured milliseconds taken to deserialize an HTTP response from the server.
 	/// </summary>
 	public const string ElasticTransportDeserializeResponseMs = "elastic.transport.deserialize_response_ms";
+
+	/// <summary>
+	/// The human-readable identifier for the cluster, usually retrieved from response headers.
+	/// </summary>
+	public const string DbElasticsearchClusterName = "db.elasticsearch.cluster.name";
+
+	/// <summary>
+	/// The identifier of the node/insatnce which handled a request, usually retrieved from response headers.
+	/// </summary>
+	public const string DbElasticsearchNodeName = "db.elasticsearch.node.name";
 }
