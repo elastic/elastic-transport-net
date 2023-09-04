@@ -18,6 +18,8 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// </summary>
 public class ElasticsearchProductRegistration : ProductRegistration
 {
+	private const string ElasticsearchServiceIdentifier = "es";
+
 	private readonly HeadersList _headers;
 	private readonly MetaHeaderProvider _metaHeaderProvider;
 	private readonly int? _clientMajorVersion;
@@ -31,10 +33,11 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	/// 
 	/// </summary>
 	/// <param name="markerType"></param>
-	public ElasticsearchProductRegistration(Type markerType) : this()
+	/// <param name="serviceIdentifier"></param>
+	public ElasticsearchProductRegistration(Type markerType, string serviceIdentifier = ElasticsearchServiceIdentifier) : this()
 	{
 		var clientVersionInfo = ReflectionVersionInfo.Create(markerType);
-		_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, "es");
+		_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, serviceIdentifier);
 
 		// Only set this if we have a version.
 		// If we don't have a version we won't apply the vendor-based REST API compatibilty Accept header.
