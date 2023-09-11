@@ -17,6 +17,9 @@ namespace Elastic.Transport;
 /// </summary>
 public abstract class ResponseBuilder
 {
+	/// <summary> Exposes a default response builder to implementers without sharing more internal types to handle empty errors</summary>
+	public static ResponseBuilder Default { get; } = new DefaultResponseBuilder<EmptyError>();
+
 	/// <summary>
 	/// Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
 	/// </summary>
