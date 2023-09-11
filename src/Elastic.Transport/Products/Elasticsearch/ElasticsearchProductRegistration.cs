@@ -34,10 +34,13 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	public ElasticsearchProductRegistration(Type markerType) : this()
 	{
 		var clientVersionInfo = ReflectionVersionInfo.Create(markerType);
-		_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, "es");
+
+		var identifier = ServiceIdentifier;
+		if (!string.IsNullOrEmpty(identifier))
+			_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, identifier);
 
 		// Only set this if we have a version.
-		// If we don't have a version we won't apply the vendor-based REST API compatibilty Accept header.
+		// If we don't have a version we won't apply the vendor-based REST API compatibility Accept header.
 		if (clientVersionInfo.Version.Major > 0)
 			_clientMajorVersion = clientVersionInfo.Version.Major;
 	}
@@ -47,6 +50,9 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.Name"/>
 	public override string Name { get; } = "elasticsearch-net";
+
+	/// <inheritdoc cref="ProductRegistration.ServiceIdentifier"/>
+	public override string? ServiceIdentifier => "es";
 
 	/// <inheritdoc cref="ProductRegistration.SupportsPing"/>
 	public override bool SupportsPing { get; } = true;
