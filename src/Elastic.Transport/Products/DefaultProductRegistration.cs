@@ -51,9 +51,6 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	/// <inheritdoc cref="ProductRegistration.MetaHeaderProvider"/>
 	public override MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
 
-	/// <inheritdoc cref="ProductRegistration.ResponseBuilder"/>
-	public override ResponseBuilder ResponseBuilder { get; } = new DefaultResponseBuilder<EmptyError>();
-
 	/// <inheritdoc cref="ProductRegistration.DefaultMimeType"/>
 	public override string DefaultMimeType => null;
 

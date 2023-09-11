@@ -110,12 +110,12 @@ public abstract class ProductRegistration
 	public abstract bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason) where TResponse : TransportResponse;
 
 	/// <summary>
-	/// TODO
+	/// Allows product implementations to inject a metadata header to all outgoing requests
 	/// </summary>
 	public abstract MetaHeaderProvider MetaHeaderProvider { get; }
 
 	/// <summary>
-	/// TODO
+	/// Allows product implementations to take full control of building transport responses if needed.
 	/// </summary>
-	public abstract ResponseBuilder ResponseBuilder { get; }
+	public virtual ResponseBuilder ResponseBuilder => ResponseBuilder.Default;
 }
