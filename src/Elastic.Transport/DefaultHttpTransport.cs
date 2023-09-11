@@ -137,25 +137,25 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 	/// </summary>
 	public override TConfiguration Settings { get; }
 
-	/// <inheritdoc cref="HttpTransport.Request{TResponse}(HttpMethod, string, PostData?, RequestParameters?, in OpenTelemetryData)"/>
+	/// <inheritdoc cref="HttpTransport.Request{TResponse}"/>
 	public override TResponse Request<TResponse>(
 		HttpMethod method,
 		string path,
-		PostData? data,
-		RequestParameters? requestParameters,
-		in OpenTelemetryData openTelemetryData)
-			=> RequestCoreAsync<TResponse>(false, method, path, data, requestParameters, openTelemetryData).EnsureCompleted();
+		PostData? data = null,
+		RequestParameters? requestParameters = null,
+		in OpenTelemetryData? openTelemetryData = null)
+			=> RequestCoreAsync<TResponse>(false, method, path, data, requestParameters, openTelemetryData ?? default).EnsureCompleted();
 
-	/// <inheritdoc cref="HttpTransport.RequestAsync{TResponse}(HttpMethod, string, PostData?, RequestParameters?, in OpenTelemetryData, CancellationToken)"/>
+	/// <inheritdoc cref="HttpTransport.RequestAsync{TResponse}"/>
 	public override Task<TResponse> RequestAsync<TResponse>(
 		HttpMethod method,
 		string path,
-		PostData? data,
-		RequestParameters? requestParameters,
-		in OpenTelemetryData openTelemetryData,
+		PostData? data = null,
+		RequestParameters? requestParameters = null,
+		in OpenTelemetryData? openTelemetryData = null,
 		CancellationToken cancellationToken = default)
-			=> RequestCoreAsync<TResponse>(true, method, path, data, requestParameters, openTelemetryData, cancellationToken).AsTask();
-	
+			=> RequestCoreAsync<TResponse>(true, method, path, data, requestParameters, openTelemetryData ?? default, cancellationToken).AsTask();
+
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(
 		bool isAsync,
 		HttpMethod method,

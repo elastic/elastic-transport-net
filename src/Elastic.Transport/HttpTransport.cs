@@ -20,41 +20,16 @@ public abstract class HttpTransport
 	/// <typeparam name="TResponse">The type to deserialize the response body into.</typeparam>
 	/// <param name="method">The <see cref="HttpMethod"/> for the HTTP request.</param>
 	/// <param name="path">The path of the request.</param>
-	/// <returns>The deserialized <typeparamref name="TResponse"/>.</returns>
-	public TResponse Request<TResponse>(
-		HttpMethod method,
-		string path)
-		where TResponse : TransportResponse, new()
-			=> Request<TResponse>(method, path, null, null, default);
-
-#pragma warning disable 1573
-	/// <inheritdoc cref="Request{TResponse}(HttpMethod, string)"/>
 	/// <param name="postData">The data to be included as the body of the HTTP request.</param>
-	public TResponse Request<TResponse>(
-		HttpMethod method,
-		string path,
-		PostData? postData)
-		where TResponse : TransportResponse, new()
-			=> Request<TResponse>(method, path, postData, null, default);
-
-	/// <inheritdoc cref="Request{TResponse}(HttpMethod, string, PostData?)"/>
 	/// <param name="requestParameters">The parameters for the request.</param>
-	public TResponse Request<TResponse>(
-		HttpMethod method,
-		string path,
-		PostData? postData,
-		RequestParameters? requestParameters)
-		where TResponse : TransportResponse, new()
-			=> Request<TResponse>(method, path, postData, requestParameters, default);
-
-	/// <inheritdoc cref="Request{TResponse}(HttpMethod, string, PostData?, RequestParameters?)"/>
 	/// <param name="openTelemetryData">Data to be used to control the OpenTelemetry instrumentation.</param>
+	/// <returns>The deserialized <typeparamref name="TResponse"/>.</returns>
 	public abstract TResponse Request<TResponse>(
 		HttpMethod method,
 		string path,
-		PostData? postData,
-		RequestParameters? requestParameters,
-		in OpenTelemetryData openTelemetryData)
+		PostData? postData = null,
+		RequestParameters? requestParameters = null,
+		in OpenTelemetryData? openTelemetryData = null)
 		where TResponse : TransportResponse, new();
 #pragma warning restore 1573
 
@@ -64,45 +39,17 @@ public abstract class HttpTransport
 	/// <typeparam name="TResponse">The type to deserialize the response body into.</typeparam>
 	/// <param name="method">The <see cref="HttpMethod"/> for the HTTP request.</param>
 	/// <param name="path">The path of the request.</param>
+	/// <param name="postData">The data to be included as the body of the HTTP request.</param>
+	/// <param name="requestParameters">The parameters for the request.</param>
+	/// <param name="openTelemetryData">Data to be used to control the OpenTelemetry instrumentation.</param>
 	/// <param name="cancellationToken">The cancellation token to use.</param>
 	/// <returns>The deserialized <typeparamref name="TResponse"/>.</returns>
-	public Task<TResponse> RequestAsync<TResponse>(
-		HttpMethod method,
-		string path,
-		CancellationToken cancellationToken = default)
-		where TResponse : TransportResponse, new()
-			=> RequestAsync<TResponse>(method, path, null, null, default, cancellationToken);
-
-#pragma warning disable 1573
-	/// <inheritdoc cref="RequestAsync{TResponse}(HttpMethod, string, CancellationToken)"/>
-	/// <param name="postData">The data to be included as the body of the HTTP request.</param>
-	public Task<TResponse> RequestAsync<TResponse>(
-		HttpMethod method,
-		string path,
-		PostData? postData,
-		CancellationToken cancellationToken = default)
-		where TResponse : TransportResponse, new()
-			=> RequestAsync<TResponse>(method, path, postData, null, default, cancellationToken);
-
-	/// <inheritdoc cref="RequestAsync{TResponse}(HttpMethod, string, PostData?, CancellationToken)"/>
-	/// <param name="requestParameters">The parameters for the request.</param>
-	public Task<TResponse> RequestAsync<TResponse>(
-		HttpMethod method,
-		string path,
-		PostData? postData,
-		RequestParameters? requestParameters,
-		CancellationToken cancellationToken = default)
-		where TResponse : TransportResponse, new()
-			=> RequestAsync<TResponse>(method, path, postData, requestParameters, default, cancellationToken);
-
-	/// <inheritdoc cref="RequestAsync{TResponse}(HttpMethod, string, PostData?, RequestParameters?, CancellationToken)"/>
-	/// <param name="openTelemetryData">Data to be used to control the OpenTelemetry instrumentation.</param>
 	public abstract Task<TResponse> RequestAsync<TResponse>(
 		HttpMethod method,
 		string path,
-		PostData? postData,
-		RequestParameters? requestParameters,
-		in OpenTelemetryData openTelemetryData,
+		PostData? postData = null,
+		RequestParameters? requestParameters = null,
+		in OpenTelemetryData? openTelemetryData = null,
 		CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new();
 #pragma warning restore 1573
