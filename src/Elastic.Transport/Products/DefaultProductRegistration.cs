@@ -20,24 +20,24 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	private readonly MetaHeaderProvider _metaHeaderProvider;
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public DefaultProductRegistration() => _metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(HttpTransport), ServiceIdentifier);
 
 	/// <summary> A static instance of <see cref="DefaultProductRegistration"/> to promote reuse </summary>
-	public static DefaultProductRegistration Default { get; } = new DefaultProductRegistration();
+	public static DefaultProductRegistration Default { get; } = new();
 
 	/// <inheritdoc cref="ProductRegistration.Name"/>
-	public override string Name { get; } = "elastic-transport-net";
+	public override string Name => "elastic-transport-net";
 
 	/// <inheritdoc cref="ProductRegistration.ServiceIdentifier"/>
 	public override string? ServiceIdentifier => "et";
 
 	/// <inheritdoc cref="ProductRegistration.SupportsPing"/>
-	public override bool SupportsPing { get; } = false;
+	public override bool SupportsPing => false;
 
 	/// <inheritdoc cref="ProductRegistration.SupportsSniff"/>
-	public override bool SupportsSniff { get; } = false;
+	public override bool SupportsSniff => false;
 
 	/// <inheritdoc cref="ProductRegistration.SniffOrder"/>
 	public override int SniffOrder(Node node) => -1;
@@ -52,7 +52,7 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	public override MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
 
 	/// <inheritdoc cref="ProductRegistration.ResponseBuilder"/>
-	public override ResponseBuilder ResponseBuilder => new DefaultResponseBuilder<EmptyError>();
+	public override ResponseBuilder ResponseBuilder { get; } = new DefaultResponseBuilder<EmptyError>();
 
 	/// <inheritdoc cref="ProductRegistration.DefaultMimeType"/>
 	public override string DefaultMimeType => null;
