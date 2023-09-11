@@ -18,8 +18,6 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// </summary>
 public class ElasticsearchProductRegistration : ProductRegistration
 {
-	private const string ElasticsearchServiceIdentifier = "es";
-
 	private readonly HeadersList _headers;
 	private readonly MetaHeaderProvider _metaHeaderProvider;
 	private readonly int? _clientMajorVersion;
@@ -33,14 +31,16 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	/// 
 	/// </summary>
 	/// <param name="markerType"></param>
-	/// <param name="serviceIdentifier"></param>
-	public ElasticsearchProductRegistration(Type markerType, string serviceIdentifier = ElasticsearchServiceIdentifier) : this()
+	public ElasticsearchProductRegistration(Type markerType) : this()
 	{
 		var clientVersionInfo = ReflectionVersionInfo.Create(markerType);
-		_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, serviceIdentifier);
+
+		var identifier = ServiceIdentifier;
+		if (!string.IsNullOrEmpty(identifier))
+			_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, identifier);
 
 		// Only set this if we have a version.
-		// If we don't have a version we won't apply the vendor-based REST API compatibilty Accept header.
+		// If we don't have a version we won't apply the vendor-based REST API compatibility Accept header.
 		if (clientVersionInfo.Version.Major > 0)
 			_clientMajorVersion = clientVersionInfo.Version.Major;
 	}
@@ -50,6 +50,9 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.Name"/>
 	public override string Name { get; } = "elasticsearch-net";
+
+	/// <inheritdoc cref="ProductRegistration.ServiceIdentifier"/>
+	public override string? ServiceIdentifier => "es";
 
 	/// <inheritdoc cref="ProductRegistration.SupportsPing"/>
 	public override bool SupportsPing { get; } = true;

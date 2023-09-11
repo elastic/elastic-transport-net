@@ -35,6 +35,11 @@ public abstract class ProductRegistration
 	public abstract string Name { get; }
 
 	/// <summary>
+	/// An optional service-identifier string that is used in metadata headers.
+	/// </summary>
+	public abstract string? ServiceIdentifier { get; }
+
+	/// <summary>
 	/// Whether the product <see cref="HttpTransport{TConnectionSettings}"/> will call out to supports ping endpoints
 	/// </summary>
 	public abstract bool SupportsPing { get; }

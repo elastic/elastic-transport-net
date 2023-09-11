@@ -22,13 +22,16 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	/// <summary>
 	/// 
 	/// </summary>
-	public DefaultProductRegistration() => _metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(HttpTransport), "et");
+	public DefaultProductRegistration() => _metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(HttpTransport), ServiceIdentifier);
 
 	/// <summary> A static instance of <see cref="DefaultProductRegistration"/> to promote reuse </summary>
 	public static DefaultProductRegistration Default { get; } = new DefaultProductRegistration();
 
 	/// <inheritdoc cref="ProductRegistration.Name"/>
 	public override string Name { get; } = "elastic-transport-net";
+
+	/// <inheritdoc cref="ProductRegistration.ServiceIdentifier"/>
+	public override string? ServiceIdentifier => "et";
 
 	/// <inheritdoc cref="ProductRegistration.SupportsPing"/>
 	public override bool SupportsPing { get; } = false;
