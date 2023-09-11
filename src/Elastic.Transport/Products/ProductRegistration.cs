@@ -112,14 +112,9 @@ public abstract class ProductRegistration
 	public abstract bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason) where TResponse : TransportResponse;
 
 	/// <summary>
-	/// A <see cref="MetaHeaderProvider"/> which produces the client meta header for a request.
+	/// Allows product implementations to inject a metadata header to all outgoing requests.
 	/// </summary>
 	public abstract MetaHeaderProvider MetaHeaderProvider { get; }
-
-	/// <summary>
-	/// A <see cref="ResponseBuilder"/> used to produce product responses from an HTTP response.
-	/// </summary>
-	public abstract ResponseBuilder ResponseBuilder { get; }
 
 	/// <summary>
 	/// The assembly informational version of the product.
@@ -142,4 +137,9 @@ public abstract class ProductRegistration
 	/// added to the logical operation span created by Elastic.Transport.
 	/// </summary>
 	public abstract Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails);
+
+  /// <summary>
+	/// Allows product implementations to take full control of building transport responses if needed.
+	/// </summary>
+	public virtual ResponseBuilder ResponseBuilder => ResponseBuilder.Default;
 }
