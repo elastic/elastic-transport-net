@@ -4,8 +4,16 @@
 
 using System;
 using System.Reflection;
-using System.Runtime.InteropServices;
+
+#if NETFRAMEWORK
+
 using Elastic.Transport.Extensions;
+
+#else
+
+using System.Runtime.InteropServices;
+
+#endif
 
 namespace Elastic.Transport;
 

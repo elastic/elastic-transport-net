@@ -62,7 +62,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 			var root = "Elastic.Transport";
 			var allowedNamespaces = new[]
 			{
-				$"{root}.Diagnostics", $"{root}.Products", $"{root}.Extensions", "System.Runtime.CompilerServices"
+				$"{root}.Diagnostics", $"{root}.Products", $"{root}.Extensions", "System.Diagnostics.CodeAnalysis", "System.Runtime.CompilerServices"
 			};
 			var transportTypes = Scan().Where(t => t.Namespace != root && !allowedNamespaces.Any(a => t.Namespace.StartsWith(a)))
 				.Where(t => !t.Name.StartsWith("<"))
