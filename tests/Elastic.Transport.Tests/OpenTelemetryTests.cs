@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Elastic.Transport.Tests;
 
-// We cannot allow these tests to run in parellel with other tests as the listener may pick up other activities.
+// We cannot allow these tests to run in parallel with other tests as the listener may pick up other activities.
 [Collection(nameof(NonParallelCollection))]
 public class OpenTelemetryTests
 {

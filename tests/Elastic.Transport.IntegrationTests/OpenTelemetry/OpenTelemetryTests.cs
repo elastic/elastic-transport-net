@@ -18,6 +18,8 @@ using Xunit;
 
 namespace Elastic.Transport.IntegrationTests.OpenTelemetry;
 
+// We cannot allow these tests to run in parallel with other tests as the listener may pick up other activities.
+[Collection(nameof(NonParallelCollection))]
 public class OpenTelemetryTests : AssemblyServerTestsBase
 {
 	internal const string Cluster = "e9106fc68e3044f0b1475b04bf4ffd5f";
@@ -75,7 +77,7 @@ public class OpenTelemetryTests : AssemblyServerTestsBase
 
 			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportProductName)
 				.Subject.Value.Should().BeOfType<string>()
-				.Subject.Should().Be("elastic-net");
+				.Subject.Should().Be("elasticsearch-net");
 
 			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportProductVersion)
 				.Subject.Value.Should().BeOfType<string>()
@@ -96,3 +98,6 @@ public class OpenTelemetryController : ControllerBase
 		return Task.CompletedTask;
 	}
 }
+
+[CollectionDefinition(nameof(NonParallelCollection), DisableParallelization = true)]
+public class NonParallelCollection { }

@@ -156,9 +156,13 @@ public class HttpTransportClient : TransportClient
 			if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
 			{
 				var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
-				foreach (var attribute in attributes)
+
+				if (attributes is not null)
 				{
-					Activity.Current?.SetTag(attribute.Key, attribute.Value);
+					foreach (var attribute in attributes)
+					{
+						Activity.Current?.SetTag(attribute.Key, attribute.Value);
+					}
 				}
 			}
 

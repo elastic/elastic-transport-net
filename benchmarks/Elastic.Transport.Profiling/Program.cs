@@ -16,7 +16,9 @@ namespace Elastic.Transport.Profiling
 			MemoryProfiler.CollectAllocations(true);
 			MemoryProfiler.GetSnapshot("start");
 
-			var config = new TransportConfiguration(new Uri("http://localhost:9200"), new ElasticsearchProductRegistration());
+			var config = new TransportConfiguration(new Uri("http://localhost:9200"),
+				new ElasticsearchProductRegistration(typeof(ElasticsearchProductRegistration)));
+
 			var transport = new DefaultHttpTransport(config);
 
 			// WARMUP
