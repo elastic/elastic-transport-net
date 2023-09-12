@@ -8,11 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.0.4" />
+    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.9.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\src\Elastic.Transport\Elastic.Transport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="Microsoft.NETFramework.ReferenceAssemblies.net461" Version="1.0.3" />
   </ItemGroup>
 
 </Project>

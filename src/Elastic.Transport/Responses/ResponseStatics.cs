@@ -13,7 +13,7 @@ namespace Elastic.Transport.Diagnostics;
 
 /// <summary>
 /// Creates human readable debug strings based on <see cref="ApiCallDetails"/> so that
-/// its clear what exactly transpired during a call into <see cref="HttpTransport.Request{TResponse}"/>
+/// its clear what exactly transpired during a request.
 /// </summary>
 internal static class ResponseStatics
 {

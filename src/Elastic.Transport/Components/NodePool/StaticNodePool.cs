@@ -69,6 +69,7 @@ public class StaticNodePool : NodePool
 				UsingSsl = scheme == "https";
 			}
 			else if (scheme != node.Uri.Scheme)
+				// TODO - Diagnostic event here
 				throw new ArgumentException("Trying to instantiate a connection pool with mixed URI Schemes");
 		}
 

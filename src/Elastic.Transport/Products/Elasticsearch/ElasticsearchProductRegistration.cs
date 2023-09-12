@@ -5,9 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Elastic.Transport.Diagnostics;
 
 namespace Elastic.Transport.Products.Elasticsearch;
 
@@ -18,14 +21,21 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// </summary>
 public class ElasticsearchProductRegistration : ProductRegistration
 {
+	internal const string XFoundHandlingClusterHeader = "X-Found-Handling-Cluster";
+	internal const string XFoundHandlingInstanceHeader = "X-Found-Handling-Instance";
+
 	private readonly HeadersList _headers;
 	private readonly MetaHeaderProvider _metaHeaderProvider;
 	private readonly int? _clientMajorVersion;
 
+	private static string _clusterName;
+	private static readonly string[] _all = new[] { XFoundHandlingClusterHeader, XFoundHandlingInstanceHeader };
+	private static readonly string[] _instanceHeader = new[] { XFoundHandlingInstanceHeader };
+
 	/// <summary>
 	/// Create a new instance of the Elasticsearch product registration.
 	/// </summary>
-	public ElasticsearchProductRegistration() => _headers = new HeadersList("warning");
+	internal ElasticsearchProductRegistration() => _headers = new HeadersList("warning");
 
 	/// <summary>
 	/// 
@@ -43,6 +53,10 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		// If we don't have a version we won't apply the vendor-based REST API compatibility Accept header.
 		if (clientVersionInfo.Version.Major > 0)
 			_clientMajorVersion = clientVersionInfo.Version.Major;
+
+		ProductAssemblyVersion = markerType.Assembly
+			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+			.InformationalVersion;
 	}
 
 	/// <summary> A static instance of <see cref="ElasticsearchProductRegistration"/> to promote reuse </summary>
@@ -115,7 +129,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		{
 			QueryString = {{"timeout", requestConfiguration.PingTimeout}, {"flat_settings", true},}
 		};
-		return new RequestData(HttpMethod.GET, SniffPath, null, settings, requestParameters, memoryStreamFactory)
+		return new RequestData(HttpMethod.GET, SniffPath, null, settings, requestParameters, memoryStreamFactory, default)
 		{
 			Node = node
 		};
@@ -153,8 +167,11 @@ public class ElasticsearchProductRegistration : ProductRegistration
 			RequestConfiguration = requestConfiguration
 		};
 
-		var data = new RequestData(HttpMethod.HEAD, string.Empty, null, global, requestParameters,
-			memoryStreamFactory) {Node = node};
+		var data = new RequestData(HttpMethod.HEAD, string.Empty, null, global, requestParameters, memoryStreamFactory, default)
+		{
+			Node = node
+		};
+
 		return data;
 	}
 
@@ -172,4 +189,56 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		var response = connection.Request<VoidResponse>(pingData);
 		return response;
 	}
+
+	/// <inheritdoc/>
+	public override IReadOnlyCollection<string> DefaultHeadersToParse()
+	{
+		if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
+		{
+			if (string.IsNullOrEmpty(_clusterName))
+				return _all;
+			else
+				return _instanceHeader;
+		}
+
+		return Array.Empty<string>();
+	}
+
+	/// <inheritdoc/>
+	public override Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails)
+	{
+		Dictionary<string, object>? attributes = null;
+
+		if (string.IsNullOrEmpty(_clusterName) && callDetails.TryGetHeader(XFoundHandlingClusterHeader, out var clusterValues))
+		{
+			_clusterName = clusterValues.FirstOrDefault();
+		}
+
+		if (!string.IsNullOrEmpty(_clusterName))
+		{
+			attributes ??= new Dictionary<string, object>();
+			attributes.Add(OpenTelemetryAttributes.DbElasticsearchClusterName, _clusterName);
+		}
+
+		if (callDetails.TryGetHeader(XFoundHandlingInstanceHeader, out var instanceValues))
+		{
+			var instance = instanceValues.FirstOrDefault();
+			if (!string.IsNullOrEmpty(instance))
+			{
+				attributes ??= new Dictionary<string, object>();
+				attributes.Add(OpenTelemetryAttributes.DbElasticsearchNodeName, instance);
+			}
+		}
+
+		return attributes;
+	}
+
+	/// <inheritdoc/>
+	public override string ProductAssemblyVersion { get; }
+
+	/// <inheritdoc/>
+	public override IReadOnlyDictionary<string, object>? DefaultOpenTelemetryAttributes { get; } = new Dictionary<string, object>
+	{
+		[SemanticConventions.DbSystem] = "elasticsearch"
+	};
 }

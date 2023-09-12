@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,7 +23,14 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	/// <summary>
 	///
 	/// </summary>
-	public DefaultProductRegistration() => _metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(HttpTransport), ServiceIdentifier);
+	public DefaultProductRegistration()
+	{
+		_metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(HttpTransport), ServiceIdentifier);
+
+		ProductAssemblyVersion = typeof(ProductRegistration).Assembly
+			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+			.InformationalVersion;
+	}
 
 	/// <summary> A static instance of <see cref="DefaultProductRegistration"/> to promote reuse </summary>
 	public static DefaultProductRegistration Default { get; } = new();
@@ -53,6 +61,12 @@ public sealed class DefaultProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.DefaultMimeType"/>
 	public override string DefaultMimeType => null;
+
+	/// <inheritdoc cref="ProductRegistration.ProductAssemblyVersion"/>
+	public override string ProductAssemblyVersion { get; }
+
+	/// <inheritdoc cref="ProductRegistration.DefaultOpenTelemetryAttributes"/>
+	public override IReadOnlyDictionary<string, object>? DefaultOpenTelemetryAttributes { get; }
 
 	/// <inheritdoc cref="ProductRegistration.HttpStatusCodeClassifier"/>
 	public override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
@@ -88,4 +102,10 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	/// <inheritdoc cref="ProductRegistration.Ping"/>
 	public override TransportResponse Ping(TransportClient connection, RequestData pingData) =>
 		throw new NotImplementedException();
+
+	/// <inheritdoc/>
+	public override IReadOnlyCollection<string> DefaultHeadersToParse() => Array.Empty<string>();
+
+	/// <inheritdoc/>
+	public override Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails) => null;
 }

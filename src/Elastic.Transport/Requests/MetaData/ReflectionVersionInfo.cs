@@ -58,7 +58,7 @@ internal sealed class ReflectionVersionInfo : VersionInfo
 
 		try
 		{
-			// This fallback may not include the minor version numbers
+			// This fall back may not include the minor version numbers
 			if (productVersion == EmptyVersion)
 				productVersion = type.Assembly.GetName()?.Version?.ToString() ?? EmptyVersion;
 		}

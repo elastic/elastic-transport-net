@@ -31,7 +31,7 @@ public sealed class UserAgent
 
 	private UserAgent(string fullUserAgentString) => _toString = fullUserAgentString;
 
-	/// <summary> Create a user agent that adhers to the minimum information needed to be elastic standard compliant </summary>
+	/// <summary> Create a user agent that adheres to the minimum information needed to be elastic standard compliant </summary>
 	/// <param name="reposName">The repos name uniquely identifies the origin of the client</param>
 	/// <param name="typeVersionLookup">
 	/// Use <see cref="Type"/>'s assembly <see cref="AssemblyInformationalVersionAttribute"/>
@@ -45,7 +45,7 @@ public sealed class UserAgent
 	/// <summary> Create a user string that does not confirm to elastic client standards </summary>
 	public static UserAgent Create(string fullUserAgentString) => new UserAgent(fullUserAgentString);
 
-	/// <summary> The precalculated string representation of this <see cref="UserAgent"/> instance </summary>
+	/// <summary> The pre=calculated string representation of this <see cref="UserAgent"/> instance </summary>
 	/// <returns></returns>
 	public override string ToString() => _toString;
 }

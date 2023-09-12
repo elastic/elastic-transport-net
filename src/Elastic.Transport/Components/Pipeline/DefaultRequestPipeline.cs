@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -13,10 +12,6 @@ using Elastic.Transport.Diagnostics.Auditing;
 using Elastic.Transport.Extensions;
 using Elastic.Transport.Products;
 using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
-
-//#if NETSTANDARD2_0 || NETSTANDARD2_1
-//using System.Threading.Tasks.Extensions;
-//#endif
 
 namespace Elastic.Transport;
 
@@ -33,10 +28,8 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	private readonly TConfiguration _settings;
 	private readonly ResponseBuilder _responseBuilder;
 
-	private static readonly ActivitySource _activitySource = new("Elastic.Transport.RequestPipeline");
-
 	private RequestConfiguration? _pingAndSniffRequestConfiguration;
-	private List<Audit> _auditTrail = null;
+	private List<Audit> _auditTrail = null;	
 
 	/// <inheritdoc cref="RequestPipeline" />
 	internal DefaultRequestPipeline(
@@ -97,7 +90,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			var timeout = _settings.MaxRetryTimeout.GetValueOrDefault(RequestTimeout);
 			var now = _dateTimeProvider.Now();
 
-			//we apply a soft margin so that if a request timesout at 59 seconds when the maximum is 60 we also abort.
+			//we apply a soft margin so that if a request times out at 59 seconds when the maximum is 60 we also abort.
 			var margin = timeout.TotalMilliseconds / 100.0 * 98;
 			var marginTimeSpan = TimeSpan.FromMilliseconds(margin);
 			var timespanCall = now - StartedOn;
@@ -174,34 +167,27 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	}
 
 	public override TResponse CallProductEndpoint<TResponse>(RequestData requestData)
+		=> CallProductEndpointCoreAsync<TResponse>(false, requestData).EnsureCompleted();
+
+	public override Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken = default)
+		=> CallProductEndpointCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
+
+	private async ValueTask<TResponse> CallProductEndpointCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)
+		where TResponse : TransportResponse, new()
 	{
 		using var audit = Audit(HealthyResponse, requestData.Node);
 
 		if (audit is not null)
 			audit.PathAndQuery = requestData.PathAndQuery;
 
-		var activity = Activity.Current;
-		var isElasticClient = activity is not null && activity.GetCustomProperty("elastic.transport.client") is not null;
-
-		if (!isElasticClient)
-		{
-			activity = _activitySource.StartActivity($"Elastic.Transport: HTTP {requestData.Method}", ActivityKind.Client);
-		}
-
-		activity?.AddTag("http.method", requestData.Method);
-		activity?.AddTag("http.url", requestData.Uri.AbsoluteUri);
-		activity?.AddTag("net.peer.name", requestData.Uri.Host);
-		activity?.AddTag("net.peer.port", requestData.Uri.Port);
-
 		try
 		{
-			var response = _transportClient.Request<TResponse>(requestData);
+			TResponse response;
 
-#if NET6_0_OR_GREATER
-			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
-#endif
-
-			activity?.AddTag("http.status_code", response.ApiCallDetails.HttpStatusCode);
+			if (isAsync)
+				response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
+			else
+				response = _transportClient.Request<TResponse>(requestData);
 
 			response.ApiCallDetails.AuditTrail = AuditTrail;
 
@@ -217,63 +203,6 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			audit.Event = requestData.OnFailureAuditEvent;
 			audit.Exception = e;
 			throw;
-		}
-		finally
-		{
-			if (!isElasticClient)
-				activity?.Dispose();
-		}
-	}
-
-	public override async Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
-	{
-		using var audit = Audit(HealthyResponse, requestData.Node);
-
-		if (audit is not null)
-			audit.PathAndQuery = requestData.PathAndQuery;
-
-		var activity = Activity.Current;
-		var isElasticClient = activity is not null && activity.GetCustomProperty("elastic.transport.client") is not null;
-
-		if (!isElasticClient)
-		{
-			activity = _activitySource.StartActivity($"Elastic.Transport: HTTP {requestData.Method}", ActivityKind.Client);
-		}
-
-		activity?.AddTag("http.method", requestData.Method);
-		activity?.AddTag("http.url", requestData.Uri.AbsoluteUri);
-		activity?.AddTag("net.peer.name", requestData.Uri.Host);
-		activity?.AddTag("net.peer.port", requestData.Uri.Port);
-
-		try
-		{
-			var response = await _transportClient.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
-
-#if NET6_0_OR_GREATER
-			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
-#endif
-
-			activity?.AddTag("http.status_code", response.ApiCallDetails.HttpStatusCode);
-
-			response.ApiCallDetails.AuditTrail = AuditTrail;
-
-			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
-
-			if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType && audit is not null)
-				audit.Event = requestData.OnFailureAuditEvent;
-
-			return response;
-		}
-		catch (Exception e) when (audit is not null)
-		{
-			audit.Event = requestData.OnFailureAuditEvent;
-			audit.Exception = e;
-			throw;
-		}
-		finally
-		{
-			if (!isElasticClient)
-				activity?.Dispose();
 		}
 	}
 
@@ -459,7 +388,12 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		}
 	}
 
-	public override void Ping(Node node)
+	public override void Ping(Node node) => PingCoreAsync(false, node).EnsureCompleted();
+
+	public override Task PingAsync(Node node, CancellationToken cancellationToken = default)
+		=> PingCoreAsync(true, node, cancellationToken).AsTask();
+
+	public async ValueTask PingCoreAsync(bool isAsync, Node node, CancellationToken cancellationToken = default)
 	{
 		if (!_productRegistration.SupportsPing) return;
 		if (PingDisabled(node)) return;
@@ -471,9 +405,14 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		if (audit is not null)
 			audit.PathAndQuery = pingData.PathAndQuery;
 
+		TransportResponse response;
+
 		try
 		{
-			var response = _productRegistration.Ping(_transportClient, pingData);
+			if (isAsync)
+				response = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
+			else
+				response = _productRegistration.Ping(_transportClient, pingData);
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
@@ -483,8 +422,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		}
 		catch (Exception e)
 		{
-			var response = (e as PipelineException)?.Response;
-
+			response = (e as PipelineException)?.Response;
 			if (audit is not null)
 			{
 				audit.Event = PingFailure;
@@ -494,41 +432,12 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		}
 	}
 
-	public override async Task PingAsync(Node node, CancellationToken cancellationToken)
-	{
-		if (!_productRegistration.SupportsPing) return;
-		if (PingDisabled(node)) return;
+	public override void Sniff() => SniffCoreAsync(false).EnsureCompleted();
 
-		var pingData = _productRegistration.CreatePingRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
+	public override Task SniffAsync(CancellationToken cancellationToken = default)
+		=> SniffCoreAsync(true, cancellationToken).AsTask();
 
-		using var audit = Audit(PingSuccess, node);
-
-		if (audit is not null)
-			audit.PathAndQuery = pingData.PathAndQuery;
-
-		try
-		{
-			var response = await _productRegistration.PingAsync(_transportClient, pingData, cancellationToken).ConfigureAwait(false);
-
-			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
-
-			//ping should not silently accept bad but valid http responses
-			if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
-				throw new PipelineException(pingData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
-		}
-		catch (Exception e)
-		{
-			var response = (e as PipelineException)?.Response;
-			if (audit is not null)
-			{
-				audit.Event = PingFailure;
-				audit.Exception = e;
-			}
-			throw new PipelineException(PipelineFailure.PingFailure, e) { Response = response };
-		}
-	}
-
-	public override void Sniff()
+	public async ValueTask SniffCoreAsync(bool isAsync, CancellationToken cancellationToken = default)
 	{
 		if (!_productRegistration.SupportsSniff) return;
 
@@ -544,18 +453,27 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			if (audit is not null)
 				audit.PathAndQuery = requestData.PathAndQuery;
 
+			Tuple<TransportResponse, IReadOnlyCollection<Node>> result;
+
 			try
 			{
-				var (response, nodes) = _productRegistration.Sniff(_transportClient, _nodePool.UsingSsl, requestData);
+				if (isAsync)
+					result = await _productRegistration
+						.SniffAsync(_transportClient, _nodePool.UsingSsl, requestData, cancellationToken)
+						.ConfigureAwait(false);
+				else
+					result = _productRegistration
+						.Sniff(_transportClient, _nodePool.UsingSsl, requestData);
 
-				ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
+				ThrowBadAuthPipelineExceptionWhenNeeded(result.Item1.ApiCallDetails);
 
 				//sniff should not silently accept bad but valid http responses
-				if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
-					throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+				if (!result.Item1.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
+					throw new PipelineException(requestData.OnFailurePipelineFailure, result.Item1.ApiCallDetails.OriginalException) { Response = result.Item1 };
 
-				_nodePool.Reseed(nodes);
+				_nodePool.Reseed(result.Item2);
 				Refresh = true;
+
 				return;
 			}
 			catch (Exception e)
@@ -567,55 +485,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 				}
 				exceptions.Add(e);
 			}
+
+			throw new PipelineException(PipelineFailure.SniffFailure, exceptions.AsAggregateOrFirst());
 		}
-
-		throw new PipelineException(PipelineFailure.SniffFailure, exceptions.AsAggregateOrFirst());
-	}
-
-	public override async Task SniffAsync(CancellationToken cancellationToken)
-	{
-		if (!_productRegistration.SupportsSniff) return;
-
-		var exceptions = new List<Exception>();
-
-		foreach (var node in SniffNodes)
-		{
-			var requestData =
-				_productRegistration.CreateSniffRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
-
-			using var audit = Audit(SniffSuccess, node);
-
-			if (audit is not null)
-				audit.PathAndQuery = requestData.PathAndQuery;
-
-			try
-			{
-				var (response, nodes) = await _productRegistration
-					.SniffAsync(_transportClient, _nodePool.UsingSsl, requestData, cancellationToken)
-					.ConfigureAwait(false);
-
-				ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
-
-				//sniff should not silently accept bad but valid http responses
-				if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
-					throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
-
-				_nodePool.Reseed(nodes);
-				Refresh = true;
-				return;
-			}
-			catch (Exception e)
-			{
-				if (audit is not null)
-				{
-					audit.Event = SniffFailure;
-					audit.Exception = e;
-				}
-				exceptions.Add(e);
-			}
-		}
-
-		throw new PipelineException(PipelineFailure.SniffFailure, exceptions.AsAggregateOrFirst());
 	}
 
 	public override void SniffOnConnectionFailure()

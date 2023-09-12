@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Elastic.Transport.Products;
 
 /// <summary>
-/// When <see cref="HttpTransport.Request{TResponse}"/> interfaces with a product some parts are
+/// When a request interfaces with a product, some parts are
 /// bespoke for each product. This interface defines the contract products will have to implement in order to fill
 /// in these bespoke parts.
 /// <para>The expectation is that unless you instantiate <see cref="DefaultHttpTransport{TConnectionSettings}"/>
@@ -106,15 +106,39 @@ public abstract class ProductRegistration
 	/// </summary>
 	public abstract bool HttpStatusCodeClassifier(HttpMethod method, int statusCode);
 
-	/// <summary> Try to obtain a server error from the response, this is used for debugging and exception messages </summary>
+	/// <summary>
+	/// Try to obtain a server error from the response, this is used for debugging and exception messages
+	/// </summary>
 	public abstract bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason) where TResponse : TransportResponse;
 
 	/// <summary>
-	/// Allows product implementations to inject a metadata header to all outgoing requests
+	/// Allows product implementations to inject a metadata header to all outgoing requests.
 	/// </summary>
 	public abstract MetaHeaderProvider MetaHeaderProvider { get; }
 
 	/// <summary>
+	/// The assembly informational version of the product.
+	/// </summary>
+	public abstract string ProductAssemblyVersion { get; }
+
+	/// <summary>
+	/// A set of common OpenTelemetry attributes for this product which are added to the logical operation span created
+	/// by Elastic.Transport.
+	/// </summary>
+	public abstract IReadOnlyDictionary<string, object>? DefaultOpenTelemetryAttributes { get; }
+
+	/// <summary>
+	/// Returns a collection of header names to be parsed from the HTTP response.
+	/// </summary>
+	public abstract IReadOnlyCollection<string> DefaultHeadersToParse();
+
+	/// <summary>
+	/// May return a dictionary containing OpenTelemetry attributes parsed from the <see cref="ApiCallDetails"/> which are
+	/// added to the logical operation span created by Elastic.Transport.
+	/// </summary>
+	public abstract Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails);
+
+  /// <summary>
 	/// Allows product implementations to take full control of building transport responses if needed.
 	/// </summary>
 	public virtual ResponseBuilder ResponseBuilder => ResponseBuilder.Default;

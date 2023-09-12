@@ -9,8 +9,7 @@ using System.Threading.Tasks;
 namespace Elastic.Transport;
 
 /// <summary>
-/// Allows callers of <see cref="HttpTransport.Request{TResponse}"/> to override completely
-/// how `TResponse` should be deserialized to a `TResponse` that implements <see cref="TransportResponse"/> instance.
+/// Allows callers to override completely how `TResponse` should be deserialized to a `TResponse` that implements <see cref="TransportResponse"/> instance.
 /// <para>Expert setting only</para>
 /// </summary>
 public abstract class CustomResponseBuilder
