@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 // Adapted from BenchmarkDotNet source https://github.com/dotnet/BenchmarkDotNet/blob/master/src/BenchmarkDotNet/Environments/Runtimes/CoreRuntime.cs
+
 #region BenchmarkDotNet License https://github.com/dotnet/BenchmarkDotNet/blob/master/LICENSE.md
+
 // The MIT License
 // Copyright (c) 2013–2020.NET Foundation and contributors
 
@@ -21,18 +23,25 @@
 // IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#endregion
+
+#endregion BenchmarkDotNet License https://github.com/dotnet/BenchmarkDotNet/blob/master/LICENSE.md
 
 using System;
+
 using Elastic.Transport.Extensions;
+
 #if !NETFRAMEWORK
+
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+
 #else
+
 using Microsoft.Win32;
 using System.Linq;
+
 #endif
 
 namespace Elastic.Transport;
@@ -42,18 +51,40 @@ namespace Elastic.Transport;
 /// </summary>
 internal sealed class RuntimeVersionInfo : VersionInfo
 {
-	public static readonly RuntimeVersionInfo Default = new() { Version = new Version(0, 0, 0), IsPrerelease = false };
+	private static readonly SemVersion Empty = new(0, 0, 0);
 
-	public RuntimeVersionInfo() => StoreVersion(GetRuntimeVersion());
+	public RuntimeVersionInfo() : this(GetRuntimeVersion())
+	{
+	}
 
-	private static string GetRuntimeVersion() =>
+	private RuntimeVersionInfo(SemVersion version) :
+		// We don't care about metadata
+		base((int)version.Major, (int)version.Minor, (int)version.Patch, version.Prerelease, null)
+	{
+	}
+
+	private static SemVersion GetRuntimeVersion()
+	{
 #if NETFRAMEWORK
-		GetFullFrameworkRuntime();
+		var version = GetFullFrameworkRuntime();
 #else
-		GetNetCoreVersion();
+		var version = GetNetCoreVersion();
+
 #endif
 
+		if (!SemVersion.TryParse(version, out var result))
+			return Empty;
+
+		// 5.0.1 FrameworkDescription returns .NET 5.0.1-servicing.20575.16, so we special case servicing as
+		// NOT prerelease by converting the prerelease part to metadata
+		if (result.Prerelease.Contains("-servicing"))
+			return new SemVersion(result.Major, result.Minor, result.Patch, null, result.Prerelease);
+
+		return result;
+	}
+
 #if !NETFRAMEWORK
+
 	private static string GetNetCoreVersion()
 	{
 		// for .NET 5+ we can use Environment.Version
@@ -112,9 +143,6 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 		runtimeVersion = null;
 		return false;
 	}
-
-	// NOTE: 5.0.1 FrameworkDescription returns .NET 5.0.1-servicing.20575.16, so we special case servicing as NOT prerelease
-	protected override bool ContainsPrerelease(string version) => base.ContainsPrerelease(version) && !version.Contains("-servicing");
 
 	// sample input:
 	// 2.0: 4.6.26614.01 @BuiltBy: dlab14-DDVSOWINAGE018 @Commit: a536e7eec55c538c94639cefe295aa672996bf9b, Microsoft .NET Framework

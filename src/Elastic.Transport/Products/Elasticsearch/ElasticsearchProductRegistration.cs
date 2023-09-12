@@ -38,7 +38,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	internal ElasticsearchProductRegistration() => _headers = new HeadersList("warning");
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <param name="markerType"></param>
 	public ElasticsearchProductRegistration(Type markerType) : this()
@@ -51,8 +51,8 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 		// Only set this if we have a version.
 		// If we don't have a version we won't apply the vendor-based REST API compatibility Accept header.
-		if (clientVersionInfo.Version.Major > 0)
-			_clientMajorVersion = clientVersionInfo.Version.Major;
+		if (clientVersionInfo.Major > 0)
+			_clientMajorVersion = clientVersionInfo.Major;
 
 		ProductAssemblyVersion = markerType.Assembly
 			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
@@ -127,7 +127,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	{
 		var requestParameters = new DefaultRequestParameters
 		{
-			QueryString = {{"timeout", requestConfiguration.PingTimeout}, {"flat_settings", true},}
+			QueryString = { { "timeout", requestConfiguration.PingTimeout }, { "flat_settings", true }, }
 		};
 		return new RequestData(HttpMethod.GET, SniffPath, null, settings, requestParameters, memoryStreamFactory, default)
 		{

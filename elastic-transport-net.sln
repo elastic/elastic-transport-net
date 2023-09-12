@@ -40,9 +40,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Elastic.Transport.Integrati
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Elastic.Transport.Profiling", "benchmarks\Elastic.Transport.Profiling\Elastic.Transport.Profiling.csproj", "{ED4E89BE-FBE9-4876-979C-63A0E3BC5419}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playground", "Playground\Playground.csproj", "{5EE4DC72-B337-448B-802A-6158F4D90667}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Playground", "Playground\Playground.csproj", "{5EE4DC72-B337-448B-802A-6158F4D90667}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elastic.Elasticsearch.IntegrationTests", "tests\Elastic.Elasticsearch.IntegrationTests\Elastic.Elasticsearch.IntegrationTests.csproj", "{317C118F-FA1E-499A-B7F2-DC932DE66CB8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Elastic.Elasticsearch.IntegrationTests", "tests\Elastic.Elasticsearch.IntegrationTests\Elastic.Elasticsearch.IntegrationTests.csproj", "{317C118F-FA1E-499A-B7F2-DC932DE66CB8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

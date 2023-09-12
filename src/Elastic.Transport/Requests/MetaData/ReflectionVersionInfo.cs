@@ -4,42 +4,85 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
+
+using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
 
 internal sealed class ReflectionVersionInfo : VersionInfo
 {
-	private static readonly Regex VersionRegex = new(@"^\d+\.\d+\.\d\-?");
+	private static readonly SemVersion Empty = new(0, 0, 0);
 
-	public static readonly ReflectionVersionInfo Empty = new() { Version = new Version(0, 0, 0), IsPrerelease = false };
-
-	private ReflectionVersionInfo() { }
+	private ReflectionVersionInfo(SemVersion version) :
+		base((int)version.Major, (int)version.Minor, (int)version.Patch, version.Prerelease, version.Metadata)
+	{
+	}
 
 	public static ReflectionVersionInfo Create<T>()
 	{
-		var fullVersion = DetermineVersionFromType(typeof(T));
-		var clientVersion = new ReflectionVersionInfo();
-		clientVersion.StoreVersion(fullVersion);
-		return clientVersion;
+		var version = DetermineVersionFromType(typeof(T));
+		var versionInfo = new ReflectionVersionInfo(version);
+		return versionInfo;
 	}
 
 	public static ReflectionVersionInfo Create(Type type)
 	{
-		var fullVersion = DetermineVersionFromType(type);
-		var clientVersion = new ReflectionVersionInfo();
-		clientVersion.StoreVersion(fullVersion);
-		return clientVersion;
+		var version = DetermineVersionFromType(type);
+		var versionInfo = new ReflectionVersionInfo(version);
+		return versionInfo;
 	}
 
-	private static string DetermineVersionFromType(Type type)
+	private static SemVersion DetermineVersionFromType(Type type)
 	{
-		var productVersion = EmptyVersion;
-
 		try
 		{
-			productVersion = type.Assembly?.GetCustomAttribute<AssemblyVersionAttribute>()?.Version ?? EmptyVersion;
+			// Try to read the full version in 'major.minor.patch[.build][-prerelease][+build]' format. This format is semver2 compliant
+			// except for the optional [.build] version number.
+
+			var version = type.Assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+			if (string.IsNullOrEmpty(version) && !string.IsNullOrEmpty(type.Assembly?.Location))
+			{
+				var location = type.Assembly?.Location;
+				version = FileVersionInfo.GetVersionInfo(location)?.ProductVersion;
+			}
+
+			if (!string.IsNullOrEmpty(version))
+			{
+				// Version string is already in semver format
+				if (SemVersion.TryParse(version, out var result))
+					return result;
+
+				var prefix = GetVersionPrefixPart(version);
+
+				// Version prefix is not in a valid 'major.minor[.build[.revision]]' form
+				if (!System.Version.TryParse(prefix, out var prefixVersion))
+					return Empty;
+
+				// Version prefix '[.revision]' part is not present, but initial semver parsing failed anyways.
+				// Nothing we can do here...
+				if (prefixVersion.Revision < 0)
+					return Empty;
+
+				// Remove non semver compliant '[.revision]'
+				version = $"{prefixVersion.Major}.{prefixVersion.Minor}.{prefixVersion.Build}{version.Substring(prefix.Length)}";
+				if (!SemVersion.TryParse(version, out result))
+					return Empty;
+
+				// Prepend the 'revision' to metadata
+				if (prefixVersion.Revision > 0)
+				{
+					var meta = $"rev{prefixVersion.Revision}";
+					if (result.Metadata.Length != 0)
+						meta = $"{meta}.{result.Metadata}";
+
+					result = new SemVersion(result.Major, result.Minor, result.Patch, result.Prerelease, meta);
+				}
+
+				return result;
+			}
 		}
 		catch
 		{
@@ -48,29 +91,41 @@ internal sealed class ReflectionVersionInfo : VersionInfo
 
 		try
 		{
-			if (productVersion == EmptyVersion)
-				productVersion = FileVersionInfo.GetVersionInfo(type.Assembly.Location)?.ProductVersion ?? EmptyVersion;
+			// Try to read the assembly version in 'major.minor[.build[.revision]]' format.
+
+			var version = type.Assembly?.GetCustomAttribute<AssemblyVersionAttribute>()?.Version;
+
+			if (string.IsNullOrEmpty(version))
+				version = type.Assembly?.GetName()?.Version?.ToString();
+
+			if (!string.IsNullOrEmpty(version))
+			{
+				var parts = version.Split('.');
+
+				var major = parts.Length >= 1 && int.TryParse(parts[0], out var majorVal) ? majorVal : 0;
+				var minor = parts.Length >= 2 && int.TryParse(parts[1], out var minorVal) ? minorVal : 0;
+				var build = parts.Length >= 3 && int.TryParse(parts[2], out var buildVal) ? buildVal : 0;
+				var revision = parts.Length >= 4 && int.TryParse(parts[3], out var revisionVal) ? revisionVal : 0;
+
+				// Use 'build' as the semver 'patch' part and add the 'revision' as metadata
+				return (revision > 0)
+					? new SemVersion(major, minor, build, null, $"rev{revision}")
+					: new SemVersion(major, minor, build);
+			}
 		}
 		catch
 		{
 			// ignore failures and fall through
 		}
 
-		try
-		{
-			// This fall back may not include the minor version numbers
-			if (productVersion == EmptyVersion)
-				productVersion = type.Assembly.GetName()?.Version?.ToString() ?? EmptyVersion;
-		}
-		catch
-		{
-			// ignore failures and fall through
-		}
-
-		if (productVersion == EmptyVersion) return EmptyVersion;
-
-		var match = VersionRegex.Match(productVersion);
-
-		return match.Success ? match.Value : EmptyVersion;
+		return Empty;
 	}
+
+	/// <summary>
+	///
+	/// </summary>
+	/// <param name="fullVersionName"></param>
+	/// <returns></returns>
+	private static string GetVersionPrefixPart(string fullVersionName) =>
+		new(fullVersionName.TakeWhile(c => char.IsDigit(c) || c == '.').ToArray());
 }
