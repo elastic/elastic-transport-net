@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport.IntegrationTests.Plumbing.Stubs;
 
-public class TestableHttpConnection : IRequestInvoker
+public class TrackingRequestInvoker : IRequestInvoker
 {
 	private readonly Action<HttpResponseMessage> _response;
 	private TestableClientHandler _handler;
@@ -17,9 +17,9 @@ public class TestableHttpConnection : IRequestInvoker
 	public HttpClientHandler LastHttpClientHandler => (HttpClientHandler)_handler.InnerHandler;
 	private readonly HttpRequestInvoker _requestInvoker;
 
-	public TestableHttpConnection(Action<HttpResponseMessage> response) : this() => _response = response;
+	public TrackingRequestInvoker(Action<HttpResponseMessage> response) : this() => _response = response;
 
-	public TestableHttpConnection() =>
+	public TrackingRequestInvoker() =>
 		_requestInvoker = new HttpRequestInvoker((defaultHandler, _) =>
 		{
 			_handler = new TestableClientHandler(defaultHandler, _response);

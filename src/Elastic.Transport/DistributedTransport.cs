@@ -27,7 +27,7 @@ public sealed class DistributedTransport : DistributedTransport<TransportConfigu
 	///     different
 	///     nodes
 	/// </summary>
-	/// <param name="configurationValues">The connection settings to use for this transport</param>
+	/// <param name="configurationValues">The configuration to use for this transport</param>
 	public DistributedTransport(TransportConfiguration configurationValues) : base(configurationValues, null, null) { }
 
 	/// <summary>
@@ -35,7 +35,7 @@ public sealed class DistributedTransport : DistributedTransport<TransportConfigu
 	///     different
 	///     nodes
 	/// </summary>
-	/// <param name="configurationValues">The connection settings to use for this transport</param>
+	/// <param name="configurationValues">The configuration to use for this transport</param>
 	/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
@@ -59,7 +59,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	///     different
 	///     nodes
 	/// </summary>
-	/// <param name="configurationValues">The connection settings to use for this transport</param>
+	/// <param name="configurationValues">The configuration to use for this transport</param>
 	/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>

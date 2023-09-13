@@ -21,7 +21,7 @@ using TheException = System.Net.WebException;
 namespace Elastic.Transport.VirtualizedCluster.Components;
 
 /// <summary>
-/// An in memory connection that uses a rule engine to return different responses for sniffs/pings and API calls.
+/// An in memory requestInvoker that uses a rule engine to return different responses for sniffs/pings and API calls.
 /// <pre>
 /// Either instantiate through the static <see cref="Success"/> or <see cref="Error"/> for the simplest use-cases
 /// </pre>
@@ -30,7 +30,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components;
 /// <see cref="SealedVirtualCluster.VirtualClusterConnection"/> becomes available
 /// </pre>
 /// </summary>
-public class VirtualClusterTransport : IRequestInvoker
+public class VirtualClusterRequestInvoker : IRequestInvoker
 {
 	private static readonly object Lock = new();
 
@@ -43,7 +43,7 @@ public class VirtualClusterTransport : IRequestInvoker
 
 	private readonly InMemoryRequestInvoker _inMemoryRequestInvoker;
 
-	internal VirtualClusterTransport(VirtualCluster cluster, TestableDateTimeProvider dateTimeProvider)
+	internal VirtualClusterRequestInvoker(VirtualCluster cluster, TestableDateTimeProvider dateTimeProvider)
 	{
 		UpdateCluster(cluster);
 		_dateTimeProvider = dateTimeProvider;
@@ -54,10 +54,10 @@ public class VirtualClusterTransport : IRequestInvoker
 	void IDisposable.Dispose() { }
 
 	/// <summary>
-	/// Create a <see cref="VirtualClusterTransport"/> instance that always returns a successful response.
+	/// Create a <see cref="VirtualClusterRequestInvoker"/> instance that always returns a successful response.
 	/// </summary>
 	/// <param name="response">The bytes to be returned on every API call invocation</param>
-	public static VirtualClusterTransport Success(byte[] response) =>
+	public static VirtualClusterRequestInvoker Success(byte[] response) =>
 		Virtual.Elasticsearch
 			.Bootstrap(1)
 			.ClientCalls(r => r.SucceedAlways().ReturnByteResponse(response))
@@ -66,9 +66,9 @@ public class VirtualClusterTransport : IRequestInvoker
 			.Connection;
 
 	/// <summary>
-	/// Create a <see cref="VirtualClusterTransport"/> instance that always returns a failed response.
+	/// Create a <see cref="VirtualClusterRequestInvoker"/> instance that always returns a failed response.
 	/// </summary>
-	public static VirtualClusterTransport Error() =>
+	public static VirtualClusterRequestInvoker Error() =>
 		Virtual.Elasticsearch
 			.Bootstrap(1)
 			.ClientCalls(r => r.FailAlways(400))

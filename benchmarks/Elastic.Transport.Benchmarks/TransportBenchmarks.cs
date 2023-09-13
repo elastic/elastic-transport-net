@@ -10,22 +10,22 @@ namespace Elastic.Transport.Benchmarks
 {
 	public class TransportBenchmarks
 	{
-		private ITransport _requestHandler;
+		private ITransport _transport;
 
 		[GlobalSetup]
 		public void Setup()
 		{
-			var connection = new InMemoryRequestInvoker();
+			var requestInvoker = new InMemoryRequestInvoker();
 			var pool = new SingleNodePool(new Uri("http://localhost:9200"));
-			var settings = new TransportConfiguration(pool, connection);
+			var settings = new TransportConfiguration(pool, requestInvoker);
 
-			_requestHandler = new DistributedTransport(settings);
+			_transport = new DistributedTransport(settings);
 		}
 
 		[Benchmark]
-		public void TransportSuccessfulRequestBenchmark() => _requestHandler.Get<VoidResponse>("/");
+		public void TransportSuccessfulRequestBenchmark() => _transport.Get<VoidResponse>("/");
 
 		[Benchmark]
-		public async Task TransportSuccessfulAsyncRequestBenchmark() => await _requestHandler.GetAsync<VoidResponse>("/");
+		public async Task TransportSuccessfulAsyncRequestBenchmark() => await _transport.GetAsync<VoidResponse>("/");
 	}
 }

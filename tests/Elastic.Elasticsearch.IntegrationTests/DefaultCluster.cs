@@ -28,8 +28,8 @@ public class DefaultCluster : XunitClusterBase
 		this.GetOrAddClient(cluster =>
 		{
 			var nodes = NodesUris();
-			var connectionPool = new StaticNodePool(nodes);
-			var settings = new TransportConfiguration(connectionPool, productRegistration: ElasticsearchProductRegistration.Default)
+			var nodePool = new StaticNodePool(nodes);
+			var settings = new TransportConfiguration(nodePool, productRegistration: ElasticsearchProductRegistration.Default)
 				.RequestTimeout(TimeSpan.FromSeconds(5))
 				.OnRequestCompleted(d =>
 				{

@@ -184,9 +184,9 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	}
 
 	/// <inheritdoc cref="ProductRegistration.Ping"/>
-	public override TransportResponse Ping(IRequestInvoker connection, RequestData pingData)
+	public override TransportResponse Ping(IRequestInvoker requestInvoker, RequestData pingData)
 	{
-		var response = connection.Request<VoidResponse>(pingData);
+		var response = requestInvoker.Request<VoidResponse>(pingData);
 		return response;
 	}
 

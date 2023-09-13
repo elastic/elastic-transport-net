@@ -31,15 +31,15 @@ namespace Elastic.Transport.IntegrationTests.Http
 		private const string Path = "/chunked";
 
 		private ITransport Setup(
-			TestableHttpConnection connection,
+			TrackingRequestInvoker requestInvoker,
 			Uri proxyAddress = null,
 			bool? disableAutomaticProxyDetection = null,
 			bool httpCompression = false,
 			bool transferEncodingChunked = false
 		)
 		{
-			var connectionPool = new SingleNodePool(Server.Uri);
-			var config = new TransportConfiguration(connectionPool, connection)
+			var nodePool = new SingleNodePool(Server.Uri);
+			var config = new TransportConfiguration(nodePool, requestInvoker)
 				.TransferEncodingChunked(transferEncodingChunked)
 				.EnableHttpCompression(httpCompression);
 			config = disableAutomaticProxyDetection.HasValue
@@ -56,36 +56,36 @@ namespace Elastic.Transport.IntegrationTests.Http
 		/// </summary>
 		[Fact] public async Task HttpClientUseProxyShouldBeFalseWhenDisabledAutoProxyDetection()
 		{
-			var connection = new TestableHttpConnection();
-			var transport = Setup(connection, disableAutomaticProxyDetection: true);
+			var requestInvoker = new TrackingRequestInvoker();
+			var transport = Setup(requestInvoker, disableAutomaticProxyDetection: true);
 
 			var r = transport.Post<StringResponse>(Path, Body);
-			connection.LastHttpClientHandler.UseProxy.Should().BeFalse();
+			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeFalse();
 			r.Body.Should().Be(BodyString);
 
 			r = await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
-			connection.LastHttpClientHandler.UseProxy.Should().BeFalse();
+			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeFalse();
 			r.Body.Should().Be(BodyString);
 		}
 
 		[Fact] public async Task HttpClientUseProxyShouldBeTrueWhenEnabledAutoProxyDetection()
 		{
-			var connection = new TestableHttpConnection();
-			var transport = Setup(connection);
+			var requestInvoker = new TrackingRequestInvoker();
+			var transport = Setup(requestInvoker);
 
 			transport.Post<StringResponse>(Path, Body);
-			connection.LastHttpClientHandler.UseProxy.Should().BeTrue();
+			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeTrue();
 			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
-			connection.LastHttpClientHandler.UseProxy.Should().BeTrue();
+			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeTrue();
 		}
 
 		[Fact] public async Task HttpClientUseTransferEncodingChunkedWhenTransferEncodingChunkedTrue()
 		{
-			var connection = new TestableHttpConnection(responseMessage =>
+			var requestInvoker = new TrackingRequestInvoker(responseMessage =>
 			{
 				responseMessage.RequestMessage.Content.Headers.ContentLength.Should().BeNull();
 			});
-			var transport = Setup(connection, transferEncodingChunked: true);
+			var transport = Setup(requestInvoker, transferEncodingChunked: true);
 
 			transport.Post<StringResponse>(Path, Body);
 			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
@@ -93,11 +93,11 @@ namespace Elastic.Transport.IntegrationTests.Http
 
 		[Fact] public async Task HttpClientSetsContentLengthWhenTransferEncodingChunkedFalse()
 		{
-			var connection = new TestableHttpConnection(responseMessage =>
+			var trackingRequestInvoker = new TrackingRequestInvoker(responseMessage =>
 			{
 				responseMessage.RequestMessage.Content.Headers.ContentLength.Should().HaveValue();
 			});
-			var transport = Setup(connection, transferEncodingChunked: false);
+			var transport = Setup(trackingRequestInvoker, transferEncodingChunked: false);
 
 			transport.Post<StringResponse>(Path, Body);
 			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
@@ -105,11 +105,11 @@ namespace Elastic.Transport.IntegrationTests.Http
 
 		[Fact] public async Task HttpClientSetsContentLengthWhenTransferEncodingChunkedHttpCompression()
 		{
-			var connection = new TestableHttpConnection(responseMessage =>
+			var trackingRequestInvoker = new TrackingRequestInvoker(responseMessage =>
 			{
 				responseMessage.RequestMessage.Content.Headers.ContentLength.Should().HaveValue();
 			});
-			var transport = Setup(connection, transferEncodingChunked: false, httpCompression: true);
+			var transport = Setup(trackingRequestInvoker, transferEncodingChunked: false, httpCompression: true);
 
 			transport.Post<StringResponse>(Path, Body);
 			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);

@@ -65,13 +65,13 @@ public abstract class ProductRegistration
 	/// Provide an implementation that performs the ping directly using <see cref="IRequestInvoker.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
 	/// return by <see cref="CreatePingRequestData"/>
 	/// </summary>
-	public abstract Task<TransportResponse> PingAsync(IRequestInvoker connection, RequestData pingData, CancellationToken cancellationToken);
+	public abstract Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, RequestData pingData, CancellationToken cancellationToken);
 
 	/// <summary>
 	/// Provide an implementation that performs the ping directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
 	/// return by <see cref="CreatePingRequestData"/>
 	/// </summary>
-	public abstract TransportResponse Ping(IRequestInvoker connection, RequestData pingData);
+	public abstract TransportResponse Ping(IRequestInvoker requestInvoker, RequestData pingData);
 
 	/// <summary>
 	/// Create an instance of <see cref="RequestData"/> that describes where and how to sniff the cluster using <paramref name="node" />
@@ -84,13 +84,13 @@ public abstract class ProductRegistration
 	/// Provide an implementation that performs the sniff directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
 	/// return by <see cref="CreateSniffRequestData"/>
 	/// </summary>
-	public abstract Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker connection, bool forceSsl, RequestData requestData, CancellationToken cancellationToken);
+	public abstract Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, RequestData requestData, CancellationToken cancellationToken);
 
 	/// <summary>
 	/// Provide an implementation that performs the sniff directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
 	/// return by <see cref="CreateSniffRequestData"/>
 	/// </summary>
-	public abstract Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker connection, bool forceSsl, RequestData requestData);
+	public abstract Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, RequestData requestData);
 
 	/// <summary> Allows certain nodes to be queried first to obtain sniffing information </summary>
 	public abstract int SniffOrder(Node node);

@@ -16,11 +16,11 @@ namespace Elastic.Transport.Tests
 		public void Usage()
 		{
 			var pool = new StaticNodePool(new[] {new Node(new Uri("http://localhost:9200"))});
-			var connection = new HttpRequestInvoker();
+			var requestInvoker = new HttpRequestInvoker();
 			var serializer = LowLevelRequestResponseSerializer.Instance;
 			var product = ElasticsearchProductRegistration.Default;
 
-			var settings = new TransportConfiguration(pool, connection, serializer, product);
+			var settings = new TransportConfiguration(pool, requestInvoker, serializer, product);
 			var transport = new DistributedTransport<TransportConfiguration>(settings);
 
 			var response = transport.Request<StringResponse>(HttpMethod.GET, "/");

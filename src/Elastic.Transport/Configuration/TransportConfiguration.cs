@@ -104,9 +104,9 @@ public class TransportConfiguration : TransportConfigurationBase<TransportConfig
 	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
 	public TransportConfiguration(
 		NodePool nodePool,
-		IRequestInvoker invoker = null,
-		Serializer serializer = null,
-		ProductRegistration productRegistration = null)
+		IRequestInvoker? invoker = null,
+		Serializer? serializer = null,
+		ProductRegistration? productRegistration = null)
 		: base(nodePool, invoker, serializer, productRegistration) { }
 
 }
@@ -162,7 +162,7 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 	private UserAgent _userAgent;
 	private string _certificateFingerprint;
 	private bool _disableMetaHeader;
-	private readonly MetaHeaderProvider _metaHeaderProvider;
+	private readonly MetaHeaderProvider? _metaHeaderProvider;
 
 	private readonly Func<HttpMethod, int, bool> _statusCodeToResponseSuccess;
 
@@ -173,7 +173,7 @@ public abstract class TransportConfigurationBase<T> : ITransportConfiguration
 	/// <param name="requestInvoker"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
 	/// <param name="requestResponseSerializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
-	protected TransportConfigurationBase(NodePool nodePool, IRequestInvoker requestInvoker, Serializer requestResponseSerializer, ProductRegistration productRegistration)
+	protected TransportConfigurationBase(NodePool nodePool, IRequestInvoker? requestInvoker, Serializer? requestResponseSerializer, ProductRegistration? productRegistration)
 	{
 		_nodePool = nodePool;
 		_requestInvoker = requestInvoker ?? new HttpRequestInvoker();

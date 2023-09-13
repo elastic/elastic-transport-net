@@ -20,7 +20,7 @@ public class ApiCompatibilityHeaderTests : AssemblyServerTestsBase
 	[Fact]
 	public async Task AddsExpectedVendorInformationForRestApiCompaitbility()
 	{
-		var connection = new TestableHttpConnection(responseMessage =>
+		var requestInvoker = new TrackingRequestInvoker(responseMessage =>
 		{
 			responseMessage.RequestMessage.Content.Headers.ContentType.MediaType.Should().Be("application/vnd.elasticsearch+json");
 			var parameter = responseMessage.RequestMessage.Content.Headers.ContentType.Parameters.Single();
@@ -34,8 +34,8 @@ public class ApiCompatibilityHeaderTests : AssemblyServerTestsBase
 			contentTypeValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
 		});
 
-		var connectionPool = new SingleNodePool(Server.Uri);
-		var config = new TransportConfiguration(connectionPool, connection, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
+		var nodePool = new SingleNodePool(Server.Uri);
+		var config = new TransportConfiguration(nodePool, requestInvoker, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
 		var transport = new DistributedTransport(config);
 
 		var response = await transport.PostAsync<StringResponse>("/metaheader", PostData.String("{}"));

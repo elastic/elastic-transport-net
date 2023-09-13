@@ -27,7 +27,7 @@ public class HttpRequestInvoker : IRequestInvoker
 {
 	private static readonly string MissingConnectionLimitMethodError =
 		$"Your target platform does not support {nameof(TransportConfiguration.ConnectionLimit)}"
-		+ $" please set {nameof(TransportConfiguration.ConnectionLimit)} to -1 on your connection configuration/settings."
+		+ $" please set {nameof(TransportConfiguration.ConnectionLimit)} to -1 on your configuration."
 		+ $" this will cause the {nameof(HttpClientHandler.MaxConnectionsPerServer)} not to be set on {nameof(HttpClientHandler)}";
 
 	private string _expectedCertificateFingerprint;

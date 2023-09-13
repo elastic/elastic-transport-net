@@ -30,9 +30,9 @@ public class OpenTelemetryTests : AssemblyServerTestsBase
 	[Fact]
 	public async Task ElasticsearchTagsShouldBeSet_WhenUsingTheElasticsearchRegistration()
 	{
-		var connection = new TestableHttpConnection();
-		var connectionPool = new SingleNodePool(Server.Uri);
-		var config = new TransportConfiguration(connectionPool, connection, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
+		var requestInvoker = new TrackingRequestInvoker();
+		var nodePool = new SingleNodePool(Server.Uri);
+		var config = new TransportConfiguration(nodePool, requestInvoker, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
 		var transport = new DistributedTransport(config);
 
 		var mre = new ManualResetEvent(false);
