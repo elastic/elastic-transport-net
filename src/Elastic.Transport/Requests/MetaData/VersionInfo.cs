@@ -57,7 +57,7 @@ public abstract class VersionInfo
 	}
 
 	/// <summary> Returns the full version as a semantic version number </summary>
-	public string ToSemverString()
+	public string ToFullString()
 	{
 		var prefix = $"{Major}.{Minor}.{Patch}";
 		return (Prerelease, Metadata) switch
