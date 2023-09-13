@@ -15,6 +15,8 @@ internal sealed class ReflectionVersionInfo : VersionInfo
 {
 	private static readonly SemVersion Empty = new(0, 0, 0);
 
+	public static readonly string TransportVersion = Create<ReflectionVersionInfo>().ToString();
+
 	private ReflectionVersionInfo(SemVersion version) :
 		base((int)version.Major, (int)version.Minor, (int)version.Patch, version.Prerelease, version.Metadata)
 	{

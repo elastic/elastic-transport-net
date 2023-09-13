@@ -24,7 +24,7 @@ public class DefaultCluster : XunitClusterBase
 
 	public DefaultCluster(XunitClusterConfiguration xunitClusterConfiguration) : base(xunitClusterConfiguration) { }
 
-	public DistributedTransport CreateClient(ITestOutputHelper output) =>
+	public ITransport CreateClient(ITestOutputHelper output) =>
 		this.GetOrAddClient(cluster =>
 		{
 			var nodes = NodesUris();

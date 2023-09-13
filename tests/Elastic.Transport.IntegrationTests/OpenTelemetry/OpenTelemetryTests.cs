@@ -33,7 +33,7 @@ public class OpenTelemetryTests : AssemblyServerTestsBase
 		var connection = new TestableHttpConnection();
 		var connectionPool = new SingleNodePool(Server.Uri);
 		var config = new TransportConfiguration(connectionPool, connection, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
-		var transport = new DefaultHttpTransport(config);
+		var transport = new DistributedTransport(config);
 
 		var mre = new ManualResetEvent(false);
 
@@ -65,7 +65,7 @@ public class OpenTelemetryTests : AssemblyServerTestsBase
 			var informationalVersion = (typeof(Clients.Elasticsearch.ElasticsearchClient)
 				.Assembly
 				.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false)
-				as AssemblyInformationalVersionAttribute[]).FirstOrDefault()?.InformationalVersion;
+				as AssemblyInformationalVersionAttribute[])?.FirstOrDefault()?.InformationalVersion;
 
 			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.DbElasticsearchClusterName)
 				.Subject.Value.Should().BeOfType<string>()

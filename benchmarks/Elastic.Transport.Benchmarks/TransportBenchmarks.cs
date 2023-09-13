@@ -10,7 +10,7 @@ namespace Elastic.Transport.Benchmarks
 {
 	public class TransportBenchmarks
 	{
-		private DistributedTransport _requestHandler;
+		private ITransport _requestHandler;
 
 		[GlobalSetup]
 		public void Setup()

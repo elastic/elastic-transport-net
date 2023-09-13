@@ -47,12 +47,16 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 	internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
 
+	void IDisposable.Dispose() {}
+
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
-	public override TResponse Request<TResponse>(RequestData requestData) =>
+	public TResponse Request<TResponse>(RequestData requestData)
+		where TResponse : TransportResponse, new() =>
 		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
-	public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken = default) =>
+	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken = default)
+		where TResponse : TransportResponse, new() =>
 		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)

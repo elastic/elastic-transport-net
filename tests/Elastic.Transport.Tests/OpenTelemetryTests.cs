@@ -27,10 +27,10 @@ public class OpenTelemetryTests
 
 		static void Assertions(Activity activity)
 		{
-			var informationalVersion = (typeof(HttpTransport)
+			var informationalVersion = (typeof(DistributedTransport)
 				.Assembly
 				.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false)
-				as AssemblyInformationalVersionAttribute[]).FirstOrDefault()?.InformationalVersion;
+				as AssemblyInformationalVersionAttribute[])?.FirstOrDefault()?.InformationalVersion;
 
 			activity.Should().NotBeNull();
 			activity.Kind.Should().Be(ActivityKind.Client);
@@ -124,7 +124,7 @@ public class OpenTelemetryTests
 
 	private Task TestCoreAsync(Action<Activity> assertion) => TestCoreAsync(assertion, default);
 
-	private async Task TestCoreAsync(Action<Activity> assertions, OpenTelemetryData openTelemetryData, HttpTransport transport = null)
+	private async Task TestCoreAsync(Action<Activity> assertions, OpenTelemetryData openTelemetryData, ITransport transport = null)
 	{
 		var mre = new ManualResetEvent(false);
 
@@ -147,7 +147,7 @@ public class OpenTelemetryTests
 		};
 		ActivitySource.AddActivityListener(listener);
 
-		transport ??= new DefaultHttpTransport(InMemoryConnectionFactory.Create());
+		transport ??= new DistributedTransport(InMemoryConnectionFactory.Create());
 
 		_ = await transport.RequestAsync<VoidResponse>(HttpMethod.GET, "/", null, null, openTelemetryData);
 

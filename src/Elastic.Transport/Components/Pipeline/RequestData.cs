@@ -194,6 +194,7 @@ public sealed class RequestData
 	public IReadOnlyDictionary<string, string> RequestMetaData { get; }
 
 	public bool IsAsync { get; internal set; }
+
 	internal OpenTelemetryData OpenTelemetryData { get; }
 
 	public override string ToString() => $"{Method.GetStringValue()} {_path}";

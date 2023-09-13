@@ -20,35 +20,10 @@ public interface ITransport
 	/// <typeparam name="TResponse">The type to deserialize the response body into.</typeparam>
 	/// <param name="method">The <see cref="HttpMethod"/> for the HTTP request.</param>
 	/// <param name="path">The path of the request.</param>
-	/// <returns>The deserialized <typeparamref name="TResponse"/>.</returns>
-	public TResponse Request<TResponse>(
-		HttpMethod method,
-		string path)
-		where TResponse : TransportResponse, new()
-			=> Request<TResponse>(method, path, null, null, default);
-
-#pragma warning disable 1573
-	/// <inheritdoc cref="Request{TResponse}(HttpMethod, string)"/>
 	/// <param name="postData">The data to be included as the body of the HTTP request.</param>
-	public TResponse Request<TResponse>(
-		HttpMethod method,
-		string path,
-		PostData? postData)
-		where TResponse : TransportResponse, new()
-			=> Request<TResponse>(method, path, postData, null, default);
-
-	/// <inheritdoc cref="Request{TResponse}(HttpMethod, string, PostData?)"/>
 	/// <param name="requestParameters">The parameters for the request.</param>
-	public TResponse Request<TResponse>(
-		HttpMethod method,
-		string path,
-		PostData? postData,
-		RequestParameters? requestParameters)
-		where TResponse : TransportResponse, new()
-			=> Request<TResponse>(method, path, postData, requestParameters, default);
-
-	/// <inheritdoc cref="Request{TResponse}(HttpMethod, string, PostData?, RequestParameters?)"/>
 	/// <param name="openTelemetryData">Data to be used to control the OpenTelemetry instrumentation.</param>
+	/// <returns>The deserialized <typeparamref name="TResponse"/>.</returns>
 	public TResponse Request<TResponse>(
 		HttpMethod method,
 		string path,
@@ -56,7 +31,7 @@ public interface ITransport
 		RequestParameters? requestParameters,
 		in OpenTelemetryData openTelemetryData)
 		where TResponse : TransportResponse, new();
-#pragma warning restore 1573
+
 
 	/// <summary>
 	/// Orchestrate a request asynchronously into a <see cref="NodePool"/> using the workflow defined in the <see cref="RequestPipeline"/>.
@@ -64,39 +39,11 @@ public interface ITransport
 	/// <typeparam name="TResponse">The type to deserialize the response body into.</typeparam>
 	/// <param name="method">The <see cref="HttpMethod"/> for the HTTP request.</param>
 	/// <param name="path">The path of the request.</param>
-	/// <param name="cancellationToken">The cancellation token to use.</param>
-	/// <returns>The deserialized <typeparamref name="TResponse"/>.</returns>
-	public Task<TResponse> RequestAsync<TResponse>(
-		HttpMethod method,
-		string path,
-		CancellationToken cancellationToken = default)
-		where TResponse : TransportResponse, new()
-			=> RequestAsync<TResponse>(method, path, null, null, default, cancellationToken);
-
-#pragma warning disable 1573
-	/// <inheritdoc cref="RequestAsync{TResponse}(HttpMethod, string, CancellationToken)"/>
 	/// <param name="postData">The data to be included as the body of the HTTP request.</param>
-	public Task<TResponse> RequestAsync<TResponse>(
-		HttpMethod method,
-		string path,
-		PostData? postData,
-		CancellationToken cancellationToken = default)
-		where TResponse : TransportResponse, new()
-			=> RequestAsync<TResponse>(method, path, postData, null, default, cancellationToken);
-
-	/// <inheritdoc cref="RequestAsync{TResponse}(HttpMethod, string, PostData?, CancellationToken)"/>
 	/// <param name="requestParameters">The parameters for the request.</param>
-	public Task<TResponse> RequestAsync<TResponse>(
-		HttpMethod method,
-		string path,
-		PostData? postData,
-		RequestParameters? requestParameters,
-		CancellationToken cancellationToken = default)
-		where TResponse : TransportResponse, new()
-			=> RequestAsync<TResponse>(method, path, postData, requestParameters, default, cancellationToken);
-
-	/// <inheritdoc cref="RequestAsync{TResponse}(HttpMethod, string, PostData?, RequestParameters?, CancellationToken)"/>
+	/// <param name="cancellationToken">The cancellation token to use.</param>
 	/// <param name="openTelemetryData">Data to be used to control the OpenTelemetry instrumentation.</param>
+	/// <returns>The deserialized <typeparamref name="TResponse"/>.</returns>
 	public Task<TResponse> RequestAsync<TResponse>(
 		HttpMethod method,
 		string path,
@@ -105,7 +52,6 @@ public interface ITransport
 		in OpenTelemetryData openTelemetryData,
 		CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new();
-#pragma warning restore 1573
 }
 
 /// <summary>
@@ -119,4 +65,69 @@ public interface ITransport<out TConfiguration> : ITransport
 	/// The <see cref="ITransportConfiguration" /> in use by this transport instance
 	/// </summary>
 	public TConfiguration Configuration { get; }
+}
+
+/// <summary>
+/// Add request extension overloads so callees do not have to always pass all the parameters.
+/// </summary>
+public static class TransportExtensions
+{
+
+	/// <inheritdoc cref="ITransport.Request{TResponse}"/>>
+	public static TResponse Request<TResponse>(
+		this ITransport transport,
+		HttpMethod method,
+		string path)
+		where TResponse : TransportResponse, new()
+			=> transport.Request<TResponse>(method, path, null, null, default);
+
+	/// <inheritdoc cref="ITransport.Request{TResponse}"/>>
+	public static TResponse Request<TResponse>(
+		this ITransport transport,
+		HttpMethod method,
+		string path,
+		PostData? postData)
+		where TResponse : TransportResponse, new()
+			=> transport.Request<TResponse>(method, path, postData, null, default);
+
+	/// <inheritdoc cref="ITransport.Request{TResponse}"/>>
+	public static TResponse Request<TResponse>(
+		this ITransport transport,
+		HttpMethod method,
+		string path,
+		PostData? postData,
+		RequestParameters? requestParameters)
+		where TResponse : TransportResponse, new()
+			=> transport.Request<TResponse>(method, path, postData, requestParameters, default);
+
+
+	/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>>
+	public static Task<TResponse> RequestAsync<TResponse>(
+		this ITransport transport,
+		HttpMethod method,
+		string path,
+		CancellationToken cancellationToken = default)
+		where TResponse : TransportResponse, new()
+			=> transport.RequestAsync<TResponse>(method, path, null, null, default, cancellationToken);
+
+	/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>>
+	public static Task<TResponse> RequestAsync<TResponse>(
+		this ITransport transport,
+		HttpMethod method,
+		string path,
+		PostData? postData,
+		CancellationToken cancellationToken = default)
+		where TResponse : TransportResponse, new()
+			=> transport.RequestAsync<TResponse>(method, path, postData, null, default, cancellationToken);
+
+	/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>>
+	public static Task<TResponse> RequestAsync<TResponse>(
+		this ITransport transport,
+		HttpMethod method,
+		string path,
+		PostData? postData,
+		RequestParameters? requestParameters,
+		CancellationToken cancellationToken = default)
+		where TResponse : TransportResponse, new()
+			=> transport.RequestAsync<TResponse>(method, path, postData, requestParameters, default, cancellationToken);
 }

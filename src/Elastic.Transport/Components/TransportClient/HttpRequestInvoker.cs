@@ -56,11 +56,13 @@ public class HttpRequestInvoker : IRequestInvoker
 	private RequestDataHttpClientFactory HttpClientFactory { get; }
 
 	/// <inheritdoc cref="HttpRequestInvoker.Request{TResponse}" />
-	public override TResponse Request<TResponse>(RequestData requestData) =>
+	public TResponse Request<TResponse>(RequestData requestData)
+		where TResponse : TransportResponse, new() =>
 		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
 
 	/// <inheritdoc cref="HttpRequestInvoker.RequestAsync{TResponse}" />
-	public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) =>
+	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+		where TResponse : TransportResponse, new() =>
 		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)
@@ -121,7 +123,7 @@ public class HttpRequestInvoker : IRequestInvoker
 
 			requestData.MadeItToResponse = true;
 			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
-			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
+			responseHeaders = ParseHeaders(requestData, responseMessage);
 
 			if (responseMessage.Content != null)
 			{
@@ -163,55 +165,44 @@ public class HttpRequestInvoker : IRequestInvoker
 				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
 						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
-			if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
-			{
-				var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+			if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
+				return response;
 
-				if (attributes is not null)
-				{
-					foreach (var attribute in attributes)
-					{
-						Activity.Current?.SetTag(attribute.Key, attribute.Value);
-					}
-				}
-			}
+			var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+
+			if (attributes is null) return response;
+
+			foreach (var attribute in attributes)
+				Activity.Current?.SetTag(attribute.Key, attribute.Value);
 
 			return response;
 		}
 	}
 
-	private static Dictionary<string, IEnumerable<string>> ParseHeaders(RequestData requestData,
-		HttpResponseMessage responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
+	private static Dictionary<string, IEnumerable<string>>? ParseHeaders(RequestData requestData, HttpResponseMessage responseMessage)
 	{
+		Dictionary<string, IEnumerable<string>>? responseHeaders = null;
 		var defaultHeadersForProduct = requestData.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
 		foreach (var headerToParse in defaultHeadersForProduct)
-		{
 			if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 			{
 				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(headerToParse, values);
 			}
-		}
 
 		if (requestData.ParseAllHeaders)
-		{
 			foreach (var header in responseMessage.Headers)
 			{
 				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(header.Key, header.Value);
 			}
-		}
 		else if (requestData.ResponseHeadersToParse.Count > 0)
-		{
 			foreach (var headerToParse in requestData.ResponseHeadersToParse)
-			{
 				if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 				{
 					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 					responseHeaders.Add(headerToParse, values);
 				}
-			}
-		}
 
 		return responseHeaders;
 	}

@@ -28,24 +28,7 @@ public sealed class DistributedTransport : DistributedTransport<TransportConfigu
 	///     nodes
 	/// </summary>
 	/// <param name="configurationValues">The connection settings to use for this transport</param>
-	public DistributedTransport(TransportConfiguration configurationValues) : base(configurationValues)
-	{
-	}
-
-	/// <summary>
-	///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
-	///     different
-	///     nodes
-	/// </summary>
-	/// <param name="configurationValues">The connection settings to use for this transport</param>
-	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
-	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-	public DistributedTransport(TransportConfiguration configurationValues,
-		DateTimeProvider dateTimeProvider = null, MemoryStreamFactory memoryStreamFactory = null
-	)
-		: base(configurationValues, null, dateTimeProvider, memoryStreamFactory)
-	{
-	}
+	public DistributedTransport(TransportConfiguration configurationValues) : base(configurationValues, null, null) { }
 
 	/// <summary>
 	///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
@@ -56,23 +39,19 @@ public sealed class DistributedTransport : DistributedTransport<TransportConfigu
 	/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-	internal DistributedTransport(TransportConfiguration configurationValues,
-		RequestPipelineFactory<TransportConfiguration> pipelineProvider = null,
-		DateTimeProvider dateTimeProvider = null, MemoryStreamFactory memoryStreamFactory = null
+	internal DistributedTransport(
+		TransportConfiguration configurationValues,
+		RequestPipelineFactory<TransportConfiguration>? pipelineProvider = null,
+		DateTimeProvider? dateTimeProvider = null,
+		MemoryStreamFactory? memoryStreamFactory = null
 	)
-		: base(configurationValues, pipelineProvider, dateTimeProvider, memoryStreamFactory)
-	{
-	}
+		: base(configurationValues, pipelineProvider, dateTimeProvider, memoryStreamFactory) { }
 }
 
 /// <inheritdoc cref="ITransport{TConfiguration}" />
 public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	where TConfiguration : class, ITransportConfiguration
 {
-	private static readonly string TransportVersion = typeof(DistributedTransport).Assembly
-			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-			.InformationalVersion;
-
 	private readonly ProductRegistration _productRegistration;
 
 	/// <summary>
@@ -81,38 +60,14 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	///     nodes
 	/// </summary>
 	/// <param name="configurationValues">The connection settings to use for this transport</param>
-	public DistributedTransport(TConfiguration configurationValues) : this(configurationValues, null, null, null)
-	{
-	}
-
-	/// <summary>
-	///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
-	///     different
-	///     nodes
-	/// </summary>
-	/// <param name="configurationValues">The connection settings to use for this transport</param>
-	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
-	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
-	public DistributedTransport(
-		TConfiguration configurationValues,
-		DateTimeProvider dateTimeProvider = null,
-		MemoryStreamFactory memoryStreamFactory = null)
-			: this(configurationValues, null, dateTimeProvider, memoryStreamFactory) { }
-
-	/// <summary>
-	///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
-	///     different
-	///     nodes
-	/// </summary>
-	/// <param name="configurationValues">The connection settings to use for this transport</param>
 	/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
 	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
 	public DistributedTransport(
 		TConfiguration configurationValues,
-		RequestPipelineFactory<TConfiguration> pipelineProvider = null,
-		DateTimeProvider dateTimeProvider = null,
-		MemoryStreamFactory memoryStreamFactory = null
+		RequestPipelineFactory<TConfiguration>? pipelineProvider = null,
+		DateTimeProvider? dateTimeProvider = null,
+		MemoryStreamFactory? memoryStreamFactory = null
 	)
 	{
 		configurationValues.ThrowIfNull(nameof(configurationValues));
@@ -132,29 +87,31 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	private MemoryStreamFactory MemoryStreamFactory { get; }
 	private RequestPipelineFactory<TConfiguration> PipelineProvider { get; }
 
-	/// <summary>
-	///
-	/// </summary>
+	/// <inheritdoc cref="ITransport{TConfiguration}.Configuration"/>
 	public TConfiguration Configuration { get; }
 
-	/// <inheritdoc cref="HttpTransport.Request{TResponse}(HttpMethod, string, PostData?, RequestParameters?, in OpenTelemetryData)"/>
-	public override TResponse Request<TResponse>(
+	/// <inheritdoc cref="ITransport.Request{TResponse}"/>
+	public TResponse Request<TResponse>(
 		HttpMethod method,
 		string path,
 		PostData? data,
 		RequestParameters? requestParameters,
-		in OpenTelemetryData openTelemetryData)
-			=> RequestCoreAsync<TResponse>(false, method, path, data, requestParameters, openTelemetryData).EnsureCompleted();
+		in OpenTelemetryData openTelemetryData
+	)
+		where TResponse : TransportResponse, new() =>
+		RequestCoreAsync<TResponse>(false, method, path, data, requestParameters, openTelemetryData).EnsureCompleted();
 
-	/// <inheritdoc cref="HttpTransport.RequestAsync{TResponse}(HttpMethod, string, PostData?, RequestParameters?, in OpenTelemetryData, CancellationToken)"/>
-	public override Task<TResponse> RequestAsync<TResponse>(
+	/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>
+	public Task<TResponse> RequestAsync<TResponse>(
 		HttpMethod method,
 		string path,
 		PostData? data,
 		RequestParameters? requestParameters,
 		in OpenTelemetryData openTelemetryData,
-		CancellationToken cancellationToken = default)
-			=> RequestCoreAsync<TResponse>(true, method, path, data, requestParameters, openTelemetryData, cancellationToken).AsTask();
+		CancellationToken cancellationToken = default
+	)
+		where TResponse : TransportResponse, new() =>
+		RequestCoreAsync<TResponse>(true, method, path, data, requestParameters, openTelemetryData, cancellationToken).AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(
 		bool isAsync,
@@ -163,13 +120,15 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		PostData? data,
 		RequestParameters? requestParameters,
 		OpenTelemetryData openTelemetryData,
-		CancellationToken cancellationToken = default)
-			where TResponse : TransportResponse, new()
+		CancellationToken cancellationToken = default
+	)
+		where TResponse : TransportResponse, new()
 	{
 		Activity activity = null;
 
 		if (OpenTelemetry.ElasticTransportActivitySource.HasListeners())
-			activity = OpenTelemetry.ElasticTransportActivitySource.StartActivity(openTelemetryData.SpanName ?? method.GetStringValue(), ActivityKind.Client);
+			activity = OpenTelemetry.ElasticTransportActivitySource.StartActivity(openTelemetryData.SpanName ?? method.GetStringValue(),
+				ActivityKind.Client);
 
 		try
 		{
@@ -185,28 +144,24 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			Configuration.OnRequestDataCreated?.Invoke(requestData);
 			TResponse response = null;
 
-			if (OpenTelemetry.ElasticTransportActivitySource.HasListeners() && activity.IsAllDataRequested)
+			if (OpenTelemetry.ElasticTransportActivitySource.HasListeners() && activity is { IsAllDataRequested: true })
 			{
 				if (activity.IsAllDataRequested)
 					OpenTelemetry.SetCommonAttributes(activity, openTelemetryData, Configuration);
 
 				if (Configuration.Authentication is BasicAuthentication basicAuthentication)
-					activity?.SetTag(SemanticConventions.DbUser, basicAuthentication.Username);
+					activity.SetTag(SemanticConventions.DbUser, basicAuthentication.Username);
 
-				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportProductName, Configuration.ProductRegistration.Name);
-				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportProductVersion, Configuration.ProductRegistration.ProductAssemblyVersion);
-				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, TransportVersion);
-				activity?.SetTag(SemanticConventions.UserAgentOriginal, Configuration.UserAgent.ToString());
+				activity.SetTag(OpenTelemetryAttributes.ElasticTransportProductName, Configuration.ProductRegistration.Name);
+				activity.SetTag(OpenTelemetryAttributes.ElasticTransportProductVersion, Configuration.ProductRegistration.ProductAssemblyVersion);
+				activity.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, ReflectionVersionInfo.TransportVersion);
+				activity.SetTag(SemanticConventions.UserAgentOriginal, Configuration.UserAgent.ToString());
 
-				if (openTelemetryData.SpanAttributes is not null)
-				{
+				if (requestData.OpenTelemetryData.SpanAttributes is not null)
 					foreach (var attribute in requestData.OpenTelemetryData.SpanAttributes)
-					{
-						activity?.SetTag(attribute.Key, attribute.Value);
-					}
-				}
+						activity.SetTag(attribute.Key, attribute.Value);
 
-				activity?.SetTag(SemanticConventions.HttpRequestMethod, requestData.Method.GetStringValue());
+				activity.SetTag(SemanticConventions.HttpRequestMethod, requestData.Method.GetStringValue());
 			}
 
 			List<PipelineException>? seenExceptions = null;
@@ -306,9 +261,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 						throw new UnexpectedTransportException(killerException, seenExceptions)
 						{
-							Request = requestData,
-							ApiCallDetails = response?.ApiCallDetails,
-							AuditTrail = pipeline.AuditTrail
+							Request = requestData, ApiCallDetails = response?.ApiCallDetails, AuditTrail = pipeline.AuditTrail
 						};
 					}
 
@@ -380,10 +333,12 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	}
 
 	private static ApiCallDetails? GetMostRecentCallDetails<TResponse>(TResponse? response,
-		IEnumerable<PipelineException>? seenExceptions)
+		IEnumerable<PipelineException>? seenExceptions
+	)
 		where TResponse : TransportResponse, new()
 	{
-		var callDetails = response?.ApiCallDetails ?? seenExceptions?.LastOrDefault(e => e.Response?.ApiCallDetails != null)?.Response?.ApiCallDetails;
+		var callDetails = response?.ApiCallDetails
+			?? seenExceptions?.LastOrDefault(e => e.Response?.ApiCallDetails != null)?.Response?.ApiCallDetails;
 		return callDetails;
 	}
 

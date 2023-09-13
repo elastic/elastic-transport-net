@@ -16,7 +16,7 @@ public abstract class IntegrationTestBase<TCluster> : IClusterFixture<TCluster>
 	where TCluster : DefaultCluster, new()
 {
 	protected TCluster Cluster { get; }
-	protected DistributedTransport RequestHandler { get; }
+	protected ITransport RequestHandler { get; }
 
 
 	protected IntegrationTestBase(TCluster cluster, ITestOutputHelper output)

@@ -19,7 +19,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 {
 	private static readonly byte[] EmptyBody = Encoding.UTF8.GetBytes("");
 	private readonly string _contentType;
-	private readonly Exception _exception;
+	private readonly Exception? _exception;
 	private readonly byte[] _responseBody;
 	private readonly int _statusCode;
 	private readonly Dictionary<string, IEnumerable<string>> _headers;
@@ -31,7 +31,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	public InMemoryRequestInvoker() => _statusCode = 200;
 
 	/// <inheritdoc cref="InMemoryRequestInvoker"/>
-	public InMemoryRequestInvoker(byte[] responseBody, int statusCode = 200, Exception exception = null, string contentType = RequestData.DefaultMimeType, Dictionary<string, IEnumerable<string>> headers = null)
+	public InMemoryRequestInvoker(byte[] responseBody, int statusCode = 200, Exception? exception = null, string contentType = RequestData.DefaultMimeType, Dictionary<string, IEnumerable<string>> headers = null)
 	{
 		_responseBody = responseBody;
 		_statusCode = statusCode;
