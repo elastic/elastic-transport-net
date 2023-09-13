@@ -15,10 +15,10 @@ internal sealed class ReflectionVersionInfo : VersionInfo
 {
 	private static readonly SemVersion Empty = new(0, 0, 0);
 
-	public static readonly string TransportVersion = Create<ReflectionVersionInfo>().ToString();
+	public static readonly string TransportVersion = Create<ReflectionVersionInfo>().ToSemverString();
 
 	private ReflectionVersionInfo(SemVersion version) :
-		base((int)version.Major, (int)version.Minor, (int)version.Patch, version.Prerelease, version.Metadata)
+		base(version.Major, version.Minor, version.Patch, version.Prerelease, version.Metadata)
 	{
 	}
 
