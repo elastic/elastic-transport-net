@@ -155,7 +155,7 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 		in OpenTelemetryData openTelemetryData,
 		CancellationToken cancellationToken = default)
 			=> RequestCoreAsync<TResponse>(true, method, path, data, requestParameters, openTelemetryData, cancellationToken).AsTask();
-	
+
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(
 		bool isAsync,
 		HttpMethod method,
@@ -185,28 +185,28 @@ public class DefaultHttpTransport<TConfiguration> : HttpTransport<TConfiguration
 			Settings.OnRequestDataCreated?.Invoke(requestData);
 			TResponse response = null;
 
-			if (OpenTelemetry.ElasticTransportActivitySource.HasListeners() && activity.IsAllDataRequested)
+			if (activity is { IsAllDataRequested: true })
 			{
 				if (activity.IsAllDataRequested)
 					OpenTelemetry.SetCommonAttributes(activity, openTelemetryData, Settings);
 
 				if (Settings.Authentication is BasicAuthentication basicAuthentication)
-					activity?.SetTag(SemanticConventions.DbUser, basicAuthentication.Username);
+					activity.SetTag(SemanticConventions.DbUser, basicAuthentication.Username);
 
-				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportProductName, Settings.ProductRegistration.Name);
-				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportProductVersion, Settings.ProductRegistration.ProductAssemblyVersion);
-				activity?.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, TransportVersion);
-				activity?.SetTag(SemanticConventions.UserAgentOriginal, Settings.UserAgent.ToString());
+				activity.SetTag(OpenTelemetryAttributes.ElasticTransportProductName, Settings.ProductRegistration.Name);
+				activity.SetTag(OpenTelemetryAttributes.ElasticTransportProductVersion, Settings.ProductRegistration.ProductAssemblyVersion);
+				activity.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, TransportVersion);
+				activity.SetTag(SemanticConventions.UserAgentOriginal, Settings.UserAgent.ToString());
 
 				if (openTelemetryData.SpanAttributes is not null)
 				{
-					foreach (var attribute in requestData.OpenTelemetryData.SpanAttributes)
+					foreach (var attribute in openTelemetryData.SpanAttributes)
 					{
-						activity?.SetTag(attribute.Key, attribute.Value);
+						activity.SetTag(attribute.Key, attribute.Value);
 					}
 				}
 
-				activity?.SetTag(SemanticConventions.HttpRequestMethod, requestData.Method.GetStringValue());
+				activity.SetTag(SemanticConventions.HttpRequestMethod, requestData.Method.GetStringValue());
 			}
 
 			List<PipelineException>? seenExceptions = null;
