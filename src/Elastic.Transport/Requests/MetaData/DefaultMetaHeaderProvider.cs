@@ -7,9 +7,32 @@ using System;
 namespace Elastic.Transport;
 
 /// <summary>
-/// 
+///
 /// </summary>
 public sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
+{
+	private readonly MetaHeaderProducer[] _producers;
+
+	/// <inheritdoc cref="MetaHeaderProvider.Producers"/>
+	public override MetaHeaderProducer[] Producers => _producers;
+
+	/// <summary>
+	///
+	/// </summary>
+	public DefaultMetaHeaderProvider(Type clientType, string serviceIdentifier) =>
+		_producers = new MetaHeaderProducer[] { new DefaultMetaHeaderProducer(clientType, serviceIdentifier) };
+
+	/// <summary>
+	///
+	/// </summary>
+	public DefaultMetaHeaderProvider(VersionInfo versionInfo, string serviceIdentifier) =>
+		_producers = new MetaHeaderProducer[] { new DefaultMetaHeaderProducer(versionInfo, serviceIdentifier) };
+}
+
+/// <summary>
+///
+/// </summary>
+public sealed class DefaultMetaHeaderProducer : MetaHeaderProducer
 {
 	private const string MetaHeaderName = "x-elastic-client-meta";
 
@@ -17,9 +40,9 @@ public sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
 	private readonly MetaDataHeader _syncMetaDataHeader;
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
-	public DefaultMetaHeaderProvider(Type clientType, string serviceIdentifier)
+	public DefaultMetaHeaderProducer(Type clientType, string serviceIdentifier)
 	{
 		var clientVersionInfo = ReflectionVersionInfo.Create(clientType);
 		_asyncMetaDataHeader = new MetaDataHeader(clientVersionInfo, serviceIdentifier, true);
@@ -27,21 +50,21 @@ public sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
-	internal DefaultMetaHeaderProvider(ReflectionVersionInfo reflectionVersionInfo, string serviceIdentifier)
+	public DefaultMetaHeaderProducer(VersionInfo versionInfo, string serviceIdentifier)
 	{
-		_asyncMetaDataHeader = new MetaDataHeader(reflectionVersionInfo, serviceIdentifier, true);
-		_syncMetaDataHeader = new MetaDataHeader(reflectionVersionInfo, serviceIdentifier, false);
+		_asyncMetaDataHeader = new MetaDataHeader(versionInfo, serviceIdentifier, true);
+		_syncMetaDataHeader = new MetaDataHeader(versionInfo, serviceIdentifier, false);
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public override string HeaderName => MetaHeaderName;
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <param name="requestData"></param>
 	/// <returns></returns>

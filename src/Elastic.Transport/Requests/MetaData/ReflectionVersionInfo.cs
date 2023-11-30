@@ -11,7 +11,10 @@ using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
 
-internal sealed class ReflectionVersionInfo : VersionInfo
+/// <summary>
+/// 
+/// </summary>
+public sealed class ReflectionVersionInfo : VersionInfo
 {
 	private static readonly SemVersion Empty = new(0, 0, 0);
 
@@ -20,6 +23,11 @@ internal sealed class ReflectionVersionInfo : VersionInfo
 	{
 	}
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	/// <returns></returns>
 	public static ReflectionVersionInfo Create<T>()
 	{
 		var version = DetermineVersionFromType(typeof(T));
@@ -27,6 +35,11 @@ internal sealed class ReflectionVersionInfo : VersionInfo
 		return versionInfo;
 	}
 
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="type"></param>
+	/// <returns></returns>
 	public static ReflectionVersionInfo Create(Type type)
 	{
 		var version = DetermineVersionFromType(type);

@@ -5,13 +5,28 @@
 namespace Elastic.Transport;
 
 /// <summary>
-/// Injects a metadata header into all outgoing requests
+/// Injects metadata headers into all outgoing requests.
 /// </summary>
 public abstract class MetaHeaderProvider
 {
-	/// <summary>Header name </summary>
+	/// <summary>
+	/// The list of all <see cref="MetaHeaderProducer"/>s for the provider.
+	/// </summary>
+	public abstract MetaHeaderProducer[] Producers { get; }
+}
+
+/// <summary>
+/// Injects a metadata headers into all outgoing requests.
+/// </summary>
+public abstract class MetaHeaderProducer
+{
+	/// <summary>
+	/// The header name.
+	/// </summary>
 	public abstract string HeaderName { get; }
 
-	/// <summary> Produces the header value based on current outgoing <paramref name="requestData"/> </summary>
+	/// <summary>
+	/// Produces the header value based on current outgoing <paramref name="requestData"/>.
+	/// </summary>
 	public abstract string ProduceHeaderValue(RequestData requestData);
 }

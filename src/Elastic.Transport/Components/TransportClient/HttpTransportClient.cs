@@ -380,10 +380,13 @@ public class HttpTransportClient : TransportClient
 
 		if (requestData.MetaHeaderProvider is not null)
 		{
-			var value = requestData.MetaHeaderProvider.ProduceHeaderValue(requestData);
+			foreach (var producer in requestData.MetaHeaderProvider.Producers)
+			{
+				var value = producer.ProduceHeaderValue(requestData);
 
-			if (!string.IsNullOrEmpty(value))
-				requestMessage.Headers.TryAddWithoutValidation(requestData.MetaHeaderProvider.HeaderName, value);
+				if (!string.IsNullOrEmpty(value))
+					requestMessage.Headers.TryAddWithoutValidation(producer.HeaderName, value);
+			}
 		}
 
 		return requestMessage;
