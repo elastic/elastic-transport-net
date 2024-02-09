@@ -144,7 +144,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			Configuration.OnRequestDataCreated?.Invoke(requestData);
 			TResponse response = null;
 
-			if (OpenTelemetry.ElasticTransportActivitySource.HasListeners() && activity is { IsAllDataRequested: true })
+			if (activity is { IsAllDataRequested: true })
 			{
 				if (activity.IsAllDataRequested)
 					OpenTelemetry.SetCommonAttributes(activity, openTelemetryData, Configuration);

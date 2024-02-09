@@ -329,12 +329,15 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		if (requestData.Headers != null && requestData.Headers.HasKeys())
 			request.Headers.Add(requestData.Headers);
 
-		if (requestData.MetaHeaderProvider is object)
+		if (requestData.MetaHeaderProvider is not null)
 		{
-			var value = requestData.MetaHeaderProvider.ProduceHeaderValue(requestData);
+			foreach (var producer in requestData.MetaHeaderProvider.Producers)
+			{
+				var value = producer.ProduceHeaderValue(requestData);
 
-			if (!string.IsNullOrEmpty(value))
-				request.Headers.Add(requestData.MetaHeaderProvider.HeaderName, requestData.MetaHeaderProvider.ProduceHeaderValue(requestData));
+				if (!string.IsNullOrEmpty(value))
+					request.Headers.Add(producer.HeaderName, value);
+			}
 		}
 
 		var timeout = (int)requestData.RequestTimeout.TotalMilliseconds;
