@@ -24,7 +24,7 @@ public class PipelineException : Exception
 	public PipelineFailure FailureReason { get; }
 
 	/// <summary>
-	/// This exception is one the <see cref="HttpTransport{TConnectionSettings}"/> can handle
+	/// This exception is one the <see cref="ITransport{TConfiguration}"/> can handle
 	/// <para><see cref="PipelineFailure.BadRequest"/></para>
 	/// <para><see cref="PipelineFailure.BadResponse"/></para>
 	/// <para><see cref="PipelineFailure.PingFailure"/></para>

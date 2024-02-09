@@ -14,8 +14,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
 using Elastic.Transport.Extensions;
+using static Elastic.Transport.ResponseBuilderDefaults;
 
 namespace Elastic.Transport;
+
+internal static class ResponseBuilderDefaults
+{
+	public const int BufferSize = 81920;
+
+	public static readonly Type[] SpecialTypes =
+	{
+		typeof(StringResponse), typeof(BytesResponse), typeof(VoidResponse), typeof(DynamicResponse)
+	};
+
+}
 
 /// <summary>
 ///     A helper class that deals with handling how a <see cref="Stream" /> is transformed to the requested
@@ -25,16 +37,9 @@ namespace Elastic.Transport;
 /// </summary>
 internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : ErrorResponse, new()
 {
-	private const int BufferSize = 81920;
-
 	private readonly bool _isEmptyError;
 
 	public DefaultResponseBuilder() => _isEmptyError = typeof(TError) == typeof(EmptyError);
-
-	private static readonly Type[] SpecialTypes =
-	{
-		typeof(StringResponse), typeof(BytesResponse), typeof(VoidResponse), typeof(DynamicResponse)
-	};
 
 	/// <summary>
 	///     Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
@@ -150,7 +155,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <param name="details"></param>
 	/// <param name="requestData"></param>
@@ -158,7 +163,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	protected virtual bool RequiresErrorDeserialization(ApiCallDetails details, RequestData requestData) => false;
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <param name="apiCallDetails"></param>
 	/// <param name="requestData"></param>
@@ -179,7 +184,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <typeparam name="TResponse"></typeparam>
 	/// <param name="response"></param>

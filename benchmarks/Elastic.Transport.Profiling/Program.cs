@@ -19,7 +19,7 @@ namespace Elastic.Transport.Profiling
 			var config = new TransportConfiguration(new Uri("http://localhost:9200"),
 				new ElasticsearchProductRegistration(typeof(ElasticsearchProductRegistration)));
 
-			var transport = new DefaultHttpTransport(config);
+			var transport = new DistributedTransport(config);
 
 			// WARMUP
 			for (var i = 0; i < 50; i++) _ = await transport.GetAsync<VoidResponse>("/");

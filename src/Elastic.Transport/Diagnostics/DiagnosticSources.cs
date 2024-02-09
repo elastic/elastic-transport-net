@@ -45,12 +45,13 @@ internal static class DiagnosticSources
 
 	/// <summary>
 	/// Provides access to the string event names related to <see cref="HttpConnection"/> the default
-	/// <see cref="TransportClient"/> implementation.
+	/// <see cref="IRequestInvoker"/> implementation.
 	/// </summary>
 	public class HttpConnectionDiagnosticKeys : IDiagnosticsKeys
 	{
+		/// TODO investigate if we can update our source name
 		/// <inheritdoc cref="IDiagnosticsKeys.SourceName"/>
-		public string SourceName { get; } = typeof(HttpTransportClient).FullName;
+		public string SourceName { get; } = "Elastic.Transport.HttpTransportClient";
 
 		/// <summary> Start and stop event initiating the request and sending and receiving the headers</summary>
 		public string SendAndReceiveHeaders { get; } = nameof(SendAndReceiveHeaders);

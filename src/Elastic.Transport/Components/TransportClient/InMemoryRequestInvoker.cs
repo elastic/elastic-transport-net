@@ -13,13 +13,13 @@ using System.Threading.Tasks;
 namespace Elastic.Transport;
 
 /// <summary>
-/// An implementation of <see cref="TransportClient"/> designed to not actually do any IO and services requests from an in memory byte buffer
+/// An implementation of <see cref="IRequestInvoker"/> designed to not actually do any IO and services requests from an in memory byte buffer
 /// </summary>
-public class InMemoryTransportClient : TransportClient
+public class InMemoryRequestInvoker : IRequestInvoker
 {
 	private static readonly byte[] EmptyBody = Encoding.UTF8.GetBytes("");
 	private readonly string _contentType;
-	private readonly Exception _exception;
+	private readonly Exception? _exception;
 	private readonly byte[] _responseBody;
 	private readonly int _statusCode;
 	private readonly Dictionary<string, IEnumerable<string>> _headers;
@@ -28,10 +28,10 @@ public class InMemoryTransportClient : TransportClient
 	/// Every request will succeed with this overload, note that it won't actually return mocked responses
 	/// so using this overload might fail if you are using it to test high level bits that need to deserialize the response.
 	/// </summary>
-	public InMemoryTransportClient() => _statusCode = 200;
+	public InMemoryRequestInvoker() => _statusCode = 200;
 
-	/// <inheritdoc cref="InMemoryTransportClient"/>
-	public InMemoryTransportClient(byte[] responseBody, int statusCode = 200, Exception exception = null, string contentType = RequestData.DefaultMimeType, Dictionary<string, IEnumerable<string>> headers = null)
+	/// <inheritdoc cref="InMemoryRequestInvoker"/>
+	public InMemoryRequestInvoker(byte[] responseBody, int statusCode = 200, Exception? exception = null, string contentType = RequestData.DefaultMimeType, Dictionary<string, IEnumerable<string>> headers = null)
 	{
 		_responseBody = responseBody;
 		_statusCode = statusCode;
@@ -40,23 +40,27 @@ public class InMemoryTransportClient : TransportClient
 		_headers = headers;
 	}
 
-	/// <inheritdoc cref="TransportClient.Request{TResponse}"/>>
-	public override TResponse Request<TResponse>(RequestData requestData) =>
-		ReturnConnectionStatus<TResponse>(requestData);
+	void IDisposable.Dispose() { }
 
-	/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}"/>>
-	public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) =>
-		ReturnConnectionStatusAsync<TResponse>(requestData, cancellationToken);
+	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
+	public TResponse Request<TResponse>(RequestData requestData)
+		where TResponse : TransportResponse, new() =>
+		BuildResponse<TResponse>(requestData);
+
+	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
+	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+		where TResponse : TransportResponse, new() =>
+		BuildResponseAsync<TResponse>(requestData, cancellationToken);
 
 	/// <summary>
-	/// Allow subclasses to provide their own implementations for <see cref="TransportClient.Request{TResponse}"/> while reusing the more complex logic
+	/// Allow subclasses to provide their own implementations for <see cref="IRequestInvoker.Request{TResponse}"/> while reusing the more complex logic
 	/// to create a response
 	/// </summary>
 	/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
 	/// <param name="responseBody">The bytes intended to be used as return</param>
 	/// <param name="statusCode">The status code that the responses <see cref="TransportResponse.ApiCallDetails"/> should return</param>
 	/// <param name="contentType"></param>
-	internal TResponse ReturnConnectionStatus<TResponse>(RequestData requestData, byte[] responseBody = null, int? statusCode = null,
+	public TResponse BuildResponse<TResponse>(RequestData requestData, byte[] responseBody = null, int? statusCode = null,
 		string contentType = null)
 		where TResponse : TransportResponse, new()
 	{
@@ -82,8 +86,8 @@ public class InMemoryTransportClient : TransportClient
 		return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.DefaultMimeType, body?.Length ?? 0, null, null);
 	}
 
-	/// <inheritdoc cref="ReturnConnectionStatus{TResponse}"/>>
-	internal async Task<TResponse> ReturnConnectionStatusAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken,
+	/// <inheritdoc cref="BuildResponse{TResponse}"/>>
+	public async Task<TResponse> BuildResponseAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken,
 		byte[] responseBody = null, int? statusCode = null, string contentType = null)
 		where TResponse : TransportResponse, new()
 	{
@@ -110,4 +114,5 @@ public class InMemoryTransportClient : TransportClient
 			.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
 			.ConfigureAwait(false);
 	}
+
 }

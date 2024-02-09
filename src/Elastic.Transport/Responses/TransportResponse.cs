@@ -19,7 +19,7 @@ public abstract class TransportResponse<T> : TransportResponse
 }
 
 /// <summary>
-/// A response as returned by <see cref="HttpTransport{TConnectionSettings}"/> including details about the request/response life cycle.
+/// A response as returned by <see cref="ITransport{TConfiguration}"/> including details about the request/response life cycle.
 /// </summary>
 public abstract class TransportResponse
 {

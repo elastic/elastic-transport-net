@@ -91,7 +91,7 @@ internal sealed class RequestDataHttpClientFactory : IDisposable
 	{
 		if (requestData == null) throw new ArgumentNullException(nameof(requestData));
 
-		var key = HttpTransportClient.GetClientKey(requestData);
+		var key = HttpRequestInvoker.GetClientKey(requestData);
 		var handler = CreateHandler(key, requestData);
 		var client = new HttpClient(handler, disposeHandler: false)
 		{

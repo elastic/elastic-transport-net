@@ -31,16 +31,14 @@ public static class TransportSerializerExtensions
 	public static byte[] SerializeToBytes<T>(
 		this Serializer serializer,
 		T data,
-		MemoryStreamFactory memoryStreamFactory,
+		MemoryStreamFactory? memoryStreamFactory = null,
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
 		memoryStreamFactory ??= TransportConfiguration.DefaultMemoryStreamFactory;
-		using (var ms = memoryStreamFactory.Create())
-		{
-			serializer.Serialize(data, ms, formatting);
-			return ms.ToArray();
-		}
+		using var ms = memoryStreamFactory.Create();
+		serializer.Serialize(data, ms, formatting);
+		return ms.ToArray();
 	}
 
 	/// <summary>
@@ -65,15 +63,13 @@ public static class TransportSerializerExtensions
 	public static string SerializeToString<T>(
 		this Serializer serializer,
 		T data,
-		MemoryStreamFactory memoryStreamFactory,
+		MemoryStreamFactory? memoryStreamFactory = null,
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
 		memoryStreamFactory ??= TransportConfiguration.DefaultMemoryStreamFactory;
-		using (var ms = memoryStreamFactory.Create())
-		{
-			serializer.Serialize(data, ms, formatting);
-			return ms.Utf8String();
-		}
+		using var ms = memoryStreamFactory.Create();
+		serializer.Serialize(data, ms, formatting);
+		return ms.Utf8String();
 	}
 }

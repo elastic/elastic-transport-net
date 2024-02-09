@@ -9,23 +9,23 @@ namespace Elastic.Transport.VirtualizedCluster.Components;
 /// </summary>
 public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFactory<TConfiguration> where TConfiguration : class, ITransportConfiguration
 {
-	public ExposingPipelineFactory(TConfiguration connectionSettings, DateTimeProvider dateTimeProvider)
+	public ExposingPipelineFactory(TConfiguration configuration, DateTimeProvider dateTimeProvider)
 	{
 		DateTimeProvider = dateTimeProvider;
 		MemoryStreamFactory = TransportConfiguration.DefaultMemoryStreamFactory;
-		Settings = connectionSettings;
-		Pipeline = Create(Settings, DateTimeProvider, MemoryStreamFactory, new DefaultRequestParameters());
-		Transport = new DefaultHttpTransport<TConfiguration>(Settings, this, DateTimeProvider, MemoryStreamFactory);
+		Configuration = configuration;
+		Pipeline = Create(Configuration, DateTimeProvider, MemoryStreamFactory, new DefaultRequestParameters());
+		RequestHandler = new DistributedTransport<TConfiguration>(Configuration, this, DateTimeProvider, MemoryStreamFactory);
 	}
 
 	// ReSharper disable once MemberCanBePrivate.Global
 	public RequestPipeline Pipeline { get; }
 	private DateTimeProvider DateTimeProvider { get; }
 	private MemoryStreamFactory MemoryStreamFactory { get; }
-	private TConfiguration Settings { get; }
-	public HttpTransport<TConfiguration> Transport { get; }
+	private TConfiguration Configuration { get; }
+	public ITransport<TConfiguration> RequestHandler { get; }
 
 	public override RequestPipeline Create(TConfiguration configurationValues, DateTimeProvider dateTimeProvider,
 		MemoryStreamFactory memoryStreamFactory, RequestParameters requestParameters) =>
-			new DefaultRequestPipeline<TConfiguration>(Settings, DateTimeProvider, MemoryStreamFactory, requestParameters ?? new DefaultRequestParameters());
+			new DefaultRequestPipeline<TConfiguration>(Configuration, DateTimeProvider, MemoryStreamFactory, requestParameters ?? new DefaultRequestParameters());
 }

@@ -17,7 +17,7 @@ public class DefaultClusterTests : IntegrationTestBase
 	[Fact]
 	public async Task AsyncRequestDoesNotThrow()
 	{
-		var response = await Transport.RequestAsync<StringResponse>(GET, "/");
+		var response = await RequestHandler.RequestAsync<StringResponse>(GET, "/");
 		response.ApiCallDetails.Should().NotBeNull();
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
@@ -25,7 +25,7 @@ public class DefaultClusterTests : IntegrationTestBase
 	[Fact]
 	public void SyncRequestDoesNotThrow()
 	{
-		var response = Transport.Request<StringResponse>(GET, "/");
+		var response = RequestHandler.Request<StringResponse>(GET, "/");
 		response.ApiCallDetails.Should().NotBeNull();
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}

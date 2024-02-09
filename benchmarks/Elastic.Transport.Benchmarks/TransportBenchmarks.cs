@@ -10,16 +10,16 @@ namespace Elastic.Transport.Benchmarks
 {
 	public class TransportBenchmarks
 	{
-		private DefaultHttpTransport _transport;
+		private ITransport _transport;
 
 		[GlobalSetup]
 		public void Setup()
 		{
-			var connection = new InMemoryTransportClient();
+			var requestInvoker = new InMemoryRequestInvoker();
 			var pool = new SingleNodePool(new Uri("http://localhost:9200"));
-			var settings = new TransportConfiguration(pool, connection);
+			var settings = new TransportConfiguration(pool, requestInvoker);
 
-			_transport = new DefaultHttpTransport(settings);
+			_transport = new DistributedTransport(settings);
 		}
 
 		[Benchmark]

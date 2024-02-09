@@ -21,7 +21,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 	{
 		Uri Uri { get;  }
 
-		HttpTransport DefaultTransport { get;  }
+		ITransport DefaultRequestHandler { get;  }
 	}
 
 	public class TransportTestServer : TransportTestServer<DefaultStartup>
@@ -44,7 +44,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 	{
 		private readonly IWebHost _host;
 		private Uri _uri;
-		private HttpTransport _defaultTransport;
+		private ITransport _defaultRequestHandler;
 
 		public TransportTestServer()
 		{
@@ -69,10 +69,10 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			private set => _uri = value;
 		}
 
-		public HttpTransport DefaultTransport
+		public ITransport DefaultRequestHandler
 		{
-			get => _defaultTransport ?? throw new Exception($"{nameof(DefaultTransport)} is not available until {nameof(StartAsync)} is called");
-			private set => _defaultTransport = value;
+			get => _defaultRequestHandler ?? throw new Exception($"{nameof(DefaultRequestHandler)} is not available until {nameof(StartAsync)} is called");
+			private set => _defaultRequestHandler = value;
 		}
 
 		public async Task<TransportTestServer<TStartup>> StartAsync(CancellationToken token = default)
@@ -81,11 +81,11 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			var port = _host.GetServerPort();
 			var url = $"http://{TransportTestServer.LocalOrProxyHost}:{port}";
 			Uri = new Uri(url);
-			DefaultTransport = CreateTransport(c => new DefaultHttpTransport(c));
+			DefaultRequestHandler = CreateTransport(c => new DistributedTransport(c));
 			return this;
 		}
 
-		public HttpTransport CreateTransport(Func<TransportConfiguration, HttpTransport> create) =>
+		public ITransport CreateTransport(Func<TransportConfiguration, ITransport> create) =>
 			create(TransportTestServer.RerouteToProxyIfNeeded(new TransportConfiguration(Uri)));
 
 		public void Dispose() => _host?.Dispose();

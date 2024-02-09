@@ -23,17 +23,27 @@ using static System.Net.DecompressionMethods;
 namespace Elastic.Transport;
 
 /// <summary> The default TransportClient implementation. Uses <see cref="HttpClient" />.</summary>
-public class HttpTransportClient : TransportClient
+public class HttpRequestInvoker : IRequestInvoker
 {
 	private static readonly string MissingConnectionLimitMethodError =
 		$"Your target platform does not support {nameof(TransportConfiguration.ConnectionLimit)}"
-		+ $" please set {nameof(TransportConfiguration.ConnectionLimit)} to -1 on your connection configuration/settings."
+		+ $" please set {nameof(TransportConfiguration.ConnectionLimit)} to -1 on your configuration."
 		+ $" this will cause the {nameof(HttpClientHandler.MaxConnectionsPerServer)} not to be set on {nameof(HttpClientHandler)}";
 
 	private string _expectedCertificateFingerprint;
 
-	/// <inheritdoc cref="HttpTransportClient" />
-	public HttpTransportClient() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
+	/// <inheritdoc cref="HttpRequestInvoker" />
+	public HttpRequestInvoker() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
+
+	/// <summary>
+	/// Allows users to inject their own HttpMessageHandler, and optionally call our default implementation
+	/// </summary>
+	public HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler) =>
+		HttpClientFactory = new RequestDataHttpClientFactory(r =>
+		{
+			var defaultHandler = CreateHttpClientHandler(r);
+			return wrappingHandler(defaultHandler, r) ?? defaultHandler;
+		});
 
 	/// <inheritdoc cref="RequestDataHttpClientFactory.InUseHandlers" />
 	public int InUseHandlers => HttpClientFactory.InUseHandlers;
@@ -45,12 +55,14 @@ public class HttpTransportClient : TransportClient
 
 	private RequestDataHttpClientFactory HttpClientFactory { get; }
 
-	/// <inheritdoc cref="TransportClient.Request{TResponse}" />
-	public override TResponse Request<TResponse>(RequestData requestData) =>
+	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}" />
+	public TResponse Request<TResponse>(RequestData requestData)
+		where TResponse : TransportResponse, new() =>
 		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
 
-	/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}" />
-	public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken) =>
+	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}" />
+	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+		where TResponse : TransportResponse, new() =>
 		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)
@@ -111,7 +123,7 @@ public class HttpTransportClient : TransportClient
 
 			requestData.MadeItToResponse = true;
 			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
-			responseHeaders = ParseHeaders(requestData, responseMessage, responseHeaders);
+			responseHeaders = ParseHeaders(requestData, responseMessage);
 
 			if (responseMessage.Content != null)
 			{
@@ -153,55 +165,44 @@ public class HttpTransportClient : TransportClient
 				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
 						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
-			if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
-			{
-				var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+			if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
+				return response;
 
-				if (attributes is not null)
-				{
-					foreach (var attribute in attributes)
-					{
-						Activity.Current?.SetTag(attribute.Key, attribute.Value);
-					}
-				}
-			}
+			var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+
+			if (attributes is null) return response;
+
+			foreach (var attribute in attributes)
+				Activity.Current?.SetTag(attribute.Key, attribute.Value);
 
 			return response;
 		}
 	}
 
-	private static Dictionary<string, IEnumerable<string>> ParseHeaders(RequestData requestData,
-		HttpResponseMessage responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
+	private static Dictionary<string, IEnumerable<string>>? ParseHeaders(RequestData requestData, HttpResponseMessage responseMessage)
 	{
+		Dictionary<string, IEnumerable<string>>? responseHeaders = null;
 		var defaultHeadersForProduct = requestData.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
 		foreach (var headerToParse in defaultHeadersForProduct)
-		{
 			if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 			{
 				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(headerToParse, values);
 			}
-		}
 
 		if (requestData.ParseAllHeaders)
-		{
 			foreach (var header in responseMessage.Headers)
 			{
 				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(header.Key, header.Value);
 			}
-		}
 		else if (requestData.ResponseHeadersToParse.Count > 0)
-		{
 			foreach (var headerToParse in requestData.ResponseHeadersToParse)
-			{
 				if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 				{
 					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 					responseHeaders.Add(headerToParse, values);
 				}
-			}
-		}
 
 		return responseHeaders;
 	}
@@ -210,14 +211,14 @@ public class HttpTransportClient : TransportClient
 
 	/// <summary>
 	/// Creates an instance of <see cref="HttpMessageHandler" /> using the <paramref name="requestData" />.
-	/// This method is virtual so subclasses of <see cref="HttpTransportClient" /> can modify the instance if needed.
+	/// This method is virtual so subclasses of <see cref="HttpRequestInvoker" /> can modify the instance if needed.
 	/// </summary>
 	/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
 	/// <exception cref="Exception">
 	/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
 	/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 	/// </exception>
-	protected virtual HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
+	protected HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
 	{
 		var handler = new HttpClientHandler { AutomaticDecompression = requestData.HttpCompression ? GZip | Deflate : None, };
 
@@ -300,7 +301,7 @@ public class HttpTransportClient : TransportClient
 
 	/// <summary>
 	/// Creates an instance of <see cref="HttpRequestMessage" /> using the <paramref name="requestData" />.
-	/// This method is virtual so subclasses of <see cref="HttpTransportClient" /> can modify the instance if needed.
+	/// This method is virtual so subclasses of <see cref="HttpRequestInvoker" /> can modify the instance if needed.
 	/// </summary>
 	/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
 	/// <exception cref="Exception">
@@ -492,7 +493,13 @@ public class HttpTransportClient : TransportClient
 		}
 	}
 
+	/// <summary> Allows subclasses to dispose of managed resources </summary>
+	public virtual void DisposeManagedResources() {}
 	/// <inheritdoc />
-	protected override void DisposeManagedResources() => HttpClientFactory.Dispose();
+	public void Dispose()
+	{
+		HttpClientFactory.Dispose();
+		DisposeManagedResources();
+	}
 }
 #endif

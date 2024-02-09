@@ -24,12 +24,12 @@ public class DefaultCluster : XunitClusterBase
 
 	public DefaultCluster(XunitClusterConfiguration xunitClusterConfiguration) : base(xunitClusterConfiguration) { }
 
-	public DefaultHttpTransport CreateClient(ITestOutputHelper output) =>
+	public ITransport CreateClient(ITestOutputHelper output) =>
 		this.GetOrAddClient(cluster =>
 		{
 			var nodes = NodesUris();
-			var connectionPool = new StaticNodePool(nodes);
-			var settings = new TransportConfiguration(connectionPool, productRegistration: ElasticsearchProductRegistration.Default)
+			var nodePool = new StaticNodePool(nodes);
+			var settings = new TransportConfiguration(nodePool, productRegistration: ElasticsearchProductRegistration.Default)
 				.RequestTimeout(TimeSpan.FromSeconds(5))
 				.OnRequestCompleted(d =>
 				{
@@ -50,7 +50,7 @@ public class DefaultCluster : XunitClusterBase
 			if (ClusterConfiguration.Features.HasFlag(ClusterFeatures.SSL))
 				settings = settings.ServerCertificateValidationCallback(CertificateValidations.AllowAll);
 
-			return new DefaultHttpTransport(settings);
+			return new DistributedTransport(settings);
 		});
 }
 

@@ -20,9 +20,9 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport;
 
 /// <summary>
-/// This provides an <see cref="TransportClient"/> implementation that targets <see cref="HttpWebRequest"/>.
+/// This provides an <see cref="IRequestInvoker"/> implementation that targets <see cref="HttpWebRequest"/>.
 /// <para>
-/// On .NET full framework <see cref="HttpTransportClient"/> is an alias to this.
+/// On .NET full framework <see cref="HttpRequestInvoker"/> is an alias to this.
 /// </para>
 /// <para/>
 /// <para>Do NOT use this class directly on .NET Core. <see cref="HttpWebRequest"/> is monkey patched
@@ -32,27 +32,31 @@ namespace Elastic.Transport;
 #if !NETFRAMEWORK
 [Obsolete("CoreFX HttpWebRequest uses HttpClient under the covers but does not reuse HttpClient instances, do NOT use on .NET core only used as the default on Full Framework")]
 #endif
-public class HttpWebRequestTransportClient : TransportClient
+public class HttpWebRequestInvoker : IRequestInvoker
 {
 	private string _expectedCertificateFingerprint;
 
-	static HttpWebRequestTransportClient()
+	static HttpWebRequestInvoker()
 	{
 		//Not available under mono
 		if (!IsMono) HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
 	}
 
-	/// <inheritdoc cref="HttpWebRequestTransportClient"/>>
-	public HttpWebRequestTransportClient() { }
+	/// <inheritdoc cref="HttpWebRequestInvoker"/>>
+	public HttpWebRequestInvoker() { }
 
 	internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
 
-	/// <inheritdoc cref="TransportClient.Request{TResponse}"/>>
-	public override TResponse Request<TResponse>(RequestData requestData) =>
+	void IDisposable.Dispose() {}
+
+	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
+	public TResponse Request<TResponse>(RequestData requestData)
+		where TResponse : TransportResponse, new() =>
 		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
 
-	/// <inheritdoc cref="TransportClient.RequestAsync{TResponse}"/>>
-	public override Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken = default) =>
+	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
+	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken = default)
+		where TResponse : TransportResponse, new() =>
 		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)
@@ -122,7 +126,7 @@ public class HttpWebRequestTransportClient : TransportClient
 				//Either the stream or the response object needs to be closed but not both although it won't
 				//throw any errors if both are closed atleast one of them has to be Closed.
 				//Since we expose the stream we let closing the stream determining when to close the connection
-		
+
 				if (requestData.TcpStats)
 					tcpStats = TcpStats.GetStates();
 
@@ -453,4 +457,5 @@ public class HttpWebRequestTransportClient : TransportClient
 		// if stream is null call dispose on response instead.
 		if (responseStream == null || responseStream == Stream.Null) response.Dispose();
 	}
+
 }

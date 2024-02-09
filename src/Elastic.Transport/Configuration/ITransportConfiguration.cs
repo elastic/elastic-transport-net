@@ -14,8 +14,8 @@ using Elastic.Transport.Products;
 namespace Elastic.Transport;
 
 /// <summary>
-/// All the transport configuration that you as the user can use to steer the behavior of the <see cref="HttpTransport{TConnectionSettings}"/> and all the components such
-/// as <see cref="TransportClient"/> <see cref="NodePool"/> and <see cref="Serializer"/>.
+/// All the transport configuration that you as the user can use to steer the behavior of the <see cref="ITransport{TConfiguration}"/> and all the components such
+/// as <see cref="IRequestInvoker"/> <see cref="NodePool"/> and <see cref="Serializer"/>.
 /// </summary>
 public interface ITransportConfiguration : IDisposable
 {
@@ -32,18 +32,18 @@ public interface ITransportConfiguration : IDisposable
 	X509CertificateCollection ClientCertificates { get; }
 
 	/// <summary> The connection abstraction behind which all actual IO happens</summary>
-	TransportClient Connection { get; }
+	IRequestInvoker Connection { get; }
 
 	/// <summary>
 	/// Limits the number of concurrent connections that can be opened to an endpoint. Defaults to 80 (see
 	/// <see cref="TransportConfiguration.DefaultConnectionLimit" />).
 	/// <para>
 	/// For Desktop CLR, this setting applies to the DefaultConnectionLimit property on the  ServicePointManager object when creating
-	/// ServicePoint objects, affecting the default <see cref="TransportClient" /> implementation.
+	/// ServicePoint objects, affecting the default <see cref="IRequestInvoker" /> implementation.
 	/// </para>
 	/// <para>
 	/// For Core CLR, this setting applies to the MaxConnectionsPerServer property on the HttpClientHandler instances used by the HttpClient
-	/// inside the default <see cref="TransportClient" /> implementation
+	/// inside the default <see cref="IRequestInvoker" /> implementation
 	/// </para>
 	/// </summary>
 	int ConnectionLimit { get; }
@@ -296,7 +296,7 @@ public interface ITransportConfiguration : IDisposable
 	MetaHeaderProvider MetaHeaderProvider { get; }
 
 	/// <summary>
-	/// Disables the meta header which is included on all requests by default. This header contains lightweight information 
+	/// Disables the meta header which is included on all requests by default. This header contains lightweight information
 	/// about the client and runtime.
 	/// </summary>
 	bool DisableMetaHeader { get; }

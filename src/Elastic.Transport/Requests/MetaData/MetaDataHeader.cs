@@ -24,7 +24,7 @@ public sealed class MetaDataHeader
 	public MetaDataHeader(VersionInfo version, string serviceIdentifier, bool isAsync)
 	{
 		if (serviceIdentifier != "et")
-			TransportVersion = ReflectionVersionInfo.Create<HttpTransport>().ToString();
+			TransportVersion = ReflectionVersionInfo.Create<ITransport>().ToString();
 		
 		ClientVersion = version.ToString();
 		RuntimeVersion = new RuntimeVersionInfo().ToString();

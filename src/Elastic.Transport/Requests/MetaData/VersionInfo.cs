@@ -56,10 +56,20 @@ public abstract class VersionInfo
 		Metadata = metadata;
 	}
 
-	/// <summary>
-	///
-	/// </summary>
-	/// <returns></returns>
+	/// <summary> Returns the full version as a semantic version number </summary>
+	public string ToFullString()
+	{
+		var prefix = $"{Major}.{Minor}.{Patch}";
+		return (Prerelease, Metadata) switch
+		{
+			(null, null) => prefix,
+			(not null, null) => $"{prefix}-{Prerelease}",
+			(not null, not null) => $"{prefix}-{Prerelease}+{Metadata}",
+			(null, not null) => $"{prefix}+{Metadata}"
+		};
+	}
+
+	/// <summary> Returns the version in a way that safe to emit as telemetry </summary>
 	public override string ToString()
 	{
 		var prefix = $"{Major}.{Minor}.{Patch}";

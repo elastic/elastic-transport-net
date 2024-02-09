@@ -16,12 +16,12 @@ namespace Elastic.Transport.Tests
 		public void Usage()
 		{
 			var pool = new StaticNodePool(new[] {new Node(new Uri("http://localhost:9200"))});
-			var connection = new HttpTransportClient();
+			var requestInvoker = new HttpRequestInvoker();
 			var serializer = LowLevelRequestResponseSerializer.Instance;
 			var product = ElasticsearchProductRegistration.Default;
 
-			var settings = new TransportConfiguration(pool, connection, serializer, product);
-			var transport = new DefaultHttpTransport<TransportConfiguration>(settings);
+			var settings = new TransportConfiguration(pool, requestInvoker, serializer, product);
+			var transport = new DistributedTransport<TransportConfiguration>(settings);
 
 			var response = transport.Request<StringResponse>(HttpMethod.GET, "/");
 		}
@@ -29,7 +29,7 @@ namespace Elastic.Transport.Tests
 		public void MinimalUsage()
 		{
 			var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
-			var transport = new DefaultHttpTransport(settings);
+			var transport = new DistributedTransport(settings);
 
 			var response = transport.Get<StringResponse>("/");
 
@@ -40,7 +40,7 @@ namespace Elastic.Transport.Tests
 		{
 			var uri = new Uri("http://localhost:9200");
 			var settings = new TransportConfiguration(uri, ElasticsearchProductRegistration.Default);
-			var transport = new DefaultHttpTransport(settings);
+			var transport = new DistributedTransport(settings);
 
 			var response = transport.Get<StringResponse>("/");
 
@@ -50,7 +50,7 @@ namespace Elastic.Transport.Tests
 		public void MinimalUsageWithRequestParameters()
 		{
 			var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
-			var transport = new DefaultHttpTransport(settings);
+			var transport = new DistributedTransport(settings);
 
 			var response = transport.Get<StringResponse>("/", new DefaultRequestParameters());
 
@@ -61,7 +61,7 @@ namespace Elastic.Transport.Tests
 		{
 			public MyClientConfiguration(
 				NodePool nodePool = null,
-				TransportClient transportCLient = null,
+				IRequestInvoker transportCLient = null,
 				Serializer requestResponseSerializer = null,
 				ProductRegistration productRegistration = null)
 				: base(
@@ -89,7 +89,7 @@ namespace Elastic.Transport.Tests
 			var clientConfiguration = new MyClientConfiguration()
 				.NewSettings("some-value");
 
-			var transport = new DefaultHttpTransport<MyClientConfiguration>(clientConfiguration);
+			var transport = new DistributedTransport<MyClientConfiguration>(clientConfiguration);
 		}
 	}
 }
