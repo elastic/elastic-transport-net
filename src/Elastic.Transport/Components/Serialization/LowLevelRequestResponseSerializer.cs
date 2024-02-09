@@ -33,10 +33,10 @@ internal sealed class LowLevelRequestResponseSerializer : Serializer
 
 	private IList<JsonConverter> BakedInConverters { get; } = new List<JsonConverter>
 		{
-			{ new ExceptionConverter() },
-			{ new ErrorCauseConverter() },
-			{ new ErrorConverter() },
-			{ new DynamicDictionaryConverter() }
+			new ExceptionConverter(),
+			new ErrorCauseConverter(),
+			new ErrorConverter(),
+			new DynamicDictionaryConverter()
 		};
 
 	/// <inheritdoc cref="LowLevelRequestResponseSerializer"/>>
@@ -46,7 +46,7 @@ internal sealed class LowLevelRequestResponseSerializer : Serializer
 	/// <inheritdoc cref="LowLevelRequestResponseSerializer"/>>
 	/// </summary>
 	/// <param name="converters">Add more default converters onto <see cref="JsonSerializerOptions"/> being used</param>
-	public LowLevelRequestResponseSerializer(IEnumerable<JsonConverter> converters)
+	public LowLevelRequestResponseSerializer(IEnumerable<JsonConverter>? converters)
 	{
 		AdditionalConverters = converters != null
 			? new ReadOnlyCollection<JsonConverter>(converters.ToList())
@@ -75,7 +75,7 @@ internal sealed class LowLevelRequestResponseSerializer : Serializer
 
 	}
 
-	private static bool TryReturnDefault<T>(Stream stream, out T deserialize)
+	private static bool TryReturnDefault<T>(Stream? stream, out T deserialize)
 	{
 		deserialize = default;
 		return stream == null || stream == Stream.Null || (stream.CanSeek && stream.Length == 0);
@@ -88,7 +88,7 @@ internal sealed class LowLevelRequestResponseSerializer : Serializer
 	{
 		if (TryReturnDefault(stream, out object deserialize)) return deserialize;
 
-		return JsonSerializer.Deserialize(stream, type, _none.Value);
+		return JsonSerializer.Deserialize(stream, type, _none.Value)!;
 	}
 
 	/// <inheritdoc cref="Serializer.Deserialize{T}"/>>
