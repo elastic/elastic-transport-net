@@ -12,12 +12,13 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport;
 
 /// <summary>
-/// 
+///
 /// </summary>
 public sealed class ReflectionVersionInfo : VersionInfo
 {
 	private static readonly SemVersion Empty = new(0, 0, 0);
 
+	/// <summary> The version of Elastic.Transport itself </summary>
 	public static readonly string TransportVersion = Create<ReflectionVersionInfo>().ToFullString();
 
 	private ReflectionVersionInfo(SemVersion version) :
@@ -26,7 +27,7 @@ public sealed class ReflectionVersionInfo : VersionInfo
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	/// <returns></returns>
@@ -38,7 +39,7 @@ public sealed class ReflectionVersionInfo : VersionInfo
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <param name="type"></param>
 	/// <returns></returns>

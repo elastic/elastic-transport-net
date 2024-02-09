@@ -55,12 +55,12 @@ public class HttpRequestInvoker : IRequestInvoker
 
 	private RequestDataHttpClientFactory HttpClientFactory { get; }
 
-	/// <inheritdoc cref="HttpRequestInvoker.Request{TResponse}" />
+	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}" />
 	public TResponse Request<TResponse>(RequestData requestData)
 		where TResponse : TransportResponse, new() =>
 		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
 
-	/// <inheritdoc cref="HttpRequestInvoker.RequestAsync{TResponse}" />
+	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}" />
 	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new() =>
 		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
