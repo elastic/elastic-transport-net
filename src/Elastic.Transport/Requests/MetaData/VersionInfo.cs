@@ -72,10 +72,8 @@ public abstract class VersionInfo
 	/// <summary> Returns the version in a way that safe to emit as telemetry </summary>
 	public override string ToString()
 	{
-		// TODO: Use SemVersion.ToString() after we got rid of the `p` suffix
-
 		var prefix = $"{Major}.{Minor}.{Patch}";
 
-		return IsPrerelease ? $"{prefix}p" : $"{prefix}";
+		return IsPrerelease ? $"{prefix}p" : prefix;
 	}
 }
