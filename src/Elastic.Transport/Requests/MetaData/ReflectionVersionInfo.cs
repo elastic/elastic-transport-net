@@ -19,10 +19,10 @@ public sealed class ReflectionVersionInfo : VersionInfo
 	private static readonly SemVersion Empty = new(0, 0, 0);
 
 	/// <summary> The version of Elastic.Transport itself </summary>
-	public static readonly string TransportVersion = Create<ReflectionVersionInfo>().ToFullString();
+	public static readonly string TransportVersion = Create<ReflectionVersionInfo>().ToString();
 
 	private ReflectionVersionInfo(SemVersion version) :
-		base(version.Major, version.Minor, version.Patch, version.Prerelease, version.Metadata)
+		base(version)
 	{
 	}
 

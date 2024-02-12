@@ -59,7 +59,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 
 	private RuntimeVersionInfo(SemVersion version) :
 		// We don't care about metadata
-		base(version.Major, version.Minor, version.Patch, version.Prerelease, null)
+		base(version.Update(null, null, null, null, string.Empty))
 	{
 	}
 
