@@ -63,18 +63,7 @@ public abstract class VersionInfo
 	public override string ToString()
 	{
 		var prefix = $"{Major}.{Minor}.{Patch}";
-		var meta = string.Empty;
 
-		if (!string.IsNullOrEmpty(Metadata))
-		{
-			meta = $"+{Metadata}";
-			if (meta.EndsWith("p"))
-			{
-				// Make sure release versions are not accidentally marked as prerelease version
-				meta += "r";
-			}
-		}
-
-		return IsPrerelease ? $"{prefix}{meta}p" : $"{prefix}{meta}";
+		return IsPrerelease ? $"{prefix}p" : prefix;
 	}
 }
