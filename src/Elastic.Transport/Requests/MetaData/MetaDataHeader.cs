@@ -26,7 +26,7 @@ public sealed class MetaDataHeader
 		if (serviceIdentifier != "et")
 			TransportVersion = ReflectionVersionInfo.Create<ITransport>().ToString();
 		
-		ClientVersion = version.ToString();
+		ClientVersion = version.ToMetadataHeaderValue();
 		RuntimeVersion = new RuntimeVersionInfo().ToString();
 		ServiceIdentifier = serviceIdentifier;
 
