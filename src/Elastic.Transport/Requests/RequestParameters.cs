@@ -36,7 +36,7 @@ public abstract class RequestParameters
 	/// <summary>
 	/// 
 	/// </summary>
-	public CustomResponseBuilder CustomResponseBuilder { get; internal set; }
+	public CustomResponseBuilder CustomResponseBuilder { get; set; }
 
 	/// <summary>
 	/// 
