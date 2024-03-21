@@ -82,7 +82,7 @@ public sealed class ApiCallDetails
 	/// <summary>
 	///
 	/// </summary>
-	internal string ResponseMimeType { get; set; }
+	public string ResponseMimeType { get; set; }
 
 	/// <summary>
 	///
