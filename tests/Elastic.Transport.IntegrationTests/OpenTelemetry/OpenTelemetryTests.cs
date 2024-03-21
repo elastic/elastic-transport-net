@@ -13,6 +13,7 @@ using Elastic.Transport.IntegrationTests.Plumbing;
 using Elastic.Transport.IntegrationTests.Plumbing.Stubs;
 using Elastic.Transport.Products.Elasticsearch;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
@@ -92,8 +93,8 @@ public class OpenTelemetryController : ControllerBase
 	[HttpGet()]
 	public Task Get()
 	{
-		Response.Headers.Add(ElasticsearchProductRegistration.XFoundHandlingClusterHeader, OpenTelemetryTests.Cluster);
-		Response.Headers.Add(ElasticsearchProductRegistration.XFoundHandlingInstanceHeader, OpenTelemetryTests.Instance);
+		Response.Headers.Append(ElasticsearchProductRegistration.XFoundHandlingClusterHeader, OpenTelemetryTests.Cluster);
+		Response.Headers.Append(ElasticsearchProductRegistration.XFoundHandlingInstanceHeader, OpenTelemetryTests.Instance);
 
 		return Task.CompletedTask;
 	}

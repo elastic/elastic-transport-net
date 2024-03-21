@@ -198,6 +198,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				}
 			}
 			else
+			{
 				foreach (var node in pipeline.NextNode())
 				{
 					attemptedNodes++;
@@ -261,7 +262,9 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 						throw new UnexpectedTransportException(killerException, seenExceptions)
 						{
-							Request = requestData, ApiCallDetails = response?.ApiCallDetails, AuditTrail = pipeline.AuditTrail
+							Request = requestData,
+							ApiCallDetails = response?.ApiCallDetails,
+							AuditTrail = pipeline.AuditTrail
 						};
 					}
 
@@ -276,6 +279,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 					pipeline.MarkAlive(node);
 					break;
 				}
+			}
 
 #if NET6_0_OR_GREATER
 			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType ? ActivityStatusCode.Ok : ActivityStatusCode.Error);

@@ -2,21 +2,17 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.9.2" />
+    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.12.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\src\Elastic.Transport\Elastic.Transport.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="Microsoft.NETFramework.ReferenceAssemblies.net461" Version="1.0.3" />
   </ItemGroup>
 
 </Project>

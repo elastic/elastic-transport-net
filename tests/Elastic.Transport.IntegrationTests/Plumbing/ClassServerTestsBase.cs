@@ -6,11 +6,9 @@ using Xunit;
 
 namespace Elastic.Transport.IntegrationTests.Plumbing
 {
-	public class ClassServerTestsBase<TServer> : IClassFixture<TServer> where TServer : class, HttpTransportTestServer
+	public class ClassServerTestsBase<TServer>(TServer instance) : IClassFixture<TServer> where TServer : class, HttpTransportTestServer
 	{
-		public ClassServerTestsBase(TServer instance) => Server = instance;
-
-		protected TServer Server { get; }
+		protected TServer Server { get; } = instance;
 
 		protected ITransport RequestHandler => Server.DefaultRequestHandler;
 	}

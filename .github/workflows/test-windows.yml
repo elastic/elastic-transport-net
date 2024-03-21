@@ -35,7 +35,7 @@ jobs:
         
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -54,10 +54,9 @@ jobs:
             ${{ runner.os }}-nuget
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            6.0.x
+          dotnet-version: 8.0.x
 
       - run: ./build.bat build -s true
         name: Build

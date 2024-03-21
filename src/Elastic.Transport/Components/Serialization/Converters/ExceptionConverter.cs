@@ -4,9 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Reflection;
-using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -19,6 +16,8 @@ namespace Elastic.Transport;
 /// </summary>
 internal class ExceptionConverter : JsonConverter<Exception>
 {
+	public override bool CanConvert(Type typeToConvert) => typeof(Exception).IsAssignableFrom(typeToConvert);
+
 	private static List<Dictionary<string, object>> FlattenExceptions(Exception e)
 	{
 		var maxExceptions = 20;
@@ -37,60 +36,19 @@ internal class ExceptionConverter : JsonConverter<Exception>
 
 	private static Dictionary<string, object> ToDictionary(Exception e, int depth)
 	{
-		var o = new Dictionary<string, object>(10);
-		var si = new SerializationInfo(e.GetType(), new FormatterConverter());
-		var sc = new StreamingContext();
-		e.GetObjectData(si, sc);
+		var o = new Dictionary<string, object>(7);
 
-		var helpUrl = si.GetString("HelpURL");
-		var stackTrace = si.GetString("StackTraceString");
-		var remoteStackTrace = si.GetString("RemoteStackTraceString");
-		var remoteStackIndex = si.GetInt32("RemoteStackIndex");
-		var exceptionMethod = si.GetString("ExceptionMethod");
-		var hresult = si.GetInt32("HResult");
-		var source = si.GetString("Source");
-		var className = si.GetString("ClassName");
+		var className = e.GetType().FullName;
 
 		o.Add("Depth", depth);
 		o.Add("ClassName", className);
 		o.Add("Message", e.Message);
-		o.Add("Source", source);
-		o.Add("StackTraceString", stackTrace);
-		o.Add("RemoteStackTraceString", remoteStackTrace);
-		o.Add("RemoteStackIndex", remoteStackIndex);
-		o.Add("HResult", hresult);
-		o.Add("HelpURL", helpUrl);
+		o.Add("Source", e.Source);
+		o.Add("StackTraceString", e.StackTrace);
+		o.Add("HResult", e.HResult);
+		o.Add("HelpURL", e.HelpLink);
 
-		WriteStructuredExceptionMethod(o, exceptionMethod);
 		return o;
-	}
-
-	private static void WriteStructuredExceptionMethod(Dictionary<string, object> o, string exceptionMethodString)
-	{
-		if (string.IsNullOrWhiteSpace(exceptionMethodString)) return;
-
-		var args = exceptionMethodString.Split('\0', '\n');
-
-		if (args.Length != 5) return;
-
-		var memberType = int.Parse(args[0], CultureInfo.InvariantCulture);
-		var name = args[1];
-		var assemblyName = args[2];
-		var className = args[3];
-		var signature = args[4];
-		var an = new AssemblyName(assemblyName);
-		var exceptionMethod = new Dictionary<string, object>(7)
-		{
-			{ "Name", name },
-			{ "AssemblyName", an.Name },
-			{ "AssemblyVersion", an.Version.ToString() },
-			{ "AssemblyCulture", an.CultureName },
-			{ "ClassName", className },
-			{ "Signature", signature },
-			{ "MemberType", memberType }
-		};
-
-		o.Add("ExceptionMethod", exceptionMethod);
 	}
 
 	public override Exception Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>

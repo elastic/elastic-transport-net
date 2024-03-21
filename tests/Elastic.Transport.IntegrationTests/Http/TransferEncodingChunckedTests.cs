@@ -63,7 +63,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeFalse();
 			r.Body.Should().Be(BodyString);
 
-			r = await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
+			r = await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None);
 			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeFalse();
 			r.Body.Should().Be(BodyString);
 		}
@@ -75,7 +75,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 
 			transport.Post<StringResponse>(Path, Body);
 			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeTrue();
-			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
+			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None);
 			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeTrue();
 		}
 
@@ -88,7 +88,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 			var transport = Setup(requestInvoker, transferEncodingChunked: true);
 
 			transport.Post<StringResponse>(Path, Body);
-			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
+			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None);
 		}
 
 		[Fact] public async Task HttpClientSetsContentLengthWhenTransferEncodingChunkedFalse()
@@ -100,7 +100,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 			var transport = Setup(trackingRequestInvoker, transferEncodingChunked: false);
 
 			transport.Post<StringResponse>(Path, Body);
-			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
+			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None);
 		}
 
 		[Fact] public async Task HttpClientSetsContentLengthWhenTransferEncodingChunkedHttpCompression()
@@ -112,7 +112,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 			var transport = Setup(trackingRequestInvoker, transferEncodingChunked: false, httpCompression: true);
 
 			transport.Post<StringResponse>(Path, Body);
-			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None).ConfigureAwait(false);
+			await transport.PostAsync<StringResponse>(Path, Body, null, CancellationToken.None);
 		}
 	}
 }

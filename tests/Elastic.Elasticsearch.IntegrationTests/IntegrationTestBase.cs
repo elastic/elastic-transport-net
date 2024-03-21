@@ -12,12 +12,12 @@ public abstract class IntegrationTestBase : IntegrationTestBase<DefaultCluster>
 {
 	protected IntegrationTestBase(DefaultCluster cluster, ITestOutputHelper output) : base(cluster, output) { }
 }
+
 public abstract class IntegrationTestBase<TCluster> : IClusterFixture<TCluster>
 	where TCluster : DefaultCluster, new()
 {
 	protected TCluster Cluster { get; }
 	protected ITransport RequestHandler { get; }
-
 
 	protected IntegrationTestBase(TCluster cluster, ITestOutputHelper output)
 	{
