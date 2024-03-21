@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  checks: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -32,7 +33,7 @@ defaults:
 jobs:
   tests:
     runs-on: windows-2022
-        
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,7 +46,7 @@ jobs:
           git tag --list
         name: Fetch Tags
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         name: NuGet package cache
         with:
           path: ~/.nuget/packages
@@ -66,7 +67,7 @@ jobs:
 
       - name: Test Results
         if: success() || failure()
-        uses: mikepenz/action-junit-report@v3
+        uses: mikepenz/action-junit-report@v4
         with:
           report_paths: 'build/output/junit-*.xml'
           github_token: ${{ secrets.GITHUB_TOKEN }}
