@@ -12,11 +12,12 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\Elastic.Transport\Elastic.Transport.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Update="Microsoft.NETFramework.ReferenceAssemblies.net461" Version="1.0.3" />
-    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" />
   </ItemGroup>
 </Project>

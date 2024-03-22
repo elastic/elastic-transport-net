@@ -81,7 +81,7 @@ public class OpenTelemetryTests
 				.Subject.Value.Should().BeOfType<string>()
 				.Subject.Should().Be(OpenTelemetry.OpenTelemetrySchemaVersion);
 
-#if !NETFRAMEWORK
+#if NET8_0_OR_GREATER
 			activity.Status.Should().Be(ActivityStatusCode.Ok);
 #endif
 		}

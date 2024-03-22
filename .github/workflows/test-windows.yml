@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  checks: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -32,10 +33,10 @@ defaults:
 jobs:
   tests:
     runs-on: windows-2022
-        
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -45,7 +46,7 @@ jobs:
           git tag --list
         name: Fetch Tags
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         name: NuGet package cache
         with:
           path: ~/.nuget/packages
@@ -54,10 +55,9 @@ jobs:
             ${{ runner.os }}-nuget
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            6.0.x
+          global-json-file: ./global.json
 
       - run: ./build.bat build -s true
         name: Build
@@ -67,7 +67,7 @@ jobs:
 
       - name: Test Results
         if: success() || failure()
-        uses: mikepenz/action-junit-report@v3
+        uses: mikepenz/action-junit-report@v4
         with:
           report_paths: 'build/output/junit-*.xml'
           github_token: ${{ secrets.GITHUB_TOKEN }}

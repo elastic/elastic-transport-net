@@ -18,11 +18,11 @@ namespace Elastic.Elasticsearch.IntegrationTests;
 /// <summary> Declare our cluster that we want to inject into our test classes </summary>
 public class DefaultCluster : XunitClusterBase
 {
-	protected static string Version = "8.7.0";
-
 	public DefaultCluster() : this(new XunitClusterConfiguration(Version) { StartingPortNumber = 9202, AutoWireKnownProxies = true }) { }
 
 	public DefaultCluster(XunitClusterConfiguration xunitClusterConfiguration) : base(xunitClusterConfiguration) { }
+
+	protected static string Version => "8.7.0";
 
 	public ITransport CreateClient(ITestOutputHelper output) =>
 		this.GetOrAddClient(cluster =>
@@ -59,6 +59,5 @@ public class SecurityCluster : DefaultCluster
 	public SecurityCluster() : base(new XunitClusterConfiguration(Version, ClusterFeatures.Security | ClusterFeatures.SSL | ClusterFeatures.XPack)
 	{
 		StartingPortNumber = 9202
-		//, TrialMode = XPackTrialMode.Trial
 	}) { }
 }

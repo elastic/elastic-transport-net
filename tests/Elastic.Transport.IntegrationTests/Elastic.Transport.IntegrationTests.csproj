@@ -1,29 +1,29 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <IsTestProject>True</IsTestProject>
     <IsPackable>false</IsPackable>
     <NoWarn>CS8002</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.9.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="5.0.1" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
-    <PackageReference Include="xunit" Version="2.5.0" />
+    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.12.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="xunit" Version="2.7.0" />
     <PackageReference Include="Xunit.Extensions.Ordering" Version="1.4.5" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.0">
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.7">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="coverlet.collector" Version="3.1.2">
+    <PackageReference Include="coverlet.collector" Version="6.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Nullean.VsTest.Pretty.TestLogger" Version="0.3.0" />
-    <PackageReference Include="JunitXml.TestLogger" Version="3.0.134" />
-    <PackageReference Include="FluentAssertions" Version="5.10.3" />
+    <PackageReference Include="Nullean.VsTest.Pretty.TestLogger" Version="0.4.0" />
+    <PackageReference Include="JunitXml.TestLogger" Version="3.1.12" />
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
   </ItemGroup>
 
   <ItemGroup>

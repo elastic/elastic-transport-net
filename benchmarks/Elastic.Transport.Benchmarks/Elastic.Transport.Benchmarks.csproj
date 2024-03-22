@@ -3,8 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
-    <TargetFramework>net6.0</TargetFramework>
-    <LangVersion>9.0</LangVersion>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,10 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Transport.VirtualizedCluster\Elastic.Transport.VirtualizedCluster.csproj" />
     <ProjectReference Include="..\..\src\Elastic.Transport\Elastic.Transport.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="Microsoft.NETFramework.ReferenceAssemblies.net461" Version="1.0.3" />
   </ItemGroup>
 
 </Project>

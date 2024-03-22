@@ -18,30 +18,32 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 1
+
     - run: |
         git fetch --prune --unshallow --tags
         echo exit code $?
         git tag --list
-    - uses: actions/setup-dotnet@v1
+
+    - uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: | 
-          5.0.x
-          6.0.x
-        source-url: https://nuget.pkg.github.com/elastic/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        global-json-file: ./global.json
         
     - run: ./build.sh build -s true
       name: Build
+
     - run: ./build.sh test -s true
       name: Test
+
     - run: ./build.sh generatepackages -s true
       name: Generate local nuget packages
+
     - run: ./build.sh validatepackages -s true
       name: "validate *.npkg files that were created"
+
     - run: ./build.sh generateapichanges -s true
       name: "Inspect public API changes"
 
@@ -49,7 +51,8 @@ jobs:
       if: github.event_name == 'push' && startswith(github.ref, 'refs/heads')
       shell: bash
       run:  |
-          until dotnet nuget push 'build/output/*.nupkg' -k ${{secrets.GITHUB_TOKEN}} --skip-duplicate --no-symbols; do echo "Retrying"; sleep 1; done;
+          dotnet nuget add source --username USERNAME --password ${{secrets.GITHUB_TOKEN}} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/elastic/index.json"
+          until dotnet nuget push 'build/output/*.nupkg' -k ${{secrets.GITHUB_TOKEN}} --skip-duplicate --no-symbols --source "github"; do echo "Retrying"; sleep 1; done;
 
     # Github packages requires authentication, this is likely going away in the future so for now we publish to feedz.io
     - run: dotnet nuget push 'build/output/*.nupkg' -k ${{secrets.FEEDZ_IO_API_KEY}} -s https://f.feedz.io/elastic/all/nuget/index.json --skip-duplicate --no-symbols
@@ -59,6 +62,7 @@ jobs:
     - run: ./build.sh generatereleasenotes -s true
       name: Generate release notes for tag
       if: github.event_name == 'push' && startswith(github.ref, 'refs/tags')
+
     - run: ./build.sh createreleaseongithub -s true --token ${{secrets.GITHUB_TOKEN}}
       if: github.event_name == 'push' && startswith(github.ref, 'refs/tags')
       name: Create or update release for tag on github
