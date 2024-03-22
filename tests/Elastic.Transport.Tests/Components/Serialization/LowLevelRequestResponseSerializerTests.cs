@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using FluentAssertions;
 using Xunit;
@@ -55,11 +56,16 @@ public class LowLevelRequestResponseSerializerTests : SerializerTestBase
 		source.ValueKind.Should().Be(JsonValueKind.String);
 		source.GetString().Should().Be("Elastic.Transport.Tests");
 
+		var windowsPath = "Components\\Serialization\\LowLevelRequestResponseSerializerTests.cs:line";
+		var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+			? windowsPath
+			: windowsPath.Replace('\\', '/');
+
 		exception.TryGetProperty("StackTraceString", out var stackTrace).Should().BeTrue();
 		stackTrace.ValueKind.Should().Be(JsonValueKind.String);
 		stackTrace.GetString().Should()
 			.Contain("at Elastic.Transport.Tests.Components.Serialization.LowLevelRequestResponseSerializerTests")
-			.And.Contain("Components\\Serialization\\LowLevelRequestResponseSerializerTests.cs:line");
+			.And.Contain(path);
 
 		exception.TryGetProperty("HResult", out var hResult).Should().BeTrue();
 		hResult.ValueKind.Should().Be(JsonValueKind.Number);
