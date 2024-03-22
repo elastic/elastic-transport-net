@@ -20,7 +20,6 @@
     <PackageReference Include="Nullean.VsTest.Pretty.TestLogger" Version="0.4.0" />
     <PackageReference Include="JunitXml.TestLogger" Version="3.1.12" />
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
-    <PackageReference Include="Verify.Xunit" Version="23.3.0" />
   </ItemGroup>
 
   <ItemGroup>

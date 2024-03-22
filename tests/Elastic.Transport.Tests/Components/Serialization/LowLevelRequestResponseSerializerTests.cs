@@ -3,44 +3,71 @@
 // See the LICENSE file in the project root for more information
 
 using System;
-using System.Threading.Tasks;
-using VerifyXunit;
+using System.Linq;
+using System.Text.Json;
+using FluentAssertions;
 using Xunit;
 
 namespace Elastic.Transport.Tests.Components.Serialization;
 
-public class LowLevelRequestResponseSerializerTests : VerifySerializerTestBase
+public class LowLevelRequestResponseSerializerTests : SerializerTestBase
 {
 	[Fact]
-	public async Task SerializesException()
+	public void SerializesException()
 	{
 		// NOTE: Any changes to this file, may change the assertion since we validate the full JSON which
 		// includes the stack trace line numbers. As we don't foresee this changing, this should be okay.
 
-		const string url = "https://www.elastic.co";
+		const string urlValue = "https://www.elastic.co";
+		const string messageValue = "Testing";
 
 		Exception e;
 
 		try
 		{
-			throw new CustomException("Testing") { HelpLink = url };
+			throw new CustomException(messageValue) { HelpLink = urlValue };
 		}
 		catch (Exception ex)
 		{
 			e = ex;
 		}
 
-		var json = await SerializeAndGetJsonStringAsync(e);
+		using var stream = SerializeToStream(e);
 
-#if NET481
-		var version = "net481";
-#elif NET8_0
-		var version = "net80";
-#else
-		var version = "unspecified_version";
-#endif
+		var jsonDocument = JsonDocument.Parse(stream);
 
-		await Verifier.VerifyJson(json).UseFileName($"LowLevelRequestResponseSerializerTests.SerializesException_{version}");
+		jsonDocument.RootElement.EnumerateArray().Should().HaveCount(1);
+		var exception = jsonDocument.RootElement.EnumerateArray().First();
+
+		exception.TryGetProperty("Depth", out var depth).Should().BeTrue();
+		depth.ValueKind.Should().Be(JsonValueKind.Number);
+		depth.GetInt32().Should().Be(0);
+
+		exception.TryGetProperty("ClassName", out var className).Should().BeTrue();
+		className.ValueKind.Should().Be(JsonValueKind.String);
+		className.GetString().Should().Be("Elastic.Transport.Tests.Components.Serialization.CustomException");
+
+		exception.TryGetProperty("Message", out var message).Should().BeTrue();
+		message.ValueKind.Should().Be(JsonValueKind.String);
+		message.GetString().Should().Be(messageValue);
+
+		exception.TryGetProperty("Source", out var source).Should().BeTrue();
+		source.ValueKind.Should().Be(JsonValueKind.String);
+		source.GetString().Should().Be("Elastic.Transport.Tests");
+
+		exception.TryGetProperty("StackTraceString", out var stackTrace).Should().BeTrue();
+		stackTrace.ValueKind.Should().Be(JsonValueKind.String);
+		stackTrace.GetString().Should()
+			.Contain("at Elastic.Transport.Tests.Components.Serialization.LowLevelRequestResponseSerializerTests")
+			.And.Contain("Components\\Serialization\\LowLevelRequestResponseSerializerTests.cs:line");
+
+		exception.TryGetProperty("HResult", out var hResult).Should().BeTrue();
+		hResult.ValueKind.Should().Be(JsonValueKind.Number);
+		hResult.GetInt32().Should().Be(-2146233088);
+
+		exception.TryGetProperty("HelpURL", out var helpUrl).Should().BeTrue();
+		helpUrl.ValueKind.Should().Be(JsonValueKind.String);
+		helpUrl.GetString().Should().Be(urlValue);
 	}
 }
 
