@@ -38,7 +38,7 @@ internal static class Extensions
 			throw new ArgumentNullException(name);
 	}
 
-	internal static bool IsNullOrEmpty(this string value) => string.IsNullOrEmpty(value);
+	internal static bool IsNullOrEmpty(this string? value) => string.IsNullOrEmpty(value);
 
 	internal static string Utf8String(this byte[] bytes) => bytes == null ? null : Encoding.UTF8.GetString(bytes, 0, bytes.Length);
 

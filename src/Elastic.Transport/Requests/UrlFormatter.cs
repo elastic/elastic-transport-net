@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections;
 using System.Runtime.Serialization;
+using System.Text;
 using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
@@ -22,59 +22,113 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 	public UrlFormatter(ITransportConfiguration settings) => _settings = settings;
 
 	/// <inheritdoc cref="ICustomFormatter.Format"/>>
-	public string Format(string format, object arg, IFormatProvider formatProvider)
+	public string Format(string? format, object? arg, IFormatProvider? formatProvider)
 	{
 		if (arg == null) throw new ArgumentNullException();
 
-		if (format == "r") return arg.ToString();
+		if (format == "r") return arg.ToString() ?? string.Empty;
 
 		var value = CreateString(arg, _settings);
 		if (value.IsNullOrEmpty() && !format.IsNullOrEmpty())
 			throw new ArgumentException($"The parameter: {format} to the url is null or empty");
 
-		return value.IsNullOrEmpty() ? string.Empty : Uri.EscapeDataString(value);
+		return string.IsNullOrEmpty(value) ? string.Empty : Uri.EscapeDataString(value);
 	}
 
 	/// <inheritdoc cref="IFormatProvider.GetFormat"/>
-	public object GetFormat(Type formatType) => formatType == typeof(ICustomFormatter) ? this : null;
+	public object? GetFormat(Type formatType) => formatType == typeof(ICustomFormatter) ? this : null;
 
 	/// <inheritdoc cref="CreateString(object, ITransportConfiguration)"/>
-	public string CreateString(object value) => CreateString(value, _settings);
+	public string? CreateString(object? value) => CreateString(value, _settings);
 
 	/// <summary> Creates a query string representation for <paramref name="value"/> </summary>
-	public static string? CreateString(object? value, ITransportConfiguration settings)
-	{
-		switch (value)
+	public static string? CreateString(object? value, ITransportConfiguration settings) =>
+		value switch
 		{
-			case null: return null;
-			case string s: return s;
-			case string[] ss: return string.Join(",", ss);
-			case Enum e: return e.GetStringValue();
-			case bool b: return b ? "true" : "false";
-			case DateTimeOffset offset: return offset.ToString("o");
-			case IEnumerable<object> pns:
-				return CreateStringFromIEnumerable(pns, settings);
+			null => null,
+			string s => s,
+			string[] ss => string.Join(",", ss),
+			Enum e => e.GetStringValue(),
+			bool b => b ? "true" : "false",
+			DateTimeOffset offset => offset.ToString("o"),
+			TimeSpan timeSpan => timeSpan.ToTimeUnit(),
+			// Special handling to support non-zero based arrays
+			Array pns => CreateStringFromArray(pns, settings),
+			// Performance optimization for directly indexable collections
+			IList pns => CreateStringFromIList(pns, settings),
+			// Generic implementation for all other collections
+			IEnumerable pns => CreateStringFromIEnumerable(pns, settings),
+			_ => ResolveUrlParameterOrDefault(value, settings)
+		};
 
-			case Array pns:
-				return CreateStringFromIEnumerable(ConvertArrayToEnumerable(pns), settings);
-
-			case TimeSpan timeSpan: return timeSpan.ToTimeUnit();
-			default:
-				return ResolveUrlParameterOrDefault(value, settings);
-		}
-	}
-
-	private static string CreateStringFromIEnumerable(IEnumerable<object> value, ITransportConfiguration settings) =>
-		string.Join(",", value.Select(o => ResolveUrlParameterOrDefault(o, settings)));
-
-	private static IEnumerable<object> ConvertArrayToEnumerable(Array array)
+	private static string CreateStringFromArray(Array value, ITransportConfiguration settings)
 	{
-		for (var i = array.GetLowerBound(0); i <= array.GetUpperBound(0); i++)
-			yield return array.GetValue(i);
+		switch (value.Length)
+		{
+			case 0:
+				return string.Empty;
+			case 1:
+				return ResolveUrlParameterOrDefault(value.GetValue(value.GetLowerBound(0)), settings);
+		}
+
+		var sb = new StringBuilder();
+
+		for (var i = value.GetLowerBound(0); i <= value.GetUpperBound(0); ++i)
+		{
+			if (sb.Length != 0)
+				sb.Append(',');
+
+			sb.Append(ResolveUrlParameterOrDefault(value.GetValue(i), settings));
+		}
+
+		return sb.ToString();
 	}
 
-	private static string ResolveUrlParameterOrDefault(object value, ITransportConfiguration settings) =>
-		value is IUrlParameter urlParam ? urlParam.GetString(settings) : GetEnumMemberName(value) ?? value.ToString();
+	private static string CreateStringFromIList(IList value, ITransportConfiguration settings)
+	{
+		switch (value.Count)
+		{
+			case 0:
+				return string.Empty;
+			case 1:
+				return ResolveUrlParameterOrDefault(value[0], settings);
+		}
+
+		var sb = new StringBuilder();
+
+		for (var i = 0; i < value.Count; ++i)
+		{
+			if (sb.Length != 0)
+				sb.Append(',');
+
+			sb.Append(ResolveUrlParameterOrDefault(value[i], settings));
+		}
+
+		return sb.ToString();
+	}
+
+	private static string CreateStringFromIEnumerable(IEnumerable value, ITransportConfiguration settings)
+	{
+		var sb = new StringBuilder();
+
+		foreach (var v in value)
+		{
+			if (sb.Length != 0)
+				sb.Append(',');
+
+			sb.Append(ResolveUrlParameterOrDefault(v, settings));
+		}
+
+		return sb.ToString();
+	}
+
+	private static string ResolveUrlParameterOrDefault(object? value, ITransportConfiguration settings) =>
+		value switch
+		{
+			null => string.Empty,
+			IUrlParameter urlParam => urlParam.GetString(settings),
+			_ => GetEnumMemberName(value) ?? value.ToString() ?? string.Empty
+		};
 
 	private static string? GetEnumMemberName(object value)
 	{
