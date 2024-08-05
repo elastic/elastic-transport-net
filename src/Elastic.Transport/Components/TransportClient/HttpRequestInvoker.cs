@@ -118,6 +118,7 @@ public class HttpRequestInvoker : IRequestInvoker
 					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
 #endif
 
+				receive = responseMessage;
 				statusCode = (int)responseMessage.StatusCode;
 			}
 
@@ -152,8 +153,11 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			ex = e;
 		}
-		using (receive)
-		using (responseStream ??= Stream.Null)
+
+		var isStreamResponse = typeof(TResponse) == typeof(StreamResponse);
+
+		using (isStreamResponse ? DiagnosticSources.SingletonDisposable : receive)
+		using (isStreamResponse ? Stream.Null : responseStream ??= Stream.Null)
 		{
 			TResponse response;
 
@@ -164,6 +168,10 @@ public class HttpRequestInvoker : IRequestInvoker
 			else
 				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
 						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+
+			// Defer disposal of the response message
+			if (response is StreamResponse sr)
+				sr.Finalizer = () => receive.Dispose();
 
 			if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
 				return response;
