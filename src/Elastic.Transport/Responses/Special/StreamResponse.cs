@@ -25,6 +25,13 @@ public sealed class StreamResponse :
 	public string MimeType { get; }
 
 	/// <inheritdoc cref="StreamResponse"/>
+	public StreamResponse()
+	{
+		Body = Stream.Null;
+		MimeType = string.Empty;
+	}
+
+	/// <inheritdoc cref="StreamResponse"/>
 	public StreamResponse(Stream body, string? mimeType)
 	{
 		Body = body;
