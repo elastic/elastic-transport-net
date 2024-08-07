@@ -12,8 +12,10 @@ using System.Net.NetworkInformation;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Elastic.Transport.Diagnostics;
 using Elastic.Transport.Extensions;
+
 using static Elastic.Transport.ResponseBuilderDefaults;
 
 namespace Elastic.Transport;
@@ -26,7 +28,6 @@ internal static class ResponseBuilderDefaults
 	{
 		typeof(StringResponse), typeof(BytesResponse), typeof(VoidResponse), typeof(DynamicResponse)
 	};
-
 }
 
 /// <summary>
@@ -225,7 +226,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 
 		using (responseStream)
 		{
-			if (SetSpecialTypes<TResponse>(mimeType, bytes, requestData.MemoryStreamFactory, out var r)) return r;
+			if (SetSpecialTypes<TResponse>(mimeType, bytes, responseStream, requestData.MemoryStreamFactory, out var r)) return r;
 
 			if (details.HttpStatusCode.HasValue &&
 				requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
@@ -288,7 +289,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		}
 	}
 
-	private static bool SetSpecialTypes<TResponse>(string mimeType, byte[] bytes,
+	private static bool SetSpecialTypes<TResponse>(string mimeType, byte[] bytes, Stream responseStream,
 		MemoryStreamFactory memoryStreamFactory, out TResponse cs)
 		where TResponse : TransportResponse, new()
 	{
@@ -298,6 +299,8 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 
 		if (responseType == typeof(StringResponse))
 			cs = new StringResponse(bytes.Utf8String()) as TResponse;
+		else if (responseType == typeof(StreamResponse))
+			cs = new StreamResponse(responseStream, mimeType) as TResponse;
 		else if (responseType == typeof(BytesResponse))
 			cs = new BytesResponse(bytes) as TResponse;
 		else if (responseType == typeof(VoidResponse))
