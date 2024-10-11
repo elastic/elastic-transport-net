@@ -32,6 +32,8 @@ public abstract class Serializer
 	/// <inheritdoc cref="Deserialize"/>
 	public abstract ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default);
 
+	// TODO: Overloads for (object?, Type) inputs
+
 	/// <summary>
 	/// Serialize an instance of <typeparamref name="T"/> to <paramref name="stream"/> using <paramref name="formatting"/>.
 	/// </summary>

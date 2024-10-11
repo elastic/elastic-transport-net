@@ -110,9 +110,10 @@ public abstract class SystemTextJsonSerializer :
 	/// </summary>
 	/// <param name="formatting">The serialization formatting.</param>
 	/// <returns>The requested <see cref="JsonSerializerOptions"/> or <c>null</c>, if the serializer is not initialized yet.</returns>
-	protected internal JsonSerializerOptions? GetJsonSerializerOptions(SerializationFormatting formatting) => (formatting is SerializationFormatting.None)
-		? _options
-		: _indentedOptions;
+	protected internal JsonSerializerOptions? GetJsonSerializerOptions(SerializationFormatting formatting = SerializationFormatting.None) =>
+		(formatting is SerializationFormatting.None)
+			? _options
+			: _indentedOptions;
 
 	/// <summary>
 	/// Initializes a serializer instance such that its <see cref="JsonSerializerOptions"/> are populated.
