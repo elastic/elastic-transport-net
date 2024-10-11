@@ -109,10 +109,16 @@ public class InMemoryRequestInvoker : IRequestInvoker
 		requestData.MadeItToResponse = true;
 
 		var sc = statusCode ?? _statusCode;
-		Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
-		return await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
-			.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
-			.ConfigureAwait(false);
-	}
 
+		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
+
+		var isStreamResponse = typeof(TResponse) == typeof(StreamResponse);
+
+		using (isStreamResponse ? Stream.Null : responseStream ??= Stream.Null)
+		{
+			return await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
+			.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
+			.ConfigureAwait(false);
+		}
+	}
 }
