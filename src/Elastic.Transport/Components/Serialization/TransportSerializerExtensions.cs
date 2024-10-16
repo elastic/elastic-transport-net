@@ -43,7 +43,7 @@ public static class TransportSerializerExtensions
 	public static byte[] SerializeToBytes<T>(
 		this Serializer serializer,
 		T? data,
-		MemoryStreamFactory? memoryStreamFactory = null,
+		MemoryStreamFactory? memoryStreamFactory,
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
@@ -82,7 +82,7 @@ public static class TransportSerializerExtensions
 		this Serializer serializer,
 		object? data,
 		Type type,
-		MemoryStreamFactory? memoryStreamFactory = null,
+		MemoryStreamFactory? memoryStreamFactory,
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
@@ -119,7 +119,7 @@ public static class TransportSerializerExtensions
 	public static string SerializeToString<T>(
 		this Serializer serializer,
 		T? data,
-		MemoryStreamFactory? memoryStreamFactory = null,
+		MemoryStreamFactory? memoryStreamFactory,
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
@@ -167,7 +167,7 @@ public static class TransportSerializerExtensions
 		this Serializer serializer,
 		object? data,
 		Type type,
-		MemoryStreamFactory? memoryStreamFactory = null,
+		MemoryStreamFactory? memoryStreamFactory,
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
@@ -219,7 +219,7 @@ public static class TransportSerializerExtensions
 		this Serializer serializer,
 		T? data,
 		Utf8JsonWriter writer,
-		MemoryStreamFactory? memoryStreamFactory = null,
+		MemoryStreamFactory? memoryStreamFactory,
 		SerializationFormatting formatting = SerializationFormatting.None)
 	{
 		if (serializer is SystemTextJsonSerializer stjSerializer)
@@ -279,7 +279,7 @@ public static class TransportSerializerExtensions
 		object? data,
 		Type type,
 		Utf8JsonWriter writer,
-		MemoryStreamFactory? memoryStreamFactory = null,
+		MemoryStreamFactory? memoryStreamFactory,
 		SerializationFormatting formatting = SerializationFormatting.None)
 	{
 		if (serializer is SystemTextJsonSerializer stjSerializer)
