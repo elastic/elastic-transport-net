@@ -17,9 +17,10 @@ public interface IJsonSerializerOptionsProvider
 	/// <inheritdoc cref="IJsonSerializerOptionsProvider"/>
 	JsonSerializerOptions CreateJsonSerializerOptions();
 }
+
 /// <summary>
 /// Default implementation of <see cref="IJsonSerializerOptionsProvider"/> specialized in providing more converters and
-/// altering the shared <see cref="JsonSerializerOptions"/> used by <see cref="SystemTextJsonSerializer"/> and its derrived classes
+/// altering the shared <see cref="JsonSerializerOptions"/> used by <see cref="SystemTextJsonSerializer"/> and its derived classes
 /// </summary>
 public class TransportSerializerOptionsProvider : IJsonSerializerOptionsProvider
 {
@@ -31,6 +32,7 @@ public class TransportSerializerOptionsProvider : IJsonSerializerOptionsProvider
 	public JsonSerializerOptions? CreateJsonSerializerOptions()
 	{
 		var options = new JsonSerializerOptions();
+
 		foreach (var converter in _bakedInConverters ?? [])
 			options.Converters.Add(converter);
 
@@ -57,4 +59,3 @@ public class TransportSerializerOptionsProvider : IJsonSerializerOptionsProvider
 		_mutateOptions = mutateOptions;
 	}
 }
-

@@ -27,11 +27,12 @@ public abstract class SystemTextJsonSerializer : Serializer
 	/// </summary>
 	protected SystemTextJsonSerializer(IJsonSerializerOptionsProvider? provider = null)
 	{
-
 		provider ??= new TransportSerializerOptionsProvider();
 		_options = provider.CreateJsonSerializerOptions();
-		_indentedOptions = provider.CreateJsonSerializerOptions();
-		_indentedOptions.WriteIndented = true;
+		_indentedOptions = new JsonSerializerOptions(_options)
+		{
+			WriteIndented = true
+		};
 	}
 
 	#region Serializer
@@ -92,7 +93,6 @@ public abstract class SystemTextJsonSerializer : Serializer
 	/// <returns>The requested <see cref="JsonSerializerOptions"/> or <c>null</c>, if the serializer is not initialized yet.</returns>
 	protected internal JsonSerializerOptions? GetJsonSerializerOptions(SerializationFormatting formatting = SerializationFormatting.None) =>
 		formatting is SerializationFormatting.None ? _options : _indentedOptions;
-
 
 	private static bool TryReturnDefault<T>(Stream? stream, out T deserialize)
 	{
