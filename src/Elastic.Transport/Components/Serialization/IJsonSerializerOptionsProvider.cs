@@ -23,25 +23,38 @@ public interface IJsonSerializerOptionsProvider
 /// </summary>
 public class TransportSerializerOptionsProvider : IJsonSerializerOptionsProvider
 {
-	private readonly JsonSerializerOptions _options = new();
+	private readonly IReadOnlyCollection<JsonConverter>? _bakedInConverters;
+	private readonly IReadOnlyCollection<JsonConverter>? _userProvidedConverters;
+	private readonly Action<JsonSerializerOptions>? _mutateOptions;
 
 	/// <inheritdoc cref="IJsonSerializerOptionsProvider"/>
-	public JsonSerializerOptions? CreateJsonSerializerOptions() => _options;
+	public JsonSerializerOptions? CreateJsonSerializerOptions()
+	{
+		var options = new JsonSerializerOptions();
+		foreach (var converter in _bakedInConverters ?? [])
+			options.Converters.Add(converter);
+
+		foreach (var converter in _userProvidedConverters ?? [])
+			options.Converters.Add(converter);
+
+		_mutateOptions?.Invoke(options);
+
+		return options;
+	}
 
 	/// <inheritdoc cref="TransportSerializerOptionsProvider"/>
 	public TransportSerializerOptionsProvider() { }
 
 	/// <inheritdoc cref="TransportSerializerOptionsProvider"/>
-	public TransportSerializerOptionsProvider(IReadOnlyCollection<JsonConverter> bakedIn, IReadOnlyCollection<JsonConverter>? userProvided, Action<JsonSerializerOptions>? optionsAction = null)
+	public TransportSerializerOptionsProvider(
+		IReadOnlyCollection<JsonConverter> bakedInConverters,
+		IReadOnlyCollection<JsonConverter>? userProvidedConverters,
+		Action<JsonSerializerOptions>? mutateOptions = null
+	)
 	{
-		foreach (var converter in bakedIn)
-			_options.Converters.Add(converter);
-
-		foreach (var converter in userProvided ?? [])
-			_options.Converters.Add(converter);
-
-		optionsAction?.Invoke(_options);
-
+		_bakedInConverters = bakedInConverters;
+		_userProvidedConverters = userProvidedConverters;
+		_mutateOptions = mutateOptions;
 	}
 }
 
