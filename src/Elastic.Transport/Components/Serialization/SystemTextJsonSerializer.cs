@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,14 +16,23 @@ namespace Elastic.Transport;
 /// An abstract implementation of a transport <see cref="Serializer"/> which serializes using the Microsoft
 /// <c>System.Text.Json</c> library.
 /// </summary>
-public abstract class SystemTextJsonSerializer :
-	Serializer
+public abstract class SystemTextJsonSerializer : Serializer
 {
-	private readonly SemaphoreSlim _semaphore = new(1);
+	private readonly JsonSerializerOptions? _options;
+	private readonly JsonSerializerOptions? _indentedOptions;
 
-	private bool _initialized;
-	private JsonSerializerOptions? _options;
-	private JsonSerializerOptions? _indentedOptions;
+	/// <summary>
+	/// An abstract implementation of a transport <see cref="Serializer"/> which serializes using the Microsoft
+	/// <c>System.Text.Json</c> library.
+	/// </summary>
+	protected SystemTextJsonSerializer(IJsonSerializerOptionsProvider? provider = null)
+	{
+
+		provider ??= new TransportSerializerOptionsProvider();
+		_options = provider.CreateJsonSerializerOptions();
+		_indentedOptions = provider.CreateJsonSerializerOptions();
+		_indentedOptions.WriteIndented = true;
+	}
 
 	#region Serializer
 
@@ -75,79 +86,13 @@ public abstract class SystemTextJsonSerializer :
 	#endregion Serializer
 
 	/// <summary>
-	/// A factory method that can create an instance of <see cref="JsonSerializerOptions"/> that will
-	/// be used when serializing.
-	/// </summary>
-	/// <returns></returns>
-	protected abstract JsonSerializerOptions? CreateJsonSerializerOptions();
-
-	/// <summary>
-	/// A callback function that is invoked after the <see cref="JsonSerializerOptions"/> have been created and the
-	/// serializer got fully initialized.
-	/// </summary>
-	protected virtual void Initialized()
-	{
-	}
-
-	/// <summary>
 	/// Returns the <see cref="JsonSerializerOptions"/> for this serializer, based on the given <paramref name="formatting"/>.
 	/// </summary>
 	/// <param name="formatting">The serialization formatting.</param>
 	/// <returns>The requested <see cref="JsonSerializerOptions"/> or <c>null</c>, if the serializer is not initialized yet.</returns>
-	protected internal JsonSerializerOptions? GetJsonSerializerOptions(SerializationFormatting formatting = SerializationFormatting.None)
-	{
-		Initialize();
+	protected internal JsonSerializerOptions? GetJsonSerializerOptions(SerializationFormatting formatting = SerializationFormatting.None) =>
+		formatting is SerializationFormatting.None ? _options : _indentedOptions;
 
-		return (formatting is SerializationFormatting.None)
-			? _options
-			: _indentedOptions;
-	}
-
-	/// <summary>
-	/// Initializes a serializer instance such that its <see cref="JsonSerializerOptions"/> are populated.
-	/// </summary>
-	private void Initialize()
-	{
-		// Exit early, if already initialized
-		if (_initialized)
-			return;
-
-		_semaphore.Wait();
-
-		try
-		{
-			// Exit early, if the current thread lost the race
-			if (_initialized)
-				return;
-
-			var options = CreateJsonSerializerOptions();
-
-			if (options is null)
-			{
-				_options = new JsonSerializerOptions();
-				_indentedOptions = new JsonSerializerOptions
-				{
-					WriteIndented = true
-				};
-			}
-			else
-			{
-				_options = options;
-				_indentedOptions = new JsonSerializerOptions(options)
-				{
-					WriteIndented = true
-				};
-			}
-
-			_initialized = true;
-
-			Initialized();
-		}
-		finally
-		{
-			_semaphore.Release();
-		}
-	}
 
 	private static bool TryReturnDefault<T>(Stream? stream, out T deserialize)
 	{
