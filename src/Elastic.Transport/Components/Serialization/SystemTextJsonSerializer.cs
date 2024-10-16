@@ -28,65 +28,49 @@ public abstract class SystemTextJsonSerializer :
 	/// <inheritdoc />
 	public override T Deserialize<T>(Stream stream)
 	{
-		Initialize();
-
 		if (TryReturnDefault(stream, out T deserialize))
 			return deserialize;
 
-		return JsonSerializer.Deserialize<T>(stream, _options);
+		return JsonSerializer.Deserialize<T>(stream, GetJsonSerializerOptions());
 	}
 
 	/// <inheritdoc />
 	public override object? Deserialize(Type type, Stream stream)
 	{
-		Initialize();
-
 		if (TryReturnDefault(stream, out object deserialize))
 			return deserialize;
 
-		return JsonSerializer.Deserialize(stream, type, _options);
+		return JsonSerializer.Deserialize(stream, type, GetJsonSerializerOptions());
 	}
 
 	/// <inheritdoc />
 	public override ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
 	{
-		Initialize();
-
 		if (TryReturnDefault(stream, out T deserialize))
 			return new ValueTask<T>(deserialize);
 
-		return JsonSerializer.DeserializeAsync<T>(stream, _options, cancellationToken);
+		return JsonSerializer.DeserializeAsync<T>(stream, GetJsonSerializerOptions(), cancellationToken);
 	}
 
 	/// <inheritdoc />
 	public override ValueTask<object?> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
 	{
-		Initialize();
-
 		if (TryReturnDefault(stream, out object deserialize))
 			return new ValueTask<object?>(deserialize);
 
-		return JsonSerializer.DeserializeAsync(stream, type, _options, cancellationToken);
+		return JsonSerializer.DeserializeAsync(stream, type, GetJsonSerializerOptions(), cancellationToken);
 	}
 
 	/// <inheritdoc />
 	public override void Serialize<T>(T data, Stream writableStream,
-		SerializationFormatting formatting = SerializationFormatting.None)
-	{
-		Initialize();
-
+		SerializationFormatting formatting = SerializationFormatting.None) =>
 		JsonSerializer.Serialize(writableStream, data, GetJsonSerializerOptions(formatting));
-	}
 
 	/// <inheritdoc />
 	public override Task SerializeAsync<T>(T data, Stream stream,
 		SerializationFormatting formatting = SerializationFormatting.None,
-		CancellationToken cancellationToken = default)
-	{
-		Initialize();
-
-		return JsonSerializer.SerializeAsync(stream, data, GetJsonSerializerOptions(formatting), cancellationToken);
-	}
+		CancellationToken cancellationToken = default) =>
+		JsonSerializer.SerializeAsync(stream, data, GetJsonSerializerOptions(formatting), cancellationToken);
 
 	#endregion Serializer
 
@@ -110,15 +94,19 @@ public abstract class SystemTextJsonSerializer :
 	/// </summary>
 	/// <param name="formatting">The serialization formatting.</param>
 	/// <returns>The requested <see cref="JsonSerializerOptions"/> or <c>null</c>, if the serializer is not initialized yet.</returns>
-	protected internal JsonSerializerOptions? GetJsonSerializerOptions(SerializationFormatting formatting = SerializationFormatting.None) =>
-		(formatting is SerializationFormatting.None)
+	protected internal JsonSerializerOptions? GetJsonSerializerOptions(SerializationFormatting formatting = SerializationFormatting.None)
+	{
+		Initialize();
+
+		return (formatting is SerializationFormatting.None)
 			? _options
 			: _indentedOptions;
+	}
 
 	/// <summary>
 	/// Initializes a serializer instance such that its <see cref="JsonSerializerOptions"/> are populated.
 	/// </summary>
-	protected internal void Initialize()
+	private void Initialize()
 	{
 		// Exit early, if already initialized
 		if (_initialized)
