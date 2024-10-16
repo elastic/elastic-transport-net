@@ -5,6 +5,7 @@
 using System.IO;
 using System.Text.Json;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json.Nodes;
 
@@ -630,5 +631,27 @@ public static class TransportSerializerExtensions
 		ms.Position = 0;
 
 		return serializer.Deserialize(type, ms);
+	}
+
+	/// <summary>
+	/// Extension method that tries to obtain the <see cref="JsonSerializerOptions"/> for <see cref="SystemTextJsonSerializer"/> based
+	/// <paramref name="serializer"/> implementations.
+	/// </summary>
+	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
+	/// <param name="options">Receives the <see cref="JsonSerializerOptions"/>.</param>
+	/// <param name="formatting"><inheritdoc cref="SerializationFormatting" path="/summary"/></param>
+	public static bool TryGetJsonSerializerOptions(
+		this Serializer serializer,
+		[NotNullWhen(true)] out JsonSerializerOptions? options,
+		SerializationFormatting formatting = SerializationFormatting.None)
+	{
+		if (serializer is SystemTextJsonSerializer stjSerializer)
+		{
+			options = stjSerializer.GetJsonSerializerOptions(formatting);
+			return true;
+		}
+
+		options = null;
+		return false;
 	}
 }
