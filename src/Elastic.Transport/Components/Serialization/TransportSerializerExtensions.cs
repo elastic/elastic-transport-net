@@ -185,8 +185,6 @@ public static class TransportSerializerExtensions
 		return ms.Utf8String();
 	}
 
-	#region STJ Extensions
-
 	/// <summary>
 	/// Extension method that writes the serialized representation of an instance of <typeparamref name="T"/> to a
 	/// <see cref="Utf8JsonWriter"/>.
@@ -633,6 +631,4 @@ public static class TransportSerializerExtensions
 
 		return serializer.Deserialize(type, ms);
 	}
-
-	#endregion STJ Extensions
 }
