@@ -161,28 +161,32 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			unregisterWaitHandle?.Invoke();
 		}
-		responseStream ??= Stream.Null;
 
-		TResponse response;
+		var isStreamResponse = typeof(TResponse) == typeof(StreamResponse);
 
-		if (isAsync)
-			response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-				(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-					.ConfigureAwait(false);
-		else
-			response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
-
-		if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
+		using (isStreamResponse ? Stream.Null : responseStream ??= Stream.Null)
 		{
-			var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
-			foreach (var attribute in attributes)
-			{
-				Activity.Current?.SetTag(attribute.Key, attribute.Value);
-			}
-		}
+			TResponse response;
 
-		return response;
+			if (isAsync)
+				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+						.ConfigureAwait(false);
+			else
+				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
+						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+
+			if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
+			{
+				var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+				foreach (var attribute in attributes)
+				{
+					Activity.Current?.SetTag(attribute.Key, attribute.Value);
+				}
+			}
+
+			return response;
+		}
 	}
 
 	private static Dictionary<string, IEnumerable<string>> ParseHeaders(RequestData requestData, HttpWebResponse responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
