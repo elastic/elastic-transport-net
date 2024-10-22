@@ -3,146 +3,70 @@
 // See the LICENSE file in the project root for more information
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Tests.Plumbing;
 using FluentAssertions;
 using Xunit;
 
-namespace Elastic.Transport.Tests
+namespace Elastic.Transport.Tests;
+
+public class ResponseBuilderDisposeTests
 {
-	public class ResponseBuilderDisposeTests
+	private readonly ITransportConfiguration _settings = InMemoryConnectionFactory.Create().DisableDirectStreaming(false);
+
+	[Fact]
+	public async Task ResponseWithPotentialBody_StreamIsNotDisposed() => await AssertResponse(expectedDisposed: false);
+
+	[Fact]
+	public async Task ResponseWith204StatusCode_StreamIsDisposed() => await AssertResponse(204);
+
+	[Fact]
+	public async Task ResponseForHeadRequest_StreamIsDisposed() => await AssertResponse(httpMethod: HttpMethod.HEAD);
+
+	[Fact]
+	public async Task ResponseWithZeroContentLength_StreamIsDisposed() => await AssertResponse(contentLength: 0);
+
+	private async Task AssertResponse(int statusCode = 200, HttpMethod httpMethod = HttpMethod.GET, int contentLength = 10, bool expectedDisposed = true)
 	{
-		private readonly ITransportConfiguration _settings = InMemoryConnectionFactory.Create().DisableDirectStreaming(false);
-		private readonly ITransportConfiguration _settingsDisableDirectStream = InMemoryConnectionFactory.Create().DisableDirectStreaming();
-
-		[Fact] public async Task ResponseWithHttpStatusCode() => await AssertRegularResponse(false, 1);
-
-		[Fact] public async Task ResponseBuilderWithNoHttpStatusCode() => await AssertRegularResponse(false);
-
-		[Fact] public async Task ResponseWithHttpStatusCodeDisableDirectStreaming() =>
-			await AssertRegularResponse(true, 1);
-
-		[Fact] public async Task ResponseBuilderWithNoHttpStatusCodeDisableDirectStreaming() =>
-			await AssertRegularResponse(true);
-
-		private async Task AssertRegularResponse(bool disableDirectStreaming, int? statusCode = null)
+		var settings = _settings;
+		var requestData = new RequestData(httpMethod, "/", null, settings, null, null, null, default)
 		{
-			var settings = disableDirectStreaming ? _settingsDisableDirectStream : _settings;
-			var memoryStreamFactory = new TrackMemoryStreamFactory();
-			var requestData = new RequestData(HttpMethod.GET, "/", null, settings, null, null, memoryStreamFactory, default)
-			{
-				Node = new Node(new Uri("http://localhost:9200"))
-			};
+			Node = new Node(new Uri("http://localhost:9200"))
+		};
 
-			var stream = new TrackDisposeStream();
-			var response = _settings.ProductRegistration.ResponseBuilder.ToResponse<TestResponse>(requestData, null, statusCode, null, stream, null, -1, null, null);
-			response.Should().NotBeNull();
+		var stream = new TrackDisposeStream();
 
-			memoryStreamFactory.Created.Count().Should().Be(disableDirectStreaming ? 1 : 0);
-			if (disableDirectStreaming)
-			{
-				var memoryStream = memoryStreamFactory.Created[0];
-				memoryStream.IsDisposed.Should().BeTrue();
-			}
-			stream.IsDisposed.Should().BeTrue();
+		var response = _settings.ProductRegistration.ResponseBuilder.ToResponse<TestResponse>(requestData, null, statusCode, null, stream, null, contentLength, null, null);
 
+		response.Should().NotBeNull();
+		stream.IsDisposed.Should().Be(expectedDisposed);
 
-			stream = new TrackDisposeStream();
-			var ct = new CancellationToken();
-			response = await _settings.ProductRegistration.ResponseBuilder.ToResponseAsync<TestResponse>(requestData, null, statusCode, null, stream, null, -1, null, null,
-				cancellationToken: ct);
-			response.Should().NotBeNull();
-			memoryStreamFactory.Created.Count().Should().Be(disableDirectStreaming ? 2 : 0);
-			if (disableDirectStreaming)
-			{
-				var memoryStream = memoryStreamFactory.Created[1];
-				memoryStream.IsDisposed.Should().BeTrue();
-			}
-			stream.IsDisposed.Should().BeTrue();
-		}
+		stream = new TrackDisposeStream();
+		var ct = new CancellationToken();
 
-		[Fact] public async Task StreamResponseWithHttpStatusCode() => await AssertStreamResponse(false, 200);
+		response = await _settings.ProductRegistration.ResponseBuilder.ToResponseAsync<TestResponse>(requestData, null, statusCode, null, stream, null, contentLength, null, null,
+			cancellationToken: ct);
 
-		[Fact] public async Task StreamResponseBuilderWithNoHttpStatusCode() => await AssertStreamResponse(false);
+		response.Should().NotBeNull();
+		stream.IsDisposed.Should().Be(expectedDisposed);
+	}
 
-		[Fact] public async Task StreamResponseWithHttpStatusCodeDisableDirectStreaming() =>
-			await AssertStreamResponse(true, 1);
+	private class TrackDisposeStream : MemoryStream
+	{
+		public TrackDisposeStream() { }
 
-		[Fact] public async Task StreamResponseBuilderWithNoHttpStatusCodeDisableDirectStreaming() =>
-			await AssertStreamResponse(true);
+		public TrackDisposeStream(byte[] bytes) : base(bytes) { }
 
-		private async Task AssertStreamResponse(bool disableDirectStreaming, int? statusCode = null)
+		public TrackDisposeStream(byte[] bytes, int index, int count) : base(bytes, index, count) { }
+
+		public bool IsDisposed { get; private set; }
+
+		protected override void Dispose(bool disposing)
 		{
-			var settings = disableDirectStreaming ? _settingsDisableDirectStream : _settings;
-			var memoryStreamFactory = new TrackMemoryStreamFactory();
-
-			var requestData = new RequestData(HttpMethod.GET, "/", null, settings, null, null, memoryStreamFactory, default)
-			{
-				Node = new Node(new Uri("http://localhost:9200"))
-			};
-
-			var stream = new TrackDisposeStream();
-			var response = _settings.ProductRegistration.ResponseBuilder.ToResponse<TestResponse>(requestData, null, statusCode, null, stream, null, -1, null, null);
-			response.Should().NotBeNull();
-
-			memoryStreamFactory.Created.Count().Should().Be(disableDirectStreaming ? 1 : 0);
-			stream.IsDisposed.Should().Be(true);
-
-			stream = new TrackDisposeStream();
-			var ct = new CancellationToken();
-			response = await _settings.ProductRegistration.ResponseBuilder.ToResponseAsync<TestResponse>(requestData, null, statusCode, null, stream, null, -1, null, null,
-				cancellationToken: ct);
-			response.Should().NotBeNull();
-			memoryStreamFactory.Created.Count().Should().Be(disableDirectStreaming ? 2 : 0);
-			stream.IsDisposed.Should().Be(true);
-		}
-
-
-		private class TrackDisposeStream : MemoryStream
-		{
-			public TrackDisposeStream() { }
-
-			public TrackDisposeStream(byte[] bytes) : base(bytes) { }
-
-			public TrackDisposeStream(byte[] bytes, int index, int count) : base(bytes, index, count) { }
-
-			public bool IsDisposed { get; private set; }
-
-			protected override void Dispose(bool disposing)
-			{
-				IsDisposed = true;
-				base.Dispose(disposing);
-			}
-		}
-
-		private class TrackMemoryStreamFactory : MemoryStreamFactory
-		{
-			public IList<TrackDisposeStream> Created { get; } = new List<TrackDisposeStream>();
-
-			public override MemoryStream Create()
-			{
-				var stream = new TrackDisposeStream();
-				Created.Add(stream);
-				return stream;
-			}
-
-			public override MemoryStream Create(byte[] bytes)
-			{
-				var stream = new TrackDisposeStream(bytes);
-				Created.Add(stream);
-				return stream;
-			}
-
-			public override MemoryStream Create(byte[] bytes, int index, int count)
-			{
-				var stream = new TrackDisposeStream(bytes, index, count);
-				Created.Add(stream);
-				return stream;
-			}
+			IsDisposed = true;
+			base.Dispose(disposing);
 		}
 	}
 }
