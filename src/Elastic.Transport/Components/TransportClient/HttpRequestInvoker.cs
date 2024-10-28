@@ -157,7 +157,6 @@ public class HttpRequestInvoker : IRequestInvoker
 		var isStreamResponse = typeof(TResponse) == typeof(StreamResponse);
 
 		using (isStreamResponse ? DiagnosticSources.SingletonDisposable : receive)
-		using (isStreamResponse ? Stream.Null : responseStream ??= Stream.Null)
 		{
 			TResponse response;
 

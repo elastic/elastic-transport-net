@@ -10,13 +10,15 @@ namespace Elastic.Transport;
 /// <summary>
 /// A response that exposes the response <see cref="TransportResponse{T}.Body"/> as <see cref="Stream"/>.
 /// <para>
-///		Must be disposed after use.
+/// <strong>MUST</strong> be disposed after use to ensure the HTTP connection is freed for reuse.
 /// </para>
 /// </summary>
-public sealed class StreamResponse :
+public class StreamResponse :
 	TransportResponse<Stream>,
 	IDisposable
 {
+	private bool _disposed;
+
 	internal Action? Finalizer { get; set; }
 
 	/// <summary>
@@ -38,10 +40,30 @@ public sealed class StreamResponse :
 		MimeType = mimeType ?? string.Empty;
 	}
 
-	/// <inheritdoc cref="IDisposable.Dispose"/>
+	/// <summary>
+	/// Disposes the underlying stream.
+	/// </summary>
+	/// <param name="disposing"></param>
+	protected virtual void Dispose(bool disposing)
+	{
+		if (!_disposed)
+		{
+			if (disposing)
+			{
+				Body.Dispose();
+				Finalizer?.Invoke();
+			}
+
+			_disposed = true;
+		}
+	}
+
+	/// <summary>
+	/// Disposes the underlying stream.
+	/// </summary>
 	public void Dispose()
 	{
-		Body.Dispose();
-		Finalizer?.Invoke();
+		Dispose(disposing: true);
+		GC.SuppressFinalize(this);
 	}
 }

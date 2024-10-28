@@ -85,13 +85,8 @@ public class InMemoryRequestInvoker : IRequestInvoker
 		var sc = statusCode ?? _statusCode;
 		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
 
-		var isStreamResponse = typeof(TResponse) == typeof(StreamResponse);
-
-		using (isStreamResponse ? Stream.Null : responseStream ??= Stream.Null)
-		{
-			return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
-				.ToResponse<TResponse>(requestData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? RequestData.DefaultMimeType, body?.Length ?? 0, null, null);
-		}
+		return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
+			.ToResponse<TResponse>(requestData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? RequestData.DefaultMimeType, body?.Length ?? 0, null, null);
 	}
 
 	/// <inheritdoc cref="BuildResponse{TResponse}"/>>
@@ -122,13 +117,8 @@ public class InMemoryRequestInvoker : IRequestInvoker
 
 		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
 
-		var isStreamResponse = typeof(TResponse) == typeof(StreamResponse);
-
-		using (isStreamResponse ? Stream.Null : responseStream ??= Stream.Null)
-		{
-			return await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
-				.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
-				.ConfigureAwait(false);
-		}
+		return await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
+			.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
+			.ConfigureAwait(false);
 	}
 }
