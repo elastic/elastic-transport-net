@@ -75,7 +75,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		Exception ex = null;
 		string mimeType = null;
 		long contentLength = -1;
-		IDisposable receive = DiagnosticSources.SingletonDisposable;
+		IDisposable receivedResponse = DiagnosticSources.SingletonDisposable;
 		ReadOnlyDictionary<TcpState, int> tcpStats = null;
 		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 		Dictionary<string, IEnumerable<string>> responseHeaders = null;
@@ -118,7 +118,7 @@ public class HttpRequestInvoker : IRequestInvoker
 					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
 #endif
 
-				receive = responseMessage;
+				receivedResponse = responseMessage;
 				statusCode = (int)responseMessage.StatusCode;
 			}
 
@@ -156,33 +156,41 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		var isStreamResponse = typeof(TResponse) == typeof(StreamResponse);
 
-		using (isStreamResponse ? DiagnosticSources.SingletonDisposable : receive)
+		using (isStreamResponse ? DiagnosticSources.SingletonDisposable : receivedResponse)
 		{
 			TResponse response;
 
-			if (isAsync)
-				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-						.ConfigureAwait(false);
-			else
-				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+			try
+			{
+				if (isAsync)
+					response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+							.ConfigureAwait(false);
+				else
+					response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
+							(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
-			// Defer disposal of the response message
-			if (response is StreamResponse sr)
-				sr.Finalizer = () => receive.Dispose();
+				// Defer disposal of the response message
+				if (response is StreamResponse sr)
+					sr.Finalizer = () => receivedResponse.Dispose();
 
-			if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
+				if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
+					return response;
+
+				var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+
+				if (attributes is null) return response;
+
+				foreach (var attribute in attributes)
+					Activity.Current?.SetTag(attribute.Key, attribute.Value);
+
 				return response;
-
-			var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
-
-			if (attributes is null) return response;
-
-			foreach (var attribute in attributes)
-				Activity.Current?.SetTag(attribute.Key, attribute.Value);
-
-			return response;
+			}
+			catch
+			{
+				receivedResponse.Dispose(); // if there's an exception, ensure we always release the response so that the connection is freed.
+				throw;
+			}
 		}
 	}
 
