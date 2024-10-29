@@ -8,7 +8,7 @@ namespace Elastic.Transport;
 
 /// <summary>
 /// A response from an Elastic product including details about the request/response life cycle. Base class for the built in low level response
-/// types, <see cref="StringResponse"/>, <see cref="BytesResponse"/>, <see cref="DynamicResponse"/> and <see cref="VoidResponse"/>
+/// types, <see cref="StringResponse"/>, <see cref="BytesResponse"/>, <see cref="DynamicResponse"/>, <see cref="StreamResponse"/> and <see cref="VoidResponse"/>
 /// </summary>
 public abstract class TransportResponse<T> : TransportResponse
 {
@@ -34,5 +34,7 @@ public abstract class TransportResponse
 	public override string ToString() => ApiCallDetails?.DebugInformation
 		// ReSharper disable once ConstantNullCoalescingCondition
 		?? $"{nameof(ApiCallDetails)} not set, likely a bug, reverting to default ToString(): {base.ToString()}";
+
+	internal virtual bool LeaveOpen { get; } = false;
 }
 

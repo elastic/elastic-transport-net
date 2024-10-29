@@ -40,6 +40,8 @@ public class StreamResponse :
 		MimeType = mimeType ?? string.Empty;
 	}
 
+	internal override bool LeaveOpen => true;
+
 	/// <summary>
 	/// Disposes the underlying stream.
 	/// </summary>

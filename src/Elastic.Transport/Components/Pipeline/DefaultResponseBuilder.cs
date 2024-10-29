@@ -224,70 +224,69 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 			details.ResponseBodyInBytes = bytes;
 		}
 
-		var isStreamResponse = typeof(TResponse) == typeof(StreamResponse);
+		if (SetSpecialTypes<TResponse>(mimeType, bytes, responseStream, requestData.MemoryStreamFactory, out var r)) return r;
 
-		using (isStreamResponse ? Stream.Null : responseStream ??= Stream.Null)
+		if (details.HttpStatusCode.HasValue &&
+			requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
+			return null;
+
+		var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
+
+		TResponse response;
+		if (requestData.CustomResponseBuilder != null)
 		{
-			if (SetSpecialTypes<TResponse>(mimeType, bytes, responseStream, requestData.MemoryStreamFactory, out var r)) return r;
+			var beforeTicks = Stopwatch.GetTimestamp();
 
-			if (details.HttpStatusCode.HasValue &&
-				requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
-				return null;
+			if (isAsync)
+				response = await requestData.CustomResponseBuilder
+					.DeserializeResponseAsync(serializer, details, responseStream, cancellationToken)
+					.ConfigureAwait(false) as TResponse;
+			else
+				response = requestData.CustomResponseBuilder
+					.DeserializeResponse(serializer, details, responseStream) as TResponse;
 
-			var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
+			var deserializeResponseMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
+			if (deserializeResponseMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
+				Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportDeserializeResponseMs, deserializeResponseMs);
 
-			TResponse response;
-			if (requestData.CustomResponseBuilder != null)
+			return response;
+		}
+
+		// TODO: Handle empty data in a nicer way as throwing exceptions has a cost we'd like to avoid!
+		// ie. check content-length (add to ApiCallDetails)? Content-length cannot be retrieved from a GZip content stream which is annoying.
+		try
+		{
+			if (requiresErrorDeserialization && TryGetError(details, requestData, responseStream, out var error) && error.HasError())
 			{
-				var beforeTicks = Stopwatch.GetTimestamp();
-
-				if (isAsync)
-					response = await requestData.CustomResponseBuilder
-						.DeserializeResponseAsync(serializer, details, responseStream, cancellationToken)
-						.ConfigureAwait(false) as TResponse;
-				else
-					response = requestData.CustomResponseBuilder
-						.DeserializeResponse(serializer, details, responseStream) as TResponse;
-
-				var deserializeResponseMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
-				if (deserializeResponseMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
-					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportDeserializeResponseMs, deserializeResponseMs);
-
+				response = new TResponse();
+				SetErrorOnResponse(response, error);
 				return response;
 			}
 
-			// TODO: Handle empty data in a nicer way as throwing exceptions has a cost we'd like to avoid!
-			// ie. check content-length (add to ApiCallDetails)? Content-length cannot be retrieved from a GZip content stream which is annoying.
-			try
-			{
-				if (requiresErrorDeserialization && TryGetError(details, requestData, responseStream, out var error) && error.HasError())
-				{
-					response = new TResponse();
-					SetErrorOnResponse(response, error);
-					return response;
-				}
-
-				if (!requestData.ValidateResponseContentType(mimeType))
-					return default;
-
-				var beforeTicks = Stopwatch.GetTimestamp();
-
-				if (isAsync)
-					response = await serializer.DeserializeAsync<TResponse>(responseStream, cancellationToken).ConfigureAwait(false);
-				else
-					response = serializer.Deserialize<TResponse>(responseStream);
-
-				var deserializeResponseMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
-
-				if (deserializeResponseMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
-					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportDeserializeResponseMs, deserializeResponseMs);
-
-				return response;
-			}
-			catch (JsonException ex) when (ex.Message.Contains("The input does not contain any JSON tokens"))
-			{
+			if (!requestData.ValidateResponseContentType(mimeType))
 				return default;
-			}
+
+			var beforeTicks = Stopwatch.GetTimestamp();
+
+			if (isAsync)
+				response = await serializer.DeserializeAsync<TResponse>(responseStream, cancellationToken).ConfigureAwait(false);
+			else
+				response = serializer.Deserialize<TResponse>(responseStream);
+
+			var deserializeResponseMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
+
+			if (deserializeResponseMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
+				Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportDeserializeResponseMs, deserializeResponseMs);
+
+			if (!response.LeaveOpen)
+				responseStream.Dispose();
+
+			return response;
+		}
+		catch (JsonException ex) when (ex.Message.Contains("The input does not contain any JSON tokens"))
+		{
+			responseStream.Dispose();
+			return default;
 		}
 	}
 

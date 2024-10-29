@@ -154,43 +154,43 @@ public class HttpRequestInvoker : IRequestInvoker
 			ex = e;
 		}
 
-		var isStreamResponse = typeof(TResponse) == typeof(StreamResponse);
+		TResponse response;
 
-		using (isStreamResponse ? DiagnosticSources.SingletonDisposable : receivedResponse)
+		try
 		{
-			TResponse response;
+			if (isAsync)
+				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+						.ConfigureAwait(false);
+			else
+				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
+						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
-			try
-			{
-				if (isAsync)
-					response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-							.ConfigureAwait(false);
-				else
-					response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-							(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+			// Defer disposal of the response message
+			if (response is StreamResponse sr)
+				sr.Finalizer = () => receivedResponse.Dispose();
 
-				// Defer disposal of the response message
-				if (response is StreamResponse sr)
-					sr.Finalizer = () => receivedResponse.Dispose();
-
-				if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
-					return response;
-
-				var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
-
-				if (attributes is null) return response;
-
-				foreach (var attribute in attributes)
-					Activity.Current?.SetTag(attribute.Key, attribute.Value);
-
+			if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
 				return response;
-			}
-			catch
-			{
-				receivedResponse.Dispose(); // if there's an exception, ensure we always release the response so that the connection is freed.
-				throw;
-			}
+
+			var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+
+			if (attributes is null) return response;
+
+			foreach (var attribute in attributes)
+				Activity.Current?.SetTag(attribute.Key, attribute.Value);
+
+			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
+			// to release the connection.
+			if (!response.LeaveOpen)
+				receivedResponse.Dispose();
+
+			return response;
+		}
+		catch
+		{
+			receivedResponse.Dispose(); // if there's an exception, ensure we always release the response so that the connection is freed.
+			throw;
 		}
 	}
 

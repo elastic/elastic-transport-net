@@ -190,6 +190,9 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				}
 			}
 
+			if (!response.LeaveOpen)
+				receivedResponse.Dispose();
+
 			return response;
 		}
 		catch
