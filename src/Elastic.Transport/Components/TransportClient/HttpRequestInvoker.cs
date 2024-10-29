@@ -217,7 +217,7 @@ public class HttpRequestInvoker : IRequestInvoker
 				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(header.Key, header.Value);
 			}
-		else if (requestData.ResponseHeadersToParse.Count > 0)
+		else if (requestData.ResponseHeadersToParse is { Count:  > 0 })
 			foreach (var headerToParse in requestData.ResponseHeadersToParse)
 				if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 				{

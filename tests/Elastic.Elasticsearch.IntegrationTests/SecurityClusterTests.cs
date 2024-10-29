@@ -37,7 +37,7 @@ public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
 			new DefaultRequestParameters(),
 			new RequestConfiguration
 			{
-				AuthenticationHeader = new BasicAuthentication("unknown-user", "bad-password")
+				Authentication = new BasicAuthentication("unknown-user", "bad-password")
 			}
 		);
 		response.ApiCallDetails.Should().NotBeNull();

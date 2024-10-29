@@ -84,7 +84,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	public override ResponseBuilder ResponseBuilder => new ElasticsearchResponseBuilder();
 
 	/// <inheritdoc cref="ProductRegistration.DefaultMimeType"/>
-	public override string DefaultMimeType => _clientMajorVersion.HasValue ? $"application/vnd.elasticsearch+json;compatible-with={_clientMajorVersion.Value}" : null;
+	public override string? DefaultMimeType => _clientMajorVersion.HasValue ? $"application/vnd.elasticsearch+json;compatible-with={_clientMajorVersion.Value}" : null;
 
 	/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 	public const string SniffPath = "_nodes/http,settings";

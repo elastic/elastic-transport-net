@@ -33,7 +33,7 @@ internal static class ResponseBuilderDefaults
 /// <summary>
 ///     A helper class that deals with handling how a <see cref="Stream" /> is transformed to the requested
 ///     <see cref="TransportResponse" /> implementation. This includes handling optionally buffering based on
-///     <see cref="ITransportConfiguration.DisableDirectStreaming" />. And handling short circuiting special responses
+///     <see cref="IRequestConfiguration.DisableDirectStreaming" />. And handling short circuiting special responses
 ///     such as <see cref="StringResponse" />, <see cref="BytesResponse" /> and <see cref="VoidResponse" />
 /// </summary>
 internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : ErrorResponse, new()
@@ -202,7 +202,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		where TResponse : TransportResponse, new()
 	{
 		byte[] bytes = null;
-		var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ?? requestData.ConnectionSettings.DisableDirectStreaming;
+		var disableDirectStreaming = requestData.DisableDirectStreaming;
 		var requiresErrorDeserialization = RequiresErrorDeserialization(details, requestData);
 
 		var ownsStream = false;

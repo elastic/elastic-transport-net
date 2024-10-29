@@ -32,7 +32,7 @@ public class VirtualizedCluster
 			postData: PostData.Serializable(new { }),
 			requestParameters: new DefaultRequestParameters(),
 			openTelemetryData: default,
-			localConfiguration: r?.Invoke(new RequestConfigurationDescriptor(null)),
+			localConfiguration: r?.Invoke(new RequestConfigurationDescriptor()),
 			responseBuilder: null
 		);
 		_asyncCall = async (t, r) =>
@@ -44,7 +44,7 @@ public class VirtualizedCluster
 				postData: PostData.Serializable(new { }),
 				requestParameters: new DefaultRequestParameters(),
 				openTelemetryData: default,
-				localConfiguration: r?.Invoke(new RequestConfigurationDescriptor(null)),
+				localConfiguration: r?.Invoke(new RequestConfigurationDescriptor()),
 				responseBuilder: null,
 				CancellationToken.None
 			).ConfigureAwait(false);

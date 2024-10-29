@@ -79,7 +79,7 @@ public abstract partial class PostData
 	{
 		buffer = null;
 		var stream = writableStream;
-		disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming;
+		disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming ?? false;
 		return stream;
 	}
 
@@ -92,7 +92,7 @@ public abstract partial class PostData
 	protected void BufferIfNeeded(ITransportConfiguration settings, ref MemoryStream buffer,
 		ref Stream stream)
 	{
-		var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming;
+		var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming ?? false;
 		if (!disableDirectStreaming) return;
 
 		buffer = settings.MemoryStreamFactory.Create();
@@ -105,7 +105,7 @@ public abstract partial class PostData
 	/// </summary>
 	protected void FinishStream(Stream writableStream, MemoryStream buffer, ITransportConfiguration settings)
 	{
-		var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming;
+		var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming ?? false;
 		if (buffer == null || !disableDirectStreaming) return;
 
 		buffer.Position = 0;
@@ -127,7 +127,7 @@ public abstract partial class PostData
 		FinishStreamAsync(Stream writableStream, MemoryStream buffer, ITransportConfiguration settings,
 			CancellationToken ctx)
 	{
-		var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming;
+		var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming ?? false;
 		if (buffer == null || !disableDirectStreaming) return;
 
 		buffer.Position = 0;

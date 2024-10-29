@@ -14,7 +14,7 @@ namespace Elastic.Transport;
 /// </summary>
 public readonly struct HeadersList : IEnumerable<string>
 {
-	private readonly List<string> _headers;
+	private readonly List<string> _headers = [];
 
 	/// <summary>
 	/// Create a new <see cref="HeadersList"/> from an existing enumerable of header names.
@@ -23,63 +23,51 @@ public readonly struct HeadersList : IEnumerable<string>
 	/// <param name="headers">The header names to initialise the <see cref="HeadersList"/> with.</param>
 	public HeadersList(IEnumerable<string> headers)
 	{
-		_headers = new List<string>();
-
 		foreach (var header in headers)
 		{
 			if (!_headers.Contains(header, StringComparer.OrdinalIgnoreCase))
-			{
 				_headers.Add(header);
-			}
 		}
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
-	/// <param name="headers"></param>
-	/// <param name="additionalHeader"></param>
+	/// <summary> Represents a unique, case-insensitive, immutable collection of header names.  </summary>
 	public HeadersList(IEnumerable<string> headers, string additionalHeader)
 	{
-		_headers = new List<string>();
-
 		foreach (var header in headers)
 		{
 			if (!_headers.Contains(header, StringComparer.OrdinalIgnoreCase))
-			{
 				_headers.Add(header);
-			}
 		}
 
-		if (!_headers.Contains(additionalHeader, StringComparer.OrdinalIgnoreCase))
-		{
-			_headers.Add(additionalHeader);
-		}
+		if (!_headers.Contains(additionalHeader, StringComparer.OrdinalIgnoreCase)) _headers.Add(additionalHeader);
+	}
+
+	/// <summary> Represents a unique, case-insensitive, immutable collection of header names. </summary>
+	public HeadersList(IEnumerable<string> headers, IEnumerable<string> otherHeaders)
+		: this(new HeadersList(headers), new HeadersList(otherHeaders))
+	{
 	}
 
 	/// <summary>
-	/// 
+	/// Initializes a new instance of <see cref="HeadersList"/> by combining two existing <see cref="HeadersList"/> instances.
+	/// Duplicate names, including those which only differ by case, will be ignored.
 	/// </summary>
-	/// <param name="headers"></param>
-	/// <param name="otherHeaders"></param>
-	public HeadersList(IEnumerable<string> headers, IEnumerable<string> otherHeaders)
+	/// <param name="headers">The first set of header names to initialize the <see cref="HeadersList"/> with.</param>
+	/// <param name="otherHeaders">The second set of header names to initialize the <see cref="HeadersList"/> with.</param>
+	public HeadersList(HeadersList? headers, HeadersList? otherHeaders)
 	{
-		_headers = new List<string>();
+		AddToHeaders(headers);
+		AddToHeaders(otherHeaders);
+	}
+
+	private void AddToHeaders(HeadersList? headers)
+	{
+		if (headers is null) return;
 
 		foreach (var header in headers)
 		{
 			if (!_headers.Contains(header, StringComparer.OrdinalIgnoreCase))
-			{
 				_headers.Add(header);
-			}
-		}
-
-		foreach (var header in otherHeaders)
-		{
-			if (!_headers.Contains(header, StringComparer.OrdinalIgnoreCase))
-			{
-				_headers.Add(header);
-			}
 		}
 	}
 
@@ -92,10 +80,10 @@ public readonly struct HeadersList : IEnumerable<string>
 	/// <summary>
 	/// Gets the number of elements contained in the <see cref="HeadersList"/>.
 	/// </summary>
-	public int Count => _headers is null ? 0 : _headers.Count;
+	public int Count => _headers.Count;
 
 	/// <inheritdoc />
-	public IEnumerator<string> GetEnumerator() => _headers?.GetEnumerator() ?? (IEnumerator<string>)new EmptyEnumerator<string>();
+	public IEnumerator<string> GetEnumerator() => _headers.GetEnumerator();
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 

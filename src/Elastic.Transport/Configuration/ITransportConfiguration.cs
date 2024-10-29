@@ -17,19 +17,10 @@ namespace Elastic.Transport;
 /// All the transport configuration that you as the user can use to steer the behavior of the <see cref="ITransport{TConfiguration}"/> and all the components such
 /// as <see cref="IRequestInvoker"/> <see cref="NodePool"/> and <see cref="Serializer"/>.
 /// </summary>
-public interface ITransportConfiguration : IDisposable
+public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 {
-	/// <inheritdoc cref="AuthorizationHeader"/>
-	AuthorizationHeader Authentication { get; }
-
-	/// <summary> Provides a semaphoreslim to transport implementations that need to limit access to a resource</summary>
+	/// <summary> Provides a <see cref="SemaphoreSlim"/> to transport implementations that need to limit access to a resource</summary>
 	SemaphoreSlim BootstrapLock { get; }
-
-	/// <summary>
-	/// Use the following certificates to authenticate all HTTP requests. You can also set them on individual
-	/// request using <see cref="RequestConfiguration.ClientCertificates" />
-	/// </summary>
-	X509CertificateCollection ClientCertificates { get; }
 
 	/// <summary> The connection abstraction behind which all actual IO happens</summary>
 	IRequestInvoker Connection { get; }
@@ -69,38 +60,6 @@ public interface ITransportConfiguration : IDisposable
 	bool DisableAutomaticProxyDetection { get; }
 
 	/// <summary>
-	/// When set to true will disable (de)serializing directly to the request and response stream and return a byte[]
-	/// copy of the raw request and response. Defaults to false
-	/// </summary>
-	bool DisableDirectStreaming { get; }
-
-	/// <summary>
-	/// When set to true will disable capturing an audit trail for requests.
-	/// </summary>
-	bool DisableAuditTrail { get; }
-
-	/// <summary>
-	/// This signals that we do not want to send initial pings to unknown/previously dead nodes
-	/// and just send the call straightaway
-	/// </summary>
-	bool DisablePings { get; }
-
-	/// <summary>
-	/// Enable gzip compressed requests and responses
-	/// </summary>
-	bool EnableHttpCompression { get; }
-
-	/// <summary>
-	/// Try to send these headers for every request
-	/// </summary>
-	NameValueCollection? Headers { get; }
-
-	/// <summary>
-	/// Whether HTTP pipelining is enabled. The default is <c>true</c>
-	/// </summary>
-	bool HttpPipeliningEnabled { get; }
-
-	/// <summary>
 	/// KeepAliveInterval - specifies the interval, in milliseconds, between
 	/// when successive keep-alive packets are sent if no acknowledgement is
 	/// received.
@@ -117,20 +76,6 @@ public interface ITransportConfiguration : IDisposable
 	/// The maximum amount of time a node is allowed to marked dead
 	/// </summary>
 	TimeSpan? MaxDeadTimeout { get; }
-
-	/// <summary>
-	/// When a retryable exception occurs or status code is returned this controls the maximum
-	/// amount of times we should retry the call to Elasticsearch
-	/// </summary>
-	int? MaxRetries { get; }
-
-	/// <summary>
-	/// Limits the total runtime including retries separately from <see cref="RequestTimeout" />
-	/// <pre>
-	/// When not specified defaults to <see cref="RequestTimeout" /> which itself defaults to 60 seconds
-	/// </pre>
-	/// </summary>
-	TimeSpan? MaxRetryTimeout { get; }
 
 	/// <summary> Provides a memory stream factory</summary>
 	MemoryStreamFactory MemoryStreamFactory { get; }
@@ -157,16 +102,6 @@ public interface ITransportConfiguration : IDisposable
 	Action<RequestData>? OnRequestDataCreated { get; }
 
 	/// <summary>
-	/// When enabled, all headers from the HTTP response will be included in the <see cref="ApiCallDetails"/>.
-	/// </summary>
-	bool? ParseAllHeaders { get; }
-
-	/// <summary>
-	/// The timeout in milliseconds to use for ping requests, which are issued to determine whether a node is alive
-	/// </summary>
-	TimeSpan? PingTimeout { get; }
-
-	/// <summary>
 	/// When set will force all connections through this proxy
 	/// </summary>
 	string ProxyAddress { get; }
@@ -188,17 +123,6 @@ public interface ITransportConfiguration : IDisposable
 
 	/// <summary>The serializer to use to serialize requests and deserialize responses</summary>
 	Serializer RequestResponseSerializer { get; }
-
-	/// <summary>
-	/// The timeout in milliseconds for each request to Elasticsearch
-	/// </summary>
-	TimeSpan RequestTimeout { get; }
-
-	/// <summary>
-	/// A <see cref="HeadersList"/> containing the names of all HTTP response headers to attempt to parse and
-	/// included on the <see cref="ApiCallDetails"/>.
-	/// </summary>
-	HeadersList ResponseHeadersToParse { get; }
 
 	/// <summary>
 	/// Register a ServerCertificateValidationCallback per request
@@ -234,13 +158,6 @@ public interface ITransportConfiguration : IDisposable
 	bool SniffsOnStartup { get; }
 
 	/// <summary>
-	/// Instead of following a c/go like error checking on response.IsValid do throw an exception (except when <see cref="ApiCallDetails.SuccessOrKnownError"/> is false)
-	/// on the client when a call resulted in an exception on either the client or the Elasticsearch server.
-	/// <para>Reasons for such exceptions could be search parser errors, index missing exceptions, etc...</para>
-	/// </summary>
-	bool ThrowExceptions { get; }
-
-	/// <summary>
 	/// Access to <see cref="UrlFormatter"/> instance that is aware of this <see cref="ITransportConfiguration"/> instance
 	/// </summary>
 	UrlFormatter UrlFormatter { get; }
@@ -265,24 +182,9 @@ public interface ITransportConfiguration : IDisposable
 	Func<HttpMethod, int, bool> StatusCodeToResponseSuccess { get; }
 
 	/// <summary>
-	/// Whether the request should be sent with chunked Transfer-Encoding.
-	/// </summary>
-	bool TransferEncodingChunked { get; }
-
-	/// <summary>
 	/// DnsRefreshTimeout for the connections. Defaults to 5 minutes.
 	/// </summary>
 	TimeSpan DnsRefreshTimeout { get; }
-
-	/// <summary>
-	/// Enable statistics about TCP connections to be collected when making a request
-	/// </summary>
-	bool EnableTcpStats { get; }
-
-	/// <summary>
-	/// Enable statistics about thread pools to be collected when making a request
-	/// </summary>
-	bool EnableThreadPoolStats { get; }
 
 	/// <summary>
 	/// Provide hints to serializer and products to produce pretty, non minified json.

@@ -33,12 +33,12 @@ public enum PipelineFailure
 	CouldNotStartSniffOnStartup,
 
 	/// <summary>
-	/// The overall timeout specified by <see cref="ITransportConfiguration.MaxRetryTimeout"/> was reached
+	/// The overall timeout specified by <see cref="IRequestConfiguration.MaxRetryTimeout"/> was reached
 	/// </summary>
 	MaxTimeoutReached,
 
 	/// <summary>
-	/// The overall max retries as specified by <see cref="ITransportConfiguration.MaxRetries"/> was reached
+	/// The overall max retries as specified by <see cref="IRequestConfiguration.MaxRetries"/> was reached
 	/// </summary>
 	MaxRetriesReached,
 

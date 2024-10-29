@@ -47,7 +47,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		_productRegistration = configurationValues.ProductRegistration;
 		_responseBuilder = _productRegistration.ResponseBuilder;
 		_nodePredicate = _settings.NodePredicate ?? _productRegistration.NodePredicate;
-		RequestConfiguration = requestConfiguration;
+		RequestConfig = requestConfiguration;
 		StartedOn = dateTimeProvider.Now();
 	}
 
@@ -66,9 +66,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			{
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
-				AuthenticationHeader = RequestConfiguration?.AuthenticationHeader ?? _settings.Authentication,
-				EnableHttpPipelining = RequestConfiguration?.EnableHttpPipelining ?? _settings.HttpPipeliningEnabled,
-				ForceNode = RequestConfiguration?.ForceNode
+				Authentication = RequestConfig?.Authentication ?? _settings.Authentication,
+				EnableHttpPipelining = RequestConfig?.HttpPipeliningEnabled ?? _settings.HttpPipeliningEnabled,
+				ForceNode = RequestConfig?.ForceNode
 			};
 
 			return _pingAndSniffRequestConfiguration;
@@ -100,9 +100,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	}
 
 	public override int MaxRetries =>
-		RequestConfiguration?.ForceNode != null
+		RequestConfig?.ForceNode != null
 			? 0
-			: Math.Min(RequestConfiguration?.MaxRetries ?? _settings.MaxRetries.GetValueOrDefault(int.MaxValue), _nodePool.MaxRetries);
+			: Math.Min(RequestConfig?.MaxRetries ?? _settings.MaxRetries.GetValueOrDefault(int.MaxValue), _nodePool.MaxRetries);
 
 	public bool Refresh { get; private set; }
 
@@ -141,15 +141,15 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	public override DateTimeOffset StartedOn { get; }
 
 	private TimeSpan PingTimeout =>
-		RequestConfiguration?.PingTimeout
+		RequestConfig?.PingTimeout
 		?? _settings.PingTimeout
-		?? (_nodePool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
+		?? (_nodePool.UsingSsl ? RequestConfiguration.DefaultPingTimeoutOnSsl : RequestConfiguration.DefaultPingTimeout);
 
-	private IRequestConfiguration RequestConfiguration { get; }
+	private IRequestConfiguration RequestConfig { get; }
 
-	private bool RequestDisabledSniff => RequestConfiguration != null && (RequestConfiguration.DisableSniff ?? false);
+	private bool RequestDisabledSniff => RequestConfig != null && (RequestConfig.DisableSniff ?? false);
 
-	private TimeSpan RequestTimeout => RequestConfiguration?.RequestTimeout ?? _settings.RequestTimeout;
+	private TimeSpan RequestTimeout => RequestConfig?.RequestTimeout ?? _settings.RequestTimeout ?? RequestConfiguration.DefaultRequestTimeout;
 
 	public override void AuditCancellationRequested() => Audit(CancellationRequested).Dispose();
 
@@ -265,7 +265,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	{
 		if (!FirstPoolUsageNeedsSniffing) return;
 
-		if (!semaphore.Wait(_settings.RequestTimeout))
+		if (!semaphore.Wait(RequestTimeout))
 		{
 			if (FirstPoolUsageNeedsSniffing)
 				throw new PipelineException(PipelineFailure.CouldNotStartSniffOnStartup, null);
@@ -299,7 +299,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 		// TODO cancellationToken could throw here and will bubble out as OperationCancelledException
 		// everywhere else it would bubble out wrapped in a `UnexpectedTransportException`
-		var success = await semaphore.WaitAsync(_settings.RequestTimeout, cancellationToken).ConfigureAwait(false);
+		var success = await semaphore.WaitAsync(RequestTimeout, cancellationToken).ConfigureAwait(false);
 		if (!success)
 		{
 			if (FirstPoolUsageNeedsSniffing)
@@ -353,9 +353,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 	public override IEnumerable<Node> NextNode()
 	{
-		if (RequestConfiguration?.ForceNode != null)
+		if (RequestConfig?.ForceNode != null)
 		{
-			yield return new Node(RequestConfiguration.ForceNode);
+			yield return new Node(RequestConfig.ForceNode);
 
 			yield break;
 		}
@@ -537,11 +537,11 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	}
 
 	private bool PingDisabled(Node node) =>
-		(RequestConfiguration?.DisablePing).GetValueOrDefault(false)
-		|| _settings.DisablePings || !_nodePool.SupportsPinging || !node.IsResurrected;
+		(RequestConfig?.DisablePings).GetValueOrDefault(false)
+		|| (_settings.DisablePings ?? false) || !_nodePool.SupportsPinging || !node.IsResurrected;
 
-	private Auditable Audit(AuditEvent type, Node node = null) =>
-		!_settings.DisableAuditTrail ? (new(type, ref _auditTrail, _dateTimeProvider, node)) : null;
+	private Auditable? Audit(AuditEvent type, Node node = null) =>
+		(!_settings.DisableAuditTrail ?? true) ? (new(type, ref _auditTrail, _dateTimeProvider, node)) : null;
 
 	private static void ThrowBadAuthPipelineExceptionWhenNeeded(ApiCallDetails details, TransportResponse response = null)
 	{

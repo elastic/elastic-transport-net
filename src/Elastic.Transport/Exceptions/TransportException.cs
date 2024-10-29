@@ -15,7 +15,7 @@ namespace Elastic.Transport;
 /// <summary>
 /// Exceptions that occur are wrapped inside this exception. This is done to not lose valuable diagnostic information.
 /// <para>
-/// When <see cref="ITransportConfiguration.ThrowExceptions"/> is set these exceptions are rethrown and need
+/// When <see cref="IRequestConfiguration.ThrowExceptions"/> is set these exceptions are rethrown and need
 /// to be caught
 /// </para>
 /// </summary>

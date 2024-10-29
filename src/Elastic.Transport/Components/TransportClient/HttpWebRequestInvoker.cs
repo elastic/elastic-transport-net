@@ -232,7 +232,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				responseHeaders.Add(key, responseMessage.Headers.GetValues(key));
 			}
 		}
-		else if (requestData.ResponseHeadersToParse.Count > 0)
+		else if (requestData.ResponseHeadersToParse is { Count: > 0 })
 		{
 			foreach (var headerToParse in requestData.ResponseHeadersToParse)
 			{

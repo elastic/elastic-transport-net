@@ -60,7 +60,7 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	public override MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
 
 	/// <inheritdoc cref="ProductRegistration.DefaultMimeType"/>
-	public override string DefaultMimeType => null;
+	public override string? DefaultMimeType => null;
 
 	/// <inheritdoc cref="ProductRegistration.ProductAssemblyVersion"/>
 	public override string ProductAssemblyVersion { get; }
