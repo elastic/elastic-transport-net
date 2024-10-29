@@ -33,13 +33,13 @@ public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
 	[Fact]
 	public void SyncRequestDoesNotThrowOnBadAuth()
 	{
-		var response = RequestHandler.Request<StringResponse>(GET, "/", null, new DefaultRequestParameters
-		{
-			RequestConfiguration = new RequestConfiguration
+		var response = RequestHandler.Request<StringResponse>(GET, "/", null,
+			new DefaultRequestParameters(),
+			new RequestConfiguration
 			{
 				AuthenticationHeader = new BasicAuthentication("unknown-user", "bad-password")
 			}
-		});
+		);
 		response.ApiCallDetails.Should().NotBeNull();
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeFalse();
 	}

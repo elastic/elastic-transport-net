@@ -129,7 +129,7 @@ public class OpenTelemetryTests
 		var mre = new ManualResetEvent(false);
 
 		var callCounter = 0;
-		using var listener = new ActivityListener()
+		using var listener = new ActivityListener
 		{
 			ActivityStarted = _ => { },
 			ActivityStopped = activity =>
@@ -149,7 +149,7 @@ public class OpenTelemetryTests
 
 		transport ??= new DistributedTransport(InMemoryConnectionFactory.Create());
 
-		_ = await transport.RequestAsync<VoidResponse>(HttpMethod.GET, "/", null, null, openTelemetryData);
+		_ = await transport.RequestAsync<VoidResponse>(HttpMethod.GET, "/", null, null, openTelemetryData, null, null, default);
 
 		mre.WaitOne(TimeSpan.FromSeconds(1)).Should().BeTrue();
 	}

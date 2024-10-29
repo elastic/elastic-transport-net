@@ -14,10 +14,10 @@ public readonly struct OpenTelemetryData
 	/// <summary>
 	/// The name to use for spans relating to a request.
 	/// </summary>
-	public readonly string? SpanName { get; init; }
+	public string? SpanName { get; init; }
 
 	/// <summary>
 	/// Additional span attributes for transport spans relating to a request.
 	/// </summary>
-	public readonly Dictionary<string, object>? SpanAttributes { get; init; }
+	public Dictionary<string, object>? SpanAttributes { get; init; }
 }

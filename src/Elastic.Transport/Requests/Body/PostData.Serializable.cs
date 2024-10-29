@@ -42,8 +42,7 @@ public abstract partial class PostData
 			FinishStream(writableStream, buffer, settings);
 		}
 
-		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
-			CancellationToken cancellationToken)
+		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, CancellationToken cancellationToken)
 		{
 			MemoryStream buffer = null;
 			var stream = writableStream;

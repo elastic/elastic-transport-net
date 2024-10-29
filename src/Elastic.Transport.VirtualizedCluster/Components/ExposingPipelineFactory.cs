@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+#nullable enable
 namespace Elastic.Transport.VirtualizedCluster.Components;
 
 /// <summary>
@@ -14,7 +15,7 @@ public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFac
 		DateTimeProvider = dateTimeProvider;
 		MemoryStreamFactory = TransportConfiguration.DefaultMemoryStreamFactory;
 		Configuration = configuration;
-		Pipeline = Create(Configuration, DateTimeProvider, MemoryStreamFactory, new DefaultRequestParameters());
+		Pipeline = Create(Configuration, DateTimeProvider, MemoryStreamFactory, null);
 		RequestHandler = new DistributedTransport<TConfiguration>(Configuration, this, DateTimeProvider, MemoryStreamFactory);
 	}
 
@@ -26,6 +27,6 @@ public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFac
 	public ITransport<TConfiguration> RequestHandler { get; }
 
 	public override RequestPipeline Create(TConfiguration configurationValues, DateTimeProvider dateTimeProvider,
-		MemoryStreamFactory memoryStreamFactory, RequestParameters requestParameters) =>
-			new DefaultRequestPipeline<TConfiguration>(Configuration, DateTimeProvider, MemoryStreamFactory, requestParameters ?? new DefaultRequestParameters());
+		MemoryStreamFactory memoryStreamFactory, IRequestConfiguration? requestConfiguration) =>
+			new DefaultRequestPipeline<TConfiguration>(Configuration, DateTimeProvider, MemoryStreamFactory, requestConfiguration);
 }

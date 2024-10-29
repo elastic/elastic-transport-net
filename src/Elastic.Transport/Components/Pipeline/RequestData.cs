@@ -28,36 +28,28 @@ public sealed class RequestData
 	public const string OpaqueIdHeader = "X-Opaque-Id";
 	public const string RunAsSecurityHeader = "es-security-runas-user";
 
-	private Uri _requestUri;
-	private Node _node;
+	private Uri? _requestUri;
+	private Node? _node;
 
 	public RequestData(
-		HttpMethod method, string path,
-		PostData data,
+		HttpMethod method,
+		string pathAndQuery,
+		PostData? data,
 		ITransportConfiguration global,
-		RequestParameters local,
+		IRequestConfiguration? local,
+		CustomResponseBuilder? customResponseBuilder,
 		MemoryStreamFactory memoryStreamFactory,
 		OpenTelemetryData openTelemetryData
 	)
-		: this(method, data, global, local?.RequestConfiguration, memoryStreamFactory)
 	{
-		_path = path;
 		OpenTelemetryData = openTelemetryData;
-		CustomResponseBuilder = local?.CustomResponseBuilder;
-		PathAndQuery = CreatePathWithQueryStrings(path, ConnectionSettings, local);
-	}
-
-	private RequestData(HttpMethod method,
-		PostData data,
-		ITransportConfiguration global,
-		IRequestConfiguration local,
-		MemoryStreamFactory memoryStreamFactory
-	)
-	{
+		CustomResponseBuilder = customResponseBuilder;
 		ConnectionSettings = global;
 		MemoryStreamFactory = memoryStreamFactory;
 		Method = method;
 		PostData = data;
+
+		PathAndQuery = pathAndQuery;
 
 		if (data != null)
 			data.DisableDirectStreaming = local?.DisableDirectStreaming ?? global.DisableDirectStreaming;
@@ -119,19 +111,15 @@ public sealed class RequestData
 			ResponseHeadersToParse = new HeadersList(local.ResponseHeadersToParse, global.ResponseHeadersToParse);
 		}
 		else
-		{
 			ResponseHeadersToParse = global.ResponseHeadersToParse;
-		}
 	}
-
-	private readonly string _path;
 
 	public string Accept { get; }
 	public IReadOnlyCollection<int> AllowedStatusCodes { get; }
 	public AuthorizationHeader AuthenticationHeader { get; }
 	public X509CertificateCollection ClientCertificates { get; }
 	public ITransportConfiguration ConnectionSettings { get; }
-	public CustomResponseBuilder CustomResponseBuilder { get; }
+	public CustomResponseBuilder? CustomResponseBuilder { get; }
 	public bool DisableAutomaticProxyDetection { get; }
 	public HeadersList ResponseHeadersToParse { get; }
 	public bool ParseAllHeaders { get; }
@@ -143,7 +131,7 @@ public sealed class RequestData
 	public MemoryStreamFactory MemoryStreamFactory { get; }
 	public HttpMethod Method { get; }
 
-	public Node? Node
+	public Node Node
 	{
 		get => _node;
 		set
@@ -159,13 +147,13 @@ public sealed class RequestData
 	public string PathAndQuery { get; }
 	public TimeSpan PingTimeout { get; }
 	public bool Pipelined { get; }
-	public PostData PostData { get; }
+	public PostData? PostData { get; }
 	public string ProxyAddress { get; }
 	public string ProxyPassword { get; }
 	public string ProxyUsername { get; }
 	public string ContentType { get; }
 	public TimeSpan RequestTimeout { get; }
-	public string RunAs { get; }
+	public string? RunAs { get; }
 	public IReadOnlyCollection<int> SkipDeserializationForStatusCodes { get; }
 	public bool ThrowExceptions { get; }
 	public UserAgent UserAgent { get; }
@@ -197,35 +185,7 @@ public sealed class RequestData
 
 	internal OpenTelemetryData OpenTelemetryData { get; }
 
-	public override string ToString() => $"{Method.GetStringValue()} {_path}";
-
-	// TODO This feels like its in the wrong place
-	private string CreatePathWithQueryStrings(string path, ITransportConfiguration global, RequestParameters request)
-	{
-		path ??= string.Empty;
-		if (path.Contains("?"))
-			throw new ArgumentException($"{nameof(path)} can not contain querystring parameters and needs to be already escaped");
-
-		var g = global.QueryStringParameters;
-		var l = request?.QueryString;
-
-		if ((g == null || g.Count == 0) && (l == null || l.Count == 0)) return path;
-
-		//create a copy of the global query string collection if needed.
-		var nv = g == null ? new NameValueCollection() : new NameValueCollection(g);
-
-		//set all querystring pairs from local `l` on the querystring collection
-		var formatter = ConnectionSettings.UrlFormatter;
-		nv.UpdateFromDictionary(l, formatter);
-
-		//if nv has no keys simply return path as provided
-		if (!nv.HasKeys()) return path;
-
-		//create string for query string collection where key and value are escaped properly.
-		var queryString = ToQueryString(nv);
-		path += queryString;
-		return path;
-	}
+	public override string ToString() => $"{Method.GetStringValue()} {PathAndQuery}";
 
 	internal bool ValidateResponseContentType(string responseMimeType)
 	{
@@ -248,6 +208,5 @@ public sealed class RequestData
 			|| trimmedAccept.Contains("application/vnd.elasticsearch+json") && trimmedResponseMimeType.StartsWith(DefaultMimeType, StringComparison.OrdinalIgnoreCase);
 	}
 
-	public static string ToQueryString(NameValueCollection collection) => collection.ToQueryString();
 #pragma warning restore 1591
 }

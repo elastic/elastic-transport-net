@@ -96,10 +96,13 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		string path,
 		PostData? data,
 		RequestParameters? requestParameters,
-		in OpenTelemetryData openTelemetryData
+		in OpenTelemetryData openTelemetryData,
+		IRequestConfiguration? localConfiguration,
+		CustomResponseBuilder? responseBuilder
 	)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(false, method, path, data, requestParameters, openTelemetryData).EnsureCompleted();
+		RequestCoreAsync<TResponse>(isAsync: false,
+			method, path, data, requestParameters, openTelemetryData, localConfiguration, responseBuilder).EnsureCompleted();
 
 	/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>
 	public Task<TResponse> RequestAsync<TResponse>(
@@ -108,10 +111,13 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		PostData? data,
 		RequestParameters? requestParameters,
 		in OpenTelemetryData openTelemetryData,
+		IRequestConfiguration? localConfiguration,
+		CustomResponseBuilder? responseBuilder,
 		CancellationToken cancellationToken = default
 	)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(true, method, path, data, requestParameters, openTelemetryData, cancellationToken).AsTask();
+		RequestCoreAsync<TResponse>(isAsync: true,
+			method, path, data, requestParameters, openTelemetryData, localConfiguration, responseBuilder, cancellationToken).AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(
 		bool isAsync,
@@ -120,6 +126,8 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		PostData? data,
 		RequestParameters? requestParameters,
 		OpenTelemetryData openTelemetryData,
+		IRequestConfiguration? localRequestConfiguration,
+		CustomResponseBuilder? customResponseBuilder,
 		CancellationToken cancellationToken = default
 	)
 		where TResponse : TransportResponse, new()
@@ -132,15 +140,15 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 		try
 		{
-			using var pipeline =
-				PipelineProvider.Create(Configuration, DateTimeProvider, MemoryStreamFactory, requestParameters);
+			using var pipeline = PipelineProvider.Create(Configuration, DateTimeProvider, MemoryStreamFactory, localRequestConfiguration);
 
 			if (isAsync)
 				await pipeline.FirstPoolUsageAsync(Configuration.BootstrapLock, cancellationToken).ConfigureAwait(false);
 			else
 				pipeline.FirstPoolUsage(Configuration.BootstrapLock);
 
-			var requestData = new RequestData(method, path, data, Configuration, requestParameters, MemoryStreamFactory, openTelemetryData);
+			var pathAndQuery = requestParameters?.CreatePathWithQueryStrings(path, Configuration) ?? path;
+			var requestData = new RequestData(method, pathAndQuery, data, Configuration, localRequestConfiguration, customResponseBuilder, MemoryStreamFactory, openTelemetryData);
 			Configuration.OnRequestDataCreated?.Invoke(requestData);
 			TResponse response = null;
 
