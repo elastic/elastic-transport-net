@@ -13,13 +13,9 @@ namespace Elastic.Transport;
 /// <strong>MUST</strong> be disposed after use to ensure the HTTP connection is freed for reuse.
 /// </para>
 /// </summary>
-public class StreamResponse :
-	TransportResponse<Stream>,
-	IDisposable
+public class StreamResponse : TransportResponse<Stream>, IDisposable
 {
 	private bool _disposed;
-
-	internal Action? Finalizer { get; set; }
 
 	/// <summary>
 	/// The MIME type of the response, if present.
@@ -53,7 +49,12 @@ public class StreamResponse :
 			if (disposing)
 			{
 				Body.Dispose();
-				Finalizer?.Invoke();
+
+				if (LinkedDisposables is not null)
+				{
+					foreach (var disposable in LinkedDisposables)
+						disposable.Dispose();
+				}
 			}
 
 			_disposed = true;

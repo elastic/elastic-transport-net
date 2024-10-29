@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Elastic.Transport;
@@ -35,6 +37,10 @@ public abstract class TransportResponse
 		// ReSharper disable once ConstantNullCoalescingCondition
 		?? $"{nameof(ApiCallDetails)} not set, likely a bug, reverting to default ToString(): {base.ToString()}";
 
+	[JsonIgnore]
+	internal IEnumerable<IDisposable>? LinkedDisposables { get; set; }
+
+	[JsonIgnore]
 	internal virtual bool LeaveOpen { get; } = false;
 }
 

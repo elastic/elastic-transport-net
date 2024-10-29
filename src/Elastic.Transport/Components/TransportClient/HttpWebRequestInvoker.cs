@@ -177,9 +177,17 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
 						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
-			// Defer disposal of the response message
-			if (response is StreamResponse sr)
-				sr.Finalizer = () => receivedResponse.Dispose();
+			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
+			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
+			// resources can be linked such that their disposal is deferred.
+			if (response.LeaveOpen)
+			{
+				response.LinkedDisposables = [receivedResponse];
+			}
+			else
+			{
+				receivedResponse.Dispose();
+			}
 
 			if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
 			{
@@ -189,9 +197,6 @@ public class HttpWebRequestInvoker : IRequestInvoker
 					Activity.Current?.SetTag(attribute.Key, attribute.Value);
 				}
 			}
-
-			if (!response.LeaveOpen)
-				receivedResponse.Dispose();
 
 			return response;
 		}

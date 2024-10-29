@@ -224,11 +224,15 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 			details.ResponseBodyInBytes = bytes;
 		}
 
-		if (SetSpecialTypes<TResponse>(mimeType, bytes, responseStream, requestData.MemoryStreamFactory, out var r)) return r;
+		if (TrySetSpecialType<TResponse>(mimeType, bytes, responseStream, requestData.MemoryStreamFactory, out var r)) return r;
 
 		if (details.HttpStatusCode.HasValue &&
 			requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
+		{
+			// In this scenario, we always dispose as we've explicitly skipped reading the response
+			responseStream.Dispose();
 			return null;
+		}
 
 		var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
 
@@ -249,6 +253,9 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 			if (deserializeResponseMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
 				Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportDeserializeResponseMs, deserializeResponseMs);
 
+			if (!response.LeaveOpen)
+				responseStream.Dispose();
+
 			return response;
 		}
 
@@ -260,11 +267,18 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 			{
 				response = new TResponse();
 				SetErrorOnResponse(response, error);
+
+				if (!response.LeaveOpen)
+					responseStream.Dispose();
+
 				return response;
 			}
 
 			if (!requestData.ValidateResponseContentType(mimeType))
+			{
+				responseStream.Dispose();
 				return default;
+			}
 
 			var beforeTicks = Stopwatch.GetTimestamp();
 
@@ -278,34 +292,36 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 			if (deserializeResponseMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
 				Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportDeserializeResponseMs, deserializeResponseMs);
 
-			if (!response.LeaveOpen)
+			if (response is null || !response.LeaveOpen)
 				responseStream.Dispose();
 
 			return response;
 		}
 		catch (JsonException ex) when (ex.Message.Contains("The input does not contain any JSON tokens"))
 		{
+			// Note that this is only thrown after a check if the stream length is zero. When the length is zero,
+			// `default` is returned by Deserialize(Async) instead.
 			responseStream.Dispose();
 			return default;
 		}
 	}
 
-	private static bool SetSpecialTypes<TResponse>(string mimeType, byte[] bytes, Stream responseStream,
-		MemoryStreamFactory memoryStreamFactory, out TResponse cs)
+	private static bool TrySetSpecialType<TResponse>(string mimeType, byte[] bytes, Stream responseStream,
+		MemoryStreamFactory memoryStreamFactory, out TResponse response)
 		where TResponse : TransportResponse, new()
 	{
-		cs = null;
+		response = null;
 		var responseType = typeof(TResponse);
 		if (!SpecialTypes.Contains(responseType)) return false;
 
 		if (responseType == typeof(StringResponse))
-			cs = new StringResponse(bytes.Utf8String()) as TResponse;
+			response = new StringResponse(bytes.Utf8String()) as TResponse;
 		else if (responseType == typeof(StreamResponse))
-			cs = new StreamResponse(responseStream, mimeType) as TResponse;
+			response = new StreamResponse(responseStream, mimeType) as TResponse;
 		else if (responseType == typeof(BytesResponse))
-			cs = new BytesResponse(bytes) as TResponse;
+			response = new BytesResponse(bytes) as TResponse;
 		else if (responseType == typeof(VoidResponse))
-			cs = VoidResponse.Default as TResponse;
+			response = VoidResponse.Default as TResponse;
 		else if (responseType == typeof(DynamicResponse))
 		{
 			//if not json store the result under "body"
@@ -315,17 +331,20 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 				{
 					["body"] = new DynamicValue(bytes.Utf8String())
 				};
-				cs = new DynamicResponse(dictionary) as TResponse;
+				response = new DynamicResponse(dictionary) as TResponse;
 			}
 			else
 			{
 				using var ms = memoryStreamFactory.Create(bytes);
 				var body = LowLevelRequestResponseSerializer.Instance.Deserialize<DynamicDictionary>(ms);
-				cs = new DynamicResponse(body) as TResponse;
+				response = new DynamicResponse(body) as TResponse;
 			}
 		}
 
-		return cs != null;
+		if (!response.LeaveOpen)
+			responseStream.Dispose();
+
+		return response != null;
 	}
 
 	private static bool NeedsToEagerReadStream<TResponse>()
