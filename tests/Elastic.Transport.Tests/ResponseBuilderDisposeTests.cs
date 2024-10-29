@@ -29,8 +29,8 @@ public class ResponseBuilderDisposeTests
 		await AssertResponse<StreamResponse>(true, expectedDisposed: false);
 
 	[Fact]
-	public async Task StreamResponseWith204StatusCode_StreamIsDisposed() =>
-		await AssertResponse<StreamResponse>(false, 204);
+	public async Task StreamResponseWith204StatusCode_MemoryStreamIsDisposed() =>
+		await AssertResponse<StreamResponse>(true, 204);
 
 	[Fact]
 	public async Task StreamResponseForHeadRequest_StreamIsDisposed() =>
@@ -222,8 +222,6 @@ public class ResponseBuilderDisposeTests
 		public override Task<object> DeserializeResponseAsync(Serializer serializer, ApiCallDetails response, Stream stream, CancellationToken ctx = default) =>
 			Task.FromResult<object>(new TestResponse { ApiCallDetails = response });
 	}
-
-	private class TestRequestParameters : RequestParameters { }
 
 	private class TrackDisposeStream : MemoryStream
 	{

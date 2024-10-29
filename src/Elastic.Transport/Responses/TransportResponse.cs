@@ -37,6 +37,9 @@ public abstract class TransportResponse
 		// ReSharper disable once ConstantNullCoalescingCondition
 		?? $"{nameof(ApiCallDetails)} not set, likely a bug, reverting to default ToString(): {base.ToString()}";
 
+	/// <summary>
+	/// Allows other disposable resources to to be disposed along with the response.
+	/// </summary>
 	[JsonIgnore]
 	internal IEnumerable<IDisposable>? LinkedDisposables { get; set; }
 

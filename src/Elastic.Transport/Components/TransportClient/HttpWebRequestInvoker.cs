@@ -182,10 +182,11 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			// resources can be linked such that their disposal is deferred.
 			if (response.LeaveOpen)
 			{
-				response.LinkedDisposables = [receivedResponse];
+				response.LinkedDisposables = [receivedResponse, responseStream];
 			}
 			else
 			{
+				responseStream.Dispose();
 				receivedResponse.Dispose();
 			}
 
@@ -202,7 +203,9 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		}
 		catch
 		{
-			receivedResponse.Dispose(); // ensure we always release the response so the connection is freed.
+			// if there's an exception, ensure we always release the stream and response so that the connection is freed.
+			responseStream.Dispose();
+			receivedResponse.Dispose();
 			throw;
 		}
 	}

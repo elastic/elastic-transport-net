@@ -66,11 +66,8 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		// Only attempt to set the body if the response may have content
 		if (MayHaveBody(statusCode, requestData.Method, contentLength))
 			response = SetBody<TResponse>(details, requestData, responseStream, mimeType);
-		else
-			responseStream.Dispose();
 
 		response ??= new TResponse();
-
 		response.ApiCallDetails = details;
 		return response;
 	}
@@ -101,11 +98,8 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		if (MayHaveBody(statusCode, requestData.Method, contentLength))
 			response = await SetBodyAsync<TResponse>(details, requestData, responseStream, mimeType,
 				cancellationToken).ConfigureAwait(false);
-		else
-			responseStream.Dispose();
 
 		response ??= new TResponse();
-
 		response.ApiCallDetails = details;
 		return response;
 	}
@@ -211,6 +205,8 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		var disableDirectStreaming = requestData.PostData?.DisableDirectStreaming ?? requestData.ConnectionSettings.DisableDirectStreaming;
 		var requiresErrorDeserialization = RequiresErrorDeserialization(details, requestData);
 
+		var ownsStream = false;
+
 		if (disableDirectStreaming || NeedsToEagerReadStream<TResponse>() || requiresErrorDeserialization)
 		{
 			var inMemoryStream = requestData.MemoryStreamFactory.Create();
@@ -221,22 +217,28 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 				responseStream.CopyTo(inMemoryStream, BufferSize);
 
 			bytes = SwapStreams(ref responseStream, ref inMemoryStream);
+			ownsStream = true;
 			details.ResponseBodyInBytes = bytes;
 		}
 
-		if (TrySetSpecialType<TResponse>(mimeType, bytes, responseStream, requestData.MemoryStreamFactory, out var r)) return r;
+		if (TrySetSpecialType<TResponse>(mimeType, bytes, responseStream, requestData.MemoryStreamFactory, out var response))
+		{
+			ConditionalDisposal(responseStream, ownsStream, response);
+			return response;
+		}
 
 		if (details.HttpStatusCode.HasValue &&
 			requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
 		{
 			// In this scenario, we always dispose as we've explicitly skipped reading the response
-			responseStream.Dispose();
+			if (ownsStream)
+				responseStream.Dispose();
+
 			return null;
 		}
 
 		var serializer = requestData.ConnectionSettings.RequestResponseSerializer;
 
-		TResponse response;
 		if (requestData.CustomResponseBuilder != null)
 		{
 			var beforeTicks = Stopwatch.GetTimestamp();
@@ -253,9 +255,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 			if (deserializeResponseMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
 				Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportDeserializeResponseMs, deserializeResponseMs);
 
-			if (!response.LeaveOpen)
-				responseStream.Dispose();
-
+			ConditionalDisposal(responseStream, ownsStream, response);
 			return response;
 		}
 
@@ -267,16 +267,13 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 			{
 				response = new TResponse();
 				SetErrorOnResponse(response, error);
-
-				if (!response.LeaveOpen)
-					responseStream.Dispose();
-
+				ConditionalDisposal(responseStream, ownsStream, response);
 				return response;
 			}
 
 			if (!requestData.ValidateResponseContentType(mimeType))
 			{
-				responseStream.Dispose();
+				ConditionalDisposal(responseStream, ownsStream, response);
 				return default;
 			}
 
@@ -292,17 +289,24 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 			if (deserializeResponseMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
 				Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportDeserializeResponseMs, deserializeResponseMs);
 
-			if (response is null || !response.LeaveOpen)
-				responseStream.Dispose();
-
+			ConditionalDisposal(responseStream, ownsStream, response);
 			return response;
 		}
 		catch (JsonException ex) when (ex.Message.Contains("The input does not contain any JSON tokens"))
 		{
-			// Note that this is only thrown after a check if the stream length is zero. When the length is zero,
-			// `default` is returned by Deserialize(Async) instead.
-			responseStream.Dispose();
+			// Note the exception this handles is ONLY thrown after a check if the stream length is zero.
+			// When the length is zero, `default` is returned by Deserialize(Async) instead.
+
+			ConditionalDisposal(responseStream, ownsStream, response);
 			return default;
+		}
+
+		static void ConditionalDisposal(Stream responseStream, bool ownsStream, TResponse response)
+		{
+			// We only dispose of the responseStream if we created it (i.e. it is a MemoryStream) we
+			// created via MemoryStreamFactory.
+			if (ownsStream && (response is null || !response.LeaveOpen))
+				responseStream.Dispose();
 		}
 	}
 
@@ -341,9 +345,6 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 			}
 		}
 
-		if (!response.LeaveOpen)
-			responseStream.Dispose();
-
 		return response != null;
 	}
 
@@ -356,7 +357,6 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	private static byte[] SwapStreams(ref Stream responseStream, ref MemoryStream ms)
 	{
 		var bytes = ms.ToArray();
-		responseStream.Dispose();
 		responseStream = ms;
 		responseStream.Position = 0;
 		return bytes;

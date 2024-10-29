@@ -33,6 +33,23 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 		_ = sr.ReadToEndAsync();
 	}
 
+	//[Fact]
+	//public async Task StreamResponse_MemoryStreamShouldNotBeDisposed()
+	//{
+	//	var nodePool = new SingleNodePool(Server.Uri);
+	//	var memoryStreamFactory = new TrackMemoryStreamFactory();
+	//	var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
+	//		.MemoryStreamFactory(memoryStreamFactory);
+
+	//	var transport = new DistributedTransport(config);
+
+	//	_ = await transport.PostAsync<StreamResponse>(Path, PostData.String("{}"));
+
+	//	var memoryStream = memoryStreamFactory.Created.Last();
+
+	//	memoryStream.IsDisposed.Should().BeFalse();
+	//}
+
 	[Fact]
 	public async Task StreamResponse_MemoryStreamShouldNotBeDisposed()
 	{
@@ -52,13 +69,12 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 	}
 
 	[Fact]
-	public async Task  StringResponse_MemoryStreamShouldBeDisposed()
+	public async Task StringResponse_MemoryStreamShouldBeDisposed()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
 		var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
-			.MemoryStreamFactory(memoryStreamFactory)
-			.DisableDirectStreaming(true);
+			.MemoryStreamFactory(memoryStreamFactory);
 
 		var transport = new DistributedTransport(config);
 
@@ -67,6 +83,27 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 		var memoryStream = memoryStreamFactory.Created.Last();
 
 		memoryStream.IsDisposed.Should().BeTrue();
+	}
+
+	[Fact]
+	public async Task Response_MemoryStreamShouldBeDisposed()
+	{
+		var nodePool = new SingleNodePool(Server.Uri);
+		var memoryStreamFactory = new TrackMemoryStreamFactory();
+		var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
+			.MemoryStreamFactory(memoryStreamFactory);
+
+		var transport = new DistributedTransport(config);
+
+		_ = await transport.PostAsync<TestResponse>(Path, PostData.String("{}"));
+
+		var memoryStream = memoryStreamFactory.Created.Last();
+
+		memoryStream.IsDisposed.Should().BeTrue();
+	}
+
+	private class TestResponse : TransportResponse
+	{
 	}
 
 	private class TrackDisposeStream : MemoryStream
