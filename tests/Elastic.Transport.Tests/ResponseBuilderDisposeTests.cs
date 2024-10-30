@@ -29,66 +29,34 @@ public class ResponseBuilderDisposeTests
 		await AssertResponse<StreamResponse>(true, expectedDisposed: false);
 
 	[Fact]
-	public async Task StreamResponseWith204StatusCode_MemoryStreamIsDisposed() =>
-		await AssertResponse<StreamResponse>(true, 204);
+	public async Task ResponseWithPotentialBodyButInvalidMimeType_MemoryStreamIsDisposed() =>
+		await AssertResponse<TestResponse>(true, mimeType: "application/not-valid", expectedDisposed: true);
 
 	[Fact]
-	public async Task StreamResponseForHeadRequest_StreamIsDisposed() =>
-		await AssertResponse<StreamResponse>(false, httpMethod: HttpMethod.HEAD);
+	public async Task ResponseWithPotentialBodyButSkippedStatusCode_MemoryStreamIsDisposed() =>
+		await AssertResponse<TestResponse>(true, skipStatusCode: 200, expectedDisposed: true);
 
 	[Fact]
-	public async Task StreamResponseWithZeroContentLength_StreamIsDisposed() =>
-		await AssertResponse<StreamResponse>(false, contentLength: 0);
-
-	[Fact]
-	public async Task ResponseWithPotentialBody_StreamIsDisposed() =>
-		await AssertResponse<TestResponse>(false, expectedDisposed: true);
-
-	[Fact]
-	public async Task ResponseWithPotentialBodyButInvalidMimeType_StreamIsDisposed() =>
-		await AssertResponse<TestResponse>(false, mimeType: "application/not-valid", expectedDisposed: true);
-
-	[Fact]
-	public async Task ResponseWithPotentialBodyButSkippedStatusCode_StreamIsDisposed() =>
-		await AssertResponse<TestResponse>(false, skipStatusCode: 200, expectedDisposed: true);
-
-	[Fact]
-	public async Task ResponseWithPotentialBodyButEmptyJson_StreamIsDisposed() =>
-		await AssertResponse<TestResponse>(false, responseJson: "  ", expectedDisposed: true);
+	public async Task ResponseWithPotentialBodyButEmptyJson_MemoryStreamIsDisposed() =>
+		await AssertResponse<TestResponse>(true, responseJson: "  ", expectedDisposed: true);
 
 	[Fact]
 	// NOTE: The empty string here hits a fast path in STJ which returns default if the stream length is zero.
-	public async Task ResponseWithPotentialBodyButNullResponseDuringDeserialization_StreamIsDisposed() =>
-		await AssertResponse<TestResponse>(false, responseJson: "", expectedDisposed: true);
+	public async Task ResponseWithPotentialBodyButNullResponseDuringDeserialization_MemoryStreamIsDisposed() =>
+		await AssertResponse<TestResponse>(true, responseJson: "", expectedDisposed: true);
 
 	[Fact]
-	public async Task ResponseWithPotentialBodyAndCustomResponseBuilder_StreamIsDisposed() =>
-		await AssertResponse<TestResponse>(false, customResponseBuilder: new TestCustomResponseBuilder(), expectedDisposed: true);
+	public async Task ResponseWithPotentialBodyAndCustomResponseBuilder_MemoryStreamIsDisposed() =>
+		await AssertResponse<TestResponse>(true, customResponseBuilder: new TestCustomResponseBuilder(), expectedDisposed: true);
 
 	[Fact]
 	// NOTE: We expect one memory stream factory creation when handling error responses
 	public async Task ResponseWithPotentialBodyAndErrorResponse_StreamIsDisposed() =>
-		await AssertResponse<TestResponse>(false, productRegistration: new TestProductRegistration(), expectedDisposed: true, memoryStreamCreateExpected: 1);
-
-	[Fact]
-	public async Task ResponseWithPotentialBodyAndDisableDirectStreaming_MemoryStreamIsDisposed() =>
-		await AssertResponse<TestResponse>(true, expectedDisposed: true);
-
-	[Fact]
-	public async Task ResponseWith204StatusCode_StreamIsDisposed() =>
-		await AssertResponse<TestResponse>(false, 204);
-
-	[Fact]
-	public async Task ResponseForHeadRequest_StreamIsDisposed() =>
-		await AssertResponse<TestResponse>(false, httpMethod: HttpMethod.HEAD);
-
-	[Fact]
-	public async Task ResponseWithZeroContentLength_StreamIsDisposed() =>
-		await AssertResponse<TestResponse>(false, contentLength: 0);
+		await AssertResponse<TestResponse>(true, productRegistration: new TestProductRegistration(), expectedDisposed: true);
 
 	[Fact]
 	public async Task StringResponseWithPotentialBodyAndDisableDirectStreaming_MemoryStreamIsDisposed() =>
-		await AssertResponse<StringResponse>(true, expectedDisposed: true, memoryStreamCreateExpected: 1);
+		await AssertResponse<StringResponse>(false, expectedDisposed: true, memoryStreamCreateExpected: 1);
 
 	private async Task AssertResponse<T>(bool disableDirectStreaming, int statusCode = 200, HttpMethod httpMethod = HttpMethod.GET, int contentLength = 10,
 		bool expectedDisposed = true, string mimeType = "application/json", string responseJson = "{}", int skipStatusCode = -1,
@@ -136,13 +104,11 @@ public class ResponseBuilderDisposeTests
 		if (disableDirectStreaming)
 		{
 			var memoryStream = memoryStreamFactory.Created[0];
-			stream.IsDisposed.Should().BeTrue();
 			memoryStream.IsDisposed.Should().Be(expectedDisposed);
 		}
-		else
-		{
-			stream.IsDisposed.Should().Be(expectedDisposed);
-		}
+
+		// The latest implementation should never dispose the incoming stream and assumes the caller will handler disposal
+		stream.IsDisposed.Should().Be(false);
 
 		stream = new TrackDisposeStream();
 		var ct = new CancellationToken();
@@ -156,13 +122,11 @@ public class ResponseBuilderDisposeTests
 		if (disableDirectStreaming)
 		{
 			var memoryStream = memoryStreamFactory.Created[0];
-			stream.IsDisposed.Should().BeTrue();
 			memoryStream.IsDisposed.Should().Be(expectedDisposed);
 		}
-		else
-		{
-			stream.IsDisposed.Should().Be(expectedDisposed);
-		}
+
+		// The latest implementation should never dispose the incoming stream and assumes the caller will handler disposal
+		stream.IsDisposed.Should().Be(false);
 	}
 
 	private class TestProductRegistration : ProductRegistration

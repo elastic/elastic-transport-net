@@ -111,6 +111,7 @@ public abstract partial class PostData
 		buffer.Position = 0;
 		buffer.CopyTo(writableStream, BufferSize);
 		WrittenBytes ??= buffer.ToArray();
+		buffer.Dispose();
 	}
 
 	/// <summary>
@@ -132,5 +133,10 @@ public abstract partial class PostData
 		buffer.Position = 0;
 		await buffer.CopyToAsync(writableStream, BufferSize, ctx).ConfigureAwait(false);
 		WrittenBytes ??= buffer.ToArray();
+#if NET
+		await buffer.DisposeAsync().ConfigureAwait(false);
+#else
+		buffer.Dispose();
+#endif
 	}
 }

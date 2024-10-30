@@ -230,10 +230,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		if (details.HttpStatusCode.HasValue &&
 			requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
 		{
-			// In this scenario, we always dispose as we've explicitly skipped reading the response
-			if (ownsStream)
-				responseStream.Dispose();
-
+			ConditionalDisposal(responseStream, ownsStream, response);
 			return null;
 		}
 
@@ -296,7 +293,6 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		{
 			// Note the exception this handles is ONLY thrown after a check if the stream length is zero.
 			// When the length is zero, `default` is returned by Deserialize(Async) instead.
-
 			ConditionalDisposal(responseStream, ownsStream, response);
 			return default;
 		}

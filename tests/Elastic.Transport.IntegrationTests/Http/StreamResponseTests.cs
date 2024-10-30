@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
+using System.Text;
 using System.Threading.Tasks;
 using Elastic.Transport.IntegrationTests.Plumbing;
 using Elastic.Transport.Products.Elasticsearch;
@@ -33,23 +33,6 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 		_ = sr.ReadToEndAsync();
 	}
 
-	//[Fact]
-	//public async Task StreamResponse_MemoryStreamShouldNotBeDisposed()
-	//{
-	//	var nodePool = new SingleNodePool(Server.Uri);
-	//	var memoryStreamFactory = new TrackMemoryStreamFactory();
-	//	var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
-	//		.MemoryStreamFactory(memoryStreamFactory);
-
-	//	var transport = new DistributedTransport(config);
-
-	//	_ = await transport.PostAsync<StreamResponse>(Path, PostData.String("{}"));
-
-	//	var memoryStream = memoryStreamFactory.Created.Last();
-
-	//	memoryStream.IsDisposed.Should().BeFalse();
-	//}
-
 	[Fact]
 	public async Task StreamResponse_MemoryStreamShouldNotBeDisposed()
 	{
@@ -63,9 +46,9 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 
 		_ = await transport.PostAsync<StreamResponse>(Path, PostData.String("{}"));
 
-		var memoryStream = memoryStreamFactory.Created.Last();
-
-		memoryStream.IsDisposed.Should().BeFalse();
+		// When disable direct streaming, we have 1 for the original content, 1 for the buffered request bytes and the last for the buffered response
+		memoryStreamFactory.Created.Count.Should().Be(3);
+		memoryStreamFactory.Created.Last().IsDisposed.Should().BeFalse();
 	}
 
 	[Fact]
@@ -80,13 +63,36 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 
 		_ = await transport.PostAsync<StringResponse>(Path, PostData.String("{}"));
 
-		var memoryStream = memoryStreamFactory.Created.Last();
-
-		memoryStream.IsDisposed.Should().BeTrue();
+		memoryStreamFactory.Created.Count.Should().Be(2);
+		foreach (var memoryStream in memoryStreamFactory.Created)
+		{
+			memoryStream.IsDisposed.Should().BeTrue();
+		}
 	}
 
 	[Fact]
-	public async Task Response_MemoryStreamShouldBeDisposed()
+	public async Task WhenInvalidJson_MemoryStreamShouldBeDisposed()
+	{
+		var nodePool = new SingleNodePool(Server.Uri);
+		var memoryStreamFactory = new TrackMemoryStreamFactory();
+		var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
+			.MemoryStreamFactory(memoryStreamFactory)
+			.DisableDirectStreaming(true);
+
+		var transport = new DistributedTransport(config);
+
+		var payload = new Payload { ResponseJsonString = " " };
+		_ = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload));
+
+		memoryStreamFactory.Created.Count.Should().Be(3);
+		foreach (var memoryStream in memoryStreamFactory.Created)
+		{
+			memoryStream.IsDisposed.Should().BeTrue();
+		}
+	}
+
+	[Fact]
+	public async Task WhenNoContent_MemoryStreamShouldBeDisposed()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
@@ -95,11 +101,37 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 
 		var transport = new DistributedTransport(config);
 
-		_ = await transport.PostAsync<TestResponse>(Path, PostData.String("{}"));
+		var payload = new Payload { ResponseJsonString = "", StatusCode = 204 };
+		_ = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload));
 
-		var memoryStream = memoryStreamFactory.Created.Last();
+		// We expect one for sending the request payload, but as the response is 204, we shouldn't
+		// see other memory streams being created for the response.
+		memoryStreamFactory.Created.Count.Should().Be(1);
+		foreach (var memoryStream in memoryStreamFactory.Created)
+		{
+			memoryStream.IsDisposed.Should().BeTrue();
+		}
+	}
 
-		memoryStream.IsDisposed.Should().BeTrue();
+	[Fact]
+	public async Task PlainText_MemoryStreamShouldBeDisposed()
+	{
+		var nodePool = new SingleNodePool(Server.Uri);
+		var memoryStreamFactory = new TrackMemoryStreamFactory();
+		var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
+			.MemoryStreamFactory(memoryStreamFactory)
+			.DisableDirectStreaming(true);
+
+		var transport = new DistributedTransport(config);
+
+		var payload = new Payload { ResponseJsonString = "text", ContentType = "text/plain" };
+		_ = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload));
+
+		memoryStreamFactory.Created.Count.Should().Be(3);
+		foreach (var memoryStream in memoryStreamFactory.Created)
+		{
+			memoryStream.IsDisposed.Should().BeTrue();
+		}
 	}
 
 	private class TestResponse : TransportResponse
@@ -150,9 +182,27 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 	}
 }
 
+public class Payload
+{
+	public string ResponseJsonString { get; set; } = "{}";
+	public string ContentType { get; set; } = "application/json";
+	public int StatusCode { get; set; } = 200;
+}
+
 [ApiController, Route("[controller]")]
 public class StreamResponseController : ControllerBase
 {
 	[HttpPost]
-	public Task<JsonElement> Post([FromBody] JsonElement body) => Task.FromResult(body);
+	public async Task<ActionResult> Post([FromBody] Payload payload)
+	{
+		Response.ContentType = payload.ContentType;
+
+		if (payload.StatusCode != 204)
+		{
+			await Response.BodyWriter.WriteAsync(Encoding.UTF8.GetBytes(payload.ResponseJsonString));
+			await Response.BodyWriter.CompleteAsync();
+		}
+
+		return StatusCode(payload.StatusCode);
+	}
 }
