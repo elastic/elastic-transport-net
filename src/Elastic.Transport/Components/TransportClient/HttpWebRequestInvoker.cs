@@ -121,8 +121,6 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				if (prepareRequestMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
 					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs);
 
-				requestData.MadeItToResponse = true;
-
 				//http://msdn.microsoft.com/en-us/library/system.net.httpwebresponse.getresponsestream.aspx
 				//Either the stream or the response object needs to be closed but not both although it won't
 				//throw any errors if both are closed atleast one of them has to be Closed.

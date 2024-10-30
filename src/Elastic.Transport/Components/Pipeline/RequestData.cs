@@ -153,13 +153,10 @@ public sealed class RequestData
 	public bool ParseAllHeaders { get; }
 	public bool DisableAutomaticProxyDetection { get; }
 	public bool HttpCompression { get; }
-	public bool MadeItToResponse { get; set; }
 	public int KeepAliveInterval { get; }
 	public int KeepAliveTime { get; }
 	public MemoryStreamFactory MemoryStreamFactory { get; }
 
-	public AuditEvent OnFailureAuditEvent => MadeItToResponse ? AuditEvent.BadResponse : AuditEvent.BadRequest;
-	public PipelineFailure OnFailurePipelineFailure => MadeItToResponse ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
 	public TimeSpan PingTimeout { get; }
 	public bool Pipelined { get; }
 	public string ProxyAddress { get; }

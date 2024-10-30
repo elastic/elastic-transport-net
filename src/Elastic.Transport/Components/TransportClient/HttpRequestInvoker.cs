@@ -122,7 +122,6 @@ public class HttpRequestInvoker : IRequestInvoker
 				statusCode = (int)responseMessage.StatusCode;
 			}
 
-			requestData.MadeItToResponse = true;
 			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
 			responseHeaders = ParseHeaders(requestData, responseMessage);
 

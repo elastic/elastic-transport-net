@@ -17,7 +17,7 @@ public class PipelineException : Exception
 		: base(GetMessage(failure)) => FailureReason = failure;
 
 	/// <inheritdoc cref="PipelineException"/>
-	public PipelineException(PipelineFailure failure, Exception innerException)
+	public PipelineException(PipelineFailure failure, Exception? innerException)
 		: base(GetMessage(failure), innerException) => FailureReason = failure;
 
 	/// <inheritdoc cref="PipelineFailure"/>

@@ -194,13 +194,17 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
 
 			if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType && audit is not null)
-				audit.Event = requestData.OnFailureAuditEvent;
+			{
+				var @event = response.ApiCallDetails.HttpStatusCode != null ? AuditEvent.BadResponse : BadRequest;
+				audit.Event = @event;
+			}
 
 			return response;
 		}
 		catch (Exception e) when (audit is not null)
 		{
-			audit.Event = requestData.OnFailureAuditEvent;
+			var @event = e is TransportException t && t.ApiCallDetails.HttpStatusCode != null ? AuditEvent.BadResponse : BadRequest;
+			audit.Event = @event;
 			audit.Exception = e;
 			throw;
 		}
@@ -216,7 +220,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	{
 		if (callDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false) return null;
 
-		var pipelineFailure = data.OnFailurePipelineFailure;
+		var pipelineFailure = callDetails?.HttpStatusCode != null ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
 		var innerException = callDetails?.OriginalException;
 		if (seenExceptions is not null && seenExceptions.HasAny(out var exs))
 		{
@@ -426,7 +430,10 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 			//ping should not silently accept bad but valid http responses
 			if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
-				throw new PipelineException(requestData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+			{
+				var pipelineFailure = response.ApiCallDetails.HttpStatusCode != null ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
+				throw new PipelineException(pipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+			}
 		}
 		catch (Exception e)
 		{
@@ -478,7 +485,10 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 				//sniff should not silently accept bad but valid http responses
 				if (!result.Item1.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
-					throw new PipelineException(requestData.OnFailurePipelineFailure, result.Item1.ApiCallDetails.OriginalException) { Response = result.Item1 };
+				{
+					var pipelineFailure = result.Item1.ApiCallDetails.HttpStatusCode != null ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
+					throw new PipelineException(pipelineFailure, result.Item1.ApiCallDetails.OriginalException) { Response = result.Item1 };
+				}
 
 				_nodePool.Reseed(result.Item2);
 				Refresh = true;
@@ -549,7 +559,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		|| (_settings.DisablePings ?? false) || !_nodePool.SupportsPinging || !node.IsResurrected;
 
 	private Auditable? Audit(AuditEvent type, Node node = null) =>
-		(!_settings.DisableAuditTrail ?? true) ? (new(type, ref _auditTrail, _dateTimeProvider, node)) : null;
+		!_settings.DisableAuditTrail ?? true ? new(type, ref _auditTrail, _dateTimeProvider, node) : null;
 
 	private static void ThrowBadAuthPipelineExceptionWhenNeeded(ApiCallDetails details, TransportResponse response = null)
 	{

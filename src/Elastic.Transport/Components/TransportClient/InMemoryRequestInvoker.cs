@@ -82,7 +82,6 @@ public class InMemoryRequestInvoker : IRequestInvoker
 				data.Write(stream, requestData.ConnectionSettings);
 			}
 		}
-		requestData.MadeItToResponse = true;
 
 		var sc = statusCode ?? _statusCode;
 		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
@@ -113,8 +112,6 @@ public class InMemoryRequestInvoker : IRequestInvoker
 				await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
 			}
 		}
-		requestData.MadeItToResponse = true;
-
 		var sc = statusCode ?? _statusCode;
 
 		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);

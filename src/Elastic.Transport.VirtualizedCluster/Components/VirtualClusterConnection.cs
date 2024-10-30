@@ -190,7 +190,6 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
 	{
-		requestData.MadeItToResponse = true;
 		if (rules.Count == 0)
 			throw new Exception($"No {origin} defined for the current VirtualCluster, so we do not know how to respond");
 
