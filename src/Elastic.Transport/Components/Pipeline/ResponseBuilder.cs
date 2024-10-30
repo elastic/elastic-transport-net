@@ -28,14 +28,15 @@ public abstract class ResponseBuilder
 	public abstract TResponse ToResponse<TResponse>(
 		Endpoint endpoint,
 		RequestData requestData,
-		Exception ex,
+		PostData? postData,
+		Exception? ex,
 		int? statusCode,
-		Dictionary<string, IEnumerable<string>> headers,
+		Dictionary<string, IEnumerable<string>>? headers,
 		Stream responseStream,
-		string mimeType,
+		string? mimeType,
 		long contentLength,
-		IReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats,
-		IReadOnlyDictionary<TcpState, int> tcpStats
+		IReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats,
+		IReadOnlyDictionary<TcpState, int>? tcpStats
 
 	) where TResponse : TransportResponse, new();
 
@@ -45,19 +46,29 @@ public abstract class ResponseBuilder
 	public abstract Task<TResponse> ToResponseAsync<TResponse>(
 		Endpoint endpoint,
 		RequestData requestData,
-		Exception ex,
+		PostData? postData,
+		Exception? ex,
 		int? statusCode,
-		Dictionary<string, IEnumerable<string>> headers,
+		Dictionary<string, IEnumerable<string>>? headers,
 		Stream responseStream,
-		string mimeType,
+		string? mimeType,
 		long contentLength,
-		IReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats,
-		IReadOnlyDictionary<TcpState, int> tcpStats,
+		IReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats,
+		IReadOnlyDictionary<TcpState, int>? tcpStats,
 		CancellationToken cancellationToken = default
 	) where TResponse : TransportResponse, new();
 
-	internal static ApiCallDetails Initialize(in Endpoint endpoint, RequestData requestData, Exception exception, int? statusCode, Dictionary<string, IEnumerable<string>> headers, string mimeType, IReadOnlyDictionary<string,
-		ThreadPoolStatistics> threadPoolStats, IReadOnlyDictionary<TcpState, int> tcpStats, long contentLength)
+	internal static ApiCallDetails Initialize(
+		Endpoint endpoint,
+		RequestData requestData,
+		PostData? postData,
+		Exception exception,
+		int? statusCode,
+		Dictionary<string, IEnumerable<string>> headers, string mimeType,
+		IReadOnlyDictionary<string,
+		ThreadPoolStatistics> threadPoolStats, IReadOnlyDictionary<TcpState, int> tcpStats,
+		long contentLength
+	)
 	{
 		var hasSuccessfulStatusCode = false;
 		var allowedStatusCodes = requestData.AllowedStatusCodes;
@@ -80,7 +91,7 @@ public abstract class ResponseBuilder
 			HasExpectedContentType = hasExpectedContentType,
 			OriginalException = exception,
 			HttpStatusCode = statusCode,
-			RequestBodyInBytes = requestData.PostData?.WrittenBytes,
+			RequestBodyInBytes = postData?.WrittenBytes,
 			Uri = endpoint.Uri,
 			HttpMethod = endpoint.Method,
 			TcpStats = tcpStats,

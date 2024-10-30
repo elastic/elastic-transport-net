@@ -56,16 +56,16 @@ public class HttpRequestInvoker : IRequestInvoker
 	private RequestDataHttpClientFactory HttpClientFactory { get; }
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}" />
-	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData)
+	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(false, endpoint, requestData).EnsureCompleted();
+		RequestCoreAsync<TResponse>(false, endpoint, requestData, postData).EnsureCompleted();
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}" />
-	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(true, endpoint, requestData, cancellationToken).AsTask();
+		RequestCoreAsync<TResponse>(true, endpoint, requestData, postData, cancellationToken).AsTask();
 
-	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken = default)
+	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
 		var client = GetClient(requestData);
@@ -87,12 +87,12 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			var requestMessage = CreateHttpRequestMessage(endpoint, requestData);
 
-			if (requestData.PostData is not null)
+			if (postData is not null)
 			{
 				if (isAsync)
-					await SetContentAsync(requestMessage, requestData, cancellationToken).ConfigureAwait(false);
+					await SetContentAsync(requestMessage, requestData, postData, cancellationToken).ConfigureAwait(false);
 				else
-					SetContent(requestMessage, requestData);
+					SetContent(requestMessage, requestData, postData);
 			}
 
 			using (requestMessage?.Content ?? (IDisposable)Stream.Null)
@@ -160,11 +160,11 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			if (isAsync)
 				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-					(endpoint, requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+					(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
 						.ConfigureAwait(false);
 			else
 				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-						(endpoint, requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+						(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
@@ -416,25 +416,25 @@ public class HttpRequestInvoker : IRequestInvoker
 		return requestMessage;
 	}
 
-	private static void SetContent(HttpRequestMessage message, RequestData requestData)
+	private static void SetContent(HttpRequestMessage message, RequestData requestData, PostData postData)
 	{
 		if (requestData.TransferEncodingChunked)
-			message.Content = new RequestDataContent(requestData);
+			message.Content = new RequestDataContent(requestData, postData);
 		else
 		{
 			var stream = requestData.MemoryStreamFactory.Create();
 			if (requestData.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
-				requestData.PostData.Write(zipStream, requestData.ConnectionSettings);
+				postData.Write(zipStream, requestData.ConnectionSettings);
 			}
 			else
-				requestData.PostData.Write(stream, requestData.ConnectionSettings);
+				postData.Write(stream, requestData.ConnectionSettings);
 
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
-			if (requestData.PostData.DisableDirectStreaming.GetValueOrDefault(false) && !requestData.HttpCompression)
+			if (postData.DisableDirectStreaming.GetValueOrDefault(false) && !requestData.HttpCompression)
 			{
-				message.Content = new ByteArrayContent(requestData.PostData.WrittenBytes);
+				message.Content = new ByteArrayContent(postData.WrittenBytes);
 				stream.Dispose();
 			}
 			else
@@ -450,7 +450,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		}
 	}
 
-	private static async Task SetContentAsync(HttpRequestMessage message, RequestData requestData, CancellationToken cancellationToken)
+	private static async Task SetContentAsync(HttpRequestMessage message, RequestData requestData, PostData postData, CancellationToken cancellationToken)
 	{
 		if (requestData.TransferEncodingChunked)
 			message.Content = new RequestDataContent(requestData, cancellationToken);
@@ -460,15 +460,15 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (requestData.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
-				await requestData.PostData.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				await postData.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
 			}
 			else
-				await requestData.PostData.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				await postData.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
 
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
-			if (requestData.PostData.DisableDirectStreaming.GetValueOrDefault(false) && !requestData.HttpCompression)
+			if (postData.DisableDirectStreaming.GetValueOrDefault(false) && !requestData.HttpCompression)
 			{
-				message.Content = new ByteArrayContent(requestData.PostData.WrittenBytes);
+				message.Content = new ByteArrayContent(postData.WrittenBytes);
 #if DOTNETCORE_2_1_OR_HIGHER
 					await stream.DisposeAsync().ConfigureAwait(false);
 #else

@@ -86,7 +86,7 @@ public sealed class RequestData
 		CustomResponseBuilder = customResponseBuilder;
 		ConnectionSettings = global;
 		MemoryStreamFactory = memoryStreamFactory;
-		PostData = data;
+		//PostData = data;
 
 		SkipDeserializationForStatusCodes = global.SkipDeserializationForStatusCodes;
 		DnsRefreshTimeout = global.DnsRefreshTimeout;
@@ -166,7 +166,7 @@ public sealed class RequestData
 	public PipelineFailure OnFailurePipelineFailure => MadeItToResponse ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
 	public TimeSpan PingTimeout { get; }
 	public bool Pipelined { get; }
-	public PostData? PostData { get; }
+	//public PostData? PostData { get; }
 	public string ProxyAddress { get; }
 	public string ProxyPassword { get; }
 	public string ProxyUsername { get; }

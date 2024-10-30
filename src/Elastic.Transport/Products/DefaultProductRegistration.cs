@@ -96,7 +96,7 @@ public sealed class DefaultProductRegistration : ProductRegistration
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.PingAsync"/>
-	public override Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData, CancellationToken cancellationToken) =>
+	public override Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.Ping"/>

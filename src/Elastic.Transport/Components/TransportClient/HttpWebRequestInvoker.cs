@@ -50,16 +50,16 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	void IDisposable.Dispose() {}
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
-	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData)
+	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(false, endpoint, requestData).EnsureCompleted();
+		RequestCoreAsync<TResponse>(false, endpoint, requestData, postData).EnsureCompleted();
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
-	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken = default)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(true, endpoint, requestData, cancellationToken).AsTask();
+		RequestCoreAsync<TResponse>(true, endpoint, requestData, postData, cancellationToken).AsTask();
 
-	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken = default)
+	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
 		Action unregisterWaitHandle = null;
@@ -78,8 +78,8 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 		try
 		{
-			var data = requestData.PostData;
-			var request = CreateHttpWebRequest(endpoint, requestData);
+			var data = postData;
+			var request = CreateHttpWebRequest(endpoint, requestData, postData);
 			using (cancellationToken.Register(() => request.Abort()))
 			{
 				if (data is not null)
@@ -171,11 +171,11 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 		if (isAsync)
 			response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-				(endpoint, requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+				(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
 					.ConfigureAwait(false);
 		else
 			response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-					(endpoint, requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+					(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
@@ -252,9 +252,10 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	/// </summary>
 	/// <param name="endpoint">An instance of <see cref="Endpoint"/> describing where to call out to</param>
 	/// <param name="requestData">An instance of <see cref="RequestData"/> describing how to call out to</param>
-	protected virtual HttpWebRequest CreateHttpWebRequest(Endpoint endpoint, RequestData requestData)
+	/// <param name="postData">Optional data to send over the wire</param>
+	protected virtual HttpWebRequest CreateHttpWebRequest(Endpoint endpoint, RequestData requestData, PostData? postData)
 	{
-		var request = CreateWebRequest(endpoint, requestData);
+		var request = CreateWebRequest(endpoint, requestData, postData);
 		SetAuthenticationIfNeeded(endpoint, requestData, request);
 		SetProxyIfNeeded(request, requestData);
 		SetServerCertificateValidationCallBackIfNeeded(request, requestData);
@@ -323,7 +324,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 #endif
 	}
 
-	private static HttpWebRequest CreateWebRequest(Endpoint endpoint, RequestData requestData)
+	private static HttpWebRequest CreateWebRequest(Endpoint endpoint, RequestData requestData, PostData? postData)
 	{
 		var request = (HttpWebRequest)WebRequest.Create(endpoint.Uri);
 
@@ -375,7 +376,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		//see: https://github.com/elastic/elasticsearch-net/issues/562
 		var m = endpoint.Method.GetStringValue();
 		request.Method = m;
-		if (m != "HEAD" && m != "GET" && requestData.PostData == null)
+		if (m != "HEAD" && m != "GET" && postData == null)
 			request.ContentLength = 0;
 
 		return request;

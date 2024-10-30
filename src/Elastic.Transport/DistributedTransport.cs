@@ -183,10 +183,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				try
 				{
 					if (isAsync)
-						response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, cancellationToken)
+						response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, data, cancellationToken)
 							.ConfigureAwait(false);
 					else
-						response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData);
+						response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData, data);
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 				{
@@ -232,10 +232,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 						}
 
 						if (isAsync)
-							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, cancellationToken)
+							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, data, cancellationToken)
 								.ConfigureAwait(false);
 						else
-							response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData);
+							response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData, data);
 
 						if (!response.ApiCallDetails.SuccessOrKnownError)
 						{
@@ -292,7 +292,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
 			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportAttemptedNodes, attemptedNodes);
 
-			return FinalizeResponse(endpoint, requestData, pipeline, seenExceptions, response);
+			return FinalizeResponse(endpoint, requestData, data, pipeline, seenExceptions, response);
 		}
 		finally
 		{
@@ -322,7 +322,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		seenExceptions.Add(ex);
 	}
 
-	private TResponse FinalizeResponse<TResponse>(Endpoint endpoint, RequestData requestData, RequestPipeline pipeline,
+	private TResponse FinalizeResponse<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, RequestPipeline pipeline,
 		List<PipelineException>? seenExceptions,
 		TResponse? response
 	) where TResponse : TransportResponse, new()
@@ -334,7 +334,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		var clientException = pipeline.CreateClientException(response, callDetails, endpoint, requestData, seenExceptions);
 
 		if (response?.ApiCallDetails == null)
-			pipeline.BadResponse(ref response, callDetails, endpoint, requestData, clientException);
+			pipeline.BadResponse(ref response, callDetails, endpoint, requestData, postData, clientException);
 
 		HandleTransportException(requestData, clientException, response);
 		return response;

@@ -29,17 +29,19 @@ namespace Elastic.Transport;
 internal sealed class RequestDataContent : HttpContent
 {
 	private readonly RequestData _requestData;
+	private readonly PostData _postData;
 
-	private readonly Func<RequestData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext, CancellationToken, Task>
+	private readonly Func<RequestData, PostData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext, CancellationToken, Task>
 		_onStreamAvailableAsync;
 
-	private readonly Action<RequestData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext> _onStreamAvailable;
+	private readonly Action<RequestData, PostData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext> _onStreamAvailable;
 	private readonly CancellationToken _token;
 
 	/// <summary> Constructor used in synchronous paths. </summary>
-	public RequestDataContent(RequestData requestData)
+	public RequestDataContent(RequestData requestData, PostData postData)
 	{
 		_requestData = requestData;
+		_postData = postData;
 		_token = default;
 
 		Headers.TryAddWithoutValidation("Content-Type", requestData.ContentType);
@@ -51,11 +53,11 @@ internal sealed class RequestDataContent : HttpContent
 		_onStreamAvailableAsync = OnStreamAvailableAsync;
 	}
 
-	private static void OnStreamAvailable(RequestData data, Stream stream, HttpContent content, TransportContext context)
+	private static void OnStreamAvailable(RequestData data, PostData postData, Stream stream, HttpContent content, TransportContext context)
 	{
 		if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
-		using (stream) data.PostData.Write(stream, data.ConnectionSettings);
+		using (stream) postData.Write(stream, data.ConnectionSettings);
 	}
 
 	/// <summary> Constructor used in asynchronous paths. </summary>
@@ -73,7 +75,7 @@ internal sealed class RequestDataContent : HttpContent
 		_onStreamAvailableAsync = OnStreamAvailableAsync;
 	}
 
-	private static async Task OnStreamAvailableAsync(RequestData data, Stream stream, HttpContent content, TransportContext context, CancellationToken ctx = default)
+	private static async Task OnStreamAvailableAsync(RequestData data, PostData postData, Stream stream, HttpContent content, TransportContext context, CancellationToken ctx = default)
 	{
 		if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
@@ -82,7 +84,7 @@ internal sealed class RequestDataContent : HttpContent
 #else
 		using (stream)
 #endif
-		await data.PostData.WriteAsync(stream, data.ConnectionSettings, ctx).ConfigureAwait(false);
+		await postData.WriteAsync(stream, data.ConnectionSettings, ctx).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -108,7 +110,7 @@ internal sealed class RequestDataContent : HttpContent
 		var source = CancellationTokenSource.CreateLinkedTokenSource(_token, cancellationToken);
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
 		var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
-		await _onStreamAvailableAsync(_requestData, wrappedStream, this, context, source.Token).ConfigureAwait(false);
+		await _onStreamAvailableAsync(_requestData, _postData, wrappedStream, this, context, source.Token).ConfigureAwait(false);
 		await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 
@@ -117,7 +119,7 @@ internal sealed class RequestDataContent : HttpContent
 	{
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
 		using var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
-		_onStreamAvailable(_requestData, wrappedStream, this, context);
+		_onStreamAvailable(_requestData, _postData, wrappedStream, this, context);
 		//await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 #endif

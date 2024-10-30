@@ -43,14 +43,14 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	void IDisposable.Dispose() { }
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
-	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData)
+	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
 		where TResponse : TransportResponse, new() =>
-		BuildResponse<TResponse>(endpoint, requestData);
+		BuildResponse<TResponse>(endpoint, requestData, postData);
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
-	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new() =>
-		BuildResponseAsync<TResponse>(endpoint, requestData, cancellationToken);
+		BuildResponseAsync<TResponse>(endpoint, requestData, postData, cancellationToken);
 
 	/// <summary>
 	/// Allow subclasses to provide their own implementations for <see cref="IRequestInvoker.Request{TResponse}"/> while reusing the more complex logic
@@ -58,15 +58,16 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	/// </summary>
 	/// <param name="endpoint">An instance of <see cref="Endpoint"/> describing where to call out to</param>
 	/// <param name="requestData">An instance of <see cref="RequestData"/> describing how to call out to</param>
+	/// <param name="postData">Optional data to post</param>
 	/// <param name="responseBody">The bytes intended to be used as return</param>
 	/// <param name="statusCode">The status code that the responses <see cref="TransportResponse.ApiCallDetails"/> should return</param>
 	/// <param name="contentType"></param>
-	public TResponse BuildResponse<TResponse>(Endpoint endpoint, RequestData requestData, byte[] responseBody = null, int? statusCode = null,
-		string contentType = null)
+	public TResponse BuildResponse<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, byte[]? responseBody = null, int? statusCode = null,
+		string? contentType = null)
 		where TResponse : TransportResponse, new()
 	{
 		var body = responseBody ?? _responseBody;
-		var data = requestData.PostData;
+		var data = postData;
 
 		if (data is not null)
 		{
@@ -87,16 +88,16 @@ public class InMemoryRequestInvoker : IRequestInvoker
 		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
 
 		return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
-			.ToResponse<TResponse>(endpoint, requestData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? RequestData.DefaultMimeType, body?.Length ?? 0, null, null);
+			.ToResponse<TResponse>(endpoint, requestData, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? RequestData.DefaultMimeType, body?.Length ?? 0, null, null);
 	}
 
 	/// <inheritdoc cref="BuildResponse{TResponse}"/>>
-	public async Task<TResponse> BuildResponseAsync<TResponse>(Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken,
-		byte[] responseBody = null, int? statusCode = null, string contentType = null)
+	public async Task<TResponse> BuildResponseAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken,
+		byte[]? responseBody = null, int? statusCode = null, string? contentType = null)
 		where TResponse : TransportResponse, new()
 	{
 		var body = responseBody ?? _responseBody;
-		var data = requestData.PostData;
+		var data = postData;
 
 		if (data is not null)
 		{
@@ -119,7 +120,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
 
 		return await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
-			.ToResponseAsync<TResponse>(endpoint, requestData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
+			.ToResponseAsync<TResponse>(endpoint, requestData, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
 			.ConfigureAwait(false);
 	}
 }

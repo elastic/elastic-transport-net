@@ -153,26 +153,26 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 	public override void AuditCancellationRequested() => Audit(CancellationRequested).Dispose();
 
-	public override void BadResponse<TResponse>(ref TResponse response, ApiCallDetails callDetails, Endpoint endpoint, RequestData data, TransportException exception)
+	public override void BadResponse<TResponse>(ref TResponse response, ApiCallDetails callDetails, Endpoint endpoint, RequestData data, PostData? postData, TransportException exception)
 	{
 		if (response == null)
 		{
 			//make sure we copy over the error body in case we disabled direct streaming.
 			var s = callDetails?.ResponseBodyInBytes == null ? Stream.Null : _memoryStreamFactory.Create(callDetails.ResponseBodyInBytes);
 			var m = callDetails?.ResponseMimeType ?? RequestData.DefaultMimeType;
-			response = _responseBuilder.ToResponse<TResponse>(endpoint, data, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
+			response = _responseBuilder.ToResponse<TResponse>(endpoint, data, postData, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
 		}
 
 		response.ApiCallDetails.AuditTrail = AuditTrail;
 	}
 
-	public override TResponse CallProductEndpoint<TResponse>(Endpoint endpoint, RequestData requestData)
-		=> CallProductEndpointCoreAsync<TResponse>(false, endpoint, requestData).EnsureCompleted();
+	public override TResponse CallProductEndpoint<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
+		=> CallProductEndpointCoreAsync<TResponse>(false, endpoint, requestData, postData).EnsureCompleted();
 
-	public override Task<TResponse> CallProductEndpointAsync<TResponse>(Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken = default)
-		=> CallProductEndpointCoreAsync<TResponse>(true, endpoint, requestData, cancellationToken).AsTask();
+	public override Task<TResponse> CallProductEndpointAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
+		=> CallProductEndpointCoreAsync<TResponse>(true, endpoint, requestData, postData, cancellationToken).AsTask();
 
-	private async ValueTask<TResponse> CallProductEndpointCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken = default)
+	private async ValueTask<TResponse> CallProductEndpointCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
 		using var audit = Audit(HealthyResponse, endpoint.Node);
@@ -185,9 +185,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			TResponse response;
 
 			if (isAsync)
-				response = await _requestInvoker.RequestAsync<TResponse>(endpoint, requestData, cancellationToken).ConfigureAwait(false);
+				response = await _requestInvoker.RequestAsync<TResponse>(endpoint, requestData, postData, cancellationToken).ConfigureAwait(false);
 			else
-				response = _requestInvoker.Request<TResponse>(endpoint, requestData);
+				response = _requestInvoker.Request<TResponse>(endpoint, requestData, postData);
 
 			response.ApiCallDetails.AuditTrail = AuditTrail;
 

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -34,7 +35,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 {
 	private static readonly object Lock = new();
 
-	private static byte[] _defaultResponseBytes;
+	private static byte[]? _defaultResponseBytes;
 
 	private VirtualCluster _cluster;
 	private readonly TestableDateTimeProvider _dateTimeProvider;
@@ -45,7 +46,9 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 
 	internal VirtualClusterRequestInvoker(VirtualCluster cluster, TestableDateTimeProvider dateTimeProvider)
 	{
-		UpdateCluster(cluster);
+		_cluster = cluster;
+		_calls = cluster.Nodes.ToDictionary(n => n.Uri.Port, v => new State());
+		_productRegistration = cluster.ProductRegistration;
 		_dateTimeProvider = dateTimeProvider;
 		_productRegistration = cluster.ProductRegistration;
 		_inMemoryRequestInvoker = new InMemoryRequestInvoker();
@@ -100,14 +103,13 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 
 	private void UpdateCluster(VirtualCluster cluster)
 	{
-		if (cluster == null) return;
-
 		lock (Lock)
 		{
 			_cluster = cluster;
 			_calls = cluster.Nodes.ToDictionary(n => n.Uri.Port, v => new State());
 			_productRegistration = cluster.ProductRegistration;
 		}
+
 	}
 
 	private bool IsSniffRequest(Endpoint endpoint) => _productRegistration.IsSniffRequest(endpoint);
@@ -115,12 +117,12 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 	private bool IsPingRequest(Endpoint endpoint) => _productRegistration.IsPingRequest(endpoint);
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
-	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new() =>
-		Task.FromResult(Request<TResponse>(endpoint, requestData));
+		Task.FromResult(Request<TResponse>(endpoint, requestData, postData));
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
-	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData)
+	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
 		where TResponse : TransportResponse, new()
 	{
 		if (!_calls.ContainsKey(endpoint.Uri.Port))
@@ -135,6 +137,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 				return HandleRules<TResponse, ISniffRule>(
 					endpoint,
 					requestData,
+					postData,
 					nameof(VirtualCluster.Sniff),
 					_cluster.SniffingRules,
 					requestData.RequestTimeout,
@@ -148,6 +151,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 				return HandleRules<TResponse, IRule>(
 					endpoint,
 					requestData,
+					postData,
 					nameof(VirtualCluster.Ping),
 					_cluster.PingingRules,
 					requestData.PingTimeout,
@@ -159,6 +163,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			return HandleRules<TResponse, IClientCallRule>(
 				endpoint,
 				requestData,
+				postData,
 				nameof(VirtualCluster.ClientCalls),
 				_cluster.ClientCallRules,
 				requestData.RequestTimeout,
@@ -168,18 +173,19 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 		catch (TheException e)
 		{
-			return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(endpoint, requestData, e, null, null, Stream.Null, null, -1, null, null);
+			return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(endpoint, requestData, postData, e, null, null, Stream.Null, null, -1, null, null);
 		}
 	}
 
 	private TResponse HandleRules<TResponse, TRule>(
 		Endpoint endpoint,
 		RequestData requestData,
+		PostData? postData,
 		string origin,
 		IList<TRule> rules,
 		TimeSpan timeout,
 		Action<TRule> beforeReturn,
-		Func<TRule, byte[]> successResponse
+		Func<TRule, byte[]?> successResponse
 	)
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
@@ -196,29 +202,28 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			if (rule.OnPort == null || rule.OnPort.Value != endpoint.Uri.Port) continue;
 
 			if (always)
-				return Always<TResponse, TRule>(endpoint, requestData, timeout, beforeReturn, successResponse, rule);
+				return Always<TResponse, TRule>(endpoint, requestData, postData, timeout, beforeReturn, successResponse, rule);
 
 			if (rule.ExecuteCount > times) continue;
 
-			return Sometimes<TResponse, TRule>(endpoint, requestData, timeout, beforeReturn, successResponse, rule);
+			return Sometimes<TResponse, TRule>(endpoint, requestData, postData, timeout, beforeReturn, successResponse, rule);
 		}
 		foreach (var rule in rules.Where(s => !s.OnPort.HasValue))
 		{
 			var always = rule.Times.Match(t => true, t => false);
 			var times = rule.Times.Match(t => -1, t => t);
 			if (always)
-				return Always<TResponse, TRule>(endpoint, requestData, timeout, beforeReturn, successResponse, rule);
+				return Always<TResponse, TRule>(endpoint, requestData, postData, timeout, beforeReturn, successResponse, rule);
 
 			if (rule.ExecuteCount > times) continue;
 
-			return Sometimes<TResponse, TRule>(endpoint, requestData, timeout, beforeReturn, successResponse, rule);
+			return Sometimes<TResponse, TRule>(endpoint, requestData, postData, timeout, beforeReturn, successResponse, rule);
 		}
 		var count = _calls.Select(kv => kv.Value.Called).Sum();
 		throw new Exception($@"No global or port specific {origin} rule ({endpoint.Uri.Port}) matches any longer after {count} calls in to the cluster");
 	}
 
-	private TResponse Always<TResponse, TRule>(Endpoint endpoint, RequestData requestData, TimeSpan timeout, Action<TRule> beforeReturn,
-		Func<TRule, byte[]> successResponse, TRule rule
+	private TResponse Always<TResponse, TRule>(Endpoint endpoint, RequestData requestData, PostData? postData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse, TRule rule
 	)
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
@@ -235,12 +240,12 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 
 		return rule.Succeeds
-			? Success<TResponse, TRule>(endpoint, requestData, beforeReturn, successResponse, rule)
-			: Fail<TResponse, TRule>(endpoint, requestData, rule);
+			? Success<TResponse, TRule>(endpoint, requestData, postData, beforeReturn, successResponse, rule)
+			: Fail<TResponse, TRule>(endpoint, requestData, postData, rule);
 	}
 
 	private TResponse Sometimes<TResponse, TRule>(
-		Endpoint endpoint, RequestData requestData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]> successResponse, TRule rule
+		Endpoint endpoint, RequestData requestData, PostData? postData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse, TRule rule
 	)
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
@@ -257,12 +262,12 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 
 		if (rule.Succeeds)
-			return Success<TResponse, TRule>(endpoint, requestData, beforeReturn, successResponse, rule);
+			return Success<TResponse, TRule>(endpoint, requestData, postData, beforeReturn, successResponse, rule);
 
-		return Fail<TResponse, TRule>(endpoint, requestData, rule);
+		return Fail<TResponse, TRule>(endpoint, requestData, postData, rule);
 	}
 
-	private TResponse Fail<TResponse, TRule>(Endpoint endpoint, RequestData requestData, TRule rule, RuleOption<Exception, int> returnOverride = null)
+	private TResponse Fail<TResponse, TRule>(Endpoint endpoint, RequestData requestData, PostData? postData, TRule rule, RuleOption<Exception, int>? returnOverride = null)
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
 	{
@@ -276,13 +281,13 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 
 		return ret.Match(
 			e => throw e,
-			statusCode => _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, requestData, CallResponse(rule),
+			statusCode => _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, requestData, postData, CallResponse(rule),
 				//make sure we never return a valid status code in Fail responses because of a bad rule.
 				statusCode >= 200 && statusCode < 300 ? 502 : statusCode, rule.ReturnContentType)
 		);
 	}
 
-	private TResponse Success<TResponse, TRule>(Endpoint endpoint, RequestData requestData, Action<TRule> beforeReturn, Func<TRule, byte[]> successResponse,
+	private TResponse Success<TResponse, TRule>(Endpoint endpoint, RequestData requestData, PostData? postData, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse,
 		TRule rule
 	)
 		where TResponse : TransportResponse, new()
@@ -293,7 +298,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		rule.RecordExecuted();
 
 		beforeReturn?.Invoke(rule);
-		return _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, requestData, successResponse(rule), contentType: rule.ReturnContentType);
+		return _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, requestData, postData, successResponse(rule), contentType: rule.ReturnContentType);
 	}
 
 	private static byte[] CallResponse<TRule>(TRule rule)

@@ -48,6 +48,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	public override TResponse ToResponse<TResponse>(
 		Endpoint endpoint,
 		RequestData requestData,
+		PostData postData,
 		Exception ex,
 		int? statusCode,
 		Dictionary<string, IEnumerable<string>> headers,
@@ -60,7 +61,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	{
 		responseStream.ThrowIfNull(nameof(responseStream));
 
-		var details = Initialize(endpoint, requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats, contentLength);
+		var details = Initialize(endpoint, requestData, postData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats, contentLength);
 
 		TResponse response = null;
 
@@ -79,6 +80,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	public override async Task<TResponse> ToResponseAsync<TResponse>(
 		Endpoint endpoint,
 		RequestData requestData,
+		PostData postData,
 		Exception ex,
 		int? statusCode,
 		Dictionary<string, IEnumerable<string>> headers,
@@ -92,7 +94,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	{
 		responseStream.ThrowIfNull(nameof(responseStream));
 
-		var details = Initialize(endpoint, requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats, contentLength);
+		var details = Initialize(endpoint, requestData, postData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats, contentLength);
 
 		TResponse response = null;
 
