@@ -33,17 +33,6 @@ public readonly record struct EndpointPath(HttpMethod Method, string PathAndQuer
 /// </remarks>
 public record Endpoint(in EndpointPath Path, Node Node)
 {
-	/// <summary>
-	/// The <see cref="Uri" /> for the request.
-	/// </summary>
-	public Uri Uri { get; } = new(Node.Uri, Path.PathAndQuery);
-
-	/// <summary> The HTTP method used for the request (e.g., GET, POST, PUT, DELETE, HEAD). </summary>
-	public HttpMethod Method => Path.Method;
-
-	/// <summary> Gets the path and query of the endpoint.</summary>
-	public string PathAndQuery => Path.PathAndQuery;
-
 	/// <summary> Represents an empty endpoint used as a default or placeholder instance of <see cref="Endpoint"/>. </summary>
 	public static Endpoint Empty(in EndpointPath path) => new(path, EmptyNode);
 
@@ -51,6 +40,32 @@ public record Endpoint(in EndpointPath Path, Node Node)
 
 	/// <summary> Indicates whether the endpoint is an empty placeholder instance. </summary>
 	public bool IsEmpty => Node == EmptyNode;
+
+	/// <summary> The <see cref="Uri" /> for the request. </summary>
+	public Uri Uri { get; private init; } = new(Node.Uri, Path.PathAndQuery);
+
+	/// <summary> The HTTP method used for the request (e.g., GET, POST, PUT, DELETE, HEAD). </summary>
+	public HttpMethod Method => Path.Method;
+
+	/// <summary> Gets the path and query of the endpoint.</summary>
+	public string PathAndQuery => Path.PathAndQuery;
+
+	private readonly Node _node = Node;
+
+	/// <summary>
+	/// Represents a node within the transport layer of the Elastic search client.
+	/// This object encapsulates the characteristics of a node, allowing for comparisons and operations
+	/// within the broader search infrastructure.
+	/// </summary>
+	public Node Node
+	{
+		get => _node;
+		init
+		{
+			_node = value;
+			Uri = new(Node.Uri, Path.PathAndQuery);
+		}
+	}
 
 	/// <inheritdoc/>
 	public override string ToString() => $"{Path.Method.GetStringValue()} {Uri}";
