@@ -18,7 +18,9 @@ public class VirtualizedCluster
 	private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<TransportResponse>> _asyncCall;
 	private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> _syncCall;
 
-	private class VirtualResponse : TransportResponse { }
+	private class VirtualResponse : TransportResponse;
+
+	private static readonly EndpointPath RootPath = new(HttpMethod.GET, "/");
 
 	internal VirtualizedCluster(TestableDateTimeProvider dateTimeProvider, TransportConfiguration settings)
 	{
@@ -27,10 +29,8 @@ public class VirtualizedCluster
 		_exposingRequestPipeline = new ExposingPipelineFactory<ITransportConfiguration>(settings, _dateTimeProvider);
 
 		_syncCall = (t, r) => t.Request<VirtualResponse>(
-			method: HttpMethod.GET,
-			path: "/",
+			path: RootPath,
 			postData: PostData.Serializable(new { }),
-			requestParameters: new DefaultRequestParameters(),
 			openTelemetryData: default,
 			localConfiguration: r?.Invoke(new RequestConfigurationDescriptor()),
 			responseBuilder: null
@@ -39,10 +39,8 @@ public class VirtualizedCluster
 		{
 			var res = await t.RequestAsync<VirtualResponse>
 			(
-				method: HttpMethod.GET,
-				path: "/",
+				path: RootPath,
 				postData: PostData.Serializable(new { }),
-				requestParameters: new DefaultRequestParameters(),
 				openTelemetryData: default,
 				localConfiguration: r?.Invoke(new RequestConfigurationDescriptor()),
 				responseBuilder: null,

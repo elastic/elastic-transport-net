@@ -178,7 +178,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		using var audit = Audit(HealthyResponse, endpoint.Node);
 
 		if (audit is not null)
-			audit.PathAndQuery = requestData.PathAndQuery;
+			audit.PathAndQuery = endpoint.PathAndQuery;
 
 		try
 		{
@@ -413,7 +413,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		TransportResponse response;
 
 		//TODO remove
-		var requestData = new RequestData(pingEndpoint.Method, pingEndpoint.PathAndQuery, null, _settings, null, null, _memoryStreamFactory, default);
+		var requestData = new RequestData(null, _settings, null, null, _memoryStreamFactory, default);
 
 		try
 		{
@@ -455,7 +455,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		{
 			var sniffEndpoint = _productRegistration.CreateSniffEndpoint(node, PingAndSniffRequestConfiguration, _settings);
 			//TODO remove
-			var requestData = new RequestData(sniffEndpoint.Method, sniffEndpoint.PathAndQuery, null, _settings, null, null, _memoryStreamFactory, default);
+			var requestData = new RequestData(null, _settings, null, null, _memoryStreamFactory, default);
 
 			using var audit = Audit(SniffSuccess, node);
 

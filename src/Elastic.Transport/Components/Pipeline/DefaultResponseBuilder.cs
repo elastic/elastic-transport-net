@@ -65,7 +65,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		TResponse response = null;
 
 		// Only attempt to set the body if the response may have content
-		if (MayHaveBody(statusCode, requestData.Method, contentLength))
+		if (MayHaveBody(statusCode, endpoint.Method, contentLength))
 			response = SetBody<TResponse>(details, requestData, responseStream, mimeType);
 
 		response ??= new TResponse();
@@ -97,7 +97,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		TResponse response = null;
 
 		// Only attempt to set the body if the response may have content
-		if (MayHaveBody(statusCode, requestData.Method, contentLength))
+		if (MayHaveBody(statusCode, endpoint.Method, contentLength))
 			response = await SetBodyAsync<TResponse>(details, requestData, responseStream, mimeType,
 				cancellationToken).ConfigureAwait(false);
 

@@ -29,13 +29,6 @@ public interface IStringable
 public sealed class DefaultRequestParameters : RequestParameters;
 
 /// <summary>
-///
-/// </summary>
-public static class RequestParameterExtensions
-{
-}
-
-/// <summary>
 /// Used by the raw client to compose querystring parameters in a matter that still exposes some xmldocs
 /// You can always pass a simple NameValueCollection if you want.
 /// </summary>

@@ -381,7 +381,7 @@ public class HttpRequestInvoker : IRequestInvoker
 
 	private static HttpRequestMessage CreateRequestMessage(Endpoint endpoint, RequestData requestData)
 	{
-		var method = ConvertHttpMethod(requestData.Method);
+		var method = ConvertHttpMethod(endpoint.Method);
 		var requestMessage = new HttpRequestMessage(method, endpoint.Uri);
 
 		if (requestData.Headers != null)

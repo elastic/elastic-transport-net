@@ -149,7 +149,7 @@ public class OpenTelemetryTests
 
 		transport ??= new DistributedTransport(InMemoryConnectionFactory.Create());
 
-		_ = await transport.RequestAsync<VoidResponse>(HttpMethod.GET, "/", null, null, openTelemetryData, null, null, default);
+		_ = await transport.RequestAsync<VoidResponse>(new EndpointPath(HttpMethod.GET, "/"), null, openTelemetryData, null, null, default);
 
 		mre.WaitOne(TimeSpan.FromSeconds(1)).Should().BeTrue();
 	}

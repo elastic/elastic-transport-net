@@ -92,39 +92,33 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 	/// <inheritdoc cref="ITransport.Request{TResponse}"/>
 	public TResponse Request<TResponse>(
-		HttpMethod method,
-		string path,
+		in EndpointPath path,
 		PostData? data,
-		RequestParameters? requestParameters,
 		in OpenTelemetryData openTelemetryData,
 		IRequestConfiguration? localConfiguration,
 		CustomResponseBuilder? responseBuilder
 	)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(isAsync: false,
-			method, path, data, requestParameters, openTelemetryData, localConfiguration, responseBuilder).EnsureCompleted();
+		RequestCoreAsync<TResponse>(isAsync: false, path, data, openTelemetryData, localConfiguration, responseBuilder)
+			.EnsureCompleted();
 
 	/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>
 	public Task<TResponse> RequestAsync<TResponse>(
-		HttpMethod method,
-		string path,
+		in EndpointPath path,
 		PostData? data,
-		RequestParameters? requestParameters,
 		in OpenTelemetryData openTelemetryData,
 		IRequestConfiguration? localConfiguration,
 		CustomResponseBuilder? responseBuilder,
 		CancellationToken cancellationToken = default
 	)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(isAsync: true,
-			method, path, data, requestParameters, openTelemetryData, localConfiguration, responseBuilder, cancellationToken).AsTask();
+		RequestCoreAsync<TResponse>(isAsync: true, path, data, openTelemetryData, localConfiguration, responseBuilder, cancellationToken)
+			.AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(
 		bool isAsync,
-		HttpMethod method,
-		string path,
+		EndpointPath path,
 		PostData? data,
-		RequestParameters? requestParameters,
 		OpenTelemetryData openTelemetryData,
 		IRequestConfiguration? localRequestConfiguration,
 		CustomResponseBuilder? customResponseBuilder,
@@ -135,7 +129,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		Activity activity = null;
 
 		if (OpenTelemetry.ElasticTransportActivitySource.HasListeners())
-			activity = OpenTelemetry.ElasticTransportActivitySource.StartActivity(openTelemetryData.SpanName ?? method.GetStringValue(),
+			activity = OpenTelemetry.ElasticTransportActivitySource.StartActivity(openTelemetryData.SpanName ?? path.Method.GetStringValue(),
 				ActivityKind.Client);
 
 		try
@@ -147,10 +141,12 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			else
 				pipeline.FirstPoolUsage(Configuration.BootstrapLock);
 
-			var pathAndQuery = requestParameters?.CreatePathWithQueryStrings(path, Configuration) ?? path;
-			var requestData = new RequestData(method, pathAndQuery, data, Configuration, localRequestConfiguration, customResponseBuilder, MemoryStreamFactory, openTelemetryData);
+			//var pathAndQuery = requestParameters?.CreatePathWithQueryStrings(path, Configuration) ?? path;
+			var requestData = new RequestData(data, Configuration, localRequestConfiguration, customResponseBuilder, MemoryStreamFactory, openTelemetryData);
 			Configuration.OnRequestDataCreated?.Invoke(requestData);
 			TResponse response = null;
+
+			var endpoint = Endpoint.Empty(path);
 
 			if (activity is { IsAllDataRequested: true })
 			{
@@ -169,13 +165,11 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 					foreach (var attribute in requestData.OpenTelemetryData.SpanAttributes)
 						activity.SetTag(attribute.Key, attribute.Value);
 
-				activity.SetTag(SemanticConventions.HttpRequestMethod, requestData.Method.GetStringValue());
+				activity.SetTag(SemanticConventions.HttpRequestMethod, endpoint.Method.GetStringValue());
 			}
 
 			List<PipelineException>? seenExceptions = null;
 			var attemptedNodes = 0;
-
-			var endpoint = Endpoint.Empty(method, pathAndQuery);
 
 			if (pipeline.TryGetSingleNode(out var singleNode))
 			{

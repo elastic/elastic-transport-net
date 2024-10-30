@@ -128,7 +128,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 			QueryString = { { "timeout", requestConfiguration.PingTimeout }, { "flat_settings", true } }
 		};
 		var sniffPath = requestParameters.CreatePathWithQueryStrings(SniffPath, settings);
-		return new Endpoint(HttpMethod.GET, sniffPath, node);
+		return new Endpoint(new EndpointPath(HttpMethod.GET, sniffPath), node);
 	}
 
 	/// <inheritdoc cref="ProductRegistration.SniffAsync"/>
@@ -154,7 +154,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.CreatePingEndpoint"/>
 	public override Endpoint CreatePingEndpoint(Node node, IRequestConfiguration requestConfiguration) =>
-		new(HttpMethod.HEAD, string.Empty, node);
+		new(new EndpointPath(HttpMethod.HEAD, string.Empty), node);
 
 	/// <inheritdoc cref="ProductRegistration.PingAsync"/>
 	public override async Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData, CancellationToken cancellationToken)

@@ -13,6 +13,17 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport;
 
 /// <summary>
+/// Represents the path of an endpoint in a transport request, including the HTTP method
+/// and the path and query information.
+/// </summary>
+/// <remarks>
+/// This struct is used to store information about the HTTP method and the path and query of an endpoint,
+/// which are essential components when constructing a request URI.
+/// </remarks>
+public readonly record struct EndpointPath(HttpMethod Method, string PathAndQuery);
+
+
+/// <summary>
 /// Represents an endpoint in a transport request, encapsulating the HTTP method, path and query,
 /// and the node to which the request is being sent.
 /// </summary>
@@ -20,23 +31,30 @@ namespace Elastic.Transport;
 /// This class is used to construct the URI for the request based on the node's URI and the path and query.
 /// An empty endpoint can be created using the <see cref="Empty"/> method as a default or placeholder instance.
 /// </remarks>
-public record Endpoint(HttpMethod Method, string PathAndQuery, Node Node)
+public record Endpoint(in EndpointPath Path, Node Node)
 {
 	/// <summary>
 	/// The <see cref="Uri" /> for the request.
 	/// </summary>
-	public Uri Uri { get; } = new Uri(Node.Uri, PathAndQuery);
+	public Uri Uri { get; } = new(Node.Uri, Path.PathAndQuery);
+
+
+	/// <summary> The HTTP method used for the request (e.g., GET, POST, PUT, DELETE, HEAD). </summary>
+	public HttpMethod Method => Path.Method;
+
+	/// <summary> Gets the path and query of the endpoint.</summary>
+	public string PathAndQuery => Path.PathAndQuery;
 
 	/// <summary> Represents an empty endpoint used as a default or placeholder instance of <see cref="Endpoint"/>. </summary>
-	public static Endpoint Empty(HttpMethod method, string pathAndQuery) => new(method, pathAndQuery, EmptyNode);
+	public static Endpoint Empty(in EndpointPath path) => new(path, EmptyNode);
 
-	private static readonly Node EmptyNode = new Node(new Uri("http://empty.example"));
+	private static readonly Node EmptyNode = new(new Uri("http://empty.example"));
 
 	/// <summary> Indicates whether the endpoint is an empty placeholder instance. </summary>
 	public bool IsEmpty => Node == EmptyNode;
 
 	/// <inheritdoc/>
-	public override string ToString() => $"{Method.GetStringValue()} {Uri}";
+	public override string ToString() => $"{Path.Method.GetStringValue()} {Uri}";
 
 }
 
@@ -56,8 +74,6 @@ public sealed class RequestData
 	public const string RunAsSecurityHeader = "es-security-runas-user";
 
 	public RequestData(
-		HttpMethod method,
-		string pathAndQuery,
 		PostData? data,
 		ITransportConfiguration global,
 		IRequestConfiguration? local,
@@ -70,10 +86,7 @@ public sealed class RequestData
 		CustomResponseBuilder = customResponseBuilder;
 		ConnectionSettings = global;
 		MemoryStreamFactory = memoryStreamFactory;
-		Method = method;
 		PostData = data;
-
-		PathAndQuery = pathAndQuery;
 
 		SkipDeserializationForStatusCodes = global.SkipDeserializationForStatusCodes;
 		DnsRefreshTimeout = global.DnsRefreshTimeout;
@@ -148,11 +161,9 @@ public sealed class RequestData
 	public int KeepAliveInterval { get; }
 	public int KeepAliveTime { get; }
 	public MemoryStreamFactory MemoryStreamFactory { get; }
-	public HttpMethod Method { get; }
 
 	public AuditEvent OnFailureAuditEvent => MadeItToResponse ? AuditEvent.BadResponse : AuditEvent.BadRequest;
 	public PipelineFailure OnFailurePipelineFailure => MadeItToResponse ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
-	public string PathAndQuery { get; }
 	public TimeSpan PingTimeout { get; }
 	public bool Pipelined { get; }
 	public PostData? PostData { get; }
@@ -178,8 +189,6 @@ public sealed class RequestData
 	public bool IsAsync { get; internal set; }
 
 	internal OpenTelemetryData OpenTelemetryData { get; }
-
-	public override string ToString() => $"{Method.GetStringValue()} {PathAndQuery}";
 
 	internal bool ValidateResponseContentType(string responseMimeType)
 	{

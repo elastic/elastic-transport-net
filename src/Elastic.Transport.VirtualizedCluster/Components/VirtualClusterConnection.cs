@@ -110,9 +110,9 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 	}
 
-	private bool IsSniffRequest(RequestData requestData) => _productRegistration.IsSniffRequest(requestData);
+	private bool IsSniffRequest(Endpoint endpoint) => _productRegistration.IsSniffRequest(endpoint);
 
-	private bool IsPingRequest(RequestData requestData) => _productRegistration.IsPingRequest(requestData);
+	private bool IsPingRequest(Endpoint endpoint) => _productRegistration.IsPingRequest(endpoint);
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
 	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
@@ -129,7 +129,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		try
 		{
 			var state = _calls[endpoint.Uri.Port];
-			if (IsSniffRequest(requestData))
+			if (IsSniffRequest(endpoint))
 			{
 				_ = Interlocked.Increment(ref state.Sniffed);
 				return HandleRules<TResponse, ISniffRule>(
@@ -142,7 +142,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 					(r) => _productRegistration.CreateSniffResponseBytes(_cluster.Nodes, _cluster.ElasticsearchVersion, _cluster.PublishAddressOverride, _cluster.SniffShouldReturnFqnd)
 				);
 			}
-			if (IsPingRequest(requestData))
+			if (IsPingRequest(endpoint))
 			{
 				_ = Interlocked.Increment(ref state.Pinged);
 				return HandleRules<TResponse, IRule>(

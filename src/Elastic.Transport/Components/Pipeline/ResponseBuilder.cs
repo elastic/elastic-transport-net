@@ -67,12 +67,12 @@ public abstract class ResponseBuilder
 				hasSuccessfulStatusCode = true;
 			else
 				hasSuccessfulStatusCode = requestData.ConnectionSettings
-					.StatusCodeToResponseSuccess(requestData.Method, statusCode.Value);
+					.StatusCodeToResponseSuccess(endpoint.Method, statusCode.Value);
 		}
 
 		// We don't validate the content-type (MIME type) for HEAD requests or responses that have no content (204 status code).
 		// Elastic Cloud responses to HEAD requests strip the content-type header so we want to avoid validation in that case.
-		var hasExpectedContentType = !MayHaveBody(statusCode, requestData.Method, contentLength) || requestData.ValidateResponseContentType(mimeType);
+		var hasExpectedContentType = !MayHaveBody(statusCode, endpoint.Method, contentLength) || requestData.ValidateResponseContentType(mimeType);
 
 		var details = new ApiCallDetails
 		{
@@ -82,7 +82,7 @@ public abstract class ResponseBuilder
 			HttpStatusCode = statusCode,
 			RequestBodyInBytes = requestData.PostData?.WrittenBytes,
 			Uri = endpoint.Uri,
-			HttpMethod = requestData.Method,
+			HttpMethod = endpoint.Method,
 			TcpStats = tcpStats,
 			ThreadPoolStats = threadPoolStats,
 			ResponseMimeType = mimeType,

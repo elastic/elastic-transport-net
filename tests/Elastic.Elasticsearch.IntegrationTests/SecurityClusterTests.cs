@@ -14,10 +14,12 @@ public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
 {
 	public SecurityClusterTests(SecurityCluster cluster, ITestOutputHelper output) : base(cluster, output) { }
 
+	private static readonly EndpointPath Root = new(GET, "/");
+
 	[Fact]
 	public async Task AsyncRequestDoesNotThrow()
 	{
-		var response = await RequestHandler.RequestAsync<StringResponse>(GET, "/");
+		var response = await RequestHandler.RequestAsync<StringResponse>(Root);
 		response.ApiCallDetails.Should().NotBeNull();
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
@@ -25,7 +27,7 @@ public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
 	[Fact]
 	public void SyncRequestDoesNotThrow()
 	{
-		var response = RequestHandler.Request<StringResponse>(GET, "/");
+		var response = RequestHandler.Request<StringResponse>(Root);
 		response.ApiCallDetails.Should().NotBeNull();
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
@@ -33,8 +35,7 @@ public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
 	[Fact]
 	public void SyncRequestDoesNotThrowOnBadAuth()
 	{
-		var response = RequestHandler.Request<StringResponse>(GET, "/", null,
-			new DefaultRequestParameters(),
+		var response = RequestHandler.Request<StringResponse>(Root, null,
 			new RequestConfiguration
 			{
 				Authentication = new BasicAuthentication("unknown-user", "bad-password")

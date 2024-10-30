@@ -83,8 +83,8 @@ public class ResponseBuilderDisposeTests
 
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
 
-		var endpoint = new Endpoint(httpMethod, "/", new Node(new Uri("http://localhost:9200")));
-		var requestData = new RequestData(httpMethod, "/", null, config, null, customResponseBuilder, memoryStreamFactory, default);
+		var endpoint = new Endpoint(new EndpointPath(httpMethod, "/"), new Node(new Uri("http://localhost:9200")));
+		var requestData = new RequestData(null, config, null, customResponseBuilder, memoryStreamFactory, default);
 
 		var stream = new TrackDisposeStream();
 

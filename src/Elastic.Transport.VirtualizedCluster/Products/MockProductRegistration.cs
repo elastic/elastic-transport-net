@@ -31,7 +31,7 @@ public abstract class MockProductRegistration
 	/// see <see cref="VirtualClusterRequestInvoker.Request{TResponse}"/> uses this to determine if the current request is a sniff request and should follow
 	/// the sniffing rules
 	/// </summary>
-	public abstract bool IsSniffRequest(RequestData requestData);
+	public abstract bool IsSniffRequest(Endpoint endpoint);
 
-	public abstract bool IsPingRequest(RequestData requestData);
+	public abstract bool IsPingRequest(Endpoint endpoint);
 }
