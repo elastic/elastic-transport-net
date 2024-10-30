@@ -27,24 +27,28 @@ public class VirtualizedCluster
 		_exposingRequestPipeline = new ExposingPipelineFactory<ITransportConfiguration>(settings, _dateTimeProvider);
 
 		_syncCall = (t, r) => t.Request<VirtualResponse>(
-			HttpMethod.GET, "/",
-			PostData.Serializable(new {}), new DefaultRequestParameters()
-		{
-				RequestConfiguration = r?.Invoke(new RequestConfigurationDescriptor(null))
-		});
+			method: HttpMethod.GET,
+			path: "/",
+			postData: PostData.Serializable(new { }),
+			requestParameters: new DefaultRequestParameters(),
+			openTelemetryData: default,
+			localConfiguration: r?.Invoke(new RequestConfigurationDescriptor(null)),
+			responseBuilder: null
+		);
 		_asyncCall = async (t, r) =>
 		{
 			var res = await t.RequestAsync<VirtualResponse>
 			(
-				HttpMethod.GET, "/",
-				PostData.Serializable(new { }),
-				new DefaultRequestParameters()
-				{
-					RequestConfiguration = r?.Invoke(new RequestConfigurationDescriptor(null))
-				},
+				method: HttpMethod.GET,
+				path: "/",
+				postData: PostData.Serializable(new { }),
+				requestParameters: new DefaultRequestParameters(),
+				openTelemetryData: default,
+				localConfiguration: r?.Invoke(new RequestConfigurationDescriptor(null)),
+				responseBuilder: null,
 				CancellationToken.None
 			).ConfigureAwait(false);
-			return (TransportResponse)res;
+			return res;
 		};
 	}
 

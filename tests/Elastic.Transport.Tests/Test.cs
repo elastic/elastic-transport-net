@@ -74,16 +74,6 @@ namespace Elastic.Transport.Tests
 			public MyClientConfiguration NewSettings(string value) => Assign(value, (c, v) => _setting = v);
 		}
 
-		public class MyClientRequestPipeline : DefaultRequestPipeline<MyClientConfiguration>
-		{
-			public MyClientRequestPipeline(MyClientConfiguration configurationValues,
-				DateTimeProvider dateTimeProvider, MemoryStreamFactory memoryStreamFactory,
-					RequestParameters requestParameters)
-						: base(configurationValues, dateTimeProvider, memoryStreamFactory, requestParameters)
-			{
-			}
-		}
-
 		public void ExtendingConfiguration()
 		{
 			var clientConfiguration = new MyClientConfiguration()

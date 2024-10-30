@@ -2,28 +2,36 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using Elastic.Transport.Extensions;
 using static Elastic.Transport.UrlFormatter;
 
 // ReSharper disable once CheckNamespace
 namespace Elastic.Transport;
 
 /// <summary>
-/// 
+///
 /// </summary>
 public interface IStringable
 {
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	/// <returns></returns>
 	string GetString();
 }
 
 /// <summary>
-/// 
+///
 /// </summary>
-public sealed class DefaultRequestParameters : RequestParameters
+public sealed class DefaultRequestParameters : RequestParameters;
+
+/// <summary>
+///
+/// </summary>
+public static class RequestParameterExtensions
 {
 }
 
@@ -34,27 +42,17 @@ public sealed class DefaultRequestParameters : RequestParameters
 public abstract class RequestParameters
 {
 	/// <summary>
-	/// 
+	///
 	/// </summary>
-	public CustomResponseBuilder CustomResponseBuilder { get; set; }
+	public Dictionary<string, object> QueryString { get; internal set; } = new();
 
 	/// <summary>
-	/// 
-	/// </summary>
-	public Dictionary<string, object> QueryString { get; internal set; } = new Dictionary<string, object>();
-
-	/// <summary>
-	/// 
-	/// </summary>
-	public IRequestConfiguration RequestConfiguration { get; set; }
-
-	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public bool ContainsQueryString(string name) => QueryString != null && QueryString.ContainsKey(name);
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public TOut GetQueryStringValue<TOut>(string name)
 	{
@@ -69,15 +67,9 @@ public abstract class RequestParameters
 	}
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
-	public string GetResolvedQueryStringValue(string name, ITransportConfiguration transportConfiguration) =>
-		CreateString(GetQueryStringValue<object>(name), transportConfiguration);
-
-	/// <summary>
-	/// 
-	/// </summary>
-	public void SetQueryString(string name, object value)
+	public void SetQueryString(string name, object? value)
 	{
 		if (value == null) RemoveQueryString(name);
 		else QueryString[name] = value;
@@ -99,21 +91,36 @@ public abstract class RequestParameters
 		QueryString.Remove(name);
 	}
 
-	/// <summary>
-	/// Makes sure <see cref="RequestConfiguration"/> is set before explicitly setting <see cref="IRequestConfiguration.Accept"/>
-	/// </summary>
-	protected void SetAcceptHeader(string format)
+	/// <summary> </summary>
+	public virtual string CreatePathWithQueryStrings(string? path, ITransportConfiguration global)
 	{
-		if (RequestConfiguration == null)
-			RequestConfiguration = new RequestConfiguration();
+		path ??= string.Empty;
+		if (path.Contains("?"))
+			throw new ArgumentException($"{nameof(path)} can not contain querystring parameters and needs to be already escaped");
 
-		RequestConfiguration.Accept = AcceptHeaderFromFormat(format);
+		var g = global.QueryStringParameters;
+		var l = QueryString;
+
+		if ((g == null || g.Count == 0) && (l == null || l.Count == 0)) return path;
+
+		//create a copy of the global query string collection if needed.
+		var nv = g == null ? new NameValueCollection() : new NameValueCollection(g);
+
+		//set all querystring pairs from local `l` on the querystring collection
+		var formatter = global.UrlFormatter;
+		nv.UpdateFromDictionary(l, formatter);
+
+		//if nv has no keys simply return path as provided
+		if (!nv.HasKeys()) return path;
+
+		//create string for query string collection where key and value are escaped properly.
+		var queryString = nv.ToQueryString();
+		path += queryString;
+		return path;
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
-	public string AcceptHeaderFromFormat(string format)
+	/// <summary> Create the specified accept-header based on the format sent over the wire </summary>
+	public string? AcceptHeaderFromFormat(string? format)
 	{
 		if (format == null)
 			return null;

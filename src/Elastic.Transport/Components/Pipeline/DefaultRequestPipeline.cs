@@ -36,7 +36,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		TConfiguration configurationValues,
 		DateTimeProvider dateTimeProvider,
 		MemoryStreamFactory memoryStreamFactory,
-		RequestParameters requestParameters
+		IRequestConfiguration? requestConfiguration
 	)
 	{
 		_settings = configurationValues;
@@ -47,7 +47,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		_productRegistration = configurationValues.ProductRegistration;
 		_responseBuilder = _productRegistration.ResponseBuilder;
 		_nodePredicate = _settings.NodePredicate ?? _productRegistration.NodePredicate;
-		RequestConfiguration = requestParameters?.RequestConfiguration;
+		RequestConfiguration = requestConfiguration;
 		StartedOn = dateTimeProvider.Now();
 	}
 

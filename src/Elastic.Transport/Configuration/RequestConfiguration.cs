@@ -131,7 +131,7 @@ public interface IRequestConfiguration
 	/// <summary>
 	/// Holds additional meta data about the request.
 	/// </summary>
-	RequestMetaData RequestMetaData { get; set; }
+	RequestMetaData? RequestMetaData { get; set; }
 }
 
 /// <inheritdoc cref="IRequestConfiguration"/>
@@ -192,7 +192,7 @@ public class RequestConfiguration : IRequestConfiguration
 public class RequestConfigurationDescriptor : IRequestConfiguration
 {
 	/// <inheritdoc cref="IRequestConfiguration"/>
-	public RequestConfigurationDescriptor(IRequestConfiguration config)
+	public RequestConfigurationDescriptor(IRequestConfiguration? config)
 	{
 		Self.RequestTimeout = config?.RequestTimeout;
 		Self.PingTimeout = config?.PingTimeout;

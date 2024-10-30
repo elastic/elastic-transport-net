@@ -12,5 +12,5 @@ public abstract class RequestPipelineFactory<TConfiguration>
 
 	/// <summary> Create an instance of <see cref="RequestPipeline"/> </summary>
 	public abstract RequestPipeline Create(TConfiguration configuration, DateTimeProvider dateTimeProvider,
-		MemoryStreamFactory memoryStreamFactory, RequestParameters requestParameters);
+		MemoryStreamFactory memoryStreamFactory, IRequestConfiguration? requestParameters);
 }

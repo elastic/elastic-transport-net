@@ -93,7 +93,7 @@ public interface ITransportConfiguration : IDisposable
 	/// <summary>
 	/// Try to send these headers for every request
 	/// </summary>
-	NameValueCollection Headers { get; }
+	NameValueCollection? Headers { get; }
 
 	/// <summary>
 	/// Whether HTTP pipelining is enabled. The default is <c>true</c>
@@ -143,18 +143,18 @@ public interface ITransportConfiguration : IDisposable
 	/// When using static or single node connection pooling it is assumed the list of node you instantiate the client with should be taken
 	/// verbatim.
 	/// </summary>
-	Func<Node, bool> NodePredicate { get; }
+	Func<Node, bool>? NodePredicate { get; }
 
 	/// <summary>
 	/// Allows you to register a callback every time a an API call is returned
 	/// </summary>
-	Action<ApiCallDetails> OnRequestCompleted { get; }
+	Action<ApiCallDetails>? OnRequestCompleted { get; }
 
 	/// <summary>
 	/// An action to run when the <see cref="RequestData" /> for a request has been
 	/// created.
 	/// </summary>
-	Action<RequestData> OnRequestDataCreated { get; }
+	Action<RequestData>? OnRequestDataCreated { get; }
 
 	/// <summary>
 	/// When enabled, all headers from the HTTP response will be included in the <see cref="ApiCallDetails"/>.
@@ -184,7 +184,7 @@ public interface ITransportConfiguration : IDisposable
 	/// <summary>
 	/// Append these query string parameters automatically to every request
 	/// </summary>
-	NameValueCollection QueryStringParameters { get; }
+	NameValueCollection? QueryStringParameters { get; }
 
 	/// <summary>The serializer to use to serialize requests and deserialize responses</summary>
 	Serializer RequestResponseSerializer { get; }
