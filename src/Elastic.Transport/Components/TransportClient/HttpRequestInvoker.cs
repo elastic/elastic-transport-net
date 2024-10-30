@@ -193,7 +193,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			// if there's an exception, ensure we always release the stream and response so that the connection is freed.
 			responseStream.Dispose();
-			receivedResponse.Dispose(); 
+			receivedResponse.Dispose();
 			throw;
 		}
 	}
@@ -343,7 +343,7 @@ public class HttpRequestInvoker : IRequestInvoker
 	internal void SetAuthenticationIfNeeded(Endpoint endpoint, RequestData requestData, HttpRequestMessage requestMessage)
 	{
 		//If user manually specifies an Authorization Header give it preference
-		if (requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
+		if (requestData.Headers != null && requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
 		{
 			var header = AuthenticationHeaderValue.Parse(requestData.Headers["Authorization"]);
 			requestMessage.Headers.Authorization = header;

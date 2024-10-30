@@ -29,12 +29,12 @@ namespace Elastic.Transport;
 internal sealed class RequestDataContent : HttpContent
 {
 	private readonly RequestData _requestData;
-	private readonly PostData _postData;
+	private readonly PostData? _postData;
 
-	private readonly Func<RequestData, PostData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext, CancellationToken, Task>
+	private readonly Func<RequestData, PostData?, CompleteTaskOnCloseStream, RequestDataContent, TransportContext, CancellationToken, Task>
 		_onStreamAvailableAsync;
 
-	private readonly Action<RequestData, PostData, CompleteTaskOnCloseStream, RequestDataContent, TransportContext> _onStreamAvailable;
+	private readonly Action<RequestData, PostData?, CompleteTaskOnCloseStream, RequestDataContent, TransportContext> _onStreamAvailable;
 	private readonly CancellationToken _token;
 
 	/// <summary> Constructor used in synchronous paths. </summary>
@@ -53,8 +53,13 @@ internal sealed class RequestDataContent : HttpContent
 		_onStreamAvailableAsync = OnStreamAvailableAsync;
 	}
 
-	private static void OnStreamAvailable(RequestData data, PostData postData, Stream stream, HttpContent content, TransportContext context)
+	private static void OnStreamAvailable(RequestData data, PostData? postData, Stream stream, HttpContent content, TransportContext context)
 	{
+		if (postData == null)
+		{
+			stream.Dispose();
+			return;
+		}
 		if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
 		using (stream) postData.Write(stream, data.ConnectionSettings, data.DisableDirectStreaming);
@@ -75,8 +80,17 @@ internal sealed class RequestDataContent : HttpContent
 		_onStreamAvailableAsync = OnStreamAvailableAsync;
 	}
 
-	private static async Task OnStreamAvailableAsync(RequestData data, PostData postData, Stream stream, HttpContent content, TransportContext context, CancellationToken ctx = default)
+	private static async Task OnStreamAvailableAsync(RequestData data, PostData? postData, Stream stream, HttpContent content, TransportContext context, CancellationToken ctx = default)
 	{
+		if (postData == null)
+		{
+#if NET6_0_OR_GREATER
+			await stream.DisposeAsync().ConfigureAwait(false);
+#else
+			stream.Dispose();
+#endif
+			return;
+		}
 		if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
 #if NET6_0_OR_GREATER

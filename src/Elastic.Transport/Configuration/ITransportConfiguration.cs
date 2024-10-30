@@ -195,7 +195,7 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	/// <summary>
 	/// Produces the client meta header for a request.
 	/// </summary>
-	MetaHeaderProvider MetaHeaderProvider { get; }
+	MetaHeaderProvider? MetaHeaderProvider { get; }
 
 	/// <summary>
 	/// Disables the meta header which is included on all requests by default. This header contains lightweight information

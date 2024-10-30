@@ -307,7 +307,9 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	) where TResponse : TransportResponse, new() =>
 		throw new UnexpectedTransportException(killerException, seenExceptions)
 		{
-			Endpoint = endpoint, ApiCallDetails = response?.ApiCallDetails, AuditTrail = pipeline.AuditTrail
+			Endpoint = endpoint,
+			ApiCallDetails = response?.ApiCallDetails,
+			AuditTrail = pipeline.AuditTrail
 		};
 
 	private static void HandlePipelineException<TResponse>(

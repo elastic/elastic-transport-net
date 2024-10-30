@@ -160,7 +160,7 @@ public sealed class RequestData
 	public ITransportConfiguration ConnectionSettings { get; }
 	public CustomResponseBuilder? CustomResponseBuilder { get; }
 	public HeadersList? ResponseHeadersToParse { get; }
-	public NameValueCollection Headers { get; }
+	public NameValueCollection? Headers { get; }
 	public bool DisableDirectStreaming { get; }
 	public bool ParseAllHeaders { get; }
 	public bool DisableAutomaticProxyDetection { get; }
@@ -186,7 +186,7 @@ public sealed class RequestData
 
 	public TimeSpan DnsRefreshTimeout { get; }
 
-	public MetaHeaderProvider MetaHeaderProvider { get; }
+	public MetaHeaderProvider? MetaHeaderProvider { get; }
 
 	public IReadOnlyDictionary<string, string> RequestMetaData { get; }
 
