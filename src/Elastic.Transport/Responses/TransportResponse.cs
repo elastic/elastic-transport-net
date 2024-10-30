@@ -2,13 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Elastic.Transport;
 
 /// <summary>
 /// A response from an Elastic product including details about the request/response life cycle. Base class for the built in low level response
-/// types, <see cref="StringResponse"/>, <see cref="BytesResponse"/>, <see cref="DynamicResponse"/> and <see cref="VoidResponse"/>
+/// types, <see cref="StringResponse"/>, <see cref="BytesResponse"/>, <see cref="DynamicResponse"/>, <see cref="StreamResponse"/> and <see cref="VoidResponse"/>
 /// </summary>
 public abstract class TransportResponse<T> : TransportResponse
 {
@@ -34,5 +36,25 @@ public abstract class TransportResponse
 	public override string ToString() => ApiCallDetails?.DebugInformation
 		// ReSharper disable once ConstantNullCoalescingCondition
 		?? $"{nameof(ApiCallDetails)} not set, likely a bug, reverting to default ToString(): {base.ToString()}";
+
+	/// <summary>
+	/// Allows other disposable resources to to be disposed along with the response.
+	/// </summary>
+	/// <remarks>
+	/// While it's slightly confusing to have this on the base type which is NOT IDisposable, it avoids
+	/// specialised type checking in the request invoker and response builder code. Currently, only used by
+	/// StreamResponse and kept internal. If we later make this public, we might need to refine this.
+	/// </remarks>
+	[JsonIgnore]
+	internal IEnumerable<IDisposable>? LinkedDisposables { get; set; }
+
+	/// <summary>
+	/// Allows the response to identify that the response stream should NOT be automatically disposed.
+	/// </summary>
+	/// <remarks>
+	/// Currently only used by StreamResponse and therefore internal.
+	/// </remarks>
+	[JsonIgnore]
+	internal virtual bool LeaveOpen { get; } = false;
 }
 

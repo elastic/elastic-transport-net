@@ -75,7 +75,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		Exception ex = null;
 		string mimeType = null;
 		long contentLength = -1;
-		IDisposable receive = DiagnosticSources.SingletonDisposable;
+		IDisposable receivedResponse = DiagnosticSources.SingletonDisposable;
 		ReadOnlyDictionary<TcpState, int> tcpStats = null;
 		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 		Dictionary<string, IEnumerable<string>> responseHeaders = null;
@@ -118,7 +118,7 @@ public class HttpRequestInvoker : IRequestInvoker
 					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
 #endif
 
-				receive = responseMessage;
+				receivedResponse = responseMessage;
 				statusCode = (int)responseMessage.StatusCode;
 			}
 
@@ -154,13 +154,10 @@ public class HttpRequestInvoker : IRequestInvoker
 			ex = e;
 		}
 
-		var isStreamResponse = typeof(TResponse) == typeof(StreamResponse);
+		TResponse response;
 
-		using (isStreamResponse ? DiagnosticSources.SingletonDisposable : receive)
-		using (isStreamResponse ? Stream.Null : responseStream ??= Stream.Null)
+		try
 		{
-			TResponse response;
-
 			if (isAsync)
 				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
 					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
@@ -169,9 +166,18 @@ public class HttpRequestInvoker : IRequestInvoker
 				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
 						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
-			// Defer disposal of the response message
-			if (response is StreamResponse sr)
-				sr.Finalizer = () => receive.Dispose();
+			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
+			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
+			// resources can be linked such that their disposal is deferred.
+			if (response.LeaveOpen)
+			{
+				response.LinkedDisposables = [receivedResponse, responseStream];
+			}
+			else
+			{
+				responseStream.Dispose();
+				receivedResponse.Dispose();
+			}
 
 			if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
 				return response;
@@ -184,6 +190,13 @@ public class HttpRequestInvoker : IRequestInvoker
 				Activity.Current?.SetTag(attribute.Key, attribute.Value);
 
 			return response;
+		}
+		catch
+		{
+			// if there's an exception, ensure we always release the stream and response so that the connection is freed.
+			responseStream.Dispose();
+			receivedResponse.Dispose(); 
+			throw;
 		}
 	}
 

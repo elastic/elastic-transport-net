@@ -66,24 +66,27 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	{
 		var body = responseBody ?? _responseBody;
 		var data = requestData.PostData;
-		if (data != null)
+
+		if (data is not null)
 		{
-			using (var stream = requestData.MemoryStreamFactory.Create())
+			using var stream = requestData.MemoryStreamFactory.Create();
+			if (requestData.HttpCompression)
 			{
-				if (requestData.HttpCompression)
-				{
-					using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-					data.Write(zipStream, requestData.ConnectionSettings);
-				}
-				else
-					data.Write(stream, requestData.ConnectionSettings);
+				using var zipStream = new GZipStream(stream, CompressionMode.Compress);
+				data.Write(zipStream, requestData.ConnectionSettings);
+			}
+			else
+			{
+				data.Write(stream, requestData.ConnectionSettings);
 			}
 		}
 		requestData.MadeItToResponse = true;
 
 		var sc = statusCode ?? _statusCode;
-		Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
-		return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType ?? RequestData.DefaultMimeType, body?.Length ?? 0, null, null);
+		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
+
+		return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
+			.ToResponse<TResponse>(requestData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? RequestData.DefaultMimeType, body?.Length ?? 0, null, null);
 	}
 
 	/// <inheritdoc cref="BuildResponse{TResponse}"/>>
@@ -93,26 +96,29 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	{
 		var body = responseBody ?? _responseBody;
 		var data = requestData.PostData;
-		if (data != null)
+
+		if (data is not null)
 		{
-			using (var stream = requestData.MemoryStreamFactory.Create())
+			using var stream = requestData.MemoryStreamFactory.Create();
+
+			if (requestData.HttpCompression)
 			{
-				if (requestData.HttpCompression)
-				{
-					using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-					await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
-				}
-				else
-					await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				using var zipStream = new GZipStream(stream, CompressionMode.Compress);
+				await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+			}
+			else
+			{
+				await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
 			}
 		}
 		requestData.MadeItToResponse = true;
 
 		var sc = statusCode ?? _statusCode;
-		Stream s = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
+
+		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
+
 		return await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
-			.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, s, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
+			.ToResponseAsync<TResponse>(requestData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
 			.ConfigureAwait(false);
 	}
-
 }

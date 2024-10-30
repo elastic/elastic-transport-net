@@ -68,6 +68,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		Exception ex = null;
 		string mimeType = null;
 		long contentLength = -1;
+		IDisposable receivedResponse = DiagnosticSources.SingletonDisposable;
 		ReadOnlyDictionary<TcpState, int> tcpStats = null;
 		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 		Dictionary<string, IEnumerable<string>> responseHeaders = null;
@@ -146,6 +147,8 @@ public class HttpWebRequestInvoker : IRequestInvoker
 					httpWebResponse = (HttpWebResponse)request.GetResponse();
 				}
 
+				receivedResponse = httpWebResponse;
+
 				HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
 				responseHeaders = ParseHeaders(requestData, httpWebResponse, responseHeaders);
 				contentLength = httpWebResponse.ContentLength;
@@ -161,28 +164,50 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			unregisterWaitHandle?.Invoke();
 		}
-		responseStream ??= Stream.Null;
 
-		TResponse response;
-
-		if (isAsync)
-			response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-				(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-					.ConfigureAwait(false);
-		else
-			response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
-
-		if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
+		try
 		{
-			var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
-			foreach (var attribute in attributes)
-			{
-				Activity.Current?.SetTag(attribute.Key, attribute.Value);
-			}
-		}
+			TResponse response;
 
-		return response;
+			if (isAsync)
+				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+						.ConfigureAwait(false);
+			else
+				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
+						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+
+			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
+			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
+			// resources can be linked such that their disposal is deferred.
+			if (response.LeaveOpen)
+			{
+				response.LinkedDisposables = [receivedResponse, responseStream];
+			}
+			else
+			{
+				responseStream.Dispose();
+				receivedResponse.Dispose();
+			}
+
+			if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
+			{
+				var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+				foreach (var attribute in attributes)
+				{
+					Activity.Current?.SetTag(attribute.Key, attribute.Value);
+				}
+			}
+
+			return response;
+		}
+		catch
+		{
+			// if there's an exception, ensure we always release the stream and response so that the connection is freed.
+			responseStream.Dispose();
+			receivedResponse.Dispose();
+			throw;
+		}
 	}
 
 	private static Dictionary<string, IEnumerable<string>> ParseHeaders(RequestData requestData, HttpWebResponse responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
