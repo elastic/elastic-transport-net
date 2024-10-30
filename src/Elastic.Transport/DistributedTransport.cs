@@ -142,7 +142,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				pipeline.FirstPoolUsage(Configuration.BootstrapLock);
 
 			//var pathAndQuery = requestParameters?.CreatePathWithQueryStrings(path, Configuration) ?? path;
-			var requestData = new RequestData(Configuration, localRequestConfiguration, customResponseBuilder, MemoryStreamFactory, openTelemetryData);
+			var requestData = new RequestData(Configuration, localRequestConfiguration, customResponseBuilder, MemoryStreamFactory);
 			Configuration.OnRequestDataCreated?.Invoke(requestData);
 			TResponse response = null;
 
@@ -161,8 +161,8 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				activity.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, ReflectionVersionInfo.TransportVersion);
 				activity.SetTag(SemanticConventions.UserAgentOriginal, Configuration.UserAgent.ToString());
 
-				if (requestData.OpenTelemetryData.SpanAttributes is not null)
-					foreach (var attribute in requestData.OpenTelemetryData.SpanAttributes)
+				if (openTelemetryData.SpanAttributes is not null)
+					foreach (var attribute in openTelemetryData.SpanAttributes)
 						activity.SetTag(attribute.Key, attribute.Value);
 
 				activity.SetTag(SemanticConventions.HttpRequestMethod, endpoint.Method.GetStringValue());

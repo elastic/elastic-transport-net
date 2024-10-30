@@ -38,7 +38,6 @@ public record Endpoint(in EndpointPath Path, Node Node)
 	/// </summary>
 	public Uri Uri { get; } = new(Node.Uri, Path.PathAndQuery);
 
-
 	/// <summary> The HTTP method used for the request (e.g., GET, POST, PUT, DELETE, HEAD). </summary>
 	public HttpMethod Method => Path.Method;
 
@@ -77,11 +76,9 @@ public sealed class RequestData
 		ITransportConfiguration global,
 		IRequestConfiguration? local,
 		CustomResponseBuilder? customResponseBuilder,
-		MemoryStreamFactory memoryStreamFactory,
-		OpenTelemetryData openTelemetryData
+		MemoryStreamFactory memoryStreamFactory
 	)
 	{
-		OpenTelemetryData = openTelemetryData;
 		CustomResponseBuilder = customResponseBuilder;
 		ConnectionSettings = global;
 		MemoryStreamFactory = memoryStreamFactory;
@@ -178,7 +175,7 @@ public sealed class RequestData
 
 	public IReadOnlyDictionary<string, string> RequestMetaData { get; }
 
-	internal OpenTelemetryData OpenTelemetryData { get; }
+	//internal OpenTelemetryData OpenTelemetryData { get; }
 
 	internal bool ValidateResponseContentType(string responseMimeType)
 	{
