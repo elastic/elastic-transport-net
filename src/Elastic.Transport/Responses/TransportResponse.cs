@@ -40,9 +40,20 @@ public abstract class TransportResponse
 	/// <summary>
 	/// Allows other disposable resources to to be disposed along with the response.
 	/// </summary>
+	/// <remarks>
+	/// While it's slightly confusing to have this on the base type which is NOT IDisposable, it avoids
+	/// specialised type checking in the request invoker and response builder code. Currently, only used by
+	/// StreamResponse and kept internal. If we later make this public, we might need to refine this.
+	/// </remarks>
 	[JsonIgnore]
 	internal IEnumerable<IDisposable>? LinkedDisposables { get; set; }
 
+	/// <summary>
+	/// Allows the response to identify that the response stream should NOT be automatically disposed.
+	/// </summary>
+	/// <remarks>
+	/// Currently only used by StreamResponse and therefore internal.
+	/// </remarks>
 	[JsonIgnore]
 	internal virtual bool LeaveOpen { get; } = false;
 }
