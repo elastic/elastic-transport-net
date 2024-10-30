@@ -83,8 +83,9 @@ public readonly struct HeadersList : IEnumerable<string>
 	public int Count => _headers.Count;
 
 	// ReSharper disable once ConstantConditionalAccessQualifier
+	// ReSharper disable once ConstantNullCoalescingCondition
 	/// <inheritdoc />
-	public IEnumerator<string> GetEnumerator() => _headers?.GetEnumerator() ?? Enumerable.Empty<string>().GetEnumerator();
+	public IEnumerator<string> GetEnumerator() => _headers?.GetEnumerator() ?? (IEnumerator<string>)new EmptyEnumerator<string>();
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
