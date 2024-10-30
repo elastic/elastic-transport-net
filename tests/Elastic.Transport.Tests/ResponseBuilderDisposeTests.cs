@@ -66,25 +66,19 @@ public class ResponseBuilderDisposeTests
 		ITransportConfiguration config;
 
 		if (skipStatusCode > -1 )
-		{
 			config = InMemoryConnectionFactory.Create(productRegistration)
 				.DisableDirectStreaming(disableDirectStreaming)
 				.SkipDeserializationForStatusCodes(skipStatusCode);
-		}
 		else if (productRegistration is not null)
-		{
 			config = InMemoryConnectionFactory.Create(productRegistration)
 				.DisableDirectStreaming(disableDirectStreaming);
-		}
 		else
-		{
 			config = disableDirectStreaming ? _settingsDisableDirectStream : _settings;
-		}
 
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
 
 		var endpoint = new Endpoint(new EndpointPath(httpMethod, "/"), new Node(new Uri("http://localhost:9200")));
-		var requestData = new RequestData(null, config, null, customResponseBuilder, memoryStreamFactory, default);
+		var requestData = new RequestData(config, null, customResponseBuilder, memoryStreamFactory);
 
 		var stream = new TrackDisposeStream();
 
@@ -94,7 +88,7 @@ public class ResponseBuilderDisposeTests
 			stream.Position = 0;
 		}
 
-		var response = config.ProductRegistration.ResponseBuilder.ToResponse<T>(endpoint, requestData, null, statusCode, null, stream, mimeType, contentLength, null, null);
+		var response = config.ProductRegistration.ResponseBuilder.ToResponse<T>(endpoint, requestData, null, null, statusCode, null, stream, mimeType, contentLength, null, null);
 
 		response.Should().NotBeNull();
 
@@ -111,7 +105,7 @@ public class ResponseBuilderDisposeTests
 		stream = new TrackDisposeStream();
 		var ct = new CancellationToken();
 
-		response = await config.ProductRegistration.ResponseBuilder.ToResponseAsync<T>(endpoint, requestData, null, statusCode, null, stream, null, contentLength, null, null,
+		response = await config.ProductRegistration.ResponseBuilder.ToResponseAsync<T>(endpoint, requestData, null, null, statusCode, null, stream, null, contentLength, null, null,
 			cancellationToken: ct);
 
 		response.Should().NotBeNull();

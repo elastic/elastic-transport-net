@@ -75,11 +75,11 @@ public class InMemoryRequestInvoker : IRequestInvoker
 			if (requestData.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-				data.Write(zipStream, requestData.ConnectionSettings);
+				data.Write(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
 			}
 			else
 			{
-				data.Write(stream, requestData.ConnectionSettings);
+				data.Write(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
 			}
 		}
 
@@ -105,11 +105,11 @@ public class InMemoryRequestInvoker : IRequestInvoker
 			if (requestData.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-				await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				await data.WriteAsync(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 			}
 			else
 			{
-				await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				await data.WriteAsync(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 			}
 		}
 		var sc = statusCode ?? _statusCode;
