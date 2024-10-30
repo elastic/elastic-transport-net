@@ -46,6 +46,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	///     Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
 	/// </summary>
 	public override TResponse ToResponse<TResponse>(
+		Endpoint endpoint,
 		RequestData requestData,
 		Exception ex,
 		int? statusCode,
@@ -59,7 +60,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	{
 		responseStream.ThrowIfNull(nameof(responseStream));
 
-		var details = Initialize(requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats, contentLength);
+		var details = Initialize(endpoint, requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats, contentLength);
 
 		TResponse response = null;
 
@@ -76,6 +77,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	///     Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
 	/// </summary>
 	public override async Task<TResponse> ToResponseAsync<TResponse>(
+		Endpoint endpoint,
 		RequestData requestData,
 		Exception ex,
 		int? statusCode,
@@ -90,7 +92,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 	{
 		responseStream.ThrowIfNull(nameof(responseStream));
 
-		var details = Initialize(requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats, contentLength);
+		var details = Initialize(endpoint, requestData, ex, statusCode, headers, mimeType, threadPoolStats, tcpStats, contentLength);
 
 		TResponse response = null;
 
@@ -104,50 +106,6 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 		return response;
 	}
 
-	// A helper which returns true if the response could potentially have a body.
-	// We check for content-length != 0 rather than > 0 as we may not have a content-length header and the length may be -1.
-	// In that case, we may have a body and can only use the status code and method conditions to rule out a potential body.
-	private static bool MayHaveBody(int? statusCode, HttpMethod httpMethod, long contentLength) =>
-		contentLength != 0 && (!statusCode.HasValue || statusCode.Value != 204 && httpMethod != HttpMethod.HEAD);
-
-	private static ApiCallDetails Initialize(RequestData requestData, Exception exception, int? statusCode, Dictionary<string, IEnumerable<string>> headers, string mimeType, IReadOnlyDictionary<string,
-		ThreadPoolStatistics> threadPoolStats, IReadOnlyDictionary<TcpState, int> tcpStats, long contentLength)
-	{
-		var hasSuccessfulStatusCode = false;
-		var allowedStatusCodes = requestData.AllowedStatusCodes;
-		if (statusCode.HasValue)
-		{
-			if (allowedStatusCodes.Contains(-1) || allowedStatusCodes.Contains(statusCode.Value))
-				hasSuccessfulStatusCode = true;
-			else
-				hasSuccessfulStatusCode = requestData.ConnectionSettings
-					.StatusCodeToResponseSuccess(requestData.Method, statusCode.Value);
-		}
-
-		// We don't validate the content-type (MIME type) for HEAD requests or responses that have no content (204 status code).
-		// Elastic Cloud responses to HEAD requests strip the content-type header so we want to avoid validation in that case.
-		var hasExpectedContentType = !MayHaveBody(statusCode, requestData.Method, contentLength) || requestData.ValidateResponseContentType(mimeType);
-
-		var details = new ApiCallDetails
-		{
-			HasSuccessfulStatusCode = hasSuccessfulStatusCode,
-			HasExpectedContentType = hasExpectedContentType,
-			OriginalException = exception,
-			HttpStatusCode = statusCode,
-			RequestBodyInBytes = requestData.PostData?.WrittenBytes,
-			Uri = requestData.Uri,
-			HttpMethod = requestData.Method,
-			TcpStats = tcpStats,
-			ThreadPoolStats = threadPoolStats,
-			ResponseMimeType = mimeType,
-			TransportConfiguration = requestData.ConnectionSettings
-		};
-
-		if (headers is not null)
-			details.ParsedHeaders = new ReadOnlyDictionary<string, IEnumerable<string>>(headers);
-
-		return details;
-	}
 
 	/// <summary>
 	///

@@ -82,11 +82,9 @@ public class ResponseBuilderDisposeTests
 		}
 
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
-		
-		var requestData = new RequestData(httpMethod, "/", null, config, null, customResponseBuilder, memoryStreamFactory, default)
-		{
-			Node = new Node(new Uri("http://localhost:9200"))
-		};
+
+		var endpoint = new Endpoint(httpMethod, "/", new Node(new Uri("http://localhost:9200")));
+		var requestData = new RequestData(httpMethod, "/", null, config, null, customResponseBuilder, memoryStreamFactory, default);
 
 		var stream = new TrackDisposeStream();
 
@@ -96,7 +94,7 @@ public class ResponseBuilderDisposeTests
 			stream.Position = 0;
 		}
 
-		var response = config.ProductRegistration.ResponseBuilder.ToResponse<T>(requestData, null, statusCode, null, stream, mimeType, contentLength, null, null);
+		var response = config.ProductRegistration.ResponseBuilder.ToResponse<T>(endpoint, requestData, null, statusCode, null, stream, mimeType, contentLength, null, null);
 
 		response.Should().NotBeNull();
 
@@ -113,7 +111,7 @@ public class ResponseBuilderDisposeTests
 		stream = new TrackDisposeStream();
 		var ct = new CancellationToken();
 
-		response = await config.ProductRegistration.ResponseBuilder.ToResponseAsync<T>(requestData, null, statusCode, null, stream, null, contentLength, null, null,
+		response = await config.ProductRegistration.ResponseBuilder.ToResponseAsync<T>(endpoint, requestData, null, statusCode, null, stream, null, contentLength, null, null,
 			cancellationToken: ct);
 
 		response.Should().NotBeNull();
@@ -140,19 +138,20 @@ public class ResponseBuilderDisposeTests
 		public override MetaHeaderProvider MetaHeaderProvider => null;
 		public override string ProductAssemblyVersion => "0.0.0";
 		public override IReadOnlyDictionary<string, object> DefaultOpenTelemetryAttributes => new Dictionary<string, object>();
-		public override RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, MemoryStreamFactory memoryStreamFactory) => throw new NotImplementedException();
-		public override RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings, MemoryStreamFactory memoryStreamFactory) => throw new NotImplementedException();
 		public override IReadOnlyCollection<string> DefaultHeadersToParse() => [];
 		public override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) => true;
+		public override ResponseBuilder ResponseBuilder => new TestErrorResponseBuilder();
+
+		public override Endpoint CreatePingEndpoint(Node node, IRequestConfiguration requestConfiguration) => throw new NotImplementedException();
+		public override Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData, CancellationToken cancellationToken) => throw new NotImplementedException();
+		public override TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData) => throw new NotImplementedException();
+		public override Endpoint CreateSniffEndpoint(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings) => throw new NotImplementedException();
+		public override Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken) => throw new NotImplementedException();
+		public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, RequestData requestData) => throw new NotImplementedException();
 		public override bool NodePredicate(Node node) => throw new NotImplementedException();
 		public override Dictionary<string, object> ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails) => throw new NotImplementedException();
-		public override TransportResponse Ping(IRequestInvoker requestInvoker, RequestData pingData) => throw new NotImplementedException();
-		public override Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, RequestData pingData, CancellationToken cancellationToken) => throw new NotImplementedException();
-		public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, RequestData requestData) => throw new NotImplementedException();
-		public override Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) => throw new NotImplementedException();
 		public override int SniffOrder(Node node) => throw new NotImplementedException();
 		public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason) => throw new NotImplementedException();
-		public override ResponseBuilder ResponseBuilder => new TestErrorResponseBuilder();
 	}
 
 	private class TestError : ErrorResponse

@@ -79,28 +79,28 @@ public sealed class DefaultProductRegistration : ProductRegistration
 		return false;
 	}
 
-	/// <inheritdoc cref="ProductRegistration.CreateSniffRequestData"/>
-	public override RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings, MemoryStreamFactory memoryStreamFactory) =>
+	/// <inheritdoc cref="ProductRegistration.CreateSniffEndpoint"/>
+	public override Endpoint CreateSniffEndpoint(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.SniffAsync"/>
-	public override Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, RequestData requestData, CancellationToken cancellationToken) =>
+	public override Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.Sniff"/>
-	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, RequestData requestData) =>
+	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, RequestData requestData) =>
 		throw new NotImplementedException();
 
-	/// <inheritdoc cref="ProductRegistration.CreatePingRequestData"/>
-	public override RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, MemoryStreamFactory memoryStreamFactory) =>
+	/// <inheritdoc cref="ProductRegistration.CreatePingEndpoint"/>
+	public override Endpoint CreatePingEndpoint(Node node, IRequestConfiguration requestConfiguration) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.PingAsync"/>
-	public override Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, RequestData pingData, CancellationToken cancellationToken) =>
+	public override Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData, CancellationToken cancellationToken) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.Ping"/>
-	public override TransportResponse Ping(IRequestInvoker requestInvoker, RequestData pingData) =>
+	public override TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc/>

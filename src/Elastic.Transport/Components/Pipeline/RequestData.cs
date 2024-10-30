@@ -13,6 +13,34 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport;
 
 /// <summary>
+/// Represents an endpoint in a transport request, encapsulating the HTTP method, path and query,
+/// and the node to which the request is being sent.
+/// </summary>
+/// <remarks>
+/// This class is used to construct the URI for the request based on the node's URI and the path and query.
+/// An empty endpoint can be created using the <see cref="Empty"/> method as a default or placeholder instance.
+/// </remarks>
+public record Endpoint(HttpMethod Method, string PathAndQuery, Node Node)
+{
+	/// <summary>
+	/// The <see cref="Uri" /> for the request.
+	/// </summary>
+	public Uri Uri { get; } = new Uri(Node.Uri, PathAndQuery);
+
+	/// <summary> Represents an empty endpoint used as a default or placeholder instance of <see cref="Endpoint"/>. </summary>
+	public static Endpoint Empty(HttpMethod method, string pathAndQuery) => new(method, pathAndQuery, EmptyNode);
+
+	private static readonly Node EmptyNode = new Node(new Uri("http://empty.example"));
+
+	/// <summary> Indicates whether the endpoint is an empty placeholder instance. </summary>
+	public bool IsEmpty => Node == EmptyNode;
+
+	/// <inheritdoc/>
+	public override string ToString() => $"{Method.GetStringValue()} {Uri}";
+
+}
+
+/// <summary>
 /// Where and how <see cref="IRequestInvoker.Request{TResponse}" /> should connect to.
 /// <para>
 /// Represents the cumulative configuration from <see cref="ITransportConfiguration" />
@@ -26,9 +54,6 @@ public sealed class RequestData
 	public const string DefaultMimeType = "application/json";
 	public const string OpaqueIdHeader = "X-Opaque-Id";
 	public const string RunAsSecurityHeader = "es-security-runas-user";
-
-	private Uri? _requestUri;
-	private Node? _node;
 
 	public RequestData(
 		HttpMethod method,
@@ -125,17 +150,6 @@ public sealed class RequestData
 	public MemoryStreamFactory MemoryStreamFactory { get; }
 	public HttpMethod Method { get; }
 
-	public Node Node
-	{
-		get => _node;
-		set
-		{
-			// We want the Uri to regenerate when the node changes
-			_requestUri = null;
-			_node = value;
-		}
-	}
-
 	public AuditEvent OnFailureAuditEvent => MadeItToResponse ? AuditEvent.BadResponse : AuditEvent.BadRequest;
 	public PipelineFailure OnFailurePipelineFailure => MadeItToResponse ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
 	public string PathAndQuery { get; }
@@ -154,20 +168,6 @@ public sealed class RequestData
 	public bool TransferEncodingChunked { get; }
 	public bool TcpStats { get; }
 	public bool ThreadPoolStats { get; }
-
-	/// <summary>
-	/// The <see cref="Uri" /> for the request.
-	/// </summary>
-	public Uri Uri
-	{
-		get
-		{
-			if (_requestUri is not null) return _requestUri;
-
-			_requestUri = Node is not null ? new Uri(Node.Uri, PathAndQuery) : null;
-			return _requestUri;
-		}
-	}
 
 	public TimeSpan DnsRefreshTimeout { get; }
 

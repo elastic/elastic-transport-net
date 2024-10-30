@@ -56,16 +56,16 @@ public class HttpRequestInvoker : IRequestInvoker
 	private RequestDataHttpClientFactory HttpClientFactory { get; }
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}" />
-	public TResponse Request<TResponse>(RequestData requestData)
+	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
+		RequestCoreAsync<TResponse>(false, endpoint, requestData).EnsureCompleted();
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}" />
-	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
+		RequestCoreAsync<TResponse>(true, endpoint, requestData, cancellationToken).AsTask();
 
-	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)
+	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
 		var client = GetClient(requestData);
@@ -85,7 +85,7 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		try
 		{
-			var requestMessage = CreateHttpRequestMessage(requestData);
+			var requestMessage = CreateHttpRequestMessage(endpoint, requestData);
 
 			if (requestData.PostData is not null)
 			{
@@ -160,11 +160,11 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			if (isAsync)
 				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+					(endpoint, requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
 						.ConfigureAwait(false);
 			else
 				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+						(endpoint, requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
@@ -324,22 +324,24 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// Creates an instance of <see cref="HttpRequestMessage" /> using the <paramref name="requestData" />.
 	/// This method is virtual so subclasses of <see cref="HttpRequestInvoker" /> can modify the instance if needed.
 	/// </summary>
-	/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
+	/// <param name="endpoint">An object describing where we want to call out to</param>
+	/// <param name="requestData">An object describing how we want to call out to</param>
 	/// <exception cref="Exception">
 	/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
 	/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 	/// </exception>
-	internal HttpRequestMessage CreateHttpRequestMessage(RequestData requestData)
+	internal HttpRequestMessage CreateHttpRequestMessage(Endpoint endpoint, RequestData requestData)
 	{
-		var request = CreateRequestMessage(requestData);
-		SetAuthenticationIfNeeded(request, requestData);
+		var request = CreateRequestMessage(endpoint, requestData);
+		SetAuthenticationIfNeeded(endpoint, requestData, request);
 		return request;
 	}
 
 	/// <summary> Isolated hook for subclasses to set authentication on <paramref name="requestMessage" /> </summary>
 	/// <param name="requestMessage">The instance of <see cref="HttpRequestMessage" /> that needs authentication details</param>
-	/// <param name="requestData">An object describing where and how we want to call out to</param>
-	internal void SetAuthenticationIfNeeded(HttpRequestMessage requestMessage, RequestData requestData)
+	/// <param name="endpoint">An object describing where we want to call out to</param>
+	/// <param name="requestData">An object describing how we want to call out to</param>
+	internal void SetAuthenticationIfNeeded(Endpoint endpoint, RequestData requestData, HttpRequestMessage requestMessage)
 	{
 		//If user manually specifies an Authorization Header give it preference
 		if (requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
@@ -349,10 +351,10 @@ public class HttpRequestInvoker : IRequestInvoker
 			return;
 		}
 
-		SetConfiguredAuthenticationHeaderIfNeeded(requestMessage, requestData);
+		SetConfiguredAuthenticationHeaderIfNeeded(endpoint, requestData, requestMessage);
 	}
 
-	private static void SetConfiguredAuthenticationHeaderIfNeeded(HttpRequestMessage requestMessage, RequestData requestData)
+	private static void SetConfiguredAuthenticationHeaderIfNeeded(Endpoint endpoint, RequestData requestData, HttpRequestMessage requestMessage)
 	{
 		// Basic auth credentials take the following precedence (highest -> lowest):
 		// 1 - Specified with the URI (highest precedence)
@@ -361,9 +363,9 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		string parameters = null;
 		string scheme = null;
-		if (!requestData.Uri.UserInfo.IsNullOrEmpty())
+		if (!endpoint.Uri.UserInfo.IsNullOrEmpty())
 		{
-			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(requestData.Uri.UserInfo));
+			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(endpoint.Uri.UserInfo));
 			scheme = BasicAuthentication.BasicAuthenticationScheme;
 		}
 		else if (requestData.AuthenticationHeader != null && requestData.AuthenticationHeader.TryGetAuthorizationParameters(out var v))
@@ -377,10 +379,10 @@ public class HttpRequestInvoker : IRequestInvoker
 		requestMessage.Headers.Authorization = new AuthenticationHeaderValue(scheme, parameters);
 	}
 
-	private static HttpRequestMessage CreateRequestMessage(RequestData requestData)
+	private static HttpRequestMessage CreateRequestMessage(Endpoint endpoint, RequestData requestData)
 	{
 		var method = ConvertHttpMethod(requestData.Method);
-		var requestMessage = new HttpRequestMessage(method, requestData.Uri);
+		var requestMessage = new HttpRequestMessage(method, endpoint.Uri);
 
 		if (requestData.Headers != null)
 			foreach (string key in requestData.Headers)

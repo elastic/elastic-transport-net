@@ -119,28 +119,23 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		return e != null;
 	}
 
-	/// <inheritdoc cref="ProductRegistration.CreateSniffRequestData"/>
-	public override RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration,
-		ITransportConfiguration settings,
-		MemoryStreamFactory memoryStreamFactory
-	)
+	//TODO remove settings dependency
+	/// <inheritdoc cref="ProductRegistration.CreateSniffEndpoint"/>
+	public override Endpoint CreateSniffEndpoint(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings)
 	{
 		var requestParameters = new DefaultRequestParameters
 		{
 			QueryString = { { "timeout", requestConfiguration.PingTimeout }, { "flat_settings", true } }
 		};
 		var sniffPath = requestParameters.CreatePathWithQueryStrings(SniffPath, settings);
-		return new RequestData(HttpMethod.GET, sniffPath, null, settings, requestConfiguration, null, memoryStreamFactory, default)
-		{
-			Node = node
-		};
+		return new Endpoint(HttpMethod.GET, sniffPath, node);
 	}
 
 	/// <inheritdoc cref="ProductRegistration.SniffAsync"/>
 	public override async Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker,
-		bool forceSsl, RequestData requestData, CancellationToken cancellationToken)
+		bool forceSsl, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
 	{
-		var response = await requestInvoker.RequestAsync<SniffResponse>(requestData, cancellationToken)
+		var response = await requestInvoker.RequestAsync<SniffResponse>(endpoint, requestData, cancellationToken)
 			.ConfigureAwait(false);
 		var nodes = response.ToNodes(forceSsl);
 		return Tuple.Create<TransportResponse, IReadOnlyCollection<Node>>(response,
@@ -149,40 +144,29 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.Sniff"/>
 	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl,
-		RequestData requestData)
+		Endpoint endpoint, RequestData requestData)
 	{
-		var response = requestInvoker.Request<SniffResponse>(requestData);
+		var response = requestInvoker.Request<SniffResponse>(endpoint, requestData);
 		var nodes = response.ToNodes(forceSsl);
 		return Tuple.Create<TransportResponse, IReadOnlyCollection<Node>>(response,
 			new ReadOnlyCollection<Node>(nodes.ToArray()));
 	}
 
-	/// <inheritdoc cref="ProductRegistration.CreatePingRequestData"/>
-	public override RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration,
-		ITransportConfiguration global,
-		MemoryStreamFactory memoryStreamFactory
-	)
-	{
-		var data = new RequestData(HttpMethod.HEAD, string.Empty, null, global, requestConfiguration, null, memoryStreamFactory, default)
-		{
-			Node = node
-		};
-
-		return data;
-	}
+	/// <inheritdoc cref="ProductRegistration.CreatePingEndpoint"/>
+	public override Endpoint CreatePingEndpoint(Node node, IRequestConfiguration requestConfiguration) =>
+		new(HttpMethod.HEAD, string.Empty, node);
 
 	/// <inheritdoc cref="ProductRegistration.PingAsync"/>
-	public override async Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, RequestData pingData,
-		CancellationToken cancellationToken)
+	public override async Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData, CancellationToken cancellationToken)
 	{
-		var response = await requestInvoker.RequestAsync<VoidResponse>(pingData, cancellationToken).ConfigureAwait(false);
+		var response = await requestInvoker.RequestAsync<VoidResponse>(endpoint, pingData, cancellationToken).ConfigureAwait(false);
 		return response;
 	}
 
 	/// <inheritdoc cref="ProductRegistration.Ping"/>
-	public override TransportResponse Ping(IRequestInvoker requestInvoker, RequestData pingData)
+	public override TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData)
 	{
-		var response = requestInvoker.Request<VoidResponse>(pingData);
+		var response = requestInvoker.Request<VoidResponse>(endpoint, pingData);
 		return response;
 	}
 

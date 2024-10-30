@@ -175,22 +175,24 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			List<PipelineException>? seenExceptions = null;
 			var attemptedNodes = 0;
 
+			var endpoint = Endpoint.Empty(method, pathAndQuery);
+
 			if (pipeline.TryGetSingleNode(out var singleNode))
 			{
+				endpoint = endpoint with { Node = singleNode };
 				// No value in marking a single node as dead. We have no other options!
 				attemptedNodes = 1;
-				requestData.Node = singleNode;
-				activity?.SetTag(SemanticConventions.UrlFull, requestData.Uri.AbsoluteUri);
-				activity?.SetTag(SemanticConventions.ServerAddress, requestData.Uri.Host);
-				activity?.SetTag(SemanticConventions.ServerPort, requestData.Uri.Port);
+				activity?.SetTag(SemanticConventions.UrlFull, endpoint.Uri.AbsoluteUri);
+				activity?.SetTag(SemanticConventions.ServerAddress, endpoint.Uri.Host);
+				activity?.SetTag(SemanticConventions.ServerPort, endpoint.Uri.Port);
 
 				try
 				{
 					if (isAsync)
-						response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
+						response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, cancellationToken)
 							.ConfigureAwait(false);
 					else
-						response = pipeline.CallProductEndpoint<TResponse>(requestData);
+						response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData);
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 				{
@@ -202,7 +204,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				}
 				catch (Exception killerException)
 				{
-					ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
+					ThrowUnexpectedTransportException(killerException, seenExceptions, endpoint, response, pipeline);
 				}
 			}
 			else
@@ -210,13 +212,13 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				foreach (var node in pipeline.NextNode())
 				{
 					attemptedNodes++;
-					requestData.Node = node;
+					endpoint = endpoint with { Node = node };
 
 					// If multiple nodes are attempted, the final node attempted will be used to set the operation span attributes.
 					// Each physical node attempt in CallProductEndpoint will also record these attributes.
-					activity?.SetTag(SemanticConventions.UrlFull, requestData.Uri.AbsoluteUri);
-					activity?.SetTag(SemanticConventions.ServerAddress, requestData.Uri.Host);
-					activity?.SetTag(SemanticConventions.ServerPort, requestData.Uri.Port);
+					activity?.SetTag(SemanticConventions.UrlFull, endpoint.Uri.AbsoluteUri);
+					activity?.SetTag(SemanticConventions.ServerAddress, endpoint.Uri.Host);
+					activity?.SetTag(SemanticConventions.ServerPort, endpoint.Uri.Port);
 
 					try
 					{
@@ -236,10 +238,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 						}
 
 						if (isAsync)
-							response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
+							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, cancellationToken)
 								.ConfigureAwait(false);
 						else
-							response = pipeline.CallProductEndpoint<TResponse>(requestData);
+							response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData);
 
 						if (!response.ApiCallDetails.SuccessOrKnownError)
 						{
@@ -270,7 +272,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 						throw new UnexpectedTransportException(killerException, seenExceptions)
 						{
-							Request = requestData,
+							Endpoint = endpoint,
 							ApiCallDetails = response?.ApiCallDetails,
 							AuditTrail = pipeline.AuditTrail
 						};
@@ -296,7 +298,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
 			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportAttemptedNodes, attemptedNodes);
 
-			return FinalizeResponse(requestData, pipeline, seenExceptions, response);
+			return FinalizeResponse(endpoint, requestData, pipeline, seenExceptions, response);
 		}
 		finally
 		{
@@ -306,12 +308,12 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 	private static void ThrowUnexpectedTransportException<TResponse>(Exception killerException,
 		List<PipelineException> seenExceptions,
-		RequestData requestData,
+		Endpoint endpoint,
 		TResponse response, RequestPipeline pipeline
 	) where TResponse : TransportResponse, new() =>
 		throw new UnexpectedTransportException(killerException, seenExceptions)
 		{
-			Request = requestData, ApiCallDetails = response?.ApiCallDetails, AuditTrail = pipeline.AuditTrail
+			Endpoint = endpoint, ApiCallDetails = response?.ApiCallDetails, AuditTrail = pipeline.AuditTrail
 		};
 
 	private static void HandlePipelineException<TResponse>(
@@ -326,19 +328,19 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		seenExceptions.Add(ex);
 	}
 
-	private TResponse FinalizeResponse<TResponse>(RequestData requestData, RequestPipeline pipeline,
+	private TResponse FinalizeResponse<TResponse>(Endpoint endpoint, RequestData requestData, RequestPipeline pipeline,
 		List<PipelineException>? seenExceptions,
 		TResponse? response
 	) where TResponse : TransportResponse, new()
 	{
-		if (requestData.Node == null) //foreach never ran
-			pipeline.ThrowNoNodesAttempted(requestData, seenExceptions);
+		if (endpoint.IsEmpty) //foreach never ran
+			pipeline.ThrowNoNodesAttempted(endpoint, seenExceptions);
 
 		var callDetails = GetMostRecentCallDetails(response, seenExceptions);
-		var clientException = pipeline.CreateClientException(response, callDetails, requestData, seenExceptions);
+		var clientException = pipeline.CreateClientException(response, callDetails, endpoint, requestData, seenExceptions);
 
 		if (response?.ApiCallDetails == null)
-			pipeline.BadResponse(ref response, callDetails, requestData, clientException);
+			pipeline.BadResponse(ref response, callDetails, endpoint, requestData, clientException);
 
 		HandleTransportException(requestData, clientException, response);
 		return response;

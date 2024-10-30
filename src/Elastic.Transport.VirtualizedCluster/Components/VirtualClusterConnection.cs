@@ -115,24 +115,25 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 	private bool IsPingRequest(RequestData requestData) => _productRegistration.IsPingRequest(requestData);
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
-	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new() =>
-		Task.FromResult(Request<TResponse>(requestData));
+		Task.FromResult(Request<TResponse>(endpoint, requestData));
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
-	public TResponse Request<TResponse>(RequestData requestData)
+	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData)
 		where TResponse : TransportResponse, new()
 	{
-		if (!_calls.ContainsKey(requestData.Uri.Port))
-			throw new Exception($"Expected a call to happen on port {requestData.Uri.Port} but received none");
+		if (!_calls.ContainsKey(endpoint.Uri.Port))
+			throw new Exception($"Expected a call to happen on port {endpoint.Uri.Port} but received none");
 
 		try
 		{
-			var state = _calls[requestData.Uri.Port];
+			var state = _calls[endpoint.Uri.Port];
 			if (IsSniffRequest(requestData))
 			{
 				_ = Interlocked.Increment(ref state.Sniffed);
 				return HandleRules<TResponse, ISniffRule>(
+					endpoint,
 					requestData,
 					nameof(VirtualCluster.Sniff),
 					_cluster.SniffingRules,
@@ -145,6 +146,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			{
 				_ = Interlocked.Increment(ref state.Pinged);
 				return HandleRules<TResponse, IRule>(
+					endpoint,
 					requestData,
 					nameof(VirtualCluster.Ping),
 					_cluster.PingingRules,
@@ -155,6 +157,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			}
 			_ = Interlocked.Increment(ref state.Called);
 			return HandleRules<TResponse, IClientCallRule>(
+				endpoint,
 				requestData,
 				nameof(VirtualCluster.ClientCalls),
 				_cluster.ClientCallRules,
@@ -165,11 +168,12 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 		catch (TheException e)
 		{
-			return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(requestData, e, null, null, Stream.Null, null, -1, null, null);
+			return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(endpoint, requestData, e, null, null, Stream.Null, null, -1, null, null);
 		}
 	}
 
 	private TResponse HandleRules<TResponse, TRule>(
+		Endpoint endpoint,
 		RequestData requestData,
 		string origin,
 		IList<TRule> rules,
@@ -189,31 +193,31 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			var always = rule.Times.Match(t => true, t => false);
 			var times = rule.Times.Match(t => -1, t => t);
 
-			if (rule.OnPort == null || rule.OnPort.Value != requestData.Uri.Port) continue;
+			if (rule.OnPort == null || rule.OnPort.Value != endpoint.Uri.Port) continue;
 
 			if (always)
-				return Always<TResponse, TRule>(requestData, timeout, beforeReturn, successResponse, rule);
+				return Always<TResponse, TRule>(endpoint, requestData, timeout, beforeReturn, successResponse, rule);
 
 			if (rule.ExecuteCount > times) continue;
 
-			return Sometimes<TResponse, TRule>(requestData, timeout, beforeReturn, successResponse, rule);
+			return Sometimes<TResponse, TRule>(endpoint, requestData, timeout, beforeReturn, successResponse, rule);
 		}
 		foreach (var rule in rules.Where(s => !s.OnPort.HasValue))
 		{
 			var always = rule.Times.Match(t => true, t => false);
 			var times = rule.Times.Match(t => -1, t => t);
 			if (always)
-				return Always<TResponse, TRule>(requestData, timeout, beforeReturn, successResponse, rule);
+				return Always<TResponse, TRule>(endpoint, requestData, timeout, beforeReturn, successResponse, rule);
 
 			if (rule.ExecuteCount > times) continue;
 
-			return Sometimes<TResponse, TRule>(requestData, timeout, beforeReturn, successResponse, rule);
+			return Sometimes<TResponse, TRule>(endpoint, requestData, timeout, beforeReturn, successResponse, rule);
 		}
 		var count = _calls.Select(kv => kv.Value.Called).Sum();
-		throw new Exception($@"No global or port specific {origin} rule ({requestData.Uri.Port}) matches any longer after {count} calls in to the cluster");
+		throw new Exception($@"No global or port specific {origin} rule ({endpoint.Uri.Port}) matches any longer after {count} calls in to the cluster");
 	}
 
-	private TResponse Always<TResponse, TRule>(RequestData requestData, TimeSpan timeout, Action<TRule> beforeReturn,
+	private TResponse Always<TResponse, TRule>(Endpoint endpoint, RequestData requestData, TimeSpan timeout, Action<TRule> beforeReturn,
 		Func<TRule, byte[]> successResponse, TRule rule
 	)
 		where TResponse : TransportResponse, new()
@@ -231,12 +235,12 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 
 		return rule.Succeeds
-			? Success<TResponse, TRule>(requestData, beforeReturn, successResponse, rule)
-			: Fail<TResponse, TRule>(requestData, rule);
+			? Success<TResponse, TRule>(endpoint, requestData, beforeReturn, successResponse, rule)
+			: Fail<TResponse, TRule>(endpoint, requestData, rule);
 	}
 
 	private TResponse Sometimes<TResponse, TRule>(
-		RequestData requestData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]> successResponse, TRule rule
+		Endpoint endpoint, RequestData requestData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]> successResponse, TRule rule
 	)
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
@@ -253,16 +257,16 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 
 		if (rule.Succeeds)
-			return Success<TResponse, TRule>(requestData, beforeReturn, successResponse, rule);
+			return Success<TResponse, TRule>(endpoint, requestData, beforeReturn, successResponse, rule);
 
-		return Fail<TResponse, TRule>(requestData, rule);
+		return Fail<TResponse, TRule>(endpoint, requestData, rule);
 	}
 
-	private TResponse Fail<TResponse, TRule>(RequestData requestData, TRule rule, RuleOption<Exception, int> returnOverride = null)
+	private TResponse Fail<TResponse, TRule>(Endpoint endpoint, RequestData requestData, TRule rule, RuleOption<Exception, int> returnOverride = null)
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
 	{
-		var state = _calls[requestData.Uri.Port];
+		var state = _calls[endpoint.Uri.Port];
 		_ = Interlocked.Increment(ref state.Failures);
 		var ret = returnOverride ?? rule.Return;
 		rule.RecordExecuted();
@@ -271,25 +275,25 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			throw new TheException();
 
 		return ret.Match(
-			(e) => throw e,
-			(statusCode) => _inMemoryRequestInvoker.BuildResponse<TResponse>(requestData, CallResponse(rule),
+			e => throw e,
+			statusCode => _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, requestData, CallResponse(rule),
 				//make sure we never return a valid status code in Fail responses because of a bad rule.
 				statusCode >= 200 && statusCode < 300 ? 502 : statusCode, rule.ReturnContentType)
 		);
 	}
 
-	private TResponse Success<TResponse, TRule>(RequestData requestData, Action<TRule> beforeReturn, Func<TRule, byte[]> successResponse,
+	private TResponse Success<TResponse, TRule>(Endpoint endpoint, RequestData requestData, Action<TRule> beforeReturn, Func<TRule, byte[]> successResponse,
 		TRule rule
 	)
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
 	{
-		var state = _calls[requestData.Uri.Port];
+		var state = _calls[endpoint.Uri.Port];
 		_ = Interlocked.Increment(ref state.Successes);
 		rule.RecordExecuted();
 
 		beforeReturn?.Invoke(rule);
-		return _inMemoryRequestInvoker.BuildResponse<TResponse>(requestData, successResponse(rule), contentType: rule.ReturnContentType);
+		return _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, requestData, successResponse(rule), contentType: rule.ReturnContentType);
 	}
 
 	private static byte[] CallResponse<TRule>(TRule rule)
