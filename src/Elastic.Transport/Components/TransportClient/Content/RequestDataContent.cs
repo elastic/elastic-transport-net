@@ -57,7 +57,7 @@ internal sealed class RequestDataContent : HttpContent
 	{
 		if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
-		using (stream) postData.Write(stream, data.ConnectionSettings);
+		using (stream) postData.Write(stream, data.ConnectionSettings, data.DisableDirectStreaming);
 	}
 
 	/// <summary> Constructor used in asynchronous paths. </summary>
@@ -84,7 +84,7 @@ internal sealed class RequestDataContent : HttpContent
 #else
 		using (stream)
 #endif
-		await postData.WriteAsync(stream, data.ConnectionSettings, ctx).ConfigureAwait(false);
+		await postData.WriteAsync(stream, data.ConnectionSettings, data.DisableDirectStreaming, ctx).ConfigureAwait(false);
 	}
 
 	/// <summary>

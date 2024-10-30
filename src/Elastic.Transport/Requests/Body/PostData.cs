@@ -33,21 +33,15 @@ public abstract partial class PostData
 	// ReSharper disable once MemberCanBePrivate.Global
 	protected static readonly byte[] NewLineByteArray = {(byte) '\n'};
 
-	/// <summary>
-	/// By setting this to true, <see cref="Write"/> and <see cref="WriteAsync"/> will buffer the data and
-	/// expose it on <see cref="WrittenBytes"/>
-	/// </summary>
-	public bool? DisableDirectStreaming { get; set; }
-
 	/// <summary> Reports the data this instance is wrapping </summary>
 	// ReSharper disable once MemberCanBeProtected.Global
 	public PostType Type { get; private set; }
 
 	/// <summary>
-	/// If <see cref="DisableDirectStreaming" /> is set to true, this will hold the buffered data after <see cref="Write"/>
+	/// If <see cref="IRequestConfiguration.DisableDirectStreaming" /> is set to true, this will hold the buffered data after <see cref="Write"/>
 	/// or <see cref="WriteAsync"/> is called
 	/// </summary>
-	public byte[] WrittenBytes { get; private set; }
+	public byte[]? WrittenBytes { get; private set; }
 
 	/// <summary> A static instance that represents a body with no data </summary>
 	// ReSharper disable once UnusedMember.Global
@@ -57,14 +51,13 @@ public abstract partial class PostData
 	/// Implementations of <see cref="PostData"/> are expected to implement writing the data they hold to
 	/// <paramref name="writableStream"/>
 	/// </summary>
-	public abstract void Write(Stream writableStream, ITransportConfiguration settings);
+	public abstract void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming);
 
 	/// <summary>
 	/// Implementations of <see cref="PostData"/> are expected to implement writing the data they hold to
 	/// <paramref name="writableStream"/>
 	/// </summary>
-	public abstract Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
-		CancellationToken cancellationToken);
+	public abstract Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken);
 
 	/// <summary>
 	/// byte[] implicitly converts to <see cref="PostData"/> so you do not have to use the static <see cref="Bytes"/>
@@ -72,40 +65,27 @@ public abstract partial class PostData
 	/// </summary>
 	public static implicit operator PostData(byte[] byteArray) => Bytes(byteArray);
 
-	/// <summary> Sets up the stream and buffer and determines if direct streaming should be disabled </summary>
-	// ReSharper disable once MemberCanBePrivate.Global
-	protected Stream InitWrite(Stream writableStream, ITransportConfiguration settings, out MemoryStream buffer,
-		out bool disableDirectStreaming)
-	{
-		buffer = null;
-		var stream = writableStream;
-		disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming ?? false;
-		return stream;
-	}
-
-
 	/// <summary>
-	/// Based on <paramref name="settings"/> or <see cref="DisableDirectStreaming"/> this will swap <paramref name="stream"/>
-	/// with <paramref name="buffer"/> after allocating <paramref name="buffer"/>.
-	/// <para>NOTE: <paramref name="buffer"/> is expected to be null when called and may be null when this method returns</para>
+	/// Buffers the stream if direct streaming is disabled.
 	/// </summary>
-	protected void BufferIfNeeded(ITransportConfiguration settings, ref MemoryStream buffer,
-		ref Stream stream)
+	/// <param name="memoryStreamFactory">Factory to create memory streams.</param>
+	/// <param name="disableDirectStreaming">Flag indicating whether direct streaming is disabled.</param>
+	/// <param name="buffer">Reference to the buffer memory stream.</param>
+	/// <param name="stream">Reference to the stream to write to.</param>
+	protected void BufferIfNeeded(MemoryStreamFactory memoryStreamFactory, bool disableDirectStreaming, ref MemoryStream buffer, ref Stream stream)
 	{
-		var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming ?? false;
 		if (!disableDirectStreaming) return;
 
-		buffer = settings.MemoryStreamFactory.Create();
+		buffer = memoryStreamFactory.Create();
 		stream = buffer;
 	}
 
 	/// <summary>
 	/// Implementation of <see cref="Write"/> may call this to make sure <paramref name="buffer"/> makes it to <see cref="WrittenBytes"/>
-	/// if <see cref="DisableDirectStreaming"/> or <paramref name="settings"/> request to buffer the data.
+	/// if <see cref="IRequestConfiguration.DisableDirectStreaming"/> requests to buffer the data.
 	/// </summary>
-	protected void FinishStream(Stream writableStream, MemoryStream buffer, ITransportConfiguration settings)
+	protected void FinishStream(Stream writableStream, MemoryStream? buffer, bool disableDirectStreaming)
 	{
-		var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming ?? false;
 		if (buffer == null || !disableDirectStreaming) return;
 
 		buffer.Position = 0;
@@ -116,7 +96,7 @@ public abstract partial class PostData
 
 	/// <summary>
 	/// Implementation of <see cref="WriteAsync"/> may call this to make sure <paramref name="buffer"/> makes it to <see cref="WrittenBytes"/>
-	/// if <see cref="DisableDirectStreaming"/> or <paramref name="settings"/> request to buffer the data.
+	/// if <see cref="IRequestConfiguration.DisableDirectStreaming"/> requests to buffer the data.
 	/// </summary>
 	protected async
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
@@ -124,10 +104,8 @@ public abstract partial class PostData
 #else
 		Task
 #endif
-		FinishStreamAsync(Stream writableStream, MemoryStream buffer, ITransportConfiguration settings,
-			CancellationToken ctx)
+		FinishStreamAsync(Stream writableStream, MemoryStream? buffer, bool disableDirectStreaming, CancellationToken ctx)
 	{
-		var disableDirectStreaming = DisableDirectStreaming ?? settings.DisableDirectStreaming ?? false;
 		if (buffer == null || !disableDirectStreaming) return;
 
 		buffer.Position = 0;

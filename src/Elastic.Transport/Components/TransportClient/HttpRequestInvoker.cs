@@ -426,13 +426,13 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (requestData.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
-				postData.Write(zipStream, requestData.ConnectionSettings);
+				postData.Write(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
 			}
 			else
-				postData.Write(stream, requestData.ConnectionSettings);
+				postData.Write(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
 
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
-			if (postData.DisableDirectStreaming.GetValueOrDefault(false) && !requestData.HttpCompression)
+			if (requestData.DisableDirectStreaming && !requestData.HttpCompression)
 			{
 				message.Content = new ByteArrayContent(postData.WrittenBytes);
 				stream.Dispose();
@@ -460,13 +460,13 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (requestData.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
-				await postData.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				await postData.WriteAsync(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 			}
 			else
-				await postData.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				await postData.WriteAsync(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
-			if (postData.DisableDirectStreaming.GetValueOrDefault(false) && !requestData.HttpCompression)
+			if (requestData.DisableDirectStreaming && !requestData.HttpCompression)
 			{
 				message.Content = new ByteArrayContent(postData.WrittenBytes);
 #if DOTNETCORE_2_1_OR_HIGHER

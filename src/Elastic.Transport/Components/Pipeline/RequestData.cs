@@ -74,7 +74,6 @@ public sealed class RequestData
 	public const string RunAsSecurityHeader = "es-security-runas-user";
 
 	public RequestData(
-		PostData? data,
 		ITransportConfiguration global,
 		IRequestConfiguration? local,
 		CustomResponseBuilder? customResponseBuilder,
@@ -86,7 +85,6 @@ public sealed class RequestData
 		CustomResponseBuilder = customResponseBuilder;
 		ConnectionSettings = global;
 		MemoryStreamFactory = memoryStreamFactory;
-		//PostData = data;
 
 		SkipDeserializationForStatusCodes = global.SkipDeserializationForStatusCodes;
 		DnsRefreshTimeout = global.DnsRefreshTimeout;
@@ -99,14 +97,12 @@ public sealed class RequestData
 		KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
 		KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
 
-		RunAs = local.RunAs ?? global.RunAs;
+		RunAs = local?.RunAs ?? global.RunAs;
 
 		DisableDirectStreaming = local?.DisableDirectStreaming ?? global.DisableDirectStreaming ?? false;
-		if (data != null)
-			data.DisableDirectStreaming = DisableDirectStreaming;
 
 		Pipelined = local?.HttpPipeliningEnabled ?? global.HttpPipeliningEnabled ?? true;
-		HttpCompression = global.EnableHttpCompression ?? local.EnableHttpCompression ?? true;
+		HttpCompression = global.EnableHttpCompression ?? local?.EnableHttpCompression ?? true;
 		ContentType = local?.ContentType ?? global.Accept ?? DefaultMimeType;
 		Accept = local?.Accept ?? global.Accept ?? DefaultMimeType;
 		ThrowExceptions = local?.ThrowExceptions ?? global.ThrowExceptions ?? false;
@@ -166,7 +162,6 @@ public sealed class RequestData
 	public PipelineFailure OnFailurePipelineFailure => MadeItToResponse ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
 	public TimeSpan PingTimeout { get; }
 	public bool Pipelined { get; }
-	//public PostData? PostData { get; }
 	public string ProxyAddress { get; }
 	public string ProxyPassword { get; }
 	public string ProxyUsername { get; }

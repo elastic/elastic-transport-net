@@ -142,7 +142,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				pipeline.FirstPoolUsage(Configuration.BootstrapLock);
 
 			//var pathAndQuery = requestParameters?.CreatePathWithQueryStrings(path, Configuration) ?? path;
-			var requestData = new RequestData(data, Configuration, localRequestConfiguration, customResponseBuilder, MemoryStreamFactory, openTelemetryData);
+			var requestData = new RequestData(Configuration, localRequestConfiguration, customResponseBuilder, MemoryStreamFactory, openTelemetryData);
 			Configuration.OnRequestDataCreated?.Invoke(requestData);
 			TResponse response = null;
 
