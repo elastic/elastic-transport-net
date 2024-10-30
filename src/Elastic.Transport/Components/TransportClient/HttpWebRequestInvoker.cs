@@ -72,14 +72,13 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		ReadOnlyDictionary<TcpState, int> tcpStats = null;
 		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 		Dictionary<string, IEnumerable<string>> responseHeaders = null;
-		requestData.IsAsync = true;
 
 		var beforeTicks = Stopwatch.GetTimestamp();
 
 		try
 		{
 			var data = postData;
-			var request = CreateHttpWebRequest(endpoint, requestData, postData);
+			var request = CreateHttpWebRequest(endpoint, requestData, postData, isAsync);
 			using (cancellationToken.Register(() => request.Abort()))
 			{
 				if (data is not null)
@@ -251,9 +250,10 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	/// <param name="endpoint">An instance of <see cref="Endpoint"/> describing where to call out to</param>
 	/// <param name="requestData">An instance of <see cref="RequestData"/> describing how to call out to</param>
 	/// <param name="postData">Optional data to send over the wire</param>
-	protected virtual HttpWebRequest CreateHttpWebRequest(Endpoint endpoint, RequestData requestData, PostData? postData)
+	/// <param name="isAsync"></param>
+	protected virtual HttpWebRequest CreateHttpWebRequest(Endpoint endpoint, RequestData requestData, PostData? postData, bool isAsync)
 	{
-		var request = CreateWebRequest(endpoint, requestData, postData);
+		var request = CreateWebRequest(endpoint, requestData, postData, isAsync);
 		SetAuthenticationIfNeeded(endpoint, requestData, request);
 		SetProxyIfNeeded(request, requestData);
 		SetServerCertificateValidationCallBackIfNeeded(request, requestData);
@@ -322,7 +322,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 #endif
 	}
 
-	private static HttpWebRequest CreateWebRequest(Endpoint endpoint, RequestData requestData, PostData? postData)
+	private static HttpWebRequest CreateWebRequest(Endpoint endpoint, RequestData requestData, PostData? postData, bool isAsync)
 	{
 		var request = (HttpWebRequest)WebRequest.Create(endpoint.Uri);
 
@@ -358,7 +358,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			foreach (var producer in requestData.MetaHeaderProvider.Producers)
 			{
-				var value = producer.ProduceHeaderValue(requestData);
+				var value = producer.ProduceHeaderValue(requestData, isAsync);
 
 				if (!string.IsNullOrEmpty(value))
 					request.Headers.Add(producer.HeaderName, value);

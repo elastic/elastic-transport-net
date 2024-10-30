@@ -178,8 +178,6 @@ public sealed class RequestData
 
 	public IReadOnlyDictionary<string, string> RequestMetaData { get; }
 
-	public bool IsAsync { get; internal set; }
-
 	internal OpenTelemetryData OpenTelemetryData { get; }
 
 	internal bool ValidateResponseContentType(string responseMimeType)

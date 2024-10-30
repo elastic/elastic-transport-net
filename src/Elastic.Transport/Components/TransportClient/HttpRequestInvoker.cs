@@ -79,13 +79,12 @@ public class HttpRequestInvoker : IRequestInvoker
 		ReadOnlyDictionary<TcpState, int> tcpStats = null;
 		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 		Dictionary<string, IEnumerable<string>> responseHeaders = null;
-		requestData.IsAsync = isAsync;
 
 		var beforeTicks = Stopwatch.GetTimestamp();
 
 		try
 		{
-			var requestMessage = CreateHttpRequestMessage(endpoint, requestData);
+			var requestMessage = CreateHttpRequestMessage(endpoint, requestData, isAsync);
 
 			if (postData is not null)
 			{
@@ -325,13 +324,14 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// </summary>
 	/// <param name="endpoint">An object describing where we want to call out to</param>
 	/// <param name="requestData">An object describing how we want to call out to</param>
+	/// <param name="isAsync"></param>
 	/// <exception cref="Exception">
 	/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
 	/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 	/// </exception>
-	internal HttpRequestMessage CreateHttpRequestMessage(Endpoint endpoint, RequestData requestData)
+	internal HttpRequestMessage CreateHttpRequestMessage(Endpoint endpoint, RequestData requestData, bool isAsync)
 	{
-		var request = CreateRequestMessage(endpoint, requestData);
+		var request = CreateRequestMessage(endpoint, requestData, isAsync);
 		SetAuthenticationIfNeeded(endpoint, requestData, request);
 		return request;
 	}
@@ -378,7 +378,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		requestMessage.Headers.Authorization = new AuthenticationHeaderValue(scheme, parameters);
 	}
 
-	private static HttpRequestMessage CreateRequestMessage(Endpoint endpoint, RequestData requestData)
+	private static HttpRequestMessage CreateRequestMessage(Endpoint endpoint, RequestData requestData, bool isAsync)
 	{
 		var method = ConvertHttpMethod(endpoint.Method);
 		var requestMessage = new HttpRequestMessage(method, endpoint.Uri);
@@ -405,7 +405,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			foreach (var producer in requestData.MetaHeaderProvider.Producers)
 			{
-				var value = producer.ProduceHeaderValue(requestData);
+				var value = producer.ProduceHeaderValue(requestData, isAsync);
 
 				if (!string.IsNullOrEmpty(value))
 					requestMessage.Headers.TryAddWithoutValidation(producer.HeaderName, value);
