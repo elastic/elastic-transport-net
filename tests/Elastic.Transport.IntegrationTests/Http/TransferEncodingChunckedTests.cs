@@ -39,7 +39,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 		)
 		{
 			var nodePool = new SingleNodePool(Server.Uri);
-			var config = new TransportConfiguration(nodePool, requestInvoker)
+			var config = new TransportConfigurationDescriptor(nodePool, requestInvoker)
 				.TransferEncodingChunked(transferEncodingChunked)
 				.EnableHttpCompression(httpCompression);
 			config = disableAutomaticProxyDetection.HasValue

@@ -13,7 +13,6 @@ internal sealed class DefaultRequestPipelineFactory<TConfiguration> : RequestPip
 	/// <summary>
 	/// returns instances of <see cref="DefaultRequestPipeline{TConfiguration}"/>
 	/// </summary>
-	public override RequestPipeline Create(TConfiguration configurationValues, DateTimeProvider dateTimeProvider,
-		MemoryStreamFactory memoryStreamFactory, IRequestConfiguration? requestConfiguration) =>
-			new DefaultRequestPipeline<TConfiguration>(configurationValues, dateTimeProvider, memoryStreamFactory, requestConfiguration);
+	public override RequestPipeline Create(RequestData requestData, DateTimeProvider dateTimeProvider) =>
+			new DefaultRequestPipeline<TConfiguration>(requestData, dateTimeProvider);
 }

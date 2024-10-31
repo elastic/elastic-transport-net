@@ -20,15 +20,15 @@ namespace Elastic.Transport.Tests
 			var serializer = LowLevelRequestResponseSerializer.Instance;
 			var product = ElasticsearchProductRegistration.Default;
 
-			var settings = new TransportConfiguration(pool, requestInvoker, serializer, product);
-			var transport = new DistributedTransport<TransportConfiguration>(settings);
+			var settings = new TransportConfigurationDescriptor(pool, requestInvoker, serializer, product);
+			var transport = new DistributedTransport<TransportConfigurationDescriptor>(settings);
 
 			var response = transport.Request<StringResponse>(HttpMethod.GET, "/");
 		}
 
 		public void MinimalUsage()
 		{
-			var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
+			var settings = new TransportConfigurationDescriptor(new Uri("http://localhost:9200"));
 			var transport = new DistributedTransport(settings);
 
 			var response = transport.Get<StringResponse>("/");
@@ -39,7 +39,7 @@ namespace Elastic.Transport.Tests
 		public void MinimalElasticsearch()
 		{
 			var uri = new Uri("http://localhost:9200");
-			var settings = new TransportConfiguration(uri, ElasticsearchProductRegistration.Default);
+			var settings = new TransportConfigurationDescriptor(uri, ElasticsearchProductRegistration.Default);
 			var transport = new DistributedTransport(settings);
 
 			var response = transport.Get<StringResponse>("/");
@@ -49,7 +49,7 @@ namespace Elastic.Transport.Tests
 
 		public void MinimalUsageWithRequestParameters()
 		{
-			var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
+			var settings = new TransportConfigurationDescriptor(new Uri("http://localhost:9200"));
 			var transport = new DistributedTransport(settings);
 
 			var response = transport.Get<StringResponse>("/", new DefaultRequestParameters());
@@ -57,7 +57,7 @@ namespace Elastic.Transport.Tests
 			var headResponse = transport.Head("/");
 		}
 
-		public class MyClientConfiguration : TransportConfigurationBase<MyClientConfiguration>
+		public class MyClientConfiguration : TransportConfigurationDescriptorBase<MyClientConfiguration>
 		{
 			public MyClientConfiguration(
 				NodePool nodePool = null,

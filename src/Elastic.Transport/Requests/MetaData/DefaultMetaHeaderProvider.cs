@@ -11,22 +11,20 @@ namespace Elastic.Transport;
 /// </summary>
 public sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
 {
-	private readonly MetaHeaderProducer[] _producers;
-
 	/// <inheritdoc cref="MetaHeaderProvider.Producers"/>
-	public override MetaHeaderProducer[] Producers => _producers;
+	public override MetaHeaderProducer[] Producers { get; }
 
 	/// <summary>
 	///
 	/// </summary>
 	public DefaultMetaHeaderProvider(Type clientType, string serviceIdentifier) =>
-		_producers = new MetaHeaderProducer[] { new DefaultMetaHeaderProducer(clientType, serviceIdentifier) };
+		Producers = [new DefaultMetaHeaderProducer(clientType, serviceIdentifier)];
 
 	/// <summary>
 	///
 	/// </summary>
 	public DefaultMetaHeaderProvider(VersionInfo versionInfo, string serviceIdentifier) =>
-		_producers = new MetaHeaderProducer[] { new DefaultMetaHeaderProducer(versionInfo, serviceIdentifier) };
+		Producers = [new DefaultMetaHeaderProducer(versionInfo, serviceIdentifier)];
 }
 
 /// <summary>

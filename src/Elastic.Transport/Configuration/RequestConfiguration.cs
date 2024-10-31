@@ -18,68 +18,68 @@ public interface IRequestConfiguration
 	/// <summary>
 	/// Force a different Accept header on the request
 	/// </summary>
-	string? Accept { get; set; }
+	string? Accept { get; }
 
 	/// <summary>
 	/// Treat the following statuses (on top of the 200 range) NOT as error.
 	/// </summary>
-	IReadOnlyCollection<int>? AllowedStatusCodes { get; set; }
+	IReadOnlyCollection<int>? AllowedStatusCodes { get; }
 
 	/// <summary> Provide an authentication header override for this request </summary>
-	AuthorizationHeader? Authentication { get; set; }
+	AuthorizationHeader? Authentication { get; }
 
 	/// <summary>
 	/// Use the following client certificates to authenticate this single request
 	/// </summary>
-	X509CertificateCollection? ClientCertificates { get; set; }
+	X509CertificateCollection? ClientCertificates { get; }
 
 	/// <summary>
 	/// Force a different Content-Type header on the request
 	/// </summary>
-	string? ContentType { get; set; }
+	string? ContentType { get; }
 
 	/// <summary>
 	/// Whether to buffer the request and response bytes for the call
 	/// </summary>
-	bool? DisableDirectStreaming { get; set; }
+	bool? DisableDirectStreaming { get; }
 
 	/// <summary>
 	/// Whether to disable the audit trail for the request.
 	/// </summary>
-	bool? DisableAuditTrail { get; set; }
+	bool? DisableAuditTrail { get; }
 
 	/// <summary>
 	/// Under no circumstance do a ping before the actual call. If a node was previously dead a small ping with
 	/// low connect timeout will be tried first in normal circumstances
 	/// </summary>
-	bool? DisablePings { get; set; }
+	bool? DisablePings { get; }
 
 	/// <summary>
 	/// Forces no sniffing to occur on the request no matter what configuration is in place
 	/// globally
 	/// </summary>
-	bool? DisableSniff { get; set; }
+	bool? DisableSniff { get; }
 
 	/// <summary>
 	/// Whether or not this request should be pipelined. http://en.wikipedia.org/wiki/HTTP_pipelining defaults to true
 	/// </summary>
-	bool? HttpPipeliningEnabled { get; set; }
+	bool? HttpPipeliningEnabled { get; }
 
 	/// <summary>
 	/// Enable gzip compressed requests and responses
 	/// </summary>
-	bool? EnableHttpCompression { get; set; }
+	bool? EnableHttpCompression { get; }
 
 	/// <summary>
 	/// This will force the operation on the specified node, this will bypass any configured connection pool and will no retry.
 	/// </summary>
-	Uri? ForceNode { get; set; }
+	Uri? ForceNode { get; }
 
 	/// <summary>
 	/// When a retryable exception occurs or status code is returned this controls the maximum
 	/// amount of times we should retry the call to Elasticsearch
 	/// </summary>
-	int? MaxRetries { get; set; }
+	int? MaxRetries { get; }
 
 	/// <summary>
 	/// Limits the total runtime including retries separately from <see cref="IRequestConfiguration.RequestTimeout" />
@@ -87,74 +87,73 @@ public interface IRequestConfiguration
 	/// When not specified defaults to <see cref="IRequestConfiguration.RequestTimeout" /> which itself defaults to 60 seconds
 	/// </pre>
 	/// </summary>
-	TimeSpan? MaxRetryTimeout { get; set; }
+	TimeSpan? MaxRetryTimeout { get; }
 
 	/// <summary>
 	/// Associate an Id with this user-initiated task, such that it can be located in the cluster task list.
 	/// Valid only for Elasticsearch 6.2.0+
 	/// </summary>
-	string? OpaqueId { get; set; }
+	string? OpaqueId { get; }
 
 	/// <summary> Determines whether to parse all HTTP headers in the request. </summary>
-	bool? ParseAllHeaders { get; set; }
+	bool? ParseAllHeaders { get; }
 
 	/// <summary>
 	/// The ping timeout for this specific request
 	/// </summary>
-	TimeSpan? PingTimeout { get; set; }
+	TimeSpan? PingTimeout { get; }
 
 	/// <summary>
-	/// The timeout for this specific request, takes precedence over the global timeout settings
+	/// The timeout for this specific request, takes precedence over the global timeout init
 	/// </summary>
-	TimeSpan? RequestTimeout { get; set; }
+	TimeSpan? RequestTimeout { get; }
 
 
 	/// <summary> Specifies the headers from the response that should be parsed. </summary>
-	HeadersList? ResponseHeadersToParse { get; set; }
+	HeadersList? ResponseHeadersToParse { get; }
 
 	/// <summary>
 	/// Submit the request on behalf in the context of a different shield user
 	/// <pre />https://www.elastic.co/guide/en/shield/current/submitting-requests-for-other-users.html
 	/// </summary>
-	string? RunAs { get; set; }
+	string? RunAs { get; }
 
 	/// <summary>
 	/// Instead of following a c/go like error checking on response.IsValid do throw an exception (except when <see cref="ApiCallDetails.SuccessOrKnownError"/> is false)
 	/// on the client when a call resulted in an exception on either the client or the Elasticsearch server.
 	/// <para>Reasons for such exceptions could be search parser errors, index missing exceptions, etc...</para>
 	/// </summary>
-	bool? ThrowExceptions { get; set; }
+	bool? ThrowExceptions { get; }
 
 	/// <summary>
 	/// Whether the request should be sent with chunked Transfer-Encoding.
 	/// </summary>
-	bool? TransferEncodingChunked { get; set; }
+	bool? TransferEncodingChunked { get; }
 
 	/// <summary>
 	/// Try to send these headers for this single request
 	/// </summary>
-	NameValueCollection? Headers { get; set; }
+	NameValueCollection? Headers { get; }
 
 	/// <summary>
 	/// Enable statistics about TCP connections to be collected when making a request
 	/// </summary>
-	bool? EnableTcpStats { get; set; }
+	bool? EnableTcpStats { get; }
 
 	/// <summary>
 	/// Enable statistics about thread pools to be collected when making a request
 	/// </summary>
-	bool? EnableThreadPoolStats { get; set; }
+	bool? EnableThreadPoolStats { get; }
 
 	/// <summary>
 	/// Holds additional meta data about the request.
 	/// </summary>
-	RequestMetaData? RequestMetaData { get; set; }
+	RequestMetaData? RequestMetaData { get; }
 }
 
 /// <inheritdoc cref="IRequestConfiguration"/>
-public class RequestConfiguration : IRequestConfiguration
+public record RequestConfiguration : IRequestConfiguration
 {
-
 	/// <summary> The default request timeout. Defaults to 1 minute </summary>
 	public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(10);
 
@@ -166,88 +165,88 @@ public class RequestConfiguration : IRequestConfiguration
 
 
 	/// <inheritdoc />
-	public string? Accept { get; set; }
+	public string? Accept { get; init; }
 
 	/// <inheritdoc />
-	public IReadOnlyCollection<int>? AllowedStatusCodes { get; set; }
+	public IReadOnlyCollection<int>? AllowedStatusCodes { get; init; }
 
 	/// <inheritdoc />
-	public AuthorizationHeader? Authentication { get; set; }
+	public AuthorizationHeader? Authentication { get; init; }
 
 	/// <inheritdoc />
-	public X509CertificateCollection? ClientCertificates { get; set; }
+	public X509CertificateCollection? ClientCertificates { get; init; }
 
 	/// <inheritdoc />
-	public string ContentType { get; set; }
+	public string? ContentType { get; init; }
 
 	/// <inheritdoc />
-	public bool? DisableDirectStreaming { get; set; }
+	public bool? DisableDirectStreaming { get; init; }
 
 	/// <inheritdoc />
-	public bool? DisableAuditTrail { get; set; }
+	public bool? DisableAuditTrail { get; init; }
 
 	/// <inheritdoc />
-	public bool? DisablePings { get; set; }
+	public bool? DisablePings { get; init; }
 
 	/// <inheritdoc />
-	public bool? DisablePing { get; set; }
+	public bool? DisablePing { get; init; }
 
 	/// <inheritdoc />
-	public bool? DisableSniff { get; set; }
+	public bool? DisableSniff { get; init; }
 
 	/// <inheritdoc />
-	public bool? HttpPipeliningEnabled { get; set; }
+	public bool? HttpPipeliningEnabled { get; init; }
 
 	/// <inheritdoc />
-	public bool? EnableHttpPipelining { get; set; } = true;
+	public bool? EnableHttpPipelining { get; init; } = true;
 
 	/// <inheritdoc />
-	public bool? EnableHttpCompression { get; set; }
+	public bool? EnableHttpCompression { get; init; }
 
 	/// <inheritdoc />
-	public Uri ForceNode { get; set; }
+	public Uri? ForceNode { get; init; }
 
 	/// <inheritdoc />
-	public int? MaxRetries { get; set; }
+	public int? MaxRetries { get; init; }
 
 	/// <inheritdoc />
-	public TimeSpan? MaxRetryTimeout { get; set; }
+	public TimeSpan? MaxRetryTimeout { get; init; }
 
 	/// <inheritdoc />
-	public string OpaqueId { get; set; }
+	public string? OpaqueId { get; init; }
 
 	/// <inheritdoc />
-	public TimeSpan? PingTimeout { get; set; }
+	public TimeSpan? PingTimeout { get; init; }
 
 	/// <inheritdoc />
-	public TimeSpan? RequestTimeout { get; set; }
+	public TimeSpan? RequestTimeout { get; init; }
 
 	/// <inheritdoc />
-	public string RunAs { get; set; }
+	public string? RunAs { get; init; }
 
 	/// <inheritdoc />
-	public bool? ThrowExceptions { get; set; }
+	public bool? ThrowExceptions { get; init; }
 
 	/// <inheritdoc />
-	public bool? TransferEncodingChunked { get; set; }
+	public bool? TransferEncodingChunked { get; init; }
 
 	/// <inheritdoc />
-	public NameValueCollection Headers { get; set; }
+	public NameValueCollection? Headers { get; init; }
 
 	/// <inheritdoc />
-	public bool? EnableTcpStats { get; set; }
+	public bool? EnableTcpStats { get; init; }
 
 	/// <inheritdoc />
-	public bool? EnableThreadPoolStats { get; set; }
+	public bool? EnableThreadPoolStats { get; init; }
 
 	/// <inheritdoc />
-	public HeadersList? ResponseHeadersToParse { get; set; }
+	public HeadersList? ResponseHeadersToParse { get; init; }
 
 	/// <inheritdoc />
-	public bool? ParseAllHeaders { get; set; }
+	public bool? ParseAllHeaders { get; init; }
 
 	/// <inheritdoc />
-	public RequestMetaData RequestMetaData { get; set; }
+	public RequestMetaData? RequestMetaData { get; init; }
 
 }
 
@@ -255,162 +254,162 @@ public class RequestConfiguration : IRequestConfiguration
 public class RequestConfigurationDescriptor : IRequestConfiguration
 {
 	/// <inheritdoc cref="IRequestConfiguration"/>
-	public RequestConfigurationDescriptor()
-	{
-	}
+	public RequestConfigurationDescriptor() { }
 
-	string IRequestConfiguration.Accept { get; set; }
-	IReadOnlyCollection<int> IRequestConfiguration.AllowedStatusCodes { get; set; }
-	AuthorizationHeader IRequestConfiguration.Authentication { get; set; }
-	X509CertificateCollection IRequestConfiguration.ClientCertificates { get; set; }
-	string IRequestConfiguration.ContentType { get; set; }
-	bool? IRequestConfiguration.DisableDirectStreaming { get; set; }
-	bool? IRequestConfiguration.DisableAuditTrail { get; set; }
-	bool? IRequestConfiguration.DisablePings { get; set; }
-	bool? IRequestConfiguration.DisableSniff { get; set; }
-	bool? IRequestConfiguration.HttpPipeliningEnabled { get; set; }
-	bool? IRequestConfiguration.EnableHttpCompression { get; set; }
-	Uri IRequestConfiguration.ForceNode { get; set; }
-	int? IRequestConfiguration.MaxRetries { get; set; }
-	TimeSpan? IRequestConfiguration.MaxRetryTimeout { get; set; }
-	string IRequestConfiguration.OpaqueId { get; set; }
-	TimeSpan? IRequestConfiguration.PingTimeout { get; set; }
-	TimeSpan? IRequestConfiguration.RequestTimeout { get; set; }
-	string IRequestConfiguration.RunAs { get; set; }
-	private IRequestConfiguration Self => this;
-	bool? IRequestConfiguration.ThrowExceptions { get; set; }
-	bool? IRequestConfiguration.TransferEncodingChunked { get; set; }
-	NameValueCollection IRequestConfiguration.Headers { get; set; }
-	bool? IRequestConfiguration.EnableTcpStats { get; set; }
-	bool? IRequestConfiguration.EnableThreadPoolStats { get; set; }
-	HeadersList? IRequestConfiguration.ResponseHeadersToParse { get; set; }
-	bool? IRequestConfiguration.ParseAllHeaders { get; set; }
-	RequestMetaData IRequestConfiguration.RequestMetaData { get; set; }
+	private string? _accept;
+	private IReadOnlyCollection<int>? _allowedStatusCodes;
+	private AuthorizationHeader? _authentication;
+	private X509CertificateCollection? _clientCertificates;
+	private string? _contentType;
+	private bool? _disableDirectStreaming;
+	private bool? _disableAuditTrail;
+	private bool? _disablePings;
+	private bool? _disableSniff;
+	private bool? _httpPipeliningEnabled;
+	private Uri? _forceNode;
+	private int? _maxRetries;
+	private string? _opaqueId;
+	private bool? _parseAllHeaders;
+	private TimeSpan? _pingTimeout;
+	private TimeSpan? _requestTimeout;
+	private HeadersList? _responseHeadersToParse;
+	private string? _runAs;
+	private bool? _throwExceptions;
+	private bool? _transferEncodingChunked;
+	private NameValueCollection? _headers;
+	private bool? _enableTcpStats;
+	private bool? _enableThreadPoolStats;
+	private RequestMetaData? _requestMetaData;
+
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+	private bool? _enableHttpCompression;
+	private TimeSpan? _maxRetryTimeout;
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
 
 	/// <inheritdoc cref="IRequestConfiguration.RunAs"/>
 	public RequestConfigurationDescriptor RunAs(string username)
 	{
-		Self.RunAs = username;
+		_runAs = username;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.RequestTimeout"/>
 	public RequestConfigurationDescriptor RequestTimeout(TimeSpan requestTimeout)
 	{
-		Self.RequestTimeout = requestTimeout;
+		_requestTimeout = requestTimeout;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.OpaqueId"/>
 	public RequestConfigurationDescriptor OpaqueId(string opaqueId)
 	{
-		Self.OpaqueId = opaqueId;
+		_opaqueId = opaqueId;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.PingTimeout"/>
 	public RequestConfigurationDescriptor PingTimeout(TimeSpan pingTimeout)
 	{
-		Self.PingTimeout = pingTimeout;
+		_pingTimeout = pingTimeout;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.ContentType"/>
 	public RequestConfigurationDescriptor ContentType(string contentTypeHeader)
 	{
-		Self.ContentType = contentTypeHeader;
+		_contentType = contentTypeHeader;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.Accept"/>
 	public RequestConfigurationDescriptor Accept(string acceptHeader)
 	{
-		Self.Accept = acceptHeader;
+		_accept = acceptHeader;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.AllowedStatusCodes"/>
-	public RequestConfigurationDescriptor AllowedStatusCodes(IEnumerable<int> codes)
+	public RequestConfigurationDescriptor AllowedStatusCodes(IEnumerable<int>? codes)
 	{
-		Self.AllowedStatusCodes = codes?.ToReadOnlyCollection();
+		_allowedStatusCodes = codes?.ToReadOnlyCollection();
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.AllowedStatusCodes"/>
 	public RequestConfigurationDescriptor AllowedStatusCodes(params int[] codes)
 	{
-		Self.AllowedStatusCodes = codes?.ToReadOnlyCollection();
+		_allowedStatusCodes = codes.ToReadOnlyCollection();
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.DisableSniff"/>
 	public RequestConfigurationDescriptor DisableSniffing(bool disable = true)
 	{
-		Self.DisableSniff = disable;
+		_disableSniff = disable;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.DisablePings"/>
 	public RequestConfigurationDescriptor DisablePing(bool disable = true)
 	{
-		Self.DisablePings = disable;
+		_disablePings = disable;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.ThrowExceptions"/>
 	public RequestConfigurationDescriptor ThrowExceptions(bool throwExceptions = true)
 	{
-		Self.ThrowExceptions = throwExceptions;
+		_throwExceptions = throwExceptions;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.DisableDirectStreaming"/>
 	public RequestConfigurationDescriptor DisableDirectStreaming(bool disable = true)
 	{
-		Self.DisableDirectStreaming = disable;
+		_disableDirectStreaming = disable;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.DisableAuditTrail"/>
 	public RequestConfigurationDescriptor DisableAuditTrail(bool disable = true)
 	{
-		Self.DisableAuditTrail = disable;
+		_disableAuditTrail = disable;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.ForceNode"/>
 	public RequestConfigurationDescriptor ForceNode(Uri uri)
 	{
-		Self.ForceNode = uri;
+		_forceNode = uri;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.MaxRetries"/>
 	public RequestConfigurationDescriptor MaxRetries(int retry)
 	{
-		Self.MaxRetries = retry;
+		_maxRetries = retry;
 		return this;
 	}
 
 	/// <inheritdoc cref="AuthorizationHeader"/>
 	public RequestConfigurationDescriptor Authentication(AuthorizationHeader authentication)
 	{
-		Self.Authentication = authentication;
+		_authentication = authentication;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.HttpPipeliningEnabled"/>
 	public RequestConfigurationDescriptor EnableHttpPipelining(bool enable = true)
 	{
-		Self.HttpPipeliningEnabled = enable;
+		_httpPipeliningEnabled = enable;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.ClientCertificates"/>
 	public RequestConfigurationDescriptor ClientCertificates(X509CertificateCollection certificates)
 	{
-		Self.ClientCertificates = certificates;
+		_clientCertificates = certificates;
 		return this;
 	}
 
@@ -425,49 +424,101 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 	/// <inheritdoc cref="IRequestConfiguration.TransferEncodingChunked" />
 	public RequestConfigurationDescriptor TransferEncodingChunked(bool transferEncodingChunked = true)
 	{
-		Self.TransferEncodingChunked = transferEncodingChunked;
+		_transferEncodingChunked = transferEncodingChunked;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.Headers" />
 	public RequestConfigurationDescriptor GlobalHeaders(NameValueCollection headers)
 	{
-		Self.Headers = headers;
+		_headers = headers;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.EnableTcpStats" />
 	public RequestConfigurationDescriptor EnableTcpStats(bool enableTcpStats = true)
 	{
-		Self.EnableTcpStats = enableTcpStats;
+		_enableTcpStats = enableTcpStats;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.EnableThreadPoolStats" />
 	public RequestConfigurationDescriptor EnableThreadPoolStats(bool enableThreadPoolStats = true)
 	{
-		Self.EnableThreadPoolStats = enableThreadPoolStats;
+		_enableThreadPoolStats = enableThreadPoolStats;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.ParseAllHeaders"/>
 	public RequestConfigurationDescriptor ParseAllHeaders(bool enable = true)
 	{
-		Self.ParseAllHeaders = enable;
+		_parseAllHeaders = enable;
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.ResponseHeadersToParse"/>
 	public RequestConfigurationDescriptor ResponseHeadersToParse(IEnumerable<string> headers)
 	{
-		Self.ResponseHeadersToParse = new HeadersList(headers);
+		_responseHeadersToParse = new HeadersList(headers);
 		return this;
 	}
 
 	/// <inheritdoc cref="IRequestConfiguration.RequestMetaData" />
 	public RequestConfigurationDescriptor RequestMetaData(RequestMetaData metaData)
 	{
-		Self.RequestMetaData = metaData;
+		_requestMetaData = metaData;
 		return this;
 	}
+
+	string? IRequestConfiguration.Accept => _accept;
+
+	IReadOnlyCollection<int>? IRequestConfiguration.AllowedStatusCodes => _allowedStatusCodes;
+
+	AuthorizationHeader? IRequestConfiguration.Authentication => _authentication;
+
+	X509CertificateCollection? IRequestConfiguration.ClientCertificates => _clientCertificates;
+
+	string? IRequestConfiguration.ContentType => _contentType;
+
+	bool? IRequestConfiguration.DisableDirectStreaming => _disableDirectStreaming;
+
+	bool? IRequestConfiguration.DisableAuditTrail => _disableAuditTrail;
+
+	bool? IRequestConfiguration.DisablePings => _disablePings;
+
+	bool? IRequestConfiguration.DisableSniff => _disableSniff;
+
+	bool? IRequestConfiguration.HttpPipeliningEnabled => _httpPipeliningEnabled;
+
+	bool? IRequestConfiguration.EnableHttpCompression => _enableHttpCompression;
+
+	Uri? IRequestConfiguration.ForceNode => _forceNode;
+
+	int? IRequestConfiguration.MaxRetries => _maxRetries;
+
+	TimeSpan? IRequestConfiguration.MaxRetryTimeout => _maxRetryTimeout;
+
+	string? IRequestConfiguration.OpaqueId => _opaqueId;
+
+	bool? IRequestConfiguration.ParseAllHeaders => _parseAllHeaders;
+
+	TimeSpan? IRequestConfiguration.PingTimeout => _pingTimeout;
+
+	TimeSpan? IRequestConfiguration.RequestTimeout => _requestTimeout;
+
+	HeadersList? IRequestConfiguration.ResponseHeadersToParse => _responseHeadersToParse;
+
+	string? IRequestConfiguration.RunAs => _runAs;
+
+	bool? IRequestConfiguration.ThrowExceptions => _throwExceptions;
+
+	bool? IRequestConfiguration.TransferEncodingChunked => _transferEncodingChunked;
+
+	NameValueCollection? IRequestConfiguration.Headers => _headers;
+
+	bool? IRequestConfiguration.EnableTcpStats => _enableTcpStats;
+
+	bool? IRequestConfiguration.EnableThreadPoolStats => _enableThreadPoolStats;
+
+	RequestMetaData? IRequestConfiguration.RequestMetaData => _requestMetaData;
 }

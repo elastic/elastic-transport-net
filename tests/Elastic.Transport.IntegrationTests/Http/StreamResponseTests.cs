@@ -23,7 +23,7 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 	public async Task StreamResponse_ShouldNotBeDisposed()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
-		var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
+		var config = new TransportConfigurationDescriptor(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
 		var transport = new DistributedTransport(config);
 
 		var response = await transport.PostAsync<StreamResponse>(Path, PostData.String("{}"));
@@ -38,7 +38,7 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
-		var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
+		var config = new TransportConfigurationDescriptor(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
 			.MemoryStreamFactory(memoryStreamFactory)
 			.DisableDirectStreaming(true);
 
@@ -56,7 +56,7 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
-		var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
+		var config = new TransportConfigurationDescriptor(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
 			.MemoryStreamFactory(memoryStreamFactory);
 
 		var transport = new DistributedTransport(config);
@@ -75,7 +75,7 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
-		var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
+		var config = new TransportConfigurationDescriptor(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
 			.MemoryStreamFactory(memoryStreamFactory)
 			.DisableDirectStreaming(true);
 
@@ -96,7 +96,7 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
-		var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
+		var config = new TransportConfigurationDescriptor(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
 			.MemoryStreamFactory(memoryStreamFactory);
 
 		var transport = new DistributedTransport(config);
@@ -116,7 +116,7 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
-		var config = new TransportConfiguration(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
+		var config = new TransportConfigurationDescriptor(nodePool, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)))
 			.MemoryStreamFactory(memoryStreamFactory)
 			.DisableDirectStreaming(true);
 

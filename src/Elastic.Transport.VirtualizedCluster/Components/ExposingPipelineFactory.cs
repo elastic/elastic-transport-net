@@ -13,20 +13,17 @@ public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFac
 	public ExposingPipelineFactory(TConfiguration configuration, DateTimeProvider dateTimeProvider)
 	{
 		DateTimeProvider = dateTimeProvider;
-		MemoryStreamFactory = TransportConfiguration.DefaultMemoryStreamFactory;
 		Configuration = configuration;
-		Pipeline = Create(Configuration, DateTimeProvider, MemoryStreamFactory, null);
-		RequestHandler = new DistributedTransport<TConfiguration>(Configuration, this, DateTimeProvider, MemoryStreamFactory);
+		Pipeline = Create(new RequestData(Configuration, null, null), DateTimeProvider);
+		RequestHandler = new DistributedTransport<TConfiguration>(Configuration, this, DateTimeProvider);
 	}
 
 	// ReSharper disable once MemberCanBePrivate.Global
 	public RequestPipeline Pipeline { get; }
 	private DateTimeProvider DateTimeProvider { get; }
-	private MemoryStreamFactory MemoryStreamFactory { get; }
 	private TConfiguration Configuration { get; }
 	public ITransport<TConfiguration> RequestHandler { get; }
 
-	public override RequestPipeline Create(TConfiguration configurationValues, DateTimeProvider dateTimeProvider,
-		MemoryStreamFactory memoryStreamFactory, IRequestConfiguration? requestConfiguration) =>
-			new DefaultRequestPipeline<TConfiguration>(Configuration, DateTimeProvider, MemoryStreamFactory, requestConfiguration);
+	public override RequestPipeline Create(RequestData requestData, DateTimeProvider dateTimeProvider) =>
+			new DefaultRequestPipeline<TConfiguration>(requestData, DateTimeProvider);
 }

@@ -65,20 +65,22 @@ public class ResponseBuilderDisposeTests
 	{
 		ITransportConfiguration config;
 
+		var memoryStreamFactory = new TrackMemoryStreamFactory();
+
 		if (skipStatusCode > -1 )
 			config = InMemoryConnectionFactory.Create(productRegistration)
 				.DisableDirectStreaming(disableDirectStreaming)
-				.SkipDeserializationForStatusCodes(skipStatusCode);
+				.SkipDeserializationForStatusCodes(skipStatusCode)
+				.MemoryStreamFactory(memoryStreamFactory);
 		else if (productRegistration is not null)
 			config = InMemoryConnectionFactory.Create(productRegistration)
-				.DisableDirectStreaming(disableDirectStreaming);
+				.DisableDirectStreaming(disableDirectStreaming)
+				.MemoryStreamFactory(memoryStreamFactory);
 		else
 			config = disableDirectStreaming ? _settingsDisableDirectStream : _settings;
 
-		var memoryStreamFactory = new TrackMemoryStreamFactory();
-
 		var endpoint = new Endpoint(new EndpointPath(httpMethod, "/"), new Node(new Uri("http://localhost:9200")));
-		var requestData = new RequestData(config, null, customResponseBuilder, memoryStreamFactory);
+		var requestData = new RequestData(config, null, customResponseBuilder);
 
 		var stream = new TrackDisposeStream();
 

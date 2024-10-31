@@ -15,7 +15,7 @@ namespace Elastic.Transport;
 /// </summary>
 public abstract class RequestPipeline : IDisposable
 {
-	private bool _disposed = false;
+	private bool _disposed;
 
 	internal RequestPipeline() { }
 
