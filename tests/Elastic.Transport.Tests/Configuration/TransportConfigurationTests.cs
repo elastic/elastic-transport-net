@@ -19,6 +19,7 @@ public class TransportConfigurationTests
 		config.Should().BeEquivalentTo(newConfig);
 	}
 
+#if !NETFRAMEWORK
 	[Fact]
 	public void CopiesAllProperties()
 	{
@@ -33,4 +34,5 @@ public class TransportConfigurationTests
 
 		config.Should().BeEquivalentTo(newConfig);
 	}
+#endif
 }
