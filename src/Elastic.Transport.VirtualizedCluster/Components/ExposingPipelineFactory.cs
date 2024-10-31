@@ -8,7 +8,8 @@ namespace Elastic.Transport.VirtualizedCluster.Components;
 /// <summary>
 /// An implementation that exposes all the components so that <see cref="VirtualCluster"/> can reference them directly.
 /// </summary>
-public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFactory<TConfiguration> where TConfiguration : class, ITransportConfiguration
+public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFactory
+	where TConfiguration : class, ITransportConfiguration
 {
 	public ExposingPipelineFactory(TConfiguration configuration, DateTimeProvider dateTimeProvider)
 	{
@@ -25,5 +26,5 @@ public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFac
 	public ITransport<TConfiguration> RequestHandler { get; }
 
 	public override RequestPipeline Create(RequestData requestData, DateTimeProvider dateTimeProvider) =>
-			new DefaultRequestPipeline<TConfiguration>(requestData, DateTimeProvider);
+			new DefaultRequestPipeline(requestData, DateTimeProvider);
 }

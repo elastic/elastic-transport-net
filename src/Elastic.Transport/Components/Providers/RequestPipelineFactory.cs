@@ -5,8 +5,7 @@
 namespace Elastic.Transport;
 
 /// <summary> A factory that creates instances of <see cref="RequestPipeline"/>, this factory exists so that transport can be tested. </summary>
-public abstract class RequestPipelineFactory<TConfiguration>
-	where TConfiguration : class, ITransportConfiguration
+public abstract class RequestPipelineFactory
 {
 	internal RequestPipelineFactory() { }
 

@@ -5,14 +5,14 @@
 namespace Elastic.Transport;
 
 /// <summary>
-/// The default implementation for <see cref="RequestPipeline"/> that returns <see cref="DefaultRequestPipeline{TConfiguration}"/>
+/// The default implementation for <see cref="RequestPipeline"/> that returns <see cref="DefaultRequestPipeline"/>
 /// </summary>
-internal sealed class DefaultRequestPipelineFactory<TConfiguration> : RequestPipelineFactory<TConfiguration>
-	where TConfiguration : class, ITransportConfiguration
+internal sealed class DefaultRequestPipelineFactory
+	: RequestPipelineFactory
 {
 	/// <summary>
-	/// returns instances of <see cref="DefaultRequestPipeline{TConfiguration}"/>
+	/// returns instances of <see cref="DefaultRequestPipeline"/>
 	/// </summary>
 	public override RequestPipeline Create(RequestData requestData, DateTimeProvider dateTimeProvider) =>
-			new DefaultRequestPipeline<TConfiguration>(requestData, dateTimeProvider);
+			new DefaultRequestPipeline(requestData, dateTimeProvider);
 }

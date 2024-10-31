@@ -16,8 +16,7 @@ using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
 namespace Elastic.Transport;
 
 /// <inheritdoc cref="RequestPipeline" />
-public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
-	where TConfiguration : class, ITransportConfiguration
+public class DefaultRequestPipeline : RequestPipeline
 {
 	private readonly IRequestInvoker _requestInvoker;
 	private readonly NodePool _nodePool;
