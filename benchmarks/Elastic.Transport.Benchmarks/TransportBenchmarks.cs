@@ -17,7 +17,7 @@ namespace Elastic.Transport.Benchmarks
 		{
 			var requestInvoker = new InMemoryRequestInvoker();
 			var pool = new SingleNodePool(new Uri("http://localhost:9200"));
-			var settings = new TransportConfigurationDescriptor(pool, requestInvoker);
+			var settings = new TransportConfiguration(pool, requestInvoker);
 
 			_transport = new DistributedTransport(settings);
 		}
