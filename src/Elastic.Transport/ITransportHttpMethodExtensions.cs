@@ -17,12 +17,12 @@ public static class TransportHttpMethodExtensions
 		new(method, parameters.CreatePathWithQueryStrings(path, configuration));
 
 	/// <summary>Perform a GET request</summary>
-	public static TResponse Get<TResponse>(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters)
+	public static TResponse Get<TResponse>(this ITransport<TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>> transport, string path, RequestParameters parameters)
 		where TResponse : TransportResponse, new() =>
 		transport.Request<TResponse>(ToEndpointPath(GET, path, parameters, transport.Configuration), postData: null, openTelemetryData: default, null, null);
 
 	/// <summary>Perform a GET request</summary>
-	public static Task<TResponse> GetAsync<TResponse>(this ITransport<ITransportConfiguration> transport, string path,
+	public static Task<TResponse> GetAsync<TResponse>(this ITransport<TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>> transport, string path,
 		RequestParameters parameters, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new() =>
 		transport.RequestAsync<TResponse>(ToEndpointPath(GET, path, parameters, transport.Configuration), postData: null, openTelemetryData: default, null, null, cancellationToken);
@@ -38,11 +38,11 @@ public static class TransportHttpMethodExtensions
 		transport.RequestAsync<TResponse>(new EndpointPath(GET, pathAndQuery), postData: null, openTelemetryData: default, null, null, cancellationToken);
 
 	/// <summary>Perform a HEAD request</summary>
-	public static VoidResponse Head(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters)
+	public static VoidResponse Head(this ITransport<TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>> transport, string path, RequestParameters parameters)
 		 => transport.Request<VoidResponse>(ToEndpointPath(HEAD, path, parameters, transport.Configuration), postData: null, openTelemetryData: default, null, null);
 
 	/// <summary>Perform a HEAD request</summary>
-	public static Task<VoidResponse> HeadAsync(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters, CancellationToken cancellationToken = default)
+	public static Task<VoidResponse> HeadAsync(this ITransport<TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>> transport, string path, RequestParameters parameters, CancellationToken cancellationToken = default)
 		=> transport.RequestAsync<VoidResponse>(ToEndpointPath(HEAD, path, parameters, transport.Configuration), postData: null, openTelemetryData: default, null, null, cancellationToken);
 
 	/// <summary>Perform a HEAD request</summary>
@@ -54,12 +54,12 @@ public static class TransportHttpMethodExtensions
 		=> transport.RequestAsync<VoidResponse>(new EndpointPath(HEAD, pathAndQuery), postData: null, openTelemetryData: default, null, null, cancellationToken);
 
 	/// <summary>Perform a POST request</summary>
-	public static TResponse Post<TResponse>(this ITransport<ITransportConfiguration> transport, string path, PostData data, RequestParameters parameters)
+	public static TResponse Post<TResponse>(this ITransport<TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>> transport, string path, PostData data, RequestParameters parameters)
 		where TResponse : TransportResponse, new() =>
 		transport.Request<TResponse>(ToEndpointPath(POST, path, parameters, transport.Configuration), data, openTelemetryData: default, null, null);
 
 	/// <summary>Perform a POST request</summary>
-	public static Task<TResponse> PostAsync<TResponse>(this ITransport<ITransportConfiguration> transport, string path, PostData data,
+	public static Task<TResponse> PostAsync<TResponse>(this ITransport<TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>> transport, string path, PostData data,
 		RequestParameters parameters, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new() =>
 		transport.RequestAsync<TResponse>(ToEndpointPath(POST, path, parameters, transport.Configuration), data, openTelemetryData: default, null, null, cancellationToken);
@@ -75,12 +75,12 @@ public static class TransportHttpMethodExtensions
 		transport.RequestAsync<TResponse>(new EndpointPath(POST, pathAndQuery), data, openTelemetryData: default, null, null, cancellationToken);
 
 	/// <summary>Perform a PUT request</summary>
-	public static TResponse Put<TResponse>(this ITransport<ITransportConfiguration> transport, string path, PostData data, RequestParameters parameters)
+	public static TResponse Put<TResponse>(this ITransport<TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>> transport, string path, PostData data, RequestParameters parameters)
 		where TResponse : TransportResponse, new() =>
 		transport.Request<TResponse>(ToEndpointPath(PUT, path, parameters, transport.Configuration), data, openTelemetryData: default, null, null);
 
 	/// <summary>Perform a PUT request</summary>
-	public static Task<TResponse> PutAsync<TResponse>(this ITransport<ITransportConfiguration> transport, string path, PostData data, RequestParameters parameters, CancellationToken cancellationToken = default)
+	public static Task<TResponse> PutAsync<TResponse>(this ITransport<TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>> transport, string path, PostData data, RequestParameters parameters, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new() =>
 		transport.RequestAsync<TResponse>(ToEndpointPath(PUT, path, parameters, transport.Configuration), data, openTelemetryData: default, null, null, cancellationToken);
 
@@ -96,12 +96,12 @@ public static class TransportHttpMethodExtensions
 
 
 	/// <summary>Perform a DELETE request</summary>
-	public static TResponse Delete<TResponse>(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters, PostData? data = null)
+	public static TResponse Delete<TResponse>(this ITransport<TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>> transport, string path, RequestParameters parameters, PostData? data = null)
 		where TResponse : TransportResponse, new() =>
 		transport.Request<TResponse>(ToEndpointPath(DELETE, path, parameters, transport.Configuration), data, openTelemetryData: default, null, null);
 
 	/// <summary>Perform a DELETE request</summary>
-	public static Task<TResponse> DeleteAsync<TResponse>(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters, PostData? data = null, CancellationToken cancellationToken = default)
+	public static Task<TResponse> DeleteAsync<TResponse>(this ITransport<TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>> transport, string path, RequestParameters parameters, PostData? data = null, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new() =>
 		transport.RequestAsync<TResponse>(ToEndpointPath(DELETE, path, parameters, transport.Configuration), data, openTelemetryData: default, null, null, cancellationToken);
 

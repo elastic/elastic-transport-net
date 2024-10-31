@@ -39,13 +39,11 @@ namespace Elastic.Transport.IntegrationTests.Http
 		)
 		{
 			var nodePool = new SingleNodePool(Server.Uri);
-			var config = new TransportConfiguration(nodePool, requestInvoker)
-			{
-					TransferEncodingChunked = transferEncodingChunked,
-					EnableHttpCompression = httpCompression
-			};
+			var config = new TransportConfigurationDescriptor(nodePool, requestInvoker)
+				.TransferEncodingChunked(transferEncodingChunked)
+				.EnableHttpCompression(httpCompression);
 			config = disableAutomaticProxyDetection.HasValue
-				? config with { DisableAutomaticProxyDetection = disableAutomaticProxyDetection.Value }
+				? config.DisableAutomaticProxyDetection(disableAutomaticProxyDetection.Value)
 				//make sure we the requests in debugging proxy
 				: TransportTestServer.RerouteToProxyIfNeeded(config);
 

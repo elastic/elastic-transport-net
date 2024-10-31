@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net.Security;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Elastic.Transport.Products;
@@ -100,7 +99,7 @@ public record TransportConfiguration : ITransportConfiguration
 
 		MetaHeaderProvider = productRegistration?.MetaHeaderProvider;
 		UrlFormatter = new UrlFormatter(this);
-		StatusCodeToResponseSuccess = ProductRegistration.HttpStatusCodeClassifier;
+		StatusCodeToResponseSuccess = (m, i) => ProductRegistration.HttpStatusCodeClassifier(m, i);
 		UserAgent = UserAgent.Create(ProductRegistration.Name, ProductRegistration.GetType());
 
 		if (nodePool is CloudNodePool cloudPool)
@@ -131,7 +130,6 @@ public record TransportConfiguration : ITransportConfiguration
 		DisableAuditTrail = config.DisableAuditTrail;
 		DisableAutomaticProxyDetection = config.DisableAutomaticProxyDetection;
 		DisableDirectStreaming = config.DisableDirectStreaming;
-		DisableMetaHeader = config.DisableMetaHeader;
 		DisablePings = config.DisablePings;
 		DisableSniff = config.DisableSniff;
 		DnsRefreshTimeout = config.DnsRefreshTimeout;
@@ -175,22 +173,6 @@ public record TransportConfiguration : ITransportConfiguration
 		TransferEncodingChunked = config.TransferEncodingChunked;
 		UrlFormatter = config.UrlFormatter;
 		UserAgent = config.UserAgent;
-	}
-
-	/// <summary>
-	/// Turns on settings that aid in debugging like DisableDirectStreaming() and PrettyJson()
-	/// so that the original request and response JSON can be inspected. It also always asks the server for the full stack trace on errors
-	/// </summary>
-	public virtual bool DebugMode
-	{
-		get => PrettyJson;
-		init
-		{
-			PrettyJson = value;
-			DisableDirectStreaming = value;
-			EnableTcpStats = value;
-			EnableThreadPoolStats = value;
-		}
 	}
 
 	/// <inheritdoc />
@@ -287,7 +269,6 @@ public record TransportConfiguration : ITransportConfiguration
 	public Action<ApiCallDetails>? OnRequestCompleted { get; init; }
 	/// <inheritdoc />
 	public Action<RequestData>? OnRequestDataCreated { get; init; }
-	//TODO URI
 	/// <inheritdoc />
 	public string? ProxyAddress { get; init; }
 	/// <inheritdoc />

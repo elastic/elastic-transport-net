@@ -34,7 +34,7 @@ public static class TestableResponseFactory
 			HttpStatusCode = httpStatusCode,
 			HasSuccessfulStatusCode = statusCodeRepresentsSuccess,
 			HasExpectedContentType = true,
-			TransportConfiguration = new TransportConfiguration()
+			TransportConfiguration = new TransportConfigurationDescriptor()
 		};
 
 		return CreateResponse<T>(response, apiCallDetails);

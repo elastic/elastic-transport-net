@@ -31,7 +31,11 @@ public sealed record RequestData
 	public const string RunAsSecurityHeader = "es-security-runas-user";
 
 	/// <inheritdoc cref="RequestData"/>
-	public RequestData(ITransportConfiguration global, IRequestConfiguration? local = null, CustomResponseBuilder? customResponseBuilder = null)
+	public RequestData(
+		ITransportConfiguration global,
+		IRequestConfiguration? local,
+		CustomResponseBuilder? customResponseBuilder
+	)
 	{
 		CustomResponseBuilder = customResponseBuilder;
 		ConnectionSettings = global;

@@ -29,7 +29,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 		private static readonly bool RunningFiddler = Process.GetProcessesByName("fiddler").Any();
 		private static string Localhost => "127.0.0.1";
 		public static string LocalOrProxyHost => RunningFiddler || RunningMitmProxy ? "ipv4.fiddler" : Localhost;
-		public static TransportConfiguration RerouteToProxyIfNeeded(TransportConfiguration config)
+		public static TransportConfigurationDescriptor RerouteToProxyIfNeeded(TransportConfigurationDescriptor config)
 		{
 			if (!RunningMitmProxy) return config;
 
@@ -84,8 +84,8 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			return this;
 		}
 
-		public ITransport CreateTransport(Func<TransportConfiguration, ITransport> create) =>
-			create(TransportTestServer.RerouteToProxyIfNeeded(new TransportConfiguration(Uri)));
+		public ITransport CreateTransport(Func<TransportConfigurationDescriptor, ITransport> create) =>
+			create(TransportTestServer.RerouteToProxyIfNeeded(new TransportConfigurationDescriptor(Uri)));
 
 		public void Dispose() => _host?.Dispose();
 
