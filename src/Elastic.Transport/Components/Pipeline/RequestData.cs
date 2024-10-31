@@ -13,6 +13,66 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport;
 
 /// <summary>
+/// Represents the path of an endpoint in a transport request, including the HTTP method
+/// and the path and query information.
+/// </summary>
+/// <remarks>
+/// This struct is used to store information about the HTTP method and the path and query of an endpoint,
+/// which are essential components when constructing a request URI.
+/// </remarks>
+public readonly record struct EndpointPath(HttpMethod Method, string PathAndQuery);
+
+
+/// <summary>
+/// Represents an endpoint in a transport request, encapsulating the HTTP method, path and query,
+/// and the node to which the request is being sent.
+/// </summary>
+/// <remarks>
+/// This class is used to construct the URI for the request based on the node's URI and the path and query.
+/// An empty endpoint can be created using the <see cref="Empty"/> method as a default or placeholder instance.
+/// </remarks>
+public record Endpoint(in EndpointPath Path, Node Node)
+{
+	/// <summary> Represents an empty endpoint used as a default or placeholder instance of <see cref="Endpoint"/>. </summary>
+	public static Endpoint Empty(in EndpointPath path) => new(path, EmptyNode);
+
+	private static readonly Node EmptyNode = new(new Uri("http://empty.example"));
+
+	/// <summary> Indicates whether the endpoint is an empty placeholder instance. </summary>
+	public bool IsEmpty => Node == EmptyNode;
+
+	/// <summary> The <see cref="Uri" /> for the request. </summary>
+	public Uri Uri { get; private init; } = new(Node.Uri, Path.PathAndQuery);
+
+	/// <summary> The HTTP method used for the request (e.g., GET, POST, PUT, DELETE, HEAD). </summary>
+	public HttpMethod Method => Path.Method;
+
+	/// <summary> Gets the path and query of the endpoint.</summary>
+	public string PathAndQuery => Path.PathAndQuery;
+
+	private readonly Node _node = Node;
+
+	/// <summary>
+	/// Represents a node within the transport layer of the Elastic search client.
+	/// This object encapsulates the characteristics of a node, allowing for comparisons and operations
+	/// within the broader search infrastructure.
+	/// </summary>
+	public Node Node
+	{
+		get => _node;
+		init
+		{
+			_node = value;
+			Uri = new(Node.Uri, Path.PathAndQuery);
+		}
+	}
+
+	/// <inheritdoc/>
+	public override string ToString() => $"{Path.Method.GetStringValue()} {Uri}";
+
+}
+
+/// <summary>
 /// Where and how <see cref="IRequestInvoker.Request{TResponse}" /> should connect to.
 /// <para>
 /// Represents the cumulative configuration from <see cref="ITransportConfiguration" />
@@ -24,40 +84,56 @@ public sealed class RequestData
 //TODO add xmldocs and clean up this class
 #pragma warning disable 1591
 	public const string DefaultMimeType = "application/json";
-	public const string MimeTypeTextPlain = "text/plain";
 	public const string OpaqueIdHeader = "X-Opaque-Id";
 	public const string RunAsSecurityHeader = "es-security-runas-user";
 
-	private Uri? _requestUri;
-	private Node? _node;
-
 	public RequestData(
-		HttpMethod method,
-		string pathAndQuery,
-		PostData? data,
 		ITransportConfiguration global,
 		IRequestConfiguration? local,
 		CustomResponseBuilder? customResponseBuilder,
-		MemoryStreamFactory memoryStreamFactory,
-		OpenTelemetryData openTelemetryData
+		MemoryStreamFactory memoryStreamFactory
 	)
 	{
-		OpenTelemetryData = openTelemetryData;
 		CustomResponseBuilder = customResponseBuilder;
 		ConnectionSettings = global;
 		MemoryStreamFactory = memoryStreamFactory;
-		Method = method;
-		PostData = data;
 
-		PathAndQuery = pathAndQuery;
+		SkipDeserializationForStatusCodes = global.SkipDeserializationForStatusCodes;
+		DnsRefreshTimeout = global.DnsRefreshTimeout;
+		MetaHeaderProvider = global.MetaHeaderProvider;
+		ProxyAddress = global.ProxyAddress;
+		ProxyUsername = global.ProxyUsername;
+		ProxyPassword = global.ProxyPassword;
+		DisableAutomaticProxyDetection = global.DisableAutomaticProxyDetection;
+		UserAgent = global.UserAgent;
+		KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
+		KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
 
-		if (data != null)
-			data.DisableDirectStreaming = local?.DisableDirectStreaming ?? global.DisableDirectStreaming;
+		RunAs = local?.RunAs ?? global.RunAs;
 
-		Pipelined = local?.EnableHttpPipelining ?? global.HttpPipeliningEnabled;
-		HttpCompression = global.EnableHttpCompression;
-		ContentType = local?.ContentType ?? global.ProductRegistration.DefaultMimeType ?? DefaultMimeType;
-		Accept = local?.Accept ?? global.ProductRegistration.DefaultMimeType ?? DefaultMimeType;
+		DisableDirectStreaming = local?.DisableDirectStreaming ?? global.DisableDirectStreaming ?? false;
+
+		Pipelined = local?.HttpPipeliningEnabled ?? global.HttpPipeliningEnabled ?? true;
+		HttpCompression = global.EnableHttpCompression ?? local?.EnableHttpCompression ?? true;
+		ContentType = local?.ContentType ?? global.Accept ?? DefaultMimeType;
+		Accept = local?.Accept ?? global.Accept ?? DefaultMimeType;
+		ThrowExceptions = local?.ThrowExceptions ?? global.ThrowExceptions ?? false;
+		RequestTimeout = local?.RequestTimeout ?? global.RequestTimeout ?? RequestConfiguration.DefaultRequestTimeout;
+		RequestMetaData = local?.RequestMetaData?.Items ?? EmptyReadOnly<string, string>.Dictionary;
+		AuthenticationHeader = local?.Authentication ?? global.Authentication;
+		AllowedStatusCodes = local?.AllowedStatusCodes ?? EmptyReadOnly<int>.Collection;
+		ClientCertificates = local?.ClientCertificates ?? global.ClientCertificates;
+		TransferEncodingChunked = local?.TransferEncodingChunked ?? global.TransferEncodingChunked ?? false;
+		TcpStats = local?.EnableTcpStats ?? global.EnableTcpStats ?? true;
+		ThreadPoolStats = local?.EnableThreadPoolStats ?? global.EnableThreadPoolStats ?? true;
+		ParseAllHeaders = local?.ParseAllHeaders ?? global.ParseAllHeaders ?? false;
+		ResponseHeadersToParse = local is not null
+			? new HeadersList(local.ResponseHeadersToParse, global.ResponseHeadersToParse)
+			: global.ResponseHeadersToParse;
+		PingTimeout =
+			local?.PingTimeout
+			?? global.PingTimeout
+			?? (global.NodePool.UsingSsl ? RequestConfiguration.DefaultPingTimeoutOnSsl : RequestConfiguration.DefaultPingTimeout);
 
 		if (global.Headers != null)
 			Headers = new NameValueCollection(global.Headers);
@@ -75,79 +151,26 @@ public sealed class RequestData
 			Headers.Add(OpaqueIdHeader, local.OpaqueId);
 		}
 
-		RunAs = local?.RunAs;
-		SkipDeserializationForStatusCodes = global.SkipDeserializationForStatusCodes;
-		ThrowExceptions = local?.ThrowExceptions ?? global.ThrowExceptions;
-
-		RequestTimeout = local?.RequestTimeout ?? global.RequestTimeout;
-		PingTimeout =
-			local?.PingTimeout
-			?? global.PingTimeout
-			?? (global.NodePool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
-
-		KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
-		KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
-		DnsRefreshTimeout = global.DnsRefreshTimeout;
-
-		MetaHeaderProvider = global.MetaHeaderProvider;
-		RequestMetaData = local?.RequestMetaData?.Items ?? EmptyReadOnly<string, string>.Dictionary;
-
-		ProxyAddress = global.ProxyAddress;
-		ProxyUsername = global.ProxyUsername;
-		ProxyPassword = global.ProxyPassword;
-		DisableAutomaticProxyDetection = global.DisableAutomaticProxyDetection;
-		AuthenticationHeader = local?.AuthenticationHeader ?? global.Authentication;
-		AllowedStatusCodes = local?.AllowedStatusCodes ?? EmptyReadOnly<int>.Collection;
-		ClientCertificates = local?.ClientCertificates ?? global.ClientCertificates;
-		UserAgent = global.UserAgent;
-		TransferEncodingChunked = local?.TransferEncodingChunked ?? global.TransferEncodingChunked;
-		TcpStats = local?.EnableTcpStats ?? global.EnableTcpStats;
-		ThreadPoolStats = local?.EnableThreadPoolStats ?? global.EnableThreadPoolStats;
-		ParseAllHeaders = local?.ParseAllHeaders ?? global.ParseAllHeaders ?? false;
-
-		if (local is not null)
-		{
-			ResponseHeadersToParse = local.ResponseHeadersToParse;
-			ResponseHeadersToParse = new HeadersList(local.ResponseHeadersToParse, global.ResponseHeadersToParse);
-		}
-		else
-			ResponseHeadersToParse = global.ResponseHeadersToParse;
 	}
 
 	public string Accept { get; }
 	public IReadOnlyCollection<int> AllowedStatusCodes { get; }
-	public AuthorizationHeader AuthenticationHeader { get; }
-	public X509CertificateCollection ClientCertificates { get; }
+	public AuthorizationHeader? AuthenticationHeader { get; }
+	public X509CertificateCollection? ClientCertificates { get; }
 	public ITransportConfiguration ConnectionSettings { get; }
 	public CustomResponseBuilder? CustomResponseBuilder { get; }
-	public bool DisableAutomaticProxyDetection { get; }
-	public HeadersList ResponseHeadersToParse { get; }
+	public HeadersList? ResponseHeadersToParse { get; }
+	public NameValueCollection? Headers { get; }
+	public bool DisableDirectStreaming { get; }
 	public bool ParseAllHeaders { get; }
-	public NameValueCollection Headers { get; }
+	public bool DisableAutomaticProxyDetection { get; }
 	public bool HttpCompression { get; }
 	public int KeepAliveInterval { get; }
 	public int KeepAliveTime { get; }
-	public bool MadeItToResponse { get; set; }
 	public MemoryStreamFactory MemoryStreamFactory { get; }
-	public HttpMethod Method { get; }
 
-	public Node Node
-	{
-		get => _node;
-		set
-		{
-			// We want the Uri to regenerate when the node changes
-			_requestUri = null;
-			_node = value;
-		}
-	}
-
-	public AuditEvent OnFailureAuditEvent => MadeItToResponse ? AuditEvent.BadResponse : AuditEvent.BadRequest;
-	public PipelineFailure OnFailurePipelineFailure => MadeItToResponse ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
-	public string PathAndQuery { get; }
 	public TimeSpan PingTimeout { get; }
 	public bool Pipelined { get; }
-	public PostData? PostData { get; }
 	public string ProxyAddress { get; }
 	public string ProxyPassword { get; }
 	public string ProxyUsername { get; }
@@ -161,31 +184,13 @@ public sealed class RequestData
 	public bool TcpStats { get; }
 	public bool ThreadPoolStats { get; }
 
-	/// <summary>
-	/// The <see cref="Uri" /> for the request.
-	/// </summary>
-	public Uri Uri
-	{
-		get
-		{
-			if (_requestUri is not null) return _requestUri;
-
-			_requestUri = Node is not null ? new Uri(Node.Uri, PathAndQuery) : null;
-			return _requestUri;
-		}
-	}
-
 	public TimeSpan DnsRefreshTimeout { get; }
 
-	public MetaHeaderProvider MetaHeaderProvider { get; }
+	public MetaHeaderProvider? MetaHeaderProvider { get; }
 
 	public IReadOnlyDictionary<string, string> RequestMetaData { get; }
 
-	public bool IsAsync { get; internal set; }
-
-	internal OpenTelemetryData OpenTelemetryData { get; }
-
-	public override string ToString() => $"{Method.GetStringValue()} {PathAndQuery}";
+	//internal OpenTelemetryData OpenTelemetryData { get; }
 
 	internal bool ValidateResponseContentType(string responseMimeType)
 	{

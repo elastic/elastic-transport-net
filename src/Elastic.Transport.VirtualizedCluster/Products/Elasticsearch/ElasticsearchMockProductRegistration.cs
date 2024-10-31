@@ -22,10 +22,9 @@ public sealed class ElasticsearchMockProductRegistration : MockProductRegistrati
 	public override byte[] CreateSniffResponseBytes(IReadOnlyList<Node> nodes, string stackVersion, string publishAddressOverride, bool returnFullyQualifiedDomainNames) =>
 		ElasticsearchSniffResponseFactory.Create(nodes, stackVersion, publishAddressOverride, returnFullyQualifiedDomainNames);
 
-	public override bool IsSniffRequest(RequestData requestData) =>
-		requestData.PathAndQuery.StartsWith(ElasticsearchProductRegistration.SniffPath, StringComparison.Ordinal);
+	public override bool IsSniffRequest(Endpoint endpoint) =>
+		endpoint.PathAndQuery.StartsWith(ElasticsearchProductRegistration.SniffPath, StringComparison.Ordinal);
 
-	public override bool IsPingRequest(RequestData requestData) =>
-		requestData.Method == HttpMethod.HEAD &&
-		(requestData.PathAndQuery == string.Empty || requestData.PathAndQuery.StartsWith("?"));
+	public override bool IsPingRequest(Endpoint endpoint) =>
+		endpoint.Method == HttpMethod.HEAD && (endpoint.PathAndQuery == string.Empty || endpoint.PathAndQuery.StartsWith("?"));
 }

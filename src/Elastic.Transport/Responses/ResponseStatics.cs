@@ -31,7 +31,7 @@ internal static class ResponseStatics
 
 		var auditTrail = (r.AuditTrail ?? Enumerable.Empty<Audit>()).ToList();
 
-		if (!r.TransportConfiguration.DisableAuditTrail)
+		if (!r.TransportConfiguration.DisableAuditTrail ?? true)
 		{
 			DebugAuditTrail(auditTrail, sb);
 		}
@@ -42,7 +42,7 @@ internal static class ResponseStatics
 
 		if (r.OriginalException != null) sb.AppendLine($"# OriginalException: {r.OriginalException}");
 
-		if (!r.TransportConfiguration.DisableAuditTrail)
+		if (!r.TransportConfiguration.DisableAuditTrail ?? true)
 			DebugAuditTrailExceptions(auditTrail, sb);
 
 		var response = r.ResponseBodyInBytes?.Utf8String() ?? ResponseAlreadyCaptured;

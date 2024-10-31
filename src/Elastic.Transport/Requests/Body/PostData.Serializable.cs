@@ -27,33 +27,32 @@ public abstract partial class PostData
 			_serializable = item;
 		}
 
-		public static implicit operator SerializableData<T>(T serializableData) =>
-			new SerializableData<T>(serializableData);
+		public static implicit operator SerializableData<T>(T serializableData) => new(serializableData);
 
-		public override void Write(Stream writableStream, ITransportConfiguration settings)
+		public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
 		{
 			MemoryStream buffer = null;
 			var stream = writableStream;
-			BufferIfNeeded(settings, ref buffer, ref stream);
+			BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
 
 			var indent = settings.PrettyJson ? Indented : None;
 			settings.RequestResponseSerializer.Serialize(_serializable, stream, indent);
 
-			FinishStream(writableStream, buffer, settings);
+			FinishStream(writableStream, buffer, disableDirectStreaming);
 		}
 
-		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, CancellationToken cancellationToken)
+		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
 		{
 			MemoryStream buffer = null;
 			var stream = writableStream;
-			BufferIfNeeded(settings, ref buffer, ref stream);
+			BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
 
 			var indent = settings.PrettyJson ? Indented : None;
 			await settings.RequestResponseSerializer
 				.SerializeAsync(_serializable, stream, indent, cancellationToken)
 				.ConfigureAwait(false);
 
-			await FinishStreamAsync(writableStream, buffer, settings, cancellationToken).ConfigureAwait(false);
+			await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);
 		}
 	}
 }

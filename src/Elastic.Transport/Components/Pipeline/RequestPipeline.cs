@@ -45,10 +45,10 @@ public abstract class RequestPipeline : IDisposable
 
 	public abstract DateTimeOffset StartedOn { get; }
 
-	public abstract TResponse CallProductEndpoint<TResponse>(RequestData requestData)
+	public abstract TResponse CallProductEndpoint<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
 		where TResponse : TransportResponse, new();
 
-	public abstract Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+	public abstract Task<TResponse> CallProductEndpointAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new();
 
 	public abstract void MarkAlive(Node node);
@@ -87,15 +87,15 @@ public abstract class RequestPipeline : IDisposable
 
 	public abstract Task SniffOnConnectionFailureAsync(CancellationToken cancellationToken);
 
-	public abstract void BadResponse<TResponse>(ref TResponse response, ApiCallDetails callDetails, RequestData data, TransportException exception)
+	public abstract void BadResponse<TResponse>(ref TResponse response, ApiCallDetails callDetails, Endpoint endpoint, RequestData data, PostData? postData, TransportException exception)
 		where TResponse : TransportResponse, new();
 
-	public abstract void ThrowNoNodesAttempted(RequestData requestData, List<PipelineException>? seenExceptions);
+	public abstract void ThrowNoNodesAttempted(Endpoint endpoint, List<PipelineException>? seenExceptions);
 
 	public abstract void AuditCancellationRequested();
 
 	public abstract TransportException? CreateClientException<TResponse>(TResponse? response, ApiCallDetails? callDetails,
-		RequestData data, List<PipelineException>? seenExceptions)
+		Endpoint endpoint, RequestData data, List<PipelineException>? seenExceptions)
 		where TResponse : TransportResponse, new();
 #pragma warning restore 1591
 

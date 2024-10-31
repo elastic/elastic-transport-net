@@ -37,7 +37,7 @@ public static class ElasticsearchErrorExtensions
 
 	/// <summary>
 	/// Try to parse an Elasticsearch <see cref="ElasticsearchServerError"/>, this only works if
-	/// <see cref="ITransportConfiguration.DisableDirectStreaming"/> gives us access to <see cref="ApiCallDetails.RequestBodyInBytes"/>
+	/// <see cref="IRequestConfiguration.DisableDirectStreaming"/> gives us access to <see cref="ApiCallDetails.RequestBodyInBytes"/>
 	/// </summary>
 	public static bool TryGetElasticsearchServerError(this TransportResponse response, out ElasticsearchServerError serverError)
 	{

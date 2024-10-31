@@ -33,38 +33,37 @@ public abstract partial class PostData
 			Type = PostType.LiteralString;
 		}
 
-		public override void Write(Stream writableStream, ITransportConfiguration settings)
+		public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
 		{
 			if (string.IsNullOrEmpty(_literalString)) return;
 
-			var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
+			MemoryStream? buffer = null;
 
 			var stringBytes = WrittenBytes ?? _literalString.Utf8Bytes();
 			WrittenBytes ??= stringBytes;
 			if (!disableDirectStreaming)
-				stream.Write(stringBytes, 0, stringBytes.Length);
+				writableStream.Write(stringBytes, 0, stringBytes.Length);
 			else
 				buffer = settings.MemoryStreamFactory.Create(stringBytes);
 
-			FinishStream(writableStream, buffer, settings);
+			FinishStream(writableStream, buffer, disableDirectStreaming);
 		}
 
-		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
-			CancellationToken cancellationToken)
+		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
 		{
 			if (string.IsNullOrEmpty(_literalString)) return;
 
-			var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
+			MemoryStream? buffer = null;
 
 			var stringBytes = WrittenBytes ?? _literalString.Utf8Bytes();
 			WrittenBytes ??= stringBytes;
 			if (!disableDirectStreaming)
-				await stream.WriteAsync(stringBytes, 0, stringBytes.Length, cancellationToken)
+				await writableStream.WriteAsync(stringBytes, 0, stringBytes.Length, cancellationToken)
 					.ConfigureAwait(false);
 			else
 				buffer = settings.MemoryStreamFactory.Create(stringBytes);
 
-			await FinishStreamAsync(writableStream, buffer, settings, cancellationToken).ConfigureAwait(false);
+			await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);
 		}
 	}
 }

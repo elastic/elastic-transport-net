@@ -15,7 +15,7 @@ namespace Elastic.Transport;
 /// <summary>
 /// Exceptions that occur are wrapped inside this exception. This is done to not lose valuable diagnostic information.
 /// <para>
-/// When <see cref="ITransportConfiguration.ThrowExceptions"/> is set these exceptions are rethrown and need
+/// When <see cref="IRequestConfiguration.ThrowExceptions"/> is set these exceptions are rethrown and need
 /// to be caught
 /// </para>
 /// </summary>
@@ -51,7 +51,7 @@ public class TransportException : Exception
 	public PipelineFailure? FailureReason { get; }
 
 	/// <summary> Information about the request that triggered this exception </summary>
-	public RequestData Request { get; internal set; }
+	public Endpoint? Endpoint { get; internal set; }
 
 	/// <summary> The response if available that triggered the exception </summary>
 	public ApiCallDetails ApiCallDetails { get; internal set; }
@@ -74,16 +74,10 @@ public class TransportException : Exception
 				.Append(failureReason)
 				.Append(" while attempting ");
 
-			if (Request != null)
+			if (Endpoint is not null)
 			{
-				sb.Append(Request.Method.GetStringValue()).Append(" on ");
-				if (Request.Uri != null)
-					sb.AppendLine(Request.Uri.ToString());
-				else
-				{
-					sb.Append(Request.PathAndQuery)
-						.AppendLine(" on an empty node, likely a node predicate on ConnectionSettings not matching ANY nodes");
-				}
+				sb.Append(Endpoint.Method.GetStringValue()).Append(" on ");
+				sb.AppendLine(Endpoint.Uri.ToString());
 			}
 			else if (ApiCallDetails != null)
 			{

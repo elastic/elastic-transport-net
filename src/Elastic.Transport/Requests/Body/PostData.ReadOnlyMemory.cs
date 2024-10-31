@@ -27,38 +27,37 @@ namespace Elastic.Transport
 				Type = PostType.ReadOnlyMemory;
 			}
 
-			public override void Write(Stream writableStream, ITransportConfiguration settings)
+			public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
 			{
 				if (_memoryOfBytes.IsEmpty) return;
 
-				var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
+				MemoryStream? buffer = null;
 
 				if (!disableDirectStreaming)
-					stream.Write(_memoryOfBytes.Span);
+					writableStream.Write(_memoryOfBytes.Span);
 				else
 				{
 					WrittenBytes ??= _memoryOfBytes.Span.ToArray();
 					buffer = settings.MemoryStreamFactory.Create(WrittenBytes);
 				}
-				FinishStream(writableStream, buffer, settings);
+				FinishStream(writableStream, buffer, disableDirectStreaming);
 			}
 
-			public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
-				CancellationToken cancellationToken)
+			public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
 			{
 				if (_memoryOfBytes.IsEmpty) return;
 
-				var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
+				MemoryStream? buffer = null;
 
 				if (!disableDirectStreaming)
-					stream.Write(_memoryOfBytes.Span);
+					writableStream.Write(_memoryOfBytes.Span);
 				else
 				{
 					WrittenBytes ??= _memoryOfBytes.Span.ToArray();
 					buffer = settings.MemoryStreamFactory.Create(WrittenBytes);
 				}
 
-				await FinishStreamAsync(writableStream, buffer, settings, cancellationToken).ConfigureAwait(false);
+				await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);
 			}
 		}
 	}

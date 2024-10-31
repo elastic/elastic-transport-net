@@ -19,7 +19,9 @@ public interface IRequestInvoker : IDisposable
 	/// <summary>
 	/// Perform a request to the endpoint described by <paramref name="requestData"/> using its associated configuration.
 	/// </summary>
-	/// <param name="requestData">An object describing where and how to perform the IO call</param>
+	/// <param name="endpoint">An object describing where to perform the IO call</param>
+	/// <param name="requestData">An object describing how to perform the IO call</param>
+	/// <param name="postData">Optional data to post</param>
 	/// <param name="cancellationToken"></param>
 	/// <typeparam name="TResponse">
 	/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
@@ -31,13 +33,15 @@ public interface IRequestInvoker : IDisposable
 	/// for <see cref="RequestPipeline"/> and <see cref="ITransport{TConfiguration}"/> to determine what to
 	/// do with the response
 	/// </returns>
-	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new();
 
 	/// <summary>
 	/// Perform a request to the endpoint described by <paramref name="requestData"/> using its associated configuration.
 	/// </summary>
-	/// <param name="requestData">An object describing where and how to perform the IO call</param>
+	/// <param name="endpoint">An object describing where to perform the IO call</param>
+	/// <param name="requestData">An object describing how to perform the IO call</param>
+	/// <param name="postData">Optional data to post</param>
 	/// <typeparam name="TResponse">
 	/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
 	/// for <see cref="RequestPipeline"/> and <see cref="ITransport{TConfiguration}"/> to determine what to
@@ -48,7 +52,7 @@ public interface IRequestInvoker : IDisposable
 	/// for <see cref="RequestPipeline"/> and <see cref="ITransport{TConfiguration}"/> to determine what to
 	/// do with the response
 	/// </returns>
-	public TResponse Request<TResponse>(RequestData requestData)
+	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
 		where TResponse : TransportResponse, new();
 
 }

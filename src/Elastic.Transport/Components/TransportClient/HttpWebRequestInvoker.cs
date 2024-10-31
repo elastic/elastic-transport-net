@@ -50,16 +50,16 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	void IDisposable.Dispose() {}
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
-	public TResponse Request<TResponse>(RequestData requestData)
+	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
+		RequestCoreAsync<TResponse>(false, endpoint, requestData, postData).EnsureCompleted();
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
-	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken = default)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
+		RequestCoreAsync<TResponse>(true, endpoint, requestData, postData, cancellationToken).AsTask();
 
-	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)
+	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
 		Action unregisterWaitHandle = null;
@@ -72,14 +72,13 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		ReadOnlyDictionary<TcpState, int> tcpStats = null;
 		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 		Dictionary<string, IEnumerable<string>> responseHeaders = null;
-		requestData.IsAsync = true;
 
 		var beforeTicks = Stopwatch.GetTimestamp();
 
 		try
 		{
-			var data = requestData.PostData;
-			var request = CreateHttpWebRequest(requestData);
+			var data = postData;
+			var request = CreateHttpWebRequest(endpoint, requestData, postData, isAsync);
 			using (cancellationToken.Register(() => request.Abort()))
 			{
 				if (data is not null)
@@ -95,10 +94,10 @@ public class HttpWebRequestInvoker : IRequestInvoker
 							if (requestData.HttpCompression)
 							{
 								using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-								await data.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+								await data.WriteAsync(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 							}
 							else
-								await data.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+								await data.WriteAsync(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 						}
 						unregisterWaitHandle?.Invoke();
 					}
@@ -109,10 +108,10 @@ public class HttpWebRequestInvoker : IRequestInvoker
 						if (requestData.HttpCompression)
 						{
 							using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-							data.Write(zipStream, requestData.ConnectionSettings);
+							data.Write(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
 						}
 						else
-							data.Write(stream, requestData.ConnectionSettings);
+							data.Write(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
 					}
 				}
 
@@ -120,8 +119,6 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 				if (prepareRequestMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
 					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs);
-
-				requestData.MadeItToResponse = true;
 
 				//http://msdn.microsoft.com/en-us/library/system.net.httpwebresponse.getresponsestream.aspx
 				//Either the stream or the response object needs to be closed but not both although it won't
@@ -169,13 +166,13 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			TResponse response;
 
-			if (isAsync)
-				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-						.ConfigureAwait(false);
-			else
-				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+		if (isAsync)
+			response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
+				(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+					.ConfigureAwait(false);
+		else
+			response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
+					(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
@@ -232,7 +229,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				responseHeaders.Add(key, responseMessage.Headers.GetValues(key));
 			}
 		}
-		else if (requestData.ResponseHeadersToParse.Count > 0)
+		else if (requestData.ResponseHeadersToParse is { Count: > 0 })
 		{
 			foreach (var headerToParse in requestData.ResponseHeadersToParse)
 			{
@@ -250,11 +247,14 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	/// <summary>
 	/// Allows subclasses to modify the <see cref="HttpWebRequest"/> instance that is going to be used for the API call
 	/// </summary>
-	/// <param name="requestData">An instance of <see cref="RequestData"/> describing where and how to call out to</param>
-	protected virtual HttpWebRequest CreateHttpWebRequest(RequestData requestData)
+	/// <param name="endpoint">An instance of <see cref="Endpoint"/> describing where to call out to</param>
+	/// <param name="requestData">An instance of <see cref="RequestData"/> describing how to call out to</param>
+	/// <param name="postData">Optional data to send over the wire</param>
+	/// <param name="isAsync"></param>
+	protected virtual HttpWebRequest CreateHttpWebRequest(Endpoint endpoint, RequestData requestData, PostData? postData, bool isAsync)
 	{
-		var request = CreateWebRequest(requestData);
-		SetAuthenticationIfNeeded(requestData, request);
+		var request = CreateWebRequest(endpoint, requestData, postData, isAsync);
+		SetAuthenticationIfNeeded(endpoint, requestData, request);
 		SetProxyIfNeeded(request, requestData);
 		SetServerCertificateValidationCallBackIfNeeded(request, requestData);
 		SetClientCertificates(request, requestData);
@@ -322,9 +322,9 @@ public class HttpWebRequestInvoker : IRequestInvoker
 #endif
 	}
 
-	private static HttpWebRequest CreateWebRequest(RequestData requestData)
+	private static HttpWebRequest CreateWebRequest(Endpoint endpoint, RequestData requestData, PostData? postData, bool isAsync)
 	{
-		var request = (HttpWebRequest)WebRequest.Create(requestData.Uri);
+		var request = (HttpWebRequest)WebRequest.Create(endpoint.Uri);
 
 		request.Accept = requestData.Accept;
 		request.ContentType = requestData.ContentType;
@@ -358,7 +358,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			foreach (var producer in requestData.MetaHeaderProvider.Producers)
 			{
-				var value = producer.ProduceHeaderValue(requestData);
+				var value = producer.ProduceHeaderValue(requestData, isAsync);
 
 				if (!string.IsNullOrEmpty(value))
 					request.Headers.Add(producer.HeaderName, value);
@@ -372,9 +372,9 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		//WebRequest won't send Content-Length: 0 for empty bodies
 		//which goes against RFC's and might break i.e IIS when used as a proxy.
 		//see: https://github.com/elastic/elasticsearch-net/issues/562
-		var m = requestData.Method.GetStringValue();
+		var m = endpoint.Method.GetStringValue();
 		request.Method = m;
-		if (m != "HEAD" && m != "GET" && requestData.PostData == null)
+		if (m != "HEAD" && m != "GET" && postData == null)
 			request.ContentLength = 0;
 
 		return request;
@@ -411,7 +411,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	}
 
 	/// <summary> Hook for subclasses to set authentication on <paramref name="request"/></summary>
-	protected virtual void SetAuthenticationIfNeeded(RequestData requestData, HttpWebRequest request)
+	protected virtual void SetAuthenticationIfNeeded(Endpoint endpoint, RequestData requestData, HttpWebRequest request)
 	{
 		//If user manually specifies an Authorization Header give it preference
 		if (requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
@@ -420,10 +420,10 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			request.Headers["Authorization"] = header;
 			return;
 		}
-		SetBasicAuthenticationIfNeeded(request, requestData);
+		SetBasicAuthenticationIfNeeded(endpoint, requestData, request);
 	}
 
-	private static void SetBasicAuthenticationIfNeeded(HttpWebRequest request, RequestData requestData)
+	private static void SetBasicAuthenticationIfNeeded(Endpoint endpoint, RequestData requestData, HttpWebRequest request)
 	{
 		// Basic auth credentials take the following precedence (highest -> lowest):
 		// 1 - Specified on the request (highest precedence)
@@ -438,9 +438,9 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 		string parameters = null;
 		string scheme = null;
-		if (!requestData.Uri.UserInfo.IsNullOrEmpty())
+		if (!endpoint.Uri.UserInfo.IsNullOrEmpty())
 		{
-			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(requestData.Uri.UserInfo));
+			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(endpoint.Uri.UserInfo));
 			scheme = BasicAuthentication.BasicAuthenticationScheme;
 		}
 		else if (requestData.AuthenticationHeader != null && requestData.AuthenticationHeader.TryGetAuthorizationParameters(out var v))

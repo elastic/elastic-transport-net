@@ -84,7 +84,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	public override ResponseBuilder ResponseBuilder => new ElasticsearchResponseBuilder();
 
 	/// <inheritdoc cref="ProductRegistration.DefaultMimeType"/>
-	public override string DefaultMimeType => _clientMajorVersion.HasValue ? $"application/vnd.elasticsearch+json;compatible-with={_clientMajorVersion.Value}" : null;
+	public override string? DefaultMimeType => _clientMajorVersion.HasValue ? $"application/vnd.elasticsearch+json;compatible-with={_clientMajorVersion.Value}" : null;
 
 	/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 	public const string SniffPath = "_nodes/http,settings";
@@ -119,28 +119,23 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		return e != null;
 	}
 
-	/// <inheritdoc cref="ProductRegistration.CreateSniffRequestData"/>
-	public override RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration,
-		ITransportConfiguration settings,
-		MemoryStreamFactory memoryStreamFactory
-	)
+	//TODO remove settings dependency
+	/// <inheritdoc cref="ProductRegistration.CreateSniffEndpoint"/>
+	public override Endpoint CreateSniffEndpoint(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings)
 	{
 		var requestParameters = new DefaultRequestParameters
 		{
 			QueryString = { { "timeout", requestConfiguration.PingTimeout }, { "flat_settings", true } }
 		};
 		var sniffPath = requestParameters.CreatePathWithQueryStrings(SniffPath, settings);
-		return new RequestData(HttpMethod.GET, sniffPath, null, settings, requestConfiguration, null, memoryStreamFactory, default)
-		{
-			Node = node
-		};
+		return new Endpoint(new EndpointPath(HttpMethod.GET, sniffPath), node);
 	}
 
 	/// <inheritdoc cref="ProductRegistration.SniffAsync"/>
 	public override async Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker,
-		bool forceSsl, RequestData requestData, CancellationToken cancellationToken)
+		bool forceSsl, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
 	{
-		var response = await requestInvoker.RequestAsync<SniffResponse>(requestData, cancellationToken)
+		var response = await requestInvoker.RequestAsync<SniffResponse>(endpoint, requestData, null, cancellationToken)
 			.ConfigureAwait(false);
 		var nodes = response.ToNodes(forceSsl);
 		return Tuple.Create<TransportResponse, IReadOnlyCollection<Node>>(response,
@@ -149,40 +144,29 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.Sniff"/>
 	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl,
-		RequestData requestData)
+		Endpoint endpoint, RequestData requestData)
 	{
-		var response = requestInvoker.Request<SniffResponse>(requestData);
+		var response = requestInvoker.Request<SniffResponse>(endpoint, requestData, null);
 		var nodes = response.ToNodes(forceSsl);
 		return Tuple.Create<TransportResponse, IReadOnlyCollection<Node>>(response,
 			new ReadOnlyCollection<Node>(nodes.ToArray()));
 	}
 
-	/// <inheritdoc cref="ProductRegistration.CreatePingRequestData"/>
-	public override RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration,
-		ITransportConfiguration global,
-		MemoryStreamFactory memoryStreamFactory
-	)
-	{
-		var data = new RequestData(HttpMethod.HEAD, string.Empty, null, global, requestConfiguration, null, memoryStreamFactory, default)
-		{
-			Node = node
-		};
-
-		return data;
-	}
+	/// <inheritdoc cref="ProductRegistration.CreatePingEndpoint"/>
+	public override Endpoint CreatePingEndpoint(Node node, IRequestConfiguration requestConfiguration) =>
+		new(new EndpointPath(HttpMethod.HEAD, string.Empty), node);
 
 	/// <inheritdoc cref="ProductRegistration.PingAsync"/>
-	public override async Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, RequestData pingData,
-		CancellationToken cancellationToken)
+	public override async Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
 	{
-		var response = await requestInvoker.RequestAsync<VoidResponse>(pingData, cancellationToken).ConfigureAwait(false);
+		var response = await requestInvoker.RequestAsync<VoidResponse>(endpoint, requestData, null, cancellationToken).ConfigureAwait(false);
 		return response;
 	}
 
 	/// <inheritdoc cref="ProductRegistration.Ping"/>
-	public override TransportResponse Ping(IRequestInvoker requestInvoker, RequestData pingData)
+	public override TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData)
 	{
-		var response = requestInvoker.Request<VoidResponse>(pingData);
+		var response = requestInvoker.Request<VoidResponse>(endpoint, pingData, null);
 		return response;
 	}
 

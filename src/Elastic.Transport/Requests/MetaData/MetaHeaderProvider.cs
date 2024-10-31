@@ -28,5 +28,5 @@ public abstract class MetaHeaderProducer
 	/// <summary>
 	/// Produces the header value based on current outgoing <paramref name="requestData"/>.
 	/// </summary>
-	public abstract string ProduceHeaderValue(RequestData requestData);
+	public abstract string? ProduceHeaderValue(RequestData requestData, bool isAsync);
 }

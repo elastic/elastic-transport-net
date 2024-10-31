@@ -58,24 +58,18 @@ public sealed class DefaultMetaHeaderProducer : MetaHeaderProducer
 		_syncMetaDataHeader = new MetaDataHeader(versionInfo, serviceIdentifier, false);
 	}
 
-	/// <summary>
-	///
-	/// </summary>
+	/// <inheritdoc/>
 	public override string HeaderName => MetaHeaderName;
 
-	/// <summary>
-	///
-	/// </summary>
-	/// <param name="requestData"></param>
-	/// <returns></returns>
-	public override string ProduceHeaderValue(RequestData requestData)
+	/// <inheritdoc/>
+	public override string? ProduceHeaderValue(RequestData requestData, bool isAsync)
 	{
 		try
 		{
 			if (requestData.ConnectionSettings.DisableMetaHeader)
 				return null;
 
-			var headerValue = requestData.IsAsync
+			var headerValue = isAsync
 				? _asyncMetaDataHeader.ToString()
 				: _syncMetaDataHeader.ToString();
 

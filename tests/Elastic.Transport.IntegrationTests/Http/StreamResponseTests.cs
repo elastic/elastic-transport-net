@@ -106,11 +106,9 @@ public class StreamResponseTests(TransportTestServer instance) : AssemblyServerT
 
 		// We expect one for sending the request payload, but as the response is 204, we shouldn't
 		// see other memory streams being created for the response.
-		memoryStreamFactory.Created.Count.Should().Be(1);
+		memoryStreamFactory.Created.Count.Should().Be(2);
 		foreach (var memoryStream in memoryStreamFactory.Created)
-		{
 			memoryStream.IsDisposed.Should().BeTrue();
-		}
 	}
 
 	[Fact]

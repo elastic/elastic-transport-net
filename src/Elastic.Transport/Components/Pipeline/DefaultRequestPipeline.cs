@@ -47,7 +47,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		_productRegistration = configurationValues.ProductRegistration;
 		_responseBuilder = _productRegistration.ResponseBuilder;
 		_nodePredicate = _settings.NodePredicate ?? _productRegistration.NodePredicate;
-		RequestConfiguration = requestConfiguration;
+		RequestConfig = requestConfiguration;
 		StartedOn = dateTimeProvider.Now();
 	}
 
@@ -66,9 +66,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			{
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
-				AuthenticationHeader = RequestConfiguration?.AuthenticationHeader ?? _settings.Authentication,
-				EnableHttpPipelining = RequestConfiguration?.EnableHttpPipelining ?? _settings.HttpPipeliningEnabled,
-				ForceNode = RequestConfiguration?.ForceNode
+				Authentication = RequestConfig?.Authentication ?? _settings.Authentication,
+				EnableHttpPipelining = RequestConfig?.HttpPipeliningEnabled ?? _settings.HttpPipeliningEnabled,
+				ForceNode = RequestConfig?.ForceNode
 			};
 
 			return _pingAndSniffRequestConfiguration;
@@ -100,9 +100,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	}
 
 	public override int MaxRetries =>
-		RequestConfiguration?.ForceNode != null
+		RequestConfig?.ForceNode != null
 			? 0
-			: Math.Min(RequestConfiguration?.MaxRetries ?? _settings.MaxRetries.GetValueOrDefault(int.MaxValue), _nodePool.MaxRetries);
+			: Math.Min(RequestConfig?.MaxRetries ?? _settings.MaxRetries.GetValueOrDefault(int.MaxValue), _nodePool.MaxRetries);
 
 	public bool Refresh { get; private set; }
 
@@ -141,77 +141,86 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	public override DateTimeOffset StartedOn { get; }
 
 	private TimeSpan PingTimeout =>
-		RequestConfiguration?.PingTimeout
+		RequestConfig?.PingTimeout
 		?? _settings.PingTimeout
-		?? (_nodePool.UsingSsl ? TransportConfiguration.DefaultPingTimeoutOnSsl : TransportConfiguration.DefaultPingTimeout);
+		?? (_nodePool.UsingSsl ? RequestConfiguration.DefaultPingTimeoutOnSsl : RequestConfiguration.DefaultPingTimeout);
 
-	private IRequestConfiguration RequestConfiguration { get; }
+	private IRequestConfiguration RequestConfig { get; }
 
-	private bool RequestDisabledSniff => RequestConfiguration != null && (RequestConfiguration.DisableSniff ?? false);
+	private bool RequestDisabledSniff => RequestConfig != null && (RequestConfig.DisableSniff ?? false);
 
-	private TimeSpan RequestTimeout => RequestConfiguration?.RequestTimeout ?? _settings.RequestTimeout;
+	private TimeSpan RequestTimeout => RequestConfig?.RequestTimeout ?? _settings.RequestTimeout ?? RequestConfiguration.DefaultRequestTimeout;
 
 	public override void AuditCancellationRequested() => Audit(CancellationRequested).Dispose();
 
-	public override void BadResponse<TResponse>(ref TResponse response, ApiCallDetails callDetails, RequestData data, TransportException exception)
+	public override void BadResponse<TResponse>(ref TResponse response, ApiCallDetails callDetails, Endpoint endpoint, RequestData data, PostData? postData, TransportException exception)
 	{
 		if (response == null)
 		{
 			//make sure we copy over the error body in case we disabled direct streaming.
 			var s = callDetails?.ResponseBodyInBytes == null ? Stream.Null : _memoryStreamFactory.Create(callDetails.ResponseBodyInBytes);
 			var m = callDetails?.ResponseMimeType ?? RequestData.DefaultMimeType;
-			response = _responseBuilder.ToResponse<TResponse>(data, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
+			response = _responseBuilder.ToResponse<TResponse>(endpoint, data, postData, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
 		}
 
 		response.ApiCallDetails.AuditTrail = AuditTrail;
 	}
 
-	public override TResponse CallProductEndpoint<TResponse>(RequestData requestData)
-		=> CallProductEndpointCoreAsync<TResponse>(false, requestData).EnsureCompleted();
+	public override TResponse CallProductEndpoint<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
+		=> CallProductEndpointCoreAsync<TResponse>(false, endpoint, requestData, postData).EnsureCompleted();
 
-	public override Task<TResponse> CallProductEndpointAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken = default)
-		=> CallProductEndpointCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
+	public override Task<TResponse> CallProductEndpointAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
+		=> CallProductEndpointCoreAsync<TResponse>(true, endpoint, requestData, postData, cancellationToken).AsTask();
 
-	private async ValueTask<TResponse> CallProductEndpointCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)
+	private async ValueTask<TResponse> CallProductEndpointCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
-		using var audit = Audit(HealthyResponse, requestData.Node);
+		using var audit = Audit(HealthyResponse, endpoint.Node);
 
 		if (audit is not null)
-			audit.PathAndQuery = requestData.PathAndQuery;
+			audit.PathAndQuery = endpoint.PathAndQuery;
 
 		try
 		{
 			TResponse response;
 
 			if (isAsync)
-				response = await _requestInvoker.RequestAsync<TResponse>(requestData, cancellationToken).ConfigureAwait(false);
+				response = await _requestInvoker.RequestAsync<TResponse>(endpoint, requestData, postData, cancellationToken).ConfigureAwait(false);
 			else
-				response = _requestInvoker.Request<TResponse>(requestData);
+				response = _requestInvoker.Request<TResponse>(endpoint, requestData, postData);
 
 			response.ApiCallDetails.AuditTrail = AuditTrail;
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails, response);
 
 			if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType && audit is not null)
-				audit.Event = requestData.OnFailureAuditEvent;
+			{
+				var @event = response.ApiCallDetails.HttpStatusCode != null ? AuditEvent.BadResponse : BadRequest;
+				audit.Event = @event;
+			}
 
 			return response;
 		}
 		catch (Exception e) when (audit is not null)
 		{
-			audit.Event = requestData.OnFailureAuditEvent;
+			var @event = e is TransportException t && t.ApiCallDetails.HttpStatusCode != null ? AuditEvent.BadResponse : BadRequest;
+			audit.Event = @event;
 			audit.Exception = e;
 			throw;
 		}
 	}
 
-	public override TransportException? CreateClientException<TResponse>(TResponse response, ApiCallDetails? callDetails,
-		RequestData data, List<PipelineException>? seenExceptions)
+	public override TransportException? CreateClientException<TResponse>(
+		TResponse response,
+		ApiCallDetails? callDetails,
+		Endpoint endpoint,
+		RequestData data,
+		List<PipelineException>? seenExceptions
+	)
 	{
 		if (callDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false) return null;
 
-		var pipelineFailure = data.OnFailurePipelineFailure;
+		var pipelineFailure = callDetails?.HttpStatusCode != null ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
 		var innerException = callDetails?.OriginalException;
 		if (seenExceptions is not null && seenExceptions.HasAny(out var exs))
 		{
@@ -253,7 +262,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 		var clientException = new TransportException(pipelineFailure, exceptionMessage, innerException)
 		{
-			Request = data,
+			Endpoint = endpoint,
 			ApiCallDetails = callDetails,
 			AuditTrail = AuditTrail
 		};
@@ -265,7 +274,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 	{
 		if (!FirstPoolUsageNeedsSniffing) return;
 
-		if (!semaphore.Wait(_settings.RequestTimeout))
+		if (!semaphore.Wait(RequestTimeout))
 		{
 			if (FirstPoolUsageNeedsSniffing)
 				throw new PipelineException(PipelineFailure.CouldNotStartSniffOnStartup, null);
@@ -299,7 +308,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 		// TODO cancellationToken could throw here and will bubble out as OperationCancelledException
 		// everywhere else it would bubble out wrapped in a `UnexpectedTransportException`
-		var success = await semaphore.WaitAsync(_settings.RequestTimeout, cancellationToken).ConfigureAwait(false);
+		var success = await semaphore.WaitAsync(RequestTimeout, cancellationToken).ConfigureAwait(false);
 		if (!success)
 		{
 			if (FirstPoolUsageNeedsSniffing)
@@ -353,9 +362,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 	public override IEnumerable<Node> NextNode()
 	{
-		if (RequestConfiguration?.ForceNode != null)
+		if (RequestConfig?.ForceNode != null)
 		{
-			yield return new Node(RequestConfiguration.ForceNode);
+			yield return new Node(RequestConfig.ForceNode);
 
 			yield break;
 		}
@@ -398,27 +407,33 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		if (!_productRegistration.SupportsPing) return;
 		if (PingDisabled(node)) return;
 
-		var pingData = _productRegistration.CreatePingRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
+		var pingEndpoint = _productRegistration.CreatePingEndpoint(node, PingAndSniffRequestConfiguration);
 
 		using var audit = Audit(PingSuccess, node);
 
 		if (audit is not null)
-			audit.PathAndQuery = pingData.PathAndQuery;
+			audit.PathAndQuery = pingEndpoint.PathAndQuery;
 
 		TransportResponse response;
+
+		//TODO remove
+		var requestData = new RequestData(_settings, null, null, _memoryStreamFactory);
 
 		try
 		{
 			if (isAsync)
-				response = await _productRegistration.PingAsync(_requestInvoker, pingData, cancellationToken).ConfigureAwait(false);
+				response = await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, requestData, cancellationToken).ConfigureAwait(false);
 			else
-				response = _productRegistration.Ping(_requestInvoker, pingData);
+				response = _productRegistration.Ping(_requestInvoker, pingEndpoint, requestData);
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
 			//ping should not silently accept bad but valid http responses
 			if (!response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
-				throw new PipelineException(pingData.OnFailurePipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+			{
+				var pipelineFailure = response.ApiCallDetails.HttpStatusCode != null ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
+				throw new PipelineException(pipelineFailure, response.ApiCallDetails.OriginalException) { Response = response };
+			}
 		}
 		catch (Exception e)
 		{
@@ -445,13 +460,14 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 		foreach (var node in SniffNodes)
 		{
-			var requestData =
-				_productRegistration.CreateSniffRequestData(node, PingAndSniffRequestConfiguration, _settings, _memoryStreamFactory);
+			var sniffEndpoint = _productRegistration.CreateSniffEndpoint(node, PingAndSniffRequestConfiguration, _settings);
+			//TODO remove
+			var requestData = new RequestData(_settings, null, null, _memoryStreamFactory);
 
 			using var audit = Audit(SniffSuccess, node);
 
 			if (audit is not null)
-				audit.PathAndQuery = requestData.PathAndQuery;
+				audit.PathAndQuery = sniffEndpoint.PathAndQuery;
 
 			Tuple<TransportResponse, IReadOnlyCollection<Node>> result;
 
@@ -459,17 +475,20 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			{
 				if (isAsync)
 					result = await _productRegistration
-						.SniffAsync(_requestInvoker, _nodePool.UsingSsl, requestData, cancellationToken)
+						.SniffAsync(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, requestData, cancellationToken)
 						.ConfigureAwait(false);
 				else
 					result = _productRegistration
-						.Sniff(_requestInvoker, _nodePool.UsingSsl, requestData);
+						.Sniff(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, requestData);
 
 				ThrowBadAuthPipelineExceptionWhenNeeded(result.Item1.ApiCallDetails);
 
 				//sniff should not silently accept bad but valid http responses
 				if (!result.Item1.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
-					throw new PipelineException(requestData.OnFailurePipelineFailure, result.Item1.ApiCallDetails.OriginalException) { Response = result.Item1 };
+				{
+					var pipelineFailure = result.Item1.ApiCallDetails.HttpStatusCode != null ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
+					throw new PipelineException(pipelineFailure, result.Item1.ApiCallDetails.OriginalException) { Response = result.Item1 };
+				}
 
 				_nodePool.Reseed(result.Item2);
 				Refresh = true;
@@ -528,20 +547,19 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		}
 	}
 
-	public override void ThrowNoNodesAttempted(RequestData requestData, List<PipelineException>? seenExceptions)
+	public override void ThrowNoNodesAttempted(Endpoint endpoint, List<PipelineException>? seenExceptions)
 	{
-		var clientException = new TransportException(PipelineFailure.NoNodesAttempted, RequestPipelineStatics.NoNodesAttemptedMessage,
-			(Exception)null);
+		var clientException = new TransportException(PipelineFailure.NoNodesAttempted, RequestPipelineStatics.NoNodesAttemptedMessage, (Exception)null);
 		using (Audit(NoNodesAttempted))
-			throw new UnexpectedTransportException(clientException, seenExceptions) { Request = requestData, AuditTrail = AuditTrail };
+			throw new UnexpectedTransportException(clientException, seenExceptions) { Endpoint = endpoint, AuditTrail = AuditTrail };
 	}
 
 	private bool PingDisabled(Node node) =>
-		(RequestConfiguration?.DisablePing).GetValueOrDefault(false)
-		|| _settings.DisablePings || !_nodePool.SupportsPinging || !node.IsResurrected;
+		(RequestConfig?.DisablePings).GetValueOrDefault(false)
+		|| (_settings.DisablePings ?? false) || !_nodePool.SupportsPinging || !node.IsResurrected;
 
-	private Auditable Audit(AuditEvent type, Node node = null) =>
-		!_settings.DisableAuditTrail ? (new(type, ref _auditTrail, _dateTimeProvider, node)) : null;
+	private Auditable? Audit(AuditEvent type, Node node = null) =>
+		!_settings.DisableAuditTrail ?? true ? new(type, ref _auditTrail, _dateTimeProvider, node) : null;
 
 	private static void ThrowBadAuthPipelineExceptionWhenNeeded(ApiCallDetails details, TransportResponse response = null)
 	{

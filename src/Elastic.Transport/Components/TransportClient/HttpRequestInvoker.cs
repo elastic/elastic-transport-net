@@ -56,16 +56,16 @@ public class HttpRequestInvoker : IRequestInvoker
 	private RequestDataHttpClientFactory HttpClientFactory { get; }
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}" />
-	public TResponse Request<TResponse>(RequestData requestData)
+	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(false, requestData).EnsureCompleted();
+		RequestCoreAsync<TResponse>(false, endpoint, requestData, postData).EnsureCompleted();
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}" />
-	public Task<TResponse> RequestAsync<TResponse>(RequestData requestData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(true, requestData, cancellationToken).AsTask();
+		RequestCoreAsync<TResponse>(true, endpoint, requestData, postData, cancellationToken).AsTask();
 
-	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, RequestData requestData, CancellationToken cancellationToken = default)
+	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
 		var client = GetClient(requestData);
@@ -79,20 +79,19 @@ public class HttpRequestInvoker : IRequestInvoker
 		ReadOnlyDictionary<TcpState, int> tcpStats = null;
 		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
 		Dictionary<string, IEnumerable<string>> responseHeaders = null;
-		requestData.IsAsync = isAsync;
 
 		var beforeTicks = Stopwatch.GetTimestamp();
 
 		try
 		{
-			var requestMessage = CreateHttpRequestMessage(requestData);
+			var requestMessage = CreateHttpRequestMessage(endpoint, requestData, isAsync);
 
-			if (requestData.PostData is not null)
+			if (postData is not null)
 			{
 				if (isAsync)
-					await SetContentAsync(requestMessage, requestData, cancellationToken).ConfigureAwait(false);
+					await SetContentAsync(requestMessage, requestData, postData, cancellationToken).ConfigureAwait(false);
 				else
-					SetContent(requestMessage, requestData);
+					SetContent(requestMessage, requestData, postData);
 			}
 
 			using (requestMessage?.Content ?? (IDisposable)Stream.Null)
@@ -122,7 +121,6 @@ public class HttpRequestInvoker : IRequestInvoker
 				statusCode = (int)responseMessage.StatusCode;
 			}
 
-			requestData.MadeItToResponse = true;
 			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
 			responseHeaders = ParseHeaders(requestData, responseMessage);
 
@@ -160,11 +158,11 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			if (isAsync)
 				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-					(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+					(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
 						.ConfigureAwait(false);
 			else
 				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-						(requestData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+						(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
@@ -195,7 +193,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			// if there's an exception, ensure we always release the stream and response so that the connection is freed.
 			responseStream.Dispose();
-			receivedResponse.Dispose(); 
+			receivedResponse.Dispose();
 			throw;
 		}
 	}
@@ -217,7 +215,7 @@ public class HttpRequestInvoker : IRequestInvoker
 				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(header.Key, header.Value);
 			}
-		else if (requestData.ResponseHeadersToParse.Count > 0)
+		else if (requestData.ResponseHeadersToParse is { Count:  > 0 })
 			foreach (var headerToParse in requestData.ResponseHeadersToParse)
 				if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 				{
@@ -324,35 +322,38 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// Creates an instance of <see cref="HttpRequestMessage" /> using the <paramref name="requestData" />.
 	/// This method is virtual so subclasses of <see cref="HttpRequestInvoker" /> can modify the instance if needed.
 	/// </summary>
-	/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
+	/// <param name="endpoint">An object describing where we want to call out to</param>
+	/// <param name="requestData">An object describing how we want to call out to</param>
+	/// <param name="isAsync"></param>
 	/// <exception cref="Exception">
 	/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
 	/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 	/// </exception>
-	internal HttpRequestMessage CreateHttpRequestMessage(RequestData requestData)
+	internal HttpRequestMessage CreateHttpRequestMessage(Endpoint endpoint, RequestData requestData, bool isAsync)
 	{
-		var request = CreateRequestMessage(requestData);
-		SetAuthenticationIfNeeded(request, requestData);
+		var request = CreateRequestMessage(endpoint, requestData, isAsync);
+		SetAuthenticationIfNeeded(endpoint, requestData, request);
 		return request;
 	}
 
 	/// <summary> Isolated hook for subclasses to set authentication on <paramref name="requestMessage" /> </summary>
 	/// <param name="requestMessage">The instance of <see cref="HttpRequestMessage" /> that needs authentication details</param>
-	/// <param name="requestData">An object describing where and how we want to call out to</param>
-	internal void SetAuthenticationIfNeeded(HttpRequestMessage requestMessage, RequestData requestData)
+	/// <param name="endpoint">An object describing where we want to call out to</param>
+	/// <param name="requestData">An object describing how we want to call out to</param>
+	internal void SetAuthenticationIfNeeded(Endpoint endpoint, RequestData requestData, HttpRequestMessage requestMessage)
 	{
 		//If user manually specifies an Authorization Header give it preference
-		if (requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
+		if (requestData.Headers != null && requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
 		{
 			var header = AuthenticationHeaderValue.Parse(requestData.Headers["Authorization"]);
 			requestMessage.Headers.Authorization = header;
 			return;
 		}
 
-		SetConfiguredAuthenticationHeaderIfNeeded(requestMessage, requestData);
+		SetConfiguredAuthenticationHeaderIfNeeded(endpoint, requestData, requestMessage);
 	}
 
-	private static void SetConfiguredAuthenticationHeaderIfNeeded(HttpRequestMessage requestMessage, RequestData requestData)
+	private static void SetConfiguredAuthenticationHeaderIfNeeded(Endpoint endpoint, RequestData requestData, HttpRequestMessage requestMessage)
 	{
 		// Basic auth credentials take the following precedence (highest -> lowest):
 		// 1 - Specified with the URI (highest precedence)
@@ -361,9 +362,9 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		string parameters = null;
 		string scheme = null;
-		if (!requestData.Uri.UserInfo.IsNullOrEmpty())
+		if (!endpoint.Uri.UserInfo.IsNullOrEmpty())
 		{
-			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(requestData.Uri.UserInfo));
+			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(endpoint.Uri.UserInfo));
 			scheme = BasicAuthentication.BasicAuthenticationScheme;
 		}
 		else if (requestData.AuthenticationHeader != null && requestData.AuthenticationHeader.TryGetAuthorizationParameters(out var v))
@@ -377,10 +378,10 @@ public class HttpRequestInvoker : IRequestInvoker
 		requestMessage.Headers.Authorization = new AuthenticationHeaderValue(scheme, parameters);
 	}
 
-	private static HttpRequestMessage CreateRequestMessage(RequestData requestData)
+	private static HttpRequestMessage CreateRequestMessage(Endpoint endpoint, RequestData requestData, bool isAsync)
 	{
-		var method = ConvertHttpMethod(requestData.Method);
-		var requestMessage = new HttpRequestMessage(method, requestData.Uri);
+		var method = ConvertHttpMethod(endpoint.Method);
+		var requestMessage = new HttpRequestMessage(method, endpoint.Uri);
 
 		if (requestData.Headers != null)
 			foreach (string key in requestData.Headers)
@@ -404,7 +405,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			foreach (var producer in requestData.MetaHeaderProvider.Producers)
 			{
-				var value = producer.ProduceHeaderValue(requestData);
+				var value = producer.ProduceHeaderValue(requestData, isAsync);
 
 				if (!string.IsNullOrEmpty(value))
 					requestMessage.Headers.TryAddWithoutValidation(producer.HeaderName, value);
@@ -414,25 +415,25 @@ public class HttpRequestInvoker : IRequestInvoker
 		return requestMessage;
 	}
 
-	private static void SetContent(HttpRequestMessage message, RequestData requestData)
+	private static void SetContent(HttpRequestMessage message, RequestData requestData, PostData postData)
 	{
 		if (requestData.TransferEncodingChunked)
-			message.Content = new RequestDataContent(requestData);
+			message.Content = new RequestDataContent(requestData, postData);
 		else
 		{
 			var stream = requestData.MemoryStreamFactory.Create();
 			if (requestData.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
-				requestData.PostData.Write(zipStream, requestData.ConnectionSettings);
+				postData.Write(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
 			}
 			else
-				requestData.PostData.Write(stream, requestData.ConnectionSettings);
+				postData.Write(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
 
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
-			if (requestData.PostData.DisableDirectStreaming.GetValueOrDefault(false) && !requestData.HttpCompression)
+			if (requestData.DisableDirectStreaming && !requestData.HttpCompression)
 			{
-				message.Content = new ByteArrayContent(requestData.PostData.WrittenBytes);
+				message.Content = new ByteArrayContent(postData.WrittenBytes);
 				stream.Dispose();
 			}
 			else
@@ -448,7 +449,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		}
 	}
 
-	private static async Task SetContentAsync(HttpRequestMessage message, RequestData requestData, CancellationToken cancellationToken)
+	private static async Task SetContentAsync(HttpRequestMessage message, RequestData requestData, PostData postData, CancellationToken cancellationToken)
 	{
 		if (requestData.TransferEncodingChunked)
 			message.Content = new RequestDataContent(requestData, cancellationToken);
@@ -458,15 +459,15 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (requestData.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
-				await requestData.PostData.WriteAsync(zipStream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				await postData.WriteAsync(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 			}
 			else
-				await requestData.PostData.WriteAsync(stream, requestData.ConnectionSettings, cancellationToken).ConfigureAwait(false);
+				await postData.WriteAsync(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
-			if (requestData.PostData.DisableDirectStreaming.GetValueOrDefault(false) && !requestData.HttpCompression)
+			if (requestData.DisableDirectStreaming && !requestData.HttpCompression)
 			{
-				message.Content = new ByteArrayContent(requestData.PostData.WrittenBytes);
+				message.Content = new ByteArrayContent(postData.WrittenBytes);
 #if DOTNETCORE_2_1_OR_HIGHER
 					await stream.DisposeAsync().ConfigureAwait(false);
 #else

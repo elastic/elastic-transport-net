@@ -46,23 +46,22 @@ public abstract partial class PostData
 			Type = PostType.StreamHandler;
 		}
 
-		public override void Write(Stream writableStream, ITransportConfiguration settings)
+		public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
 		{
 			MemoryStream buffer = null;
 			var stream = writableStream;
-			BufferIfNeeded(settings, ref buffer, ref stream);
+			BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
 			_syncWriter(_state, stream);
-			FinishStream(writableStream, buffer, settings);
+			FinishStream(writableStream, buffer, disableDirectStreaming);
 		}
 
-		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
-			CancellationToken cancellationToken)
+		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
 		{
 			MemoryStream buffer = null;
 			var stream = writableStream;
-			BufferIfNeeded(settings, ref buffer, ref stream);
+			BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
 			await _asyncWriter(_state, stream, cancellationToken).ConfigureAwait(false);
-			await FinishStreamAsync(writableStream, buffer, settings, cancellationToken).ConfigureAwait(false);
+			await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);
 		}
 	}
 }

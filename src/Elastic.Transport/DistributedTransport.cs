@@ -92,39 +92,33 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 	/// <inheritdoc cref="ITransport.Request{TResponse}"/>
 	public TResponse Request<TResponse>(
-		HttpMethod method,
-		string path,
+		in EndpointPath path,
 		PostData? data,
-		RequestParameters? requestParameters,
 		in OpenTelemetryData openTelemetryData,
 		IRequestConfiguration? localConfiguration,
 		CustomResponseBuilder? responseBuilder
 	)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(isAsync: false,
-			method, path, data, requestParameters, openTelemetryData, localConfiguration, responseBuilder).EnsureCompleted();
+		RequestCoreAsync<TResponse>(isAsync: false, path, data, openTelemetryData, localConfiguration, responseBuilder)
+			.EnsureCompleted();
 
 	/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>
 	public Task<TResponse> RequestAsync<TResponse>(
-		HttpMethod method,
-		string path,
+		in EndpointPath path,
 		PostData? data,
-		RequestParameters? requestParameters,
 		in OpenTelemetryData openTelemetryData,
 		IRequestConfiguration? localConfiguration,
 		CustomResponseBuilder? responseBuilder,
 		CancellationToken cancellationToken = default
 	)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(isAsync: true,
-			method, path, data, requestParameters, openTelemetryData, localConfiguration, responseBuilder, cancellationToken).AsTask();
+		RequestCoreAsync<TResponse>(isAsync: true, path, data, openTelemetryData, localConfiguration, responseBuilder, cancellationToken)
+			.AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(
 		bool isAsync,
-		HttpMethod method,
-		string path,
+		EndpointPath path,
 		PostData? data,
-		RequestParameters? requestParameters,
 		OpenTelemetryData openTelemetryData,
 		IRequestConfiguration? localRequestConfiguration,
 		CustomResponseBuilder? customResponseBuilder,
@@ -135,7 +129,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		Activity activity = null;
 
 		if (OpenTelemetry.ElasticTransportActivitySource.HasListeners())
-			activity = OpenTelemetry.ElasticTransportActivitySource.StartActivity(openTelemetryData.SpanName ?? method.GetStringValue(),
+			activity = OpenTelemetry.ElasticTransportActivitySource.StartActivity(openTelemetryData.SpanName ?? path.Method.GetStringValue(),
 				ActivityKind.Client);
 
 		try
@@ -147,10 +141,12 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			else
 				pipeline.FirstPoolUsage(Configuration.BootstrapLock);
 
-			var pathAndQuery = requestParameters?.CreatePathWithQueryStrings(path, Configuration) ?? path;
-			var requestData = new RequestData(method, pathAndQuery, data, Configuration, localRequestConfiguration, customResponseBuilder, MemoryStreamFactory, openTelemetryData);
+			//var pathAndQuery = requestParameters?.CreatePathWithQueryStrings(path, Configuration) ?? path;
+			var requestData = new RequestData(Configuration, localRequestConfiguration, customResponseBuilder, MemoryStreamFactory);
 			Configuration.OnRequestDataCreated?.Invoke(requestData);
 			TResponse response = null;
+
+			var endpoint = Endpoint.Empty(path);
 
 			if (activity is { IsAllDataRequested: true })
 			{
@@ -165,11 +161,11 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				activity.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, ReflectionVersionInfo.TransportVersion);
 				activity.SetTag(SemanticConventions.UserAgentOriginal, Configuration.UserAgent.ToString());
 
-				if (requestData.OpenTelemetryData.SpanAttributes is not null)
-					foreach (var attribute in requestData.OpenTelemetryData.SpanAttributes)
+				if (openTelemetryData.SpanAttributes is not null)
+					foreach (var attribute in openTelemetryData.SpanAttributes)
 						activity.SetTag(attribute.Key, attribute.Value);
 
-				activity.SetTag(SemanticConventions.HttpRequestMethod, requestData.Method.GetStringValue());
+				activity.SetTag(SemanticConventions.HttpRequestMethod, endpoint.Method.GetStringValue());
 			}
 
 			List<PipelineException>? seenExceptions = null;
@@ -177,20 +173,20 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 			if (pipeline.TryGetSingleNode(out var singleNode))
 			{
+				endpoint = endpoint with { Node = singleNode };
 				// No value in marking a single node as dead. We have no other options!
 				attemptedNodes = 1;
-				requestData.Node = singleNode;
-				activity?.SetTag(SemanticConventions.UrlFull, requestData.Uri.AbsoluteUri);
-				activity?.SetTag(SemanticConventions.ServerAddress, requestData.Uri.Host);
-				activity?.SetTag(SemanticConventions.ServerPort, requestData.Uri.Port);
+				activity?.SetTag(SemanticConventions.UrlFull, endpoint.Uri.AbsoluteUri);
+				activity?.SetTag(SemanticConventions.ServerAddress, endpoint.Uri.Host);
+				activity?.SetTag(SemanticConventions.ServerPort, endpoint.Uri.Port);
 
 				try
 				{
 					if (isAsync)
-						response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
+						response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, data, cancellationToken)
 							.ConfigureAwait(false);
 					else
-						response = pipeline.CallProductEndpoint<TResponse>(requestData);
+						response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData, data);
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 				{
@@ -202,7 +198,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				}
 				catch (Exception killerException)
 				{
-					ThrowUnexpectedTransportException(killerException, seenExceptions, requestData, response, pipeline);
+					ThrowUnexpectedTransportException(killerException, seenExceptions, endpoint, response, pipeline);
 				}
 			}
 			else
@@ -210,13 +206,13 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				foreach (var node in pipeline.NextNode())
 				{
 					attemptedNodes++;
-					requestData.Node = node;
+					endpoint = endpoint with { Node = node };
 
 					// If multiple nodes are attempted, the final node attempted will be used to set the operation span attributes.
 					// Each physical node attempt in CallProductEndpoint will also record these attributes.
-					activity?.SetTag(SemanticConventions.UrlFull, requestData.Uri.AbsoluteUri);
-					activity?.SetTag(SemanticConventions.ServerAddress, requestData.Uri.Host);
-					activity?.SetTag(SemanticConventions.ServerPort, requestData.Uri.Port);
+					activity?.SetTag(SemanticConventions.UrlFull, endpoint.Uri.AbsoluteUri);
+					activity?.SetTag(SemanticConventions.ServerAddress, endpoint.Uri.Host);
+					activity?.SetTag(SemanticConventions.ServerPort, endpoint.Uri.Port);
 
 					try
 					{
@@ -236,10 +232,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 						}
 
 						if (isAsync)
-							response = await pipeline.CallProductEndpointAsync<TResponse>(requestData, cancellationToken)
+							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, data, cancellationToken)
 								.ConfigureAwait(false);
 						else
-							response = pipeline.CallProductEndpoint<TResponse>(requestData);
+							response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData, data);
 
 						if (!response.ApiCallDetails.SuccessOrKnownError)
 						{
@@ -270,7 +266,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 						throw new UnexpectedTransportException(killerException, seenExceptions)
 						{
-							Request = requestData,
+							Endpoint = endpoint,
 							ApiCallDetails = response?.ApiCallDetails,
 							AuditTrail = pipeline.AuditTrail
 						};
@@ -296,7 +292,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
 			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportAttemptedNodes, attemptedNodes);
 
-			return FinalizeResponse(requestData, pipeline, seenExceptions, response);
+			return FinalizeResponse(endpoint, requestData, data, pipeline, seenExceptions, response);
 		}
 		finally
 		{
@@ -306,12 +302,14 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 	private static void ThrowUnexpectedTransportException<TResponse>(Exception killerException,
 		List<PipelineException> seenExceptions,
-		RequestData requestData,
+		Endpoint endpoint,
 		TResponse response, RequestPipeline pipeline
 	) where TResponse : TransportResponse, new() =>
 		throw new UnexpectedTransportException(killerException, seenExceptions)
 		{
-			Request = requestData, ApiCallDetails = response?.ApiCallDetails, AuditTrail = pipeline.AuditTrail
+			Endpoint = endpoint,
+			ApiCallDetails = response?.ApiCallDetails,
+			AuditTrail = pipeline.AuditTrail
 		};
 
 	private static void HandlePipelineException<TResponse>(
@@ -326,19 +324,19 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		seenExceptions.Add(ex);
 	}
 
-	private TResponse FinalizeResponse<TResponse>(RequestData requestData, RequestPipeline pipeline,
+	private TResponse FinalizeResponse<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, RequestPipeline pipeline,
 		List<PipelineException>? seenExceptions,
 		TResponse? response
 	) where TResponse : TransportResponse, new()
 	{
-		if (requestData.Node == null) //foreach never ran
-			pipeline.ThrowNoNodesAttempted(requestData, seenExceptions);
+		if (endpoint.IsEmpty) //foreach never ran
+			pipeline.ThrowNoNodesAttempted(endpoint, seenExceptions);
 
 		var callDetails = GetMostRecentCallDetails(response, seenExceptions);
-		var clientException = pipeline.CreateClientException(response, callDetails, requestData, seenExceptions);
+		var clientException = pipeline.CreateClientException(response, callDetails, endpoint, requestData, seenExceptions);
 
 		if (response?.ApiCallDetails == null)
-			pipeline.BadResponse(ref response, callDetails, requestData, clientException);
+			pipeline.BadResponse(ref response, callDetails, endpoint, requestData, postData, clientException);
 
 		HandleTransportException(requestData, clientException, response);
 		return response;

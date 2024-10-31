@@ -29,13 +29,6 @@ public interface IStringable
 public sealed class DefaultRequestParameters : RequestParameters;
 
 /// <summary>
-///
-/// </summary>
-public static class RequestParameterExtensions
-{
-}
-
-/// <summary>
 /// Used by the raw client to compose querystring parameters in a matter that still exposes some xmldocs
 /// You can always pass a simple NameValueCollection if you want.
 /// </summary>
@@ -92,7 +85,7 @@ public abstract class RequestParameters
 	}
 
 	/// <summary> </summary>
-	public virtual string CreatePathWithQueryStrings(string? path, ITransportConfiguration global)
+	public virtual string CreatePathWithQueryStrings(string? path, ITransportConfiguration? global)
 	{
 		path ??= string.Empty;
 		if (path.Contains("?"))
@@ -107,7 +100,7 @@ public abstract class RequestParameters
 		var nv = g == null ? new NameValueCollection() : new NameValueCollection(g);
 
 		//set all querystring pairs from local `l` on the querystring collection
-		var formatter = global.UrlFormatter;
+		var formatter = global?.UrlFormatter;
 		nv.UpdateFromDictionary(l, formatter);
 
 		//if nv has no keys simply return path as provided

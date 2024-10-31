@@ -53,14 +53,14 @@ public enum AuditEvent
 	/// <summary>
 	/// The request took too long.
 	/// This could mean the call was retried but retrying was to slow and cumulatively this exceeded
-	/// <see cref="ITransportConfiguration.MaxRetryTimeout"/>
+	/// <see cref="IRequestConfiguration.MaxRetryTimeout"/>
 	/// </summary>
 	MaxTimeoutReached,
 
 	/// <summary>
 	/// The request was not able to complete
 	/// successfully and exceeded the available retries as configured on
-	/// <see cref="ITransportConfiguration.MaxRetries"/>.
+	/// <see cref="IRequestConfiguration.MaxRetries"/>.
 	/// </summary>
 	MaxRetriesReached,
 
@@ -82,7 +82,7 @@ public enum AuditEvent
 	CancellationRequested,
 
 	/// <summary>
-	/// The request failed within the allotted <see cref="ITransportConfiguration.MaxRetryTimeout"/> but failed
+	/// The request failed within the allotted <see cref="IRequestConfiguration.MaxRetryTimeout"/> but failed
 	/// on all the available <see cref="NodePool.Nodes"/>
 	/// </summary>
 	FailedOverAllNodes,

@@ -24,34 +24,33 @@ public abstract partial class PostData
 			Type = PostType.ByteArray;
 		}
 
-		public override void Write(Stream writableStream, ITransportConfiguration settings)
+		public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
 		{
 			if (WrittenBytes == null) return;
 
-			var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
+			MemoryStream? buffer = null;
 
 			if (!disableDirectStreaming)
-				stream.Write(WrittenBytes, 0, WrittenBytes.Length);
+				writableStream.Write(WrittenBytes, 0, WrittenBytes.Length);
 			else
 				buffer = settings.MemoryStreamFactory.Create(WrittenBytes);
 
-			FinishStream(writableStream, buffer, settings);
+			FinishStream(writableStream, buffer, disableDirectStreaming);
 		}
 
-		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings,
-			CancellationToken cancellationToken)
+		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
 		{
 			if (WrittenBytes == null) return;
 
-			var stream = InitWrite(writableStream, settings, out var buffer, out var disableDirectStreaming);
+			MemoryStream? buffer = null;
 
 			if (!disableDirectStreaming)
-				await stream.WriteAsync(WrittenBytes, 0, WrittenBytes.Length, cancellationToken)
+				await writableStream.WriteAsync(WrittenBytes, 0, WrittenBytes.Length, cancellationToken)
 					.ConfigureAwait(false);
 			else
 				buffer = settings.MemoryStreamFactory.Create(WrittenBytes);
 
-			await FinishStreamAsync(writableStream, buffer, settings, cancellationToken).ConfigureAwait(false);
+			await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);
 		}
 	}
 }

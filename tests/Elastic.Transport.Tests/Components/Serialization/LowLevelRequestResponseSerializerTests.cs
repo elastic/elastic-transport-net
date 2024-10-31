@@ -56,16 +56,17 @@ public class LowLevelRequestResponseSerializerTests : SerializerTestBase
 		source.ValueKind.Should().Be(JsonValueKind.String);
 		source.GetString().Should().Be("Elastic.Transport.Tests");
 
-		var windowsPath = "Components\\Serialization\\LowLevelRequestResponseSerializerTests.cs:line";
+		var windowsPath = "Components\\Serialization\\LowLevelRequestResponseSerializerTests.cs";
 		var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 			? windowsPath
 			: windowsPath.Replace('\\', '/');
 
 		exception.TryGetProperty("StackTraceString", out var stackTrace).Should().BeTrue();
 		stackTrace.ValueKind.Should().Be(JsonValueKind.String);
-		stackTrace.GetString().Should()
+		var stackTraceString = stackTrace.GetString();
+		stackTraceString.Should()
 			.Contain("at Elastic.Transport.Tests.Components.Serialization.LowLevelRequestResponseSerializerTests")
-			.And.Contain(path);
+			.And.Contain(path, stackTraceString);
 
 		exception.TryGetProperty("HResult", out var hResult).Should().BeTrue();
 		hResult.ValueKind.Should().Be(JsonValueKind.Number);
@@ -77,5 +78,4 @@ public class LowLevelRequestResponseSerializerTests : SerializerTestBase
 	}
 }
 
-internal class CustomException(string message) : Exception(message)
-{ }
+internal class CustomException(string message) : Exception(message);

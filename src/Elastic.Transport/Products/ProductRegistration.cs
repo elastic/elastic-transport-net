@@ -59,38 +59,37 @@ public abstract class ProductRegistration
 	/// Create an instance of <see cref="RequestData"/> that describes where and how to ping see <paramref name="node" />
 	/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
 	/// </summary>
-	public abstract RequestData CreatePingRequestData(Node node, RequestConfiguration requestConfiguration, ITransportConfiguration global, MemoryStreamFactory memoryStreamFactory);
+	public abstract Endpoint CreatePingEndpoint(Node node, IRequestConfiguration requestConfiguration);
 
 	/// <summary>
 	/// Provide an implementation that performs the ping directly using <see cref="IRequestInvoker.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
-	/// return by <see cref="CreatePingRequestData"/>
+	/// return by <see cref="CreatePingEndpoint"/>
 	/// </summary>
-	public abstract Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, RequestData pingData, CancellationToken cancellationToken);
+	public abstract Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken);
 
 	/// <summary>
 	/// Provide an implementation that performs the ping directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
-	/// return by <see cref="CreatePingRequestData"/>
+	/// return by <see cref="CreatePingEndpoint"/>
 	/// </summary>
-	public abstract TransportResponse Ping(IRequestInvoker requestInvoker, RequestData pingData);
+	public abstract TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData);
 
 	/// <summary>
 	/// Create an instance of <see cref="RequestData"/> that describes where and how to sniff the cluster using <paramref name="node" />
 	/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
 	/// </summary>
-	public abstract RequestData CreateSniffRequestData(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings,
-		MemoryStreamFactory memoryStreamFactory);
+	public abstract Endpoint CreateSniffEndpoint(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings);
 
 	/// <summary>
 	/// Provide an implementation that performs the sniff directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
-	/// return by <see cref="CreateSniffRequestData"/>
+	/// return by <see cref="CreateSniffEndpoint"/>
 	/// </summary>
-	public abstract Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, RequestData requestData, CancellationToken cancellationToken);
+	public abstract Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken);
 
 	/// <summary>
 	/// Provide an implementation that performs the sniff directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
-	/// return by <see cref="CreateSniffRequestData"/>
+	/// return by <see cref="CreateSniffEndpoint"/>
 	/// </summary>
-	public abstract Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, RequestData requestData);
+	public abstract Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, RequestData requestData);
 
 	/// <summary> Allows certain nodes to be queried first to obtain sniffing information </summary>
 	public abstract int SniffOrder(Node node);
