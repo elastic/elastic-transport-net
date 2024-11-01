@@ -33,7 +33,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 		{
 			if (!RunningMitmProxy) return config;
 
-			return config.Proxy(new Uri("http://127.0.0.1:8080"), null, (string)null);
+			return config with { ProxyAddress = "http://127.0.0.1:8080" };
 		}
 
 	}

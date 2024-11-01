@@ -10,7 +10,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components;
 
 /// <summary>
 /// A continuation of <see cref="VirtualCluster"/>'s builder methods that creates
-/// an instance of <see cref="TransportConfiguration"/> for the cluster after which the components such as
+/// an instance of <see cref="TransportConfigurationDescriptor"/> for the cluster after which the components such as
 /// <see cref="IRequestInvoker"/> and <see cref="NodePool"/> can no longer be updated.
 /// </summary>
 public sealed class SealedVirtualCluster
@@ -28,23 +28,23 @@ public sealed class SealedVirtualCluster
 		_productRegistration = productRegistration;
 	}
 
-	private TransportConfiguration CreateSettings() =>
+	private TransportConfigurationDescriptor CreateSettings() =>
 		new(_nodePool, _requestInvoker, serializer: null, _productRegistration.ProductRegistration);
 
-	/// <summary> Create the cluster using all defaults on <see cref="TransportConfiguration"/> </summary>
+	/// <summary> Create the cluster using all defaults on <see cref="TransportConfigurationDescriptor"/> </summary>
 	public VirtualizedCluster AllDefaults() =>
 		new(_dateTimeProvider, CreateSettings());
 
 	/// <summary> Create the cluster using <paramref name="selector"/> to provide configuration changes </summary>
 	/// <param name="selector">Provide custom configuration options</param>
-	public VirtualizedCluster Settings(Func<TransportConfiguration, TransportConfiguration> selector) =>
+	public VirtualizedCluster Settings(Func<TransportConfigurationDescriptor, TransportConfigurationDescriptor> selector) =>
 		new(_dateTimeProvider, selector(CreateSettings()));
 
 	/// <summary>
 	/// Allows you to create an instance of `<see cref="VirtualClusterConnection"/> using the DSL provided by <see cref="Virtual"/>
 	/// </summary>
 	/// <param name="selector">Provide custom configuration options</param>
-	public VirtualClusterRequestInvoker VirtualClusterConnection(Func<TransportConfiguration, TransportConfiguration> selector = null) =>
+	public VirtualClusterRequestInvoker VirtualClusterConnection(Func<TransportConfigurationDescriptor, TransportConfigurationDescriptor> selector = null) =>
 		new VirtualizedCluster(_dateTimeProvider, selector == null ? CreateSettings() : selector(CreateSettings()))
 			.Connection;
 }

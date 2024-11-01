@@ -13,7 +13,7 @@ public class VirtualizedCluster
 {
 	private readonly ExposingPipelineFactory<ITransportConfiguration> _exposingRequestPipeline;
 	private readonly TestableDateTimeProvider _dateTimeProvider;
-	private readonly TransportConfiguration _settings;
+	private readonly TransportConfigurationDescriptor _settings;
 
 	private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<TransportResponse>> _asyncCall;
 	private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> _syncCall;
@@ -22,7 +22,7 @@ public class VirtualizedCluster
 
 	private static readonly EndpointPath RootPath = new(HttpMethod.GET, "/");
 
-	internal VirtualizedCluster(TestableDateTimeProvider dateTimeProvider, TransportConfiguration settings)
+	internal VirtualizedCluster(TestableDateTimeProvider dateTimeProvider, TransportConfigurationDescriptor settings)
 	{
 		_dateTimeProvider = dateTimeProvider;
 		_settings = settings;

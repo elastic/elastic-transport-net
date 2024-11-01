@@ -228,7 +228,7 @@ internal class DefaultResponseBuilder<TError> : ResponseBuilder where TError : E
 				return response;
 			}
 
-			if (!requestData.ValidateResponseContentType(mimeType))
+			if (!ValidateResponseContentType(requestData.Accept, mimeType))
 			{
 				ConditionalDisposal(responseStream, ownsStream, response);
 				return default;

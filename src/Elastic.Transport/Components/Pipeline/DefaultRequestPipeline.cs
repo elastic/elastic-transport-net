@@ -16,43 +16,40 @@ using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
 namespace Elastic.Transport;
 
 /// <inheritdoc cref="RequestPipeline" />
-public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
-	where TConfiguration : class, ITransportConfiguration
+public class DefaultRequestPipeline : RequestPipeline
 {
 	private readonly IRequestInvoker _requestInvoker;
 	private readonly NodePool _nodePool;
+	private readonly RequestData _requestData;
 	private readonly DateTimeProvider _dateTimeProvider;
 	private readonly MemoryStreamFactory _memoryStreamFactory;
 	private readonly Func<Node, bool> _nodePredicate;
 	private readonly ProductRegistration _productRegistration;
-	private readonly TConfiguration _settings;
 	private readonly ResponseBuilder _responseBuilder;
 
 	private RequestConfiguration? _pingAndSniffRequestConfiguration;
-	private List<Audit> _auditTrail = null;
+	private List<Audit>? _auditTrail;
+	private readonly ITransportConfiguration _settings;
 
 	/// <inheritdoc cref="RequestPipeline" />
-	internal DefaultRequestPipeline(
-		TConfiguration configurationValues,
-		DateTimeProvider dateTimeProvider,
-		MemoryStreamFactory memoryStreamFactory,
-		IRequestConfiguration? requestConfiguration
-	)
+	internal DefaultRequestPipeline(RequestData requestData, DateTimeProvider dateTimeProvider)
 	{
-		_settings = configurationValues;
-		_nodePool = _settings.NodePool;
-		_requestInvoker = _settings.Connection;
+		_requestData = requestData;
+		_settings = requestData.ConnectionSettings;
+
+		_nodePool = requestData.ConnectionSettings.NodePool;
+		_requestInvoker = requestData.ConnectionSettings.Connection;
 		_dateTimeProvider = dateTimeProvider;
-		_memoryStreamFactory = memoryStreamFactory;
-		_productRegistration = configurationValues.ProductRegistration;
+		_memoryStreamFactory = requestData.MemoryStreamFactory;
+		_productRegistration = requestData.ConnectionSettings.ProductRegistration;
 		_responseBuilder = _productRegistration.ResponseBuilder;
-		_nodePredicate = _settings.NodePredicate ?? _productRegistration.NodePredicate;
-		RequestConfig = requestConfiguration;
+		_nodePredicate = requestData.ConnectionSettings.NodePredicate ?? _productRegistration.NodePredicate;
+
 		StartedOn = dateTimeProvider.Now();
 	}
 
 	/// <inheritdoc cref="RequestPipeline.AuditTrail" />
-	public override IEnumerable<Audit> AuditTrail => _auditTrail ?? (IEnumerable<Audit>)Array.Empty<Audit>();
+	public override IEnumerable<Audit> AuditTrail => _auditTrail;
 
 	private RequestConfiguration PingAndSniffRequestConfiguration
 	{
@@ -66,9 +63,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			{
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
-				Authentication = RequestConfig?.Authentication ?? _settings.Authentication,
-				EnableHttpPipelining = RequestConfig?.HttpPipeliningEnabled ?? _settings.HttpPipeliningEnabled,
-				ForceNode = RequestConfig?.ForceNode
+				Authentication = _requestData.AuthenticationHeader,
+				EnableHttpPipelining = _requestData.HttpPipeliningEnabled,
+				ForceNode = _requestData.ForceNode
 			};
 
 			return _pingAndSniffRequestConfiguration;
@@ -99,10 +96,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		}
 	}
 
-	public override int MaxRetries =>
-		RequestConfig?.ForceNode != null
-			? 0
-			: Math.Min(RequestConfig?.MaxRetries ?? _settings.MaxRetries.GetValueOrDefault(int.MaxValue), _nodePool.MaxRetries);
+	public override int MaxRetries => _requestData.MaxRetries;
 
 	public bool Refresh { get; private set; }
 
@@ -140,18 +134,13 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 	public override DateTimeOffset StartedOn { get; }
 
-	private TimeSpan PingTimeout =>
-		RequestConfig?.PingTimeout
-		?? _settings.PingTimeout
-		?? (_nodePool.UsingSsl ? RequestConfiguration.DefaultPingTimeoutOnSsl : RequestConfiguration.DefaultPingTimeout);
+	private TimeSpan PingTimeout => _requestData.PingTimeout;
 
-	private IRequestConfiguration RequestConfig { get; }
+	private bool RequestDisabledSniff => _requestData.DisableSniff;
 
-	private bool RequestDisabledSniff => RequestConfig != null && (RequestConfig.DisableSniff ?? false);
+	private TimeSpan RequestTimeout => _requestData.RequestTimeout;
 
-	private TimeSpan RequestTimeout => RequestConfig?.RequestTimeout ?? _settings.RequestTimeout ?? RequestConfiguration.DefaultRequestTimeout;
-
-	public override void AuditCancellationRequested() => Audit(CancellationRequested).Dispose();
+	public override void AuditCancellationRequested() => Audit(CancellationRequested)?.Dispose();
 
 	public override void BadResponse<TResponse>(ref TResponse response, ApiCallDetails callDetails, Endpoint endpoint, RequestData data, PostData? postData, TransportException exception)
 	{
@@ -362,9 +351,9 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 	public override IEnumerable<Node> NextNode()
 	{
-		if (RequestConfig?.ForceNode != null)
+		if (_requestData.ForceNode != null)
 		{
-			yield return new Node(RequestConfig.ForceNode);
+			yield return new Node(_requestData.ForceNode);
 
 			yield break;
 		}
@@ -416,15 +405,12 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 
 		TransportResponse response;
 
-		//TODO remove
-		var requestData = new RequestData(_settings, null, null, _memoryStreamFactory);
-
 		try
 		{
 			if (isAsync)
-				response = await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, requestData, cancellationToken).ConfigureAwait(false);
+				response = await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, _requestData, cancellationToken).ConfigureAwait(false);
 			else
-				response = _productRegistration.Ping(_requestInvoker, pingEndpoint, requestData);
+				response = _productRegistration.Ping(_requestInvoker, pingEndpoint, _requestData);
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
@@ -462,7 +448,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 		{
 			var sniffEndpoint = _productRegistration.CreateSniffEndpoint(node, PingAndSniffRequestConfiguration, _settings);
 			//TODO remove
-			var requestData = new RequestData(_settings, null, null, _memoryStreamFactory);
+			var requestData = new RequestData(_settings, null, null);
 
 			using var audit = Audit(SniffSuccess, node);
 
@@ -554,9 +540,7 @@ public class DefaultRequestPipeline<TConfiguration> : RequestPipeline
 			throw new UnexpectedTransportException(clientException, seenExceptions) { Endpoint = endpoint, AuditTrail = AuditTrail };
 	}
 
-	private bool PingDisabled(Node node) =>
-		(RequestConfig?.DisablePings).GetValueOrDefault(false)
-		|| (_settings.DisablePings ?? false) || !_nodePool.SupportsPinging || !node.IsResurrected;
+	private bool PingDisabled(Node node) => _requestData.DisablePings || !node.IsResurrected;
 
 	private Auditable? Audit(AuditEvent type, Node node = null) =>
 		!_settings.DisableAuditTrail ?? true ? new(type, ref _auditTrail, _dateTimeProvider, node) : null;

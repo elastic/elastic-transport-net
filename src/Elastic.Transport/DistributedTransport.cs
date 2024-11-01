@@ -20,7 +20,7 @@ using System.Net;
 namespace Elastic.Transport;
 
 /// <inheritdoc cref="ITransport{TConfiguration}" />
-public sealed class DistributedTransport : DistributedTransport<TransportConfiguration>
+public sealed class DistributedTransport : DistributedTransport<ITransportConfiguration>
 {
 	/// <summary>
 	///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
@@ -28,7 +28,7 @@ public sealed class DistributedTransport : DistributedTransport<TransportConfigu
 	///     nodes
 	/// </summary>
 	/// <param name="configurationValues">The configuration to use for this transport</param>
-	public DistributedTransport(TransportConfiguration configurationValues) : base(configurationValues, null, null) { }
+	public DistributedTransport(ITransportConfiguration configurationValues) : base(configurationValues, null, null) { }
 
 	/// <summary>
 	///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
@@ -38,14 +38,12 @@ public sealed class DistributedTransport : DistributedTransport<TransportConfigu
 	/// <param name="configurationValues">The configuration to use for this transport</param>
 	/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
-	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
 	internal DistributedTransport(
-		TransportConfiguration configurationValues,
-		RequestPipelineFactory<TransportConfiguration>? pipelineProvider = null,
-		DateTimeProvider? dateTimeProvider = null,
-		MemoryStreamFactory? memoryStreamFactory = null
+		ITransportConfiguration configurationValues,
+		RequestPipelineFactory? pipelineProvider = null,
+		DateTimeProvider? dateTimeProvider = null
 	)
-		: base(configurationValues, pipelineProvider, dateTimeProvider, memoryStreamFactory) { }
+		: base(configurationValues, pipelineProvider, dateTimeProvider) { }
 }
 
 /// <inheritdoc cref="ITransport{TConfiguration}" />
@@ -62,12 +60,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	/// <param name="configurationValues">The configuration to use for this transport</param>
 	/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
 	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
-	/// <param name="memoryStreamFactory">The memory stream provider to use, safe to pass null to use the default</param>
 	public DistributedTransport(
 		TConfiguration configurationValues,
-		RequestPipelineFactory<TConfiguration>? pipelineProvider = null,
-		DateTimeProvider? dateTimeProvider = null,
-		MemoryStreamFactory? memoryStreamFactory = null
+		RequestPipelineFactory? pipelineProvider = null,
+		DateTimeProvider? dateTimeProvider = null
 	)
 	{
 		configurationValues.ThrowIfNull(nameof(configurationValues));
@@ -78,14 +74,16 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 		_productRegistration = configurationValues.ProductRegistration;
 		Configuration = configurationValues;
-		PipelineProvider = pipelineProvider ?? new DefaultRequestPipelineFactory<TConfiguration>();
+		TransportRequestData = new RequestData(Configuration);
+		PipelineProvider = pipelineProvider ?? new DefaultRequestPipelineFactory();
 		DateTimeProvider = dateTimeProvider ?? DefaultDateTimeProvider.Default;
-		MemoryStreamFactory = memoryStreamFactory ?? configurationValues.MemoryStreamFactory;
+		MemoryStreamFactory = configurationValues.MemoryStreamFactory;
 	}
 
 	private DateTimeProvider DateTimeProvider { get; }
 	private MemoryStreamFactory MemoryStreamFactory { get; }
-	private RequestPipelineFactory<TConfiguration> PipelineProvider { get; }
+	private RequestPipelineFactory PipelineProvider { get; }
+	private RequestData TransportRequestData { get; }
 
 	/// <inheritdoc cref="ITransport{TConfiguration}.Configuration"/>
 	public TConfiguration Configuration { get; }
@@ -120,7 +118,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		EndpointPath path,
 		PostData? data,
 		OpenTelemetryData openTelemetryData,
-		IRequestConfiguration? localRequestConfiguration,
+		IRequestConfiguration? localConfiguration,
 		CustomResponseBuilder? customResponseBuilder,
 		CancellationToken cancellationToken = default
 	)
@@ -134,16 +132,22 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 		try
 		{
-			using var pipeline = PipelineProvider.Create(Configuration, DateTimeProvider, MemoryStreamFactory, localRequestConfiguration);
+			//unless per request configuration or custom response builder is provided we can reuse a request data
+			//that is specific to this transport
+			var requestData =
+				localConfiguration != null || customResponseBuilder != null
+					? new RequestData(Configuration, localConfiguration, customResponseBuilder)
+					: TransportRequestData;
+
+			Configuration.OnRequestDataCreated?.Invoke(requestData);
+
+			using var pipeline = PipelineProvider.Create(requestData, DateTimeProvider);
 
 			if (isAsync)
 				await pipeline.FirstPoolUsageAsync(Configuration.BootstrapLock, cancellationToken).ConfigureAwait(false);
 			else
 				pipeline.FirstPoolUsage(Configuration.BootstrapLock);
 
-			//var pathAndQuery = requestParameters?.CreatePathWithQueryStrings(path, Configuration) ?? path;
-			var requestData = new RequestData(Configuration, localRequestConfiguration, customResponseBuilder, MemoryStreamFactory);
-			Configuration.OnRequestDataCreated?.Invoke(requestData);
 			TResponse response = null;
 
 			var endpoint = Endpoint.Empty(path);

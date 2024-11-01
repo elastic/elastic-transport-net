@@ -83,7 +83,7 @@ public abstract class ResponseBuilder
 
 		// We don't validate the content-type (MIME type) for HEAD requests or responses that have no content (204 status code).
 		// Elastic Cloud responses to HEAD requests strip the content-type header so we want to avoid validation in that case.
-		var hasExpectedContentType = !MayHaveBody(statusCode, endpoint.Method, contentLength) || requestData.ValidateResponseContentType(mimeType);
+		var hasExpectedContentType = !MayHaveBody(statusCode, endpoint.Method, contentLength) || ValidateResponseContentType(requestData.Accept, mimeType);
 
 		var details = new ApiCallDetails
 		{
@@ -113,5 +113,27 @@ public abstract class ResponseBuilder
 	/// </summary>
 	protected static bool MayHaveBody(int? statusCode, HttpMethod httpMethod, long contentLength) =>
 		contentLength != 0 && (!statusCode.HasValue || statusCode.Value != 204 && httpMethod != HttpMethod.HEAD);
+
+	internal static bool ValidateResponseContentType(string accept, string responseMimeType)
+	{
+		if (string.IsNullOrEmpty(responseMimeType)) return false;
+
+		if (accept == responseMimeType)
+			return true;
+
+		// TODO - Performance: Review options to avoid the replace here and compare more efficiently.
+		var trimmedAccept = accept.Replace(" ", "");
+		var trimmedResponseMimeType = responseMimeType.Replace(" ", "");
+
+		return trimmedResponseMimeType.Equals(trimmedAccept, StringComparison.OrdinalIgnoreCase)
+			|| trimmedResponseMimeType.StartsWith(trimmedAccept, StringComparison.OrdinalIgnoreCase)
+
+			// ES specific fallback required because:
+			// - 404 responses from ES8 don't include the vendored header
+			// - ES8 EQL responses don't include vendored type
+
+			|| trimmedAccept.Contains("application/vnd.elasticsearch+json")
+			&& trimmedResponseMimeType.StartsWith(RequestData.DefaultMimeType, StringComparison.OrdinalIgnoreCase);
+	}
 
 }

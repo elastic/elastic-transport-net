@@ -125,10 +125,10 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				//throw any errors if both are closed atleast one of them has to be Closed.
 				//Since we expose the stream we let closing the stream determining when to close the connection
 
-				if (requestData.TcpStats)
+				if (requestData.EnableTcpStats)
 					tcpStats = TcpStats.GetStates();
 
-				if (requestData.ThreadPoolStats)
+				if (requestData.EnableThreadPoolStats)
 					threadPoolStats = ThreadPoolStats.GetStats();
 
 				HttpWebResponse httpWebResponse;
@@ -332,7 +332,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		// on netstandard/netcoreapp2.0 this throws argument exception
 		request.MaximumResponseHeadersLength = -1;
 #endif
-		request.Pipelined = requestData.Pipelined;
+		request.Pipelined = requestData.HttpPipeliningEnabled;
 
 		if (requestData.TransferEncodingChunked)
 			request.SendChunked = true;

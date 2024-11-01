@@ -29,7 +29,7 @@ public class DefaultCluster : XunitClusterBase
 		{
 			var nodes = NodesUris();
 			var nodePool = new StaticNodePool(nodes);
-			var settings = new TransportConfiguration(nodePool, productRegistration: ElasticsearchProductRegistration.Default)
+			var settings = new TransportConfigurationDescriptor(nodePool, productRegistration: ElasticsearchProductRegistration.Default)
 				.RequestTimeout(TimeSpan.FromSeconds(5))
 				.OnRequestCompleted(d =>
 				{

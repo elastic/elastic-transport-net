@@ -17,13 +17,13 @@ public sealed class RequestMetaData
 	/// </summary>
 	internal const string HelperKey = "helper";
 
-	private Dictionary<string, string> _metaDataItems;
+	private Dictionary<string, string>? _metaDataItems;
 
 	internal bool TryAddMetaData(string key, string value)
 	{
-		_metaDataItems ??= new Dictionary<string, string>();
+		_metaDataItems ??= new();
 
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1 || NET6_0_OR_GREATER
 		return _metaDataItems.TryAdd(key, value);
 #else
 		if (_metaDataItems.ContainsKey(key))
@@ -34,8 +34,6 @@ public sealed class RequestMetaData
 #endif
 	}
 
-	/// <summary>
-	/// 
-	/// </summary>
-	public IReadOnlyDictionary<string, string> Items => _metaDataItems ?? EmptyReadOnly<string, string>.Dictionary;
+	/// <summary> Retrieves a read-only dictionary of metadata items associated with a client request.</summary>
+	public IReadOnlyDictionary<string, string> Items => _metaDataItems;
 }

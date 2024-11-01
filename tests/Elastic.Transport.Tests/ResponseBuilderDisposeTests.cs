@@ -17,8 +17,8 @@ namespace Elastic.Transport.Tests;
 
 public class ResponseBuilderDisposeTests
 {
-	private readonly ITransportConfiguration _settings = InMemoryConnectionFactory.Create().DisableDirectStreaming(false);
-	private readonly ITransportConfiguration _settingsDisableDirectStream = InMemoryConnectionFactory.Create().DisableDirectStreaming();
+	private readonly ITransportConfiguration _settings = InMemoryConnectionFactory.Create() with { DisableDirectStreaming = false };
+	private readonly ITransportConfiguration _settingsDisableDirectStream = InMemoryConnectionFactory.Create() with { DisableDirectStreaming = true };
 
 	[Fact]
 	public async Task StreamResponseWithPotentialBody_StreamIsNotDisposed() =>
@@ -65,20 +65,23 @@ public class ResponseBuilderDisposeTests
 	{
 		ITransportConfiguration config;
 
-		if (skipStatusCode > -1 )
-			config = InMemoryConnectionFactory.Create(productRegistration)
-				.DisableDirectStreaming(disableDirectStreaming)
-				.SkipDeserializationForStatusCodes(skipStatusCode);
+		var memoryStreamFactory = new TrackMemoryStreamFactory();
+
+		if (skipStatusCode > -1)
+			config = InMemoryConnectionFactory.Create(productRegistration) with
+			{
+				DisableDirectStreaming = disableDirectStreaming, SkipDeserializationForStatusCodes = [skipStatusCode]
+			};
+
 		else if (productRegistration is not null)
-			config = InMemoryConnectionFactory.Create(productRegistration)
-				.DisableDirectStreaming(disableDirectStreaming);
+			config = InMemoryConnectionFactory.Create(productRegistration) with { DisableDirectStreaming = disableDirectStreaming, };
 		else
 			config = disableDirectStreaming ? _settingsDisableDirectStream : _settings;
 
-		var memoryStreamFactory = new TrackMemoryStreamFactory();
+		config = new TransportConfiguration(config) { MemoryStreamFactory = memoryStreamFactory };
 
 		var endpoint = new Endpoint(new EndpointPath(httpMethod, "/"), new Node(new Uri("http://localhost:9200")));
-		var requestData = new RequestData(config, null, customResponseBuilder, memoryStreamFactory);
+		var requestData = new RequestData(config, null, customResponseBuilder);
 
 		var stream = new TrackDisposeStream();
 

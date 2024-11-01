@@ -39,7 +39,7 @@ public class OpenTelemetryTests : AssemblyServerTestsBase
 		var mre = new ManualResetEvent(false);
 
 		var callCounter = 0;
-		using var listener = new ActivityListener()
+		using var listener = new ActivityListener
 		{
 			ActivityStarted = _ => { },
 			ActivityStopped = activity =>

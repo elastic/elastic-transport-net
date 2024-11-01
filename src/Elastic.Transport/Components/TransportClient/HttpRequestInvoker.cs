@@ -26,8 +26,8 @@ namespace Elastic.Transport;
 public class HttpRequestInvoker : IRequestInvoker
 {
 	private static readonly string MissingConnectionLimitMethodError =
-		$"Your target platform does not support {nameof(TransportConfiguration.ConnectionLimit)}"
-		+ $" please set {nameof(TransportConfiguration.ConnectionLimit)} to -1 on your configuration."
+		$"Your target platform does not support {nameof(TransportConfigurationDescriptor.ConnectionLimit)}"
+		+ $" please set {nameof(TransportConfigurationDescriptor.ConnectionLimit)} to -1 on your configuration."
 		+ $" this will cause the {nameof(HttpClientHandler.MaxConnectionsPerServer)} not to be set on {nameof(HttpClientHandler)}";
 
 	private string _expectedCertificateFingerprint;
@@ -96,10 +96,10 @@ public class HttpRequestInvoker : IRequestInvoker
 
 			using (requestMessage?.Content ?? (IDisposable)Stream.Null)
 			{
-				if (requestData.TcpStats)
+				if (requestData.EnableTcpStats)
 					tcpStats = TcpStats.GetStates();
 
-				if (requestData.ThreadPoolStats)
+				if (requestData.EnableThreadPoolStats)
 					threadPoolStats = ThreadPoolStats.GetStats();
 
 				var prepareRequestMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);

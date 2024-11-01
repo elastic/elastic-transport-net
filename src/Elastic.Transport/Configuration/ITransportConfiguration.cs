@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net.Security;
-using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Elastic.Transport.Products;
@@ -91,7 +90,7 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	Func<Node, bool>? NodePredicate { get; }
 
 	/// <summary>
-	/// Allows you to register a callback every time a an API call is returned
+	/// Allows you to register a callback every time an API call is returned
 	/// </summary>
 	Action<ApiCallDetails>? OnRequestCompleted { get; }
 
@@ -104,17 +103,17 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	/// <summary>
 	/// When set will force all connections through this proxy
 	/// </summary>
-	string ProxyAddress { get; }
+	string? ProxyAddress { get; }
 
 	/// <summary>
 	/// The password for the proxy, when configured
 	/// </summary>
-	string ProxyPassword { get; }
+	string? ProxyPassword { get; }
 
 	/// <summary>
 	/// The username for the proxy, when configured
 	/// </summary>
-	string ProxyUsername { get; }
+	string? ProxyUsername { get; }
 
 	/// <summary>
 	/// Append these query string parameters automatically to every request
@@ -127,19 +126,19 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	/// <summary>
 	/// Register a ServerCertificateValidationCallback per request
 	/// </summary>
-	Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> ServerCertificateValidationCallback { get; }
+	Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool>? ServerCertificateValidationCallback { get; }
 
 	/// <summary>
 	/// During development, the server certificate fingerprint may be provided. When present, it is used to validate the
 	/// certificate sent by the server. The fingerprint is expected to be the hex string representing the SHA256 public key fingerprint.
 	/// </summary>
-	string CertificateFingerprint { get; }
+	string? CertificateFingerprint { get; }
 
 	/// <summary>
 	/// Configure the client to skip deserialization of certain status codes e.g: you run Elasticsearch behind a proxy that returns an unexpected
 	/// json format
 	/// </summary>
-	IReadOnlyCollection<int> SkipDeserializationForStatusCodes { get; }
+	IReadOnlyCollection<int>? SkipDeserializationForStatusCodes { get; }
 
 	/// <summary>
 	/// Force a new sniff for the cluster when the cluster state information is older than
@@ -171,7 +170,7 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	/// <summary>
 	/// Allow you to override the status code inspection that sets <see cref="ApiCallDetails.HasSuccessfulStatusCode"/>
 	/// <para>
-	/// Defaults to validating the statusCode is greater or equal to 200 and less then 300
+	/// Defaults to validating the statusCode is greater or equal to 200 and less than 300
 	/// </para>
 	/// <para>
 	/// When the request is using <see cref="HttpMethod.HEAD"/> 404 is valid out of the box as well
