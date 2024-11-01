@@ -16,15 +16,13 @@ namespace Elastic.Transport;
 public sealed class StickyNodePool : StaticNodePool
 {
 	/// <inheritdoc cref="StickyNodePool"/>
-	public StickyNodePool(IEnumerable<Uri> uris, DateTimeProvider dateTimeProvider = null)
-		: base(uris, false, dateTimeProvider) { }
+	public StickyNodePool(IEnumerable<Uri> uris) : base(uris, false) { }
 
 	/// <inheritdoc cref="StickyNodePool"/>
-	public StickyNodePool(IEnumerable<Node> nodes, DateTimeProvider dateTimeProvider = null)
-		: base(nodes, false, dateTimeProvider) { }
+	public StickyNodePool(IEnumerable<Node> nodes) : base(nodes, false) { }
 
 	/// <inheritdoc cref="StaticNodePool.CreateView"/>
-	public override IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null)
+	public override IEnumerable<Node> CreateView(Auditor? auditor)
 	{
 		var nodes = AliveNodes;
 
@@ -33,7 +31,7 @@ public sealed class StickyNodePool : StaticNodePool
 			var globalCursor = Interlocked.Increment(ref GlobalCursor);
 
 			//could not find a suitable node retrying on first node off globalCursor
-			yield return RetryInternalNodes(globalCursor, audit);
+			yield return RetryInternalNodes(globalCursor, auditor);
 
 			yield break;
 		}
@@ -44,7 +42,7 @@ public sealed class StickyNodePool : StaticNodePool
 			Interlocked.Exchange(ref GlobalCursor, -1);
 
 		var localCursor = 0;
-		foreach (var aliveNode in SelectAliveNodes(localCursor, nodes, audit))
+		foreach (var aliveNode in SelectAliveNodes(localCursor, nodes, auditor))
 			yield return aliveNode;
 	}
 

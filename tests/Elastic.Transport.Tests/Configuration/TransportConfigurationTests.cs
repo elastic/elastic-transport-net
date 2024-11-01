@@ -32,12 +32,9 @@ public class TransportConfigurationTests
 
 		config.Should().BeEquivalentTo(newConfig, c => c
 			.Excluding(p=>p.BootstrapLock)
-			.Excluding(p=>p.NodePool.LastUpdate)
 		);
 
 		config.BootstrapLock.CurrentCount.Should().Be(newConfig.BootstrapLock.CurrentCount);
-		config.NodePool.LastUpdate
-			.Should().BeCloseTo(newConfig.NodePool.LastUpdate, TimeSpan.FromMilliseconds(100));
 	}
 
 #if !NETFRAMEWORK

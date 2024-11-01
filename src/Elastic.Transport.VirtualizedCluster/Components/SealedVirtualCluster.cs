@@ -31,20 +31,21 @@ public sealed class SealedVirtualCluster
 	private TransportConfigurationDescriptor CreateSettings() =>
 		new(_nodePool, _requestInvoker, serializer: null, _productRegistration.ProductRegistration);
 
+
 	/// <summary> Create the cluster using all defaults on <see cref="TransportConfigurationDescriptor"/> </summary>
 	public VirtualizedCluster AllDefaults() =>
-		new(_dateTimeProvider, CreateSettings());
+		new(CreateSettings());
 
 	/// <summary> Create the cluster using <paramref name="selector"/> to provide configuration changes </summary>
 	/// <param name="selector">Provide custom configuration options</param>
 	public VirtualizedCluster Settings(Func<TransportConfigurationDescriptor, TransportConfigurationDescriptor> selector) =>
-		new(_dateTimeProvider, selector(CreateSettings()));
+		new(selector(CreateSettings()));
 
 	/// <summary>
 	/// Allows you to create an instance of `<see cref="VirtualClusterConnection"/> using the DSL provided by <see cref="Virtual"/>
 	/// </summary>
 	/// <param name="selector">Provide custom configuration options</param>
 	public VirtualClusterRequestInvoker VirtualClusterConnection(Func<TransportConfigurationDescriptor, TransportConfigurationDescriptor> selector = null) =>
-		new VirtualizedCluster(_dateTimeProvider, selector == null ? CreateSettings() : selector(CreateSettings()))
+		new VirtualizedCluster(selector == null ? CreateSettings() : selector(CreateSettings()))
 			.Connection;
 }

@@ -76,7 +76,7 @@ internal static class DiagnosticSources
 	}
 
 	/// <summary>
-	/// Provides access to the string event names that <see cref="RequestPipeline"/> emits
+	/// Provides access to the string event names that <see cref="DiagnosticSources.RequestPipeline"/> emits
 	/// </summary>
 	public class RequestPipelineDiagnosticKeys : IDiagnosticsKeys
 	{
@@ -97,7 +97,7 @@ internal static class DiagnosticSources
 
 	/// <summary>
 	/// Reference to the diagnostic source name that allows you to listen to all decisions that
-	/// <see cref="RequestPipeline"/> makes. Events it emits are the names on <see cref="AuditEvent"/>
+	/// <see cref="DiagnosticSources.RequestPipeline"/> makes. Events it emits are the names on <see cref="AuditEvent"/>
 	/// </summary>
 	public class AuditDiagnosticKeys : IDiagnosticsKeys
 	{

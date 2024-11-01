@@ -24,7 +24,7 @@ public sealed class Audit
 	/// <summary>
 	/// The node on which the request was made.
 	/// </summary>
-	public Node Node { get; internal set; }
+	public Node? Node { get; internal init; }
 
 	/// <summary>
 	/// The path of the request.

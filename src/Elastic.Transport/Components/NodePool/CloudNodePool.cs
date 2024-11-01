@@ -36,11 +36,10 @@ public sealed class CloudNodePool : SingleNodePool
 	/// <para> Read more here: https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html</para>
 	/// </param>
 	/// <param name="credentials"></param>
-	/// <param name="dateTimeProvider">Optionally inject an instance of <see cref="DateTimeProvider"/> used to set <see cref="NodePool.LastUpdate"/></param>
-	public CloudNodePool(string cloudId, AuthorizationHeader credentials, DateTimeProvider dateTimeProvider = null) : this(ParseCloudId(cloudId), dateTimeProvider) =>
+	public CloudNodePool(string cloudId, AuthorizationHeader credentials) : this(ParseCloudId(cloudId)) =>
 		AuthenticationHeader  = credentials;
 
-	private CloudNodePool(ParsedCloudId parsedCloudId, DateTimeProvider dateTimeProvider = null) : base(parsedCloudId.Uri, dateTimeProvider) =>
+	private CloudNodePool(ParsedCloudId parsedCloudId) : base(parsedCloudId.Uri) =>
 		ClusterName = parsedCloudId.Name;
 
 	//TODO implement debugger display for NodePool implementations and display it there and its ToString()
@@ -92,7 +91,4 @@ public sealed class CloudNodePool : SingleNodePool
 
 		return new ParsedCloudId(clusterName, new Uri($"https://{elasticsearchUuid}.{domainName}"));
 	}
-
-	/// <inheritdoc />
-	protected override void Dispose(bool disposing) => base.Dispose(disposing);
 }

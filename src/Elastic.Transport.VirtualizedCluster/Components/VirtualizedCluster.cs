@@ -22,11 +22,12 @@ public class VirtualizedCluster
 
 	private static readonly EndpointPath RootPath = new(HttpMethod.GET, "/");
 
-	internal VirtualizedCluster(TestableDateTimeProvider dateTimeProvider, TransportConfigurationDescriptor settings)
+	internal VirtualizedCluster(TransportConfigurationDescriptor settings)
 	{
-		_dateTimeProvider = dateTimeProvider;
 		_settings = settings;
-		_exposingRequestPipeline = new ExposingPipelineFactory<ITransportConfiguration>(settings, _dateTimeProvider);
+		_dateTimeProvider = ((ITransportConfiguration)_settings).DateTimeProvider as TestableDateTimeProvider
+			?? throw new ArgumentException("DateTime provider is not a TestableDateTimeProvider", nameof(_dateTimeProvider));
+		_exposingRequestPipeline = new ExposingPipelineFactory<ITransportConfiguration>(settings);
 
 		_syncCall = (t, r) => t.Request<VirtualResponse>(
 			path: RootPath,
@@ -52,7 +53,7 @@ public class VirtualizedCluster
 
 	public VirtualClusterRequestInvoker Connection => RequestHandler.Configuration.Connection as VirtualClusterRequestInvoker;
 	public NodePool ConnectionPool => RequestHandler.Configuration.NodePool;
-	public ITransport<ITransportConfiguration> RequestHandler => _exposingRequestPipeline?.RequestHandler;
+	public ITransport<ITransportConfiguration> RequestHandler => _exposingRequestPipeline?.Transport;
 
 	public VirtualizedCluster TransportProxiesTo(
 		Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> sync,

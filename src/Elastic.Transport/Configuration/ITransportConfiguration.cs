@@ -46,6 +46,13 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	/// </summary>
 	ProductRegistration ProductRegistration { get; }
 
+	/// Allows you to wrap calls to <see cref="DateTime.Now"/>, mainly for testing purposes to not have to rely
+	/// on the wall clock
+	DateTimeProvider DateTimeProvider { get; }
+
+	/// In charge of create a new <see cref="RequestPipeline" />
+	RequestPipelineFactory PipelineProvider { get; }
+
 	/// <summary>
 	/// The time to put dead nodes out of rotation (this will be multiplied by the number of times they've been dead)
 	/// </summary>

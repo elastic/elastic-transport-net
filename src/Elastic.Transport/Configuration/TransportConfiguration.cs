@@ -88,9 +88,14 @@ public record TransportConfiguration : ITransportConfiguration
 		NodePool = nodePool;
 		ProductRegistration = productRegistration ?? DefaultProductRegistration.Default;
 		Connection = invoker ?? new HttpRequestInvoker();
-		Accept = productRegistration?.DefaultMimeType;
 		RequestResponseSerializer = serializer ?? new LowLevelRequestResponseSerializer();
+		DateTimeProvider = nodePool.DateTimeProvider;
+		MetaHeaderProvider = productRegistration?.MetaHeaderProvider;
+		UrlFormatter = new UrlFormatter(this);
 
+		PipelineProvider = DefaultRequestPipelineFactory.Default;
+
+		Accept = productRegistration?.DefaultMimeType;
 		ConnectionLimit = DefaultConnectionLimit;
 		DnsRefreshTimeout = DefaultDnsRefreshTimeout;
 		MemoryStreamFactory = DefaultMemoryStreamFactory;
@@ -98,8 +103,6 @@ public record TransportConfiguration : ITransportConfiguration
 		SniffsOnStartup = true;
 		SniffInformationLifeSpan = TimeSpan.FromHours(1);
 
-		MetaHeaderProvider = productRegistration?.MetaHeaderProvider;
-		UrlFormatter = new UrlFormatter(this);
 		StatusCodeToResponseSuccess = ProductRegistration.HttpStatusCodeClassifier;
 		UserAgent = UserAgent.Create(ProductRegistration.Name, ProductRegistration.GetType());
 
@@ -118,6 +121,10 @@ public record TransportConfiguration : ITransportConfiguration
 		if (config is null)
 			throw new ArgumentNullException(nameof(config));
 
+		// it's important url formatter is repointed to the new instance of ITransportConfiguration
+		UrlFormatter = new UrlFormatter(this);
+
+
 		Accept = config.Accept;
 		AllowedStatusCodes = config.AllowedStatusCodes;
 		Authentication = config.Authentication;
@@ -127,6 +134,7 @@ public record TransportConfiguration : ITransportConfiguration
 		Connection = config.Connection;
 		ConnectionLimit = config.ConnectionLimit;
 		ContentType = config.ContentType;
+		DateTimeProvider = config.DateTimeProvider;
 		DeadTimeout = config.DeadTimeout;
 		DisableAuditTrail = config.DisableAuditTrail;
 		DisableAutomaticProxyDetection = config.DisableAutomaticProxyDetection;
@@ -154,6 +162,7 @@ public record TransportConfiguration : ITransportConfiguration
 		OpaqueId = config.OpaqueId;
 		ParseAllHeaders = config.ParseAllHeaders;
 		PingTimeout = config.PingTimeout;
+		PipelineProvider = config.PipelineProvider;
 		PrettyJson = config.PrettyJson;
 		ProductRegistration = config.ProductRegistration;
 		ProxyAddress = config.ProxyAddress;
@@ -173,7 +182,6 @@ public record TransportConfiguration : ITransportConfiguration
 		StatusCodeToResponseSuccess = config.StatusCodeToResponseSuccess;
 		ThrowExceptions = config.ThrowExceptions;
 		TransferEncodingChunked = config.TransferEncodingChunked;
-		UrlFormatter = config.UrlFormatter;
 		UserAgent = config.UserAgent;
 	}
 
@@ -203,7 +211,12 @@ public record TransportConfiguration : ITransportConfiguration
 	public IRequestInvoker Connection { get; }
 	/// <inheritdoc />
 	public Serializer RequestResponseSerializer { get; }
+	/// <inheritdoc />
+	public DateTimeProvider DateTimeProvider { get; }
 
+
+	/// <inheritdoc />
+	public RequestPipelineFactory PipelineProvider { get; init; }
 
 	/// <inheritdoc />
 	// ReSharper disable UnusedAutoPropertyAccessor.Global

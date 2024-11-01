@@ -8,7 +8,7 @@ using Elastic.Transport.Diagnostics.Auditing;
 
 namespace Elastic.Transport.Diagnostics;
 
-/// <summary> Provides a typed listener to <see cref="AuditEvent"/> events that <see cref="DefaultRequestPipeline"/> emits </summary>
+/// <summary> Provides a typed listener to <see cref="AuditEvent"/> events that <see cref="RequestPipeline"/> emits </summary>
 internal sealed class AuditDiagnosticObserver : TypedDiagnosticObserver<Audit>
 {
 	/// <inheritdoc cref="AuditDiagnosticObserver"/>

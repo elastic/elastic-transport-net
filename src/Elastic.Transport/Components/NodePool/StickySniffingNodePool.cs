@@ -17,12 +17,12 @@ namespace Elastic.Transport;
 public sealed class StickySniffingNodePool : SniffingNodePool
 {
 	/// <inheritdoc cref="StickySniffingNodePool"/>
-	public StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float> nodeScorer, DateTimeProvider dateTimeProvider = null)
-		: base(uris.Select(uri => new Node(uri)), nodeScorer ?? DefaultNodeScore, dateTimeProvider) { }
+	public StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float> nodeScorer)
+		: base(uris.Select(uri => new Node(uri)), nodeScorer ?? DefaultNodeScore) { }
 
 	/// <inheritdoc cref="StickySniffingNodePool"/>
-	public StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, DateTimeProvider dateTimeProvider = null)
-		: base(nodes, nodeScorer ?? DefaultNodeScore, dateTimeProvider) { }
+	public StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer)
+		: base(nodes, nodeScorer ?? DefaultNodeScore) { }
 
 	/// <inheritdoc cref="NodePool.SupportsPinging"/>
 	public override bool SupportsPinging => true;
@@ -31,7 +31,7 @@ public sealed class StickySniffingNodePool : SniffingNodePool
 	public override bool SupportsReseeding => true;
 
 	/// <inheritdoc cref="NodePool.CreateView"/>
-	public override IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null)
+	public override IEnumerable<Node> CreateView(Auditor? auditor)
 	{
 		var nodes = AliveNodes;
 
@@ -40,7 +40,7 @@ public sealed class StickySniffingNodePool : SniffingNodePool
 			var globalCursor = Interlocked.Increment(ref GlobalCursor);
 
 			//could not find a suitable node retrying on first node off globalCursor
-			yield return RetryInternalNodes(globalCursor, audit);
+			yield return RetryInternalNodes(globalCursor, auditor);
 
 			yield break;
 		}
@@ -51,7 +51,7 @@ public sealed class StickySniffingNodePool : SniffingNodePool
 			Interlocked.Exchange(ref GlobalCursor, -1);
 
 		var localCursor = 0;
-		foreach (var aliveNode in SelectAliveNodes(localCursor, nodes, audit))
+		foreach (var aliveNode in SelectAliveNodes(localCursor, nodes, auditor))
 			yield return aliveNode;
 	}
 

@@ -24,17 +24,17 @@ public sealed class ApiCallDetails
 	/// <summary>
 	///
 	/// </summary>>
-	public IEnumerable<Audit> AuditTrail { get; internal set; }
+	public IReadOnlyCollection<Audit>? AuditTrail { get; internal set; }
 
 	/// <summary>
 	///
 	/// </summary>
-	internal IReadOnlyDictionary<string, ThreadPoolStatistics> ThreadPoolStats { get; set; }
+	internal IReadOnlyDictionary<string, ThreadPoolStatistics>? ThreadPoolStats { get; init; }
 
 	/// <summary>
 	///
 	/// </summary>
-	internal IReadOnlyDictionary<TcpState, int> TcpStats { get; set; }
+	internal IReadOnlyDictionary<TcpState, int>? TcpStats { get; init; }
 
 	/// <summary>
 	///
