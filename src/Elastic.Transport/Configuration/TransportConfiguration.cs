@@ -100,7 +100,7 @@ public record TransportConfiguration : ITransportConfiguration
 
 		MetaHeaderProvider = productRegistration?.MetaHeaderProvider;
 		UrlFormatter = new UrlFormatter(this);
-		StatusCodeToResponseSuccess = (m, i) => ProductRegistration.HttpStatusCodeClassifier(m, i);
+		StatusCodeToResponseSuccess = ProductRegistration.HttpStatusCodeClassifier;
 		UserAgent = UserAgent.Create(ProductRegistration.Name, ProductRegistration.GetType());
 
 		if (nodePool is CloudNodePool cloudPool)
