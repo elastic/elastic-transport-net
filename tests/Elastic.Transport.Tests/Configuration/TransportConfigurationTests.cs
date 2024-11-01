@@ -2,9 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using AutoBogus;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using FluentAssertions;
 using Xunit;
+#if !NETFRAMEWORK
+using Soenneker.Utils.AutoBogus;
+using Soenneker.Utils.AutoBogus.Config;
+#endif
 
 namespace Elastic.Transport.Tests.Configuration;
 
@@ -23,10 +28,11 @@ public class TransportConfigurationTests
 	[Fact]
 	public void CopiesAllProperties()
 	{
+		var autoFaker = new AutoFaker<TransportConfiguration>();
+		autoFaker.RuleFor(x => x.BootstrapLock, f => new SemaphoreSlim(1, 1));
+		autoFaker.RuleFor(x => x.ClientCertificates, f => new X509CertificateCollection());
 
-		var faker = AutoFaker.Create(builder => {});
-
-		var config = faker.Generate<TransportConfiguration>();
+		var config = autoFaker.Generate();
 		var newConfig = new TransportConfiguration(config);
 
 		config.Accept.Should().NotBeEmpty();

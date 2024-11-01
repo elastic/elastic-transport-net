@@ -17,8 +17,8 @@ namespace Elastic.Transport.Tests;
 
 public class ResponseBuilderDisposeTests
 {
-	private readonly ITransportConfiguration _settings = InMemoryConnectionFactory.Create().DisableDirectStreaming(false);
-	private readonly ITransportConfiguration _settingsDisableDirectStream = InMemoryConnectionFactory.Create().DisableDirectStreaming();
+	private readonly ITransportConfiguration _settings = InMemoryConnectionFactory.Create() with { DisableDirectStreaming = false };
+	private readonly ITransportConfiguration _settingsDisableDirectStream = InMemoryConnectionFactory.Create() with { DisableDirectStreaming = true };
 
 	[Fact]
 	public async Task StreamResponseWithPotentialBody_StreamIsNotDisposed() =>
@@ -68,12 +68,13 @@ public class ResponseBuilderDisposeTests
 		var memoryStreamFactory = new TrackMemoryStreamFactory();
 
 		if (skipStatusCode > -1)
-			config = InMemoryConnectionFactory.Create(productRegistration)
-				.DisableDirectStreaming(disableDirectStreaming)
-				.SkipDeserializationForStatusCodes(skipStatusCode);
+			config = InMemoryConnectionFactory.Create(productRegistration) with
+			{
+				DisableDirectStreaming = disableDirectStreaming, SkipDeserializationForStatusCodes = [skipStatusCode]
+			};
+
 		else if (productRegistration is not null)
-			config = InMemoryConnectionFactory.Create(productRegistration)
-				.DisableDirectStreaming(disableDirectStreaming);
+			config = InMemoryConnectionFactory.Create(productRegistration) with { DisableDirectStreaming = disableDirectStreaming, };
 		else
 			config = disableDirectStreaming ? _settingsDisableDirectStream : _settings;
 

@@ -33,13 +33,13 @@ public class OpenTelemetryTests : AssemblyServerTestsBase
 	{
 		var requestInvoker = new TrackingRequestInvoker();
 		var nodePool = new SingleNodePool(Server.Uri);
-		var config = new TransportConfigurationDescriptor(nodePool, requestInvoker, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
+		var config = new TransportConfiguration(nodePool, requestInvoker, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
 		var transport = new DistributedTransport(config);
 
 		var mre = new ManualResetEvent(false);
 
 		var callCounter = 0;
-		using var listener = new ActivityListener()
+		using var listener = new ActivityListener
 		{
 			ActivityStarted = _ => { },
 			ActivityStopped = activity =>
