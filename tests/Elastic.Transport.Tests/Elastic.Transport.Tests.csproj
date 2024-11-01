@@ -5,7 +5,6 @@
     <IsTestProject>True</IsTestProject>
     <IsPackable>false</IsPackable>
     <NoWarn>CS8002</NoWarn>
-    <NoWarn>CS8002</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

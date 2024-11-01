@@ -35,7 +35,7 @@ public class ApiCompatibilityHeaderTests : AssemblyServerTestsBase
 		});
 
 		var nodePool = new SingleNodePool(Server.Uri);
-		var config = new TransportConfigurationDescriptor(nodePool, requestInvoker, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
+		var config = new TransportConfiguration(nodePool, requestInvoker, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
 		var transport = new DistributedTransport(config);
 
 		var response = await transport.PostAsync<StringResponse>("/metaheader", PostData.String("{}"));
