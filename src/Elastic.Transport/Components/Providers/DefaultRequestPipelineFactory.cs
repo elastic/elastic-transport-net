@@ -7,8 +7,7 @@ namespace Elastic.Transport;
 /// <summary>
 /// The default implementation for <see cref="RequestPipeline"/> that returns <see cref="DefaultRequestPipeline"/>
 /// </summary>
-internal sealed class DefaultRequestPipelineFactory
-	: RequestPipelineFactory
+internal sealed class DefaultRequestPipelineFactory : RequestPipelineFactory
 {
 	/// <summary>
 	/// returns instances of <see cref="DefaultRequestPipeline"/>

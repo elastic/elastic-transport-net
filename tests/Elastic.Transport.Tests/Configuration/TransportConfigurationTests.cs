@@ -9,7 +9,6 @@ using FluentAssertions;
 using Xunit;
 #if !NETFRAMEWORK
 using Soenneker.Utils.AutoBogus;
-using Soenneker.Utils.AutoBogus.Config;
 #endif
 
 namespace Elastic.Transport.Tests.Configuration;

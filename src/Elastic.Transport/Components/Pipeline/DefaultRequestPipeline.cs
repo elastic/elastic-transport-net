@@ -405,15 +405,12 @@ public class DefaultRequestPipeline : RequestPipeline
 
 		TransportResponse response;
 
-		//TODO remove
-		var requestData = new RequestData(_settings, null, null);
-
 		try
 		{
 			if (isAsync)
-				response = await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, requestData, cancellationToken).ConfigureAwait(false);
+				response = await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, _requestData, cancellationToken).ConfigureAwait(false);
 			else
-				response = _productRegistration.Ping(_requestInvoker, pingEndpoint, requestData);
+				response = _productRegistration.Ping(_requestInvoker, pingEndpoint, _requestData);
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 

@@ -74,10 +74,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 		_productRegistration = configurationValues.ProductRegistration;
 		Configuration = configurationValues;
+		TransportRequestData = new RequestData(Configuration);
 		PipelineProvider = pipelineProvider ?? new DefaultRequestPipelineFactory();
 		DateTimeProvider = dateTimeProvider ?? DefaultDateTimeProvider.Default;
 		MemoryStreamFactory = configurationValues.MemoryStreamFactory;
-		TransportRequestData = new RequestData(Configuration, null, null);
 	}
 
 	private DateTimeProvider DateTimeProvider { get; }
