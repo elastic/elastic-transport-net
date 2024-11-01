@@ -14,7 +14,7 @@ internal sealed class AuditDiagnosticObserver : TypedDiagnosticObserver<Audit>
 	/// <inheritdoc cref="AuditDiagnosticObserver"/>
 	public AuditDiagnosticObserver(
 		Action<KeyValuePair<string, Audit>> onNext,
-		Action<Exception> onError = null,
-		Action onCompleted = null
+		Action<Exception>? onError = null,
+		Action? onCompleted = null
 	) : base(onNext, onError, onCompleted) { }
 }

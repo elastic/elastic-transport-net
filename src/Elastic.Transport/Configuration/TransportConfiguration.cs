@@ -124,7 +124,6 @@ public record TransportConfiguration : ITransportConfiguration
 		// it's important url formatter is repointed to the new instance of ITransportConfiguration
 		UrlFormatter = new UrlFormatter(this);
 
-
 		Accept = config.Accept;
 		AllowedStatusCodes = config.AllowedStatusCodes;
 		Authentication = config.Authentication;

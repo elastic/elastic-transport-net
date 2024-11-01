@@ -173,9 +173,6 @@ public class RequestPipeline
 	{
 		using var audit = auditor?.Add(HealthyResponse, _dateTimeProvider, endpoint.Node);
 
-		if (audit is not null)
-			audit.PathAndQuery = endpoint.PathAndQuery;
-
 		try
 		{
 			TResponse response;
@@ -417,9 +414,6 @@ public class RequestPipeline
 
 		using var audit = auditor?.Add(PingSuccess, _dateTimeProvider, node);
 
-		if (audit is not null)
-			audit.PathAndQuery = pingEndpoint.PathAndQuery;
-
 		TransportResponse response;
 
 		try
@@ -467,9 +461,6 @@ public class RequestPipeline
 		{
 			var sniffEndpoint = _productRegistration.CreateSniffEndpoint(node, PingAndSniffRequestConfiguration, _settings);
 			using var audit = auditor?.Add(SniffSuccess, _dateTimeProvider, node);
-
-			if (audit is not null)
-				audit.PathAndQuery = sniffEndpoint.PathAndQuery;
 
 			Tuple<TransportResponse, IReadOnlyCollection<Node>> result;
 

@@ -27,11 +27,6 @@ public sealed class Audit
 	public Node? Node { get; internal init; }
 
 	/// <summary>
-	/// The path of the request.
-	/// </summary>
-	public string PathAndQuery { get; internal set; }
-
-	/// <summary>
 	/// The end date and time of the audit.
 	/// </summary>
 	public DateTimeOffset Ended { get; internal set; }
@@ -55,6 +50,8 @@ public sealed class Audit
 		var tookString = string.Empty;
 		if (took >= TimeSpan.Zero) tookString = $" Took: {took}";
 
-		return Node == null ? $"Event: {Event.GetStringValue()}{tookString}" : $"Event: {Event.GetStringValue()} Node: {Node?.Uri} NodeAlive: {Node?.IsAlive}Took: {tookString}";
+		return Node == null
+			? $"Event: {Event.GetStringValue()}{tookString}"
+			: $"Event: {Event.GetStringValue()} Node: {Node?.Uri} NodeAlive: {Node?.IsAlive}Took: {tookString}";
 	}
 }
