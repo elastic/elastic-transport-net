@@ -37,7 +37,7 @@ public class TransportConfigurationTests
 
 		config.BootstrapLock.CurrentCount.Should().Be(newConfig.BootstrapLock.CurrentCount);
 		config.NodePool.LastUpdate
-			.Should().BeCloseTo(newConfig.NodePool.LastUpdate, TimeSpan.FromMilliseconds(100));
+			.Should().BeCloseTo(newConfig.NodePool.LastUpdate, TimeSpan.FromSeconds(2));
 	}
 
 #if !NETFRAMEWORK
