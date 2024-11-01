@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using FluentAssertions;
@@ -22,6 +23,22 @@ public class TransportConfigurationTests
 		var newConfig = new TransportConfiguration(config);
 
 		config.Should().BeEquivalentTo(newConfig);
+	}
+
+	[Fact]
+	public void SameDefaults()
+	{
+		ITransportConfiguration config = new TransportConfiguration();
+		ITransportConfiguration newConfig = new TransportConfigurationDescriptor();
+
+		config.Should().BeEquivalentTo(newConfig, c => c
+			.Excluding(p=>p.BootstrapLock)
+			.Excluding(p=>p.NodePool.LastUpdate)
+		);
+
+		config.BootstrapLock.CurrentCount.Should().Be(newConfig.BootstrapLock.CurrentCount);
+		config.NodePool.LastUpdate
+			.Should().BeCloseTo(newConfig.NodePool.LastUpdate, TimeSpan.FromMilliseconds(100));
 	}
 
 #if !NETFRAMEWORK

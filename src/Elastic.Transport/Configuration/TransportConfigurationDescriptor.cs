@@ -90,7 +90,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_metaHeaderProvider = productRegistration?.MetaHeaderProvider;
 
 		_urlFormatter = new UrlFormatter(this);
-		_statusCodeToResponseSuccess = (m, i) => _productRegistration.HttpStatusCodeClassifier(m, i);
+		_statusCodeToResponseSuccess = _productRegistration.HttpStatusCodeClassifier;
 		_userAgent = Transport.UserAgent.Create(_productRegistration.Name, _productRegistration.GetType());
 
 		if (nodePool is CloudNodePool cloudPool)
