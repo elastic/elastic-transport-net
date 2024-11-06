@@ -21,8 +21,10 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	/// <summary> Provides a <see cref="SemaphoreSlim"/> to transport implementations that need to limit access to a resource</summary>
 	SemaphoreSlim BootstrapLock { get; }
 
-	/// <summary> The connection abstraction behind which all actual IO happens</summary>
-	IRequestInvoker Connection { get; }
+	/// <summary>
+	/// The abstraction behind which all actual IO happens.
+	/// </summary>
+	IRequestInvoker RequestInvoker { get; }
 
 	/// <summary>
 	/// Limits the number of concurrent connections that can be opened to an endpoint. Defaults to 80 (see
@@ -201,4 +203,9 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	/// about the client and runtime.
 	/// </summary>
 	bool DisableMetaHeader { get; }
+
+	/// <summary>
+	/// Additional response builders to apply.
+	/// </summary>
+	IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; }
 }

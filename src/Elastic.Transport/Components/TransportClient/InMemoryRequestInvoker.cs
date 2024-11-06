@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Elastic.Transport.Products;
 
 namespace Elastic.Transport;
 
@@ -28,17 +29,31 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	/// Every request will succeed with this overload, note that it won't actually return mocked responses
 	/// so using this overload might fail if you are using it to test high level bits that need to deserialize the response.
 	/// </summary>
-	public InMemoryRequestInvoker() => _statusCode = 200;
+	public InMemoryRequestInvoker() : this(null) { }
+
+	/// <inheritdoc cref="InMemoryRequestInvoker()"/>
+	public InMemoryRequestInvoker(ProductRegistration? productRegistration)
+	{
+		_statusCode = 200;
+
+		productRegistration ??= DefaultProductRegistration.Default;
+		ResponseFactory = new DefaultResponseFactory(new TransportConfiguration(null, productRegistration));
+	}
 
 	/// <inheritdoc cref="InMemoryRequestInvoker"/>
-	public InMemoryRequestInvoker(byte[] responseBody, int statusCode = 200, Exception? exception = null, string contentType = RequestData.DefaultMimeType, Dictionary<string, IEnumerable<string>> headers = null)
+	public InMemoryRequestInvoker(byte[] responseBody, int statusCode = 200, Exception? exception = null, string contentType = RequestData.DefaultContentType, Dictionary<string, IEnumerable<string>> headers = null)
 	{
 		_responseBody = responseBody;
 		_statusCode = statusCode;
 		_exception = exception;
 		_contentType = contentType;
 		_headers = headers;
+
+		ResponseFactory = new DefaultResponseFactory(new TransportConfiguration(null, DefaultProductRegistration.Default));
 	}
+
+	/// <inheritdoc />
+	public ResponseFactory ResponseFactory { get; }
 
 	void IDisposable.Dispose() { }
 
@@ -86,8 +101,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 		var sc = statusCode ?? _statusCode;
 		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
 
-		return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
-			.ToResponse<TResponse>(endpoint, requestData, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? RequestData.DefaultMimeType, body?.Length ?? 0, null, null);
+		return ResponseFactory.Create<TResponse>(endpoint, requestData, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? RequestData.DefaultContentType, body?.Length ?? 0, null, null);
 	}
 
 	/// <inheritdoc cref="BuildResponse{TResponse}"/>>
@@ -116,8 +130,8 @@ public class InMemoryRequestInvoker : IRequestInvoker
 
 		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
 
-		return await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder
-			.ToResponseAsync<TResponse>(endpoint, requestData, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
+		return await ResponseFactory
+			.CreateAsync<TResponse>(endpoint, requestData, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
 			.ConfigureAwait(false);
 	}
 }

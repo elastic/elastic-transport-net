@@ -66,7 +66,7 @@ public class ElasticsearchVirtualCluster : VirtualCluster
 		foreach (var node in InternalNodes.Where(n => !ports.Contains(n.Uri.Port)))
 		{
 			var currentFeatures = node.Features.Count == 0 ? ElasticsearchNodeFeatures.Default : node.Features;
-			node.Features = currentFeatures.Except(new[] { ElasticsearchNodeFeatures.MasterEligible }).ToList().AsReadOnly();
+			node.Features = currentFeatures.Except([ElasticsearchNodeFeatures.MasterEligible]).ToList().AsReadOnly();
 		}
 		return this;
 	}
@@ -77,7 +77,7 @@ public class ElasticsearchVirtualCluster : VirtualCluster
 		foreach (var node in InternalNodes.Where(n => ports.Contains(n.Uri.Port)))
 		{
 			var currentFeatures = node.Features.Count == 0 ? ElasticsearchNodeFeatures.Default : node.Features;
-			node.Features = currentFeatures.Except(new[] { ElasticsearchNodeFeatures.HoldsData }).ToList().AsReadOnly();
+			node.Features = currentFeatures.Except([ElasticsearchNodeFeatures.HoldsData]).ToList().AsReadOnly();
 		}
 		return this;
 	}
@@ -88,7 +88,7 @@ public class ElasticsearchVirtualCluster : VirtualCluster
 		foreach (var node in InternalNodes.Where(n => ports.Contains(n.Uri.Port)))
 		{
 			var currentFeatures = node.Features.Count == 0 ? ElasticsearchNodeFeatures.Default : node.Features;
-			node.Features = currentFeatures.Except(new[] { ElasticsearchNodeFeatures.HttpEnabled }).ToList().AsReadOnly();
+			node.Features = currentFeatures.Except([ElasticsearchNodeFeatures.HttpEnabled]).ToList().AsReadOnly();
 		}
 		return this;
 	}

@@ -22,7 +22,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 		*/
 		[Fact] public void ClassNameContainsBaseShouldBeAbstract()
 		{
-			var exceptions = new Type[] { };
+			var exceptions = Array.Empty<Type>();
 
 			var baseClassesNotAbstract = typeof(ITransport<>).Assembly.GetTypes()
 				.Where(t => t.IsClass && !exceptions.Contains(t))
@@ -34,7 +34,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 			baseClassesNotAbstract.Should().BeEmpty();
 		}
 
-		private List<Type> Scan()
+		private static List<Type> Scan()
 		{
 			var assembly = typeof(ITransport<>).Assembly;
 
@@ -48,12 +48,13 @@ namespace Elastic.Transport.Tests.CodeStandards
 			};
 
 			var types = assembly.GetTypes();
-			var typesNotInNestNamespace = types
+			var typesNotInTransportNamespace = types
 				.Where(t => t != null)
 				.Where(t => t.Namespace != null)
 				.Where(t => !exceptions.Contains(t))
 				.ToList();
-			return typesNotInNestNamespace;
+
+			return typesNotInTransportNamespace;
 		}
 
 		[Fact] public void AllTransportTypesAreInTheRoot()

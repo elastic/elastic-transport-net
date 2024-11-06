@@ -32,8 +32,7 @@ public class VirtualizedCluster
 			path: RootPath,
 			postData: PostData.Serializable(new { }),
 			openTelemetryData: default,
-			localConfiguration: r?.Invoke(new RequestConfigurationDescriptor()),
-			responseBuilder: null
+			localConfiguration: r?.Invoke(new RequestConfigurationDescriptor())
 		);
 		_asyncCall = async (t, r) =>
 		{
@@ -43,14 +42,13 @@ public class VirtualizedCluster
 				postData: PostData.Serializable(new { }),
 				openTelemetryData: default,
 				localConfiguration: r?.Invoke(new RequestConfigurationDescriptor()),
-				responseBuilder: null,
 				CancellationToken.None
 			).ConfigureAwait(false);
 			return res;
 		};
 	}
 
-	public VirtualClusterRequestInvoker Connection => RequestHandler.Configuration.Connection as VirtualClusterRequestInvoker;
+	public VirtualClusterRequestInvoker Connection => RequestHandler.Configuration.RequestInvoker as VirtualClusterRequestInvoker;
 	public NodePool ConnectionPool => RequestHandler.Configuration.NodePool;
 	public ITransport<ITransportConfiguration> RequestHandler => _exposingRequestPipeline?.RequestHandler;
 

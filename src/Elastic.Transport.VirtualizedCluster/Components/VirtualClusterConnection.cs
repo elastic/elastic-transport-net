@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.VirtualizedCluster.Products;
@@ -101,6 +102,8 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 	}
 
+	public ResponseFactory ResponseFactory => _inMemoryRequestInvoker.ResponseFactory;
+
 	private void UpdateCluster(VirtualCluster cluster)
 	{
 		lock (Lock)
@@ -109,7 +112,6 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			_calls = cluster.Nodes.ToDictionary(n => n.Uri.Port, v => new State());
 			_productRegistration = cluster.ProductRegistration;
 		}
-
 	}
 
 	private bool IsSniffRequest(Endpoint endpoint) => _productRegistration.IsSniffRequest(endpoint);
@@ -173,7 +175,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 		catch (TheException e)
 		{
-			return requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>(endpoint, requestData, postData, e, null, null, Stream.Null, null, -1, null, null);
+			return ResponseFactory.Create<TResponse>(endpoint, requestData, postData, e, null, null, Stream.Null, null, -1, null, null);
 		}
 	}
 
@@ -326,3 +328,4 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		public int Successes;
 	}
 }
+#nullable restore

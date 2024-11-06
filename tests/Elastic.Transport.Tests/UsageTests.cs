@@ -15,7 +15,7 @@ public class UsageTests
 {
 	public void Usage()
 	{
-		var pool = new StaticNodePool(new[] {new Node(new Uri("http://localhost:9200"))});
+		var pool = new StaticNodePool([new Node(new Uri("http://localhost:9200"))]);
 		var requestInvoker = new HttpRequestInvoker();
 		var serializer = LowLevelRequestResponseSerializer.Instance;
 		var product = ElasticsearchProductRegistration.Default;

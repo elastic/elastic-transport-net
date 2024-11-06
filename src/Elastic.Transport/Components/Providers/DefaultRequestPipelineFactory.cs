@@ -13,5 +13,5 @@ internal sealed class DefaultRequestPipelineFactory : RequestPipelineFactory
 	/// returns instances of <see cref="DefaultRequestPipeline"/>
 	/// </summary>
 	public override RequestPipeline Create(RequestData requestData, DateTimeProvider dateTimeProvider) =>
-			new DefaultRequestPipeline(requestData, dateTimeProvider);
+		new DefaultRequestPipeline(requestData, dateTimeProvider);
 }

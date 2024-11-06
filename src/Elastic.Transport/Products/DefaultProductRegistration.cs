@@ -59,8 +59,8 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	/// <inheritdoc cref="ProductRegistration.MetaHeaderProvider"/>
 	public override MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
 
-	/// <inheritdoc cref="ProductRegistration.DefaultMimeType"/>
-	public override string? DefaultMimeType => null;
+	/// <inheritdoc cref="ProductRegistration.DefaultContentType"/>
+	public override string? DefaultContentType => null;
 
 	/// <inheritdoc cref="ProductRegistration.ProductAssemblyVersion"/>
 	public override string ProductAssemblyVersion { get; }
@@ -104,7 +104,7 @@ public sealed class DefaultProductRegistration : ProductRegistration
 		throw new NotImplementedException();
 
 	/// <inheritdoc/>
-	public override IReadOnlyCollection<string> DefaultHeadersToParse() => Array.Empty<string>();
+	public override IReadOnlyCollection<string> DefaultHeadersToParse() => [];
 
 	/// <inheritdoc/>
 	public override Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails) => null;

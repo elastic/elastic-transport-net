@@ -25,8 +25,6 @@ public class DefaultRequestPipeline : RequestPipeline
 	private readonly MemoryStreamFactory _memoryStreamFactory;
 	private readonly Func<Node, bool> _nodePredicate;
 	private readonly ProductRegistration _productRegistration;
-	private readonly ResponseBuilder _responseBuilder;
-
 	private RequestConfiguration? _pingAndSniffRequestConfiguration;
 	private List<Audit>? _auditTrail;
 	private readonly ITransportConfiguration _settings;
@@ -36,13 +34,11 @@ public class DefaultRequestPipeline : RequestPipeline
 	{
 		_requestData = requestData;
 		_settings = requestData.ConnectionSettings;
-
 		_nodePool = requestData.ConnectionSettings.NodePool;
-		_requestInvoker = requestData.ConnectionSettings.Connection;
+		_requestInvoker = requestData.ConnectionSettings.RequestInvoker;
 		_dateTimeProvider = dateTimeProvider;
 		_memoryStreamFactory = requestData.MemoryStreamFactory;
 		_productRegistration = requestData.ConnectionSettings.ProductRegistration;
-		_responseBuilder = _productRegistration.ResponseBuilder;
 		_nodePredicate = requestData.ConnectionSettings.NodePredicate ?? _productRegistration.NodePredicate;
 
 		StartedOn = dateTimeProvider.Now();
@@ -148,8 +144,8 @@ public class DefaultRequestPipeline : RequestPipeline
 		{
 			//make sure we copy over the error body in case we disabled direct streaming.
 			var s = callDetails?.ResponseBodyInBytes == null ? Stream.Null : _memoryStreamFactory.Create(callDetails.ResponseBodyInBytes);
-			var m = callDetails?.ResponseMimeType ?? RequestData.DefaultMimeType;
-			response = _responseBuilder.ToResponse<TResponse>(endpoint, data, postData, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
+			var m = callDetails?.ResponseContentType ?? RequestData.DefaultContentType;
+			response = _requestInvoker.ResponseFactory.Create<TResponse>(endpoint, data, postData, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
 		}
 
 		response.ApiCallDetails.AuditTrail = AuditTrail;
@@ -447,8 +443,9 @@ public class DefaultRequestPipeline : RequestPipeline
 		foreach (var node in SniffNodes)
 		{
 			var sniffEndpoint = _productRegistration.CreateSniffEndpoint(node, PingAndSniffRequestConfiguration, _settings);
+			
 			//TODO remove
-			var requestData = new RequestData(_settings, null, null);
+			var requestData = new RequestData(_settings, null);
 
 			using var audit = Audit(SniffSuccess, node);
 

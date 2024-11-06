@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net481</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <NoWarn>CS8002</NoWarn>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Transport\Elastic.Transport.csproj" />
+  </ItemGroup>
+
+</Project>

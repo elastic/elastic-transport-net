@@ -26,7 +26,7 @@ public abstract class ProductRegistration
 	/// <summary>
 	/// The default MIME type used for Accept and Content-Type headers for requests.
 	/// </summary>
-	public abstract string DefaultMimeType { get; }
+	public abstract string DefaultContentType { get; }
 
 	/// <summary>
 	/// The name of the current product utilizing <see cref="ITransport{TConfiguration}"/>
@@ -100,7 +100,7 @@ public abstract class ProductRegistration
 	public abstract bool NodePredicate(Node node);
 
 	/// <summary>
-	/// Used by <see cref="ResponseBuilder"/> to determine if it needs to return true or false for
+	/// Used by the <see cref="ResponseFactory"/> to determine if it needs to return true or false for
 	/// <see cref="ApiCallDetails.HasSuccessfulStatusCode"/>
 	/// </summary>
 	public abstract bool HttpStatusCodeClassifier(HttpMethod method, int statusCode);
@@ -137,8 +137,8 @@ public abstract class ProductRegistration
 	/// </summary>
 	public abstract Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails);
 
-  /// <summary>
-	/// Allows product implementations to take full control of building transport responses if needed.
+	/// <summary>
+	/// 
 	/// </summary>
-	public virtual ResponseBuilder ResponseBuilder => ResponseBuilder.Default;
+	public virtual IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } = [new DefaultResponseBuilder()];
 }

@@ -5,10 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using Elastic.Transport.Diagnostics;
-using Elastic.Transport.Diagnostics.Auditing;
 using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
@@ -25,18 +22,16 @@ public sealed record RequestData
 	private const string OpaqueIdHeader = "X-Opaque-Id";
 
 	/// The default MIME type used for request and response payloads.
-	public const string DefaultMimeType = "application/json";
+	public const string DefaultContentType = "application/json";
 
 	/// The security header used to run requests as a different user.
 	public const string RunAsSecurityHeader = "es-security-runas-user";
 
 	/// <inheritdoc cref="RequestData"/>
-	public RequestData(ITransportConfiguration global, IRequestConfiguration? local = null, CustomResponseBuilder? customResponseBuilder = null)
+	public RequestData(ITransportConfiguration global, IRequestConfiguration? local = null)
 	{
-		CustomResponseBuilder = customResponseBuilder;
 		ConnectionSettings = global;
 		MemoryStreamFactory = global.MemoryStreamFactory;
-
 		SkipDeserializationForStatusCodes = global.SkipDeserializationForStatusCodes ?? [];
 		DnsRefreshTimeout = global.DnsRefreshTimeout;
 		MetaHeaderProvider = global.MetaHeaderProvider;
@@ -47,21 +42,17 @@ public sealed record RequestData
 		UserAgent = global.UserAgent;
 		KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
 		KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
-
 		RunAs = local?.RunAs ?? global.RunAs;
-
 		DisableDirectStreaming = local?.DisableDirectStreaming ?? global.DisableDirectStreaming ?? false;
-
 		ForceNode = global.ForceNode ?? local?.ForceNode;
 		MaxRetries = ForceNode != null ? 0
 			: Math.Min(global.MaxRetries.GetValueOrDefault(int.MaxValue), global.NodePool.MaxRetries);
 		DisableSniff = global.DisableSniff ?? local?.DisableSniff ?? false;
 		DisablePings = global.DisablePings ?? !global.NodePool.SupportsPinging;
-
 		HttpPipeliningEnabled = local?.HttpPipeliningEnabled ?? global.HttpPipeliningEnabled ?? true;
 		HttpCompression = global.EnableHttpCompression ?? local?.EnableHttpCompression ?? true;
-		ContentType = local?.ContentType ?? global.Accept ?? DefaultMimeType;
-		Accept = local?.Accept ?? global.Accept ?? DefaultMimeType;
+		ContentType = local?.ContentType ?? global.Accept ?? DefaultContentType;
+		Accept = local?.Accept ?? global.Accept ?? DefaultContentType;
 		ThrowExceptions = local?.ThrowExceptions ?? global.ThrowExceptions ?? false;
 		RequestTimeout = local?.RequestTimeout ?? global.RequestTimeout ?? RequestConfiguration.DefaultRequestTimeout;
 		RequestMetaData = local?.RequestMetaData?.Items ?? EmptyReadOnly<string, string>.Dictionary;
@@ -85,17 +76,16 @@ public sealed record RequestData
 
 		if (local?.Headers != null)
 		{
-			Headers ??= new NameValueCollection();
+			Headers ??= [];
 			foreach (var key in local.Headers.AllKeys)
 				Headers[key] = local.Headers[key];
 		}
 
 		if (!string.IsNullOrEmpty(local?.OpaqueId))
 		{
-			Headers ??= new NameValueCollection();
+			Headers ??= [];
 			Headers.Add(OpaqueIdHeader, local.OpaqueId);
 		}
-
 	}
 
 	/// <inheritdoc cref="ITransportConfiguration.MemoryStreamFactory"/>
@@ -120,11 +110,8 @@ public sealed record RequestData
 	public UserAgent UserAgent { get; }
 	/// <inheritdoc cref="ITransportConfiguration.DnsRefreshTimeout"/>
 	public TimeSpan DnsRefreshTimeout { get; }
-
-
 	/// <inheritdoc cref="IRequestConfiguration.RequestMetaData"/>
 	public IReadOnlyDictionary<string, string> RequestMetaData { get; }
-
 	/// <inheritdoc cref="IRequestConfiguration.Accept"/>
 	public string Accept { get; }
 	/// <inheritdoc cref="IRequestConfiguration.AllowedStatusCodes"/>
@@ -135,8 +122,6 @@ public sealed record RequestData
 	public X509CertificateCollection? ClientCertificates { get; }
 	/// <inheritdoc cref="ITransportConfiguration"/>
 	public ITransportConfiguration ConnectionSettings { get; }
-	/// <inheritdoc cref="CustomResponseBuilder"/>
-	public CustomResponseBuilder? CustomResponseBuilder { get; }
 	/// <inheritdoc cref="IRequestConfiguration.ResponseHeadersToParse"/>
 	public HeadersList? ResponseHeadersToParse { get; }
 	/// <inheritdoc cref="IRequestConfiguration.Headers"/>
@@ -167,12 +152,10 @@ public sealed record RequestData
 	public bool EnableTcpStats { get; }
 	/// <inheritdoc cref="IRequestConfiguration.EnableThreadPoolStats"/>
 	public bool EnableThreadPoolStats { get; }
-
 	/// <inheritdoc cref="IRequestConfiguration.MaxRetries"/>
 	public int MaxRetries { get; }
 	/// <inheritdoc cref="IRequestConfiguration.DisableSniff"/>
 	public bool DisableSniff { get; }
 	/// <inheritdoc cref="IRequestConfiguration.DisablePings"/>
-	public bool DisablePings { get;  }
-
+	public bool DisablePings { get; }
 }
