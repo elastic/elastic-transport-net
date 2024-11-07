@@ -42,8 +42,23 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		if (!IsMono) HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
 	}
 
-	/// <inheritdoc cref="HttpWebRequestInvoker"/>>
-	public HttpWebRequestInvoker() { }
+	/// <summary>
+	/// Create a new instance of the <see cref="HttpWebRequestInvoker"/>.
+	/// </summary>
+	public HttpWebRequestInvoker() : this(new TransportConfiguration()) { }
+
+	/// <summary>
+	/// Create a new instance of the <see cref="HttpWebRequestInvoker"/>.
+	/// </summary>
+	/// <param name="transportConfiguration">The <see cref="ITransportConfiguration"/> from which response builders can be loaded.</param>
+	public HttpWebRequestInvoker(ITransportConfiguration transportConfiguration) :
+		this(new DefaultResponseFactory(transportConfiguration))
+	{ }
+
+	internal HttpWebRequestInvoker(ResponseFactory responseFactory) => ResponseFactory = responseFactory;
+
+	/// <inheritdoc />
+	public ResponseFactory ResponseFactory { get; }
 
 	internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
 
@@ -66,7 +81,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		int? statusCode = null;
 		Stream responseStream = null;
 		Exception ex = null;
-		string mimeType = null;
+		string contentType = null;
 		long contentLength = -1;
 		IDisposable receivedResponse = DiagnosticSources.SingletonDisposable;
 		ReadOnlyDictionary<TcpState, int> tcpStats = null;
@@ -146,7 +161,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 				receivedResponse = httpWebResponse;
 
-				HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
+				HandleResponse(httpWebResponse, out statusCode, out responseStream, out contentType);
 				responseHeaders = ParseHeaders(requestData, httpWebResponse, responseHeaders);
 				contentLength = httpWebResponse.ContentLength;
 			}
@@ -155,7 +170,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			ex = e;
 			if (e.Response is HttpWebResponse httpWebResponse)
-				HandleResponse(httpWebResponse, out statusCode, out responseStream, out mimeType);
+				HandleResponse(httpWebResponse, out statusCode, out responseStream, out contentType);
 		}
 		finally
 		{
@@ -167,12 +182,12 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			TResponse response;
 
 		if (isAsync)
-			response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-				(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+			response = await ResponseFactory.CreateAsync<TResponse>
+				(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
 					.ConfigureAwait(false);
 		else
-			response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-					(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+			response = ResponseFactory.Create<TResponse>
+					(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
@@ -473,14 +488,14 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		(state as WebRequest)?.Abort();
 	}
 
-	private static void HandleResponse(HttpWebResponse response, out int? statusCode, out Stream responseStream, out string mimeType)
+	private static void HandleResponse(HttpWebResponse response, out int? statusCode, out Stream responseStream, out string contentType)
 	{
 		statusCode = (int)response.StatusCode;
 		responseStream = response.GetResponseStream();
-		mimeType = response.ContentType;
-		// https://github.com/elastic/elasticsearch-net/issues/2311
-		// if stream is null call dispose on response instead.
-		if (responseStream == null || responseStream == Stream.Null) response.Dispose();
+		contentType = response.ContentType;
+
+		if (responseStream == null || responseStream == Stream.Null)
+			response.Dispose();
 	}
 
 }

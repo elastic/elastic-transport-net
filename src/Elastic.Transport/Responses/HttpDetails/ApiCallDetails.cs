@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.NetworkInformation;
 using System.Text;
 using Elastic.Transport.Diagnostics;
@@ -22,22 +23,22 @@ public sealed class ApiCallDetails
 	internal ApiCallDetails() { }
 
 	/// <summary>
-	///
+	/// Access to the collection of <see cref="Audit"/> events that occurred during the request.
 	/// </summary>>
 	public IReadOnlyCollection<Audit>? AuditTrail { get; internal set; }
 
 	/// <summary>
-	///
+	/// Statistics about the worker and I/O completion port threads at the time of the request.
 	/// </summary>
 	internal IReadOnlyDictionary<string, ThreadPoolStatistics>? ThreadPoolStats { get; init; }
 
 	/// <summary>
-	///
+	/// Statistics about the number of ports in various TCP states at the time of the request.
 	/// </summary>
 	internal IReadOnlyDictionary<TcpState, int>? TcpStats { get; init; }
 
 	/// <summary>
-	///
+	/// Information used to debug the request.
 	/// </summary>
 	public string DebugInformation
 	{
@@ -55,50 +56,60 @@ public sealed class ApiCallDetails
 	}
 
 	/// <summary>
-	///
+	/// The <see cref="HttpMethod"/> used in the request.
 	/// </summary>
 	public HttpMethod HttpMethod { get; internal set; }
 
 	/// <summary>
-	///
+	/// The <see cref="HttpStatusCode"/> of the response.
 	/// </summary>
 	public int? HttpStatusCode { get; internal set; }
 
 	/// <summary>
-	///
+	/// The <see cref="Exception"/> that occurred during the request, othwerwise <c>null</c>.
 	/// </summary>
 	public Exception? OriginalException { get; internal set; }
 
 	/// <summary>
-	///
+	/// The buffered request bytes when using <see cref="IRequestConfiguration.DisableDirectStreaming"/>
+	/// otherwise, <c>null</c>.
 	/// </summary>
-	public byte[] RequestBodyInBytes { get; internal set; }
+	public byte[]? RequestBodyInBytes { get; internal set; }
 
 	/// <summary>
-	///
+	/// The buffered response bytes when using <see cref="IRequestConfiguration.DisableDirectStreaming"/>
+	/// otherwise, <c>null</c>.
 	/// </summary>
-	public byte[] ResponseBodyInBytes { get; internal set; }
+	public byte[]? ResponseBodyInBytes { get; internal set; }
 
 	/// <summary>
-	///
+	/// The value of the Content-Type header in the response.
 	/// </summary>
-	public string ResponseMimeType { get; set; }
+	[Obsolete("This property has been retired and replaced by ResponseContentType. " +
+		"Prefer using the updated property as this will be removed in a future release.")]
+	public string ResponseMimeType
+	{
+		get => ResponseContentType;
+		set => ResponseContentType = value;
+	}
 
 	/// <summary>
-	///
+	/// The value of the Content-Type header in the response.
+	/// </summary>
+	public string ResponseContentType { get; set; }
+
+	/// <summary>
+	/// Indicates whether the response has a status code that is considered successful.
 	/// </summary>
 	public bool HasSuccessfulStatusCode { get; internal set; }
 
 	/// <summary>
-	///
+	/// Indicates whether the response has a Content-Type header that is expected.
 	/// </summary>
 	public bool HasExpectedContentType { get; internal set; }
 
 	internal bool HasSuccessfulStatusCodeAndExpectedContentType => HasSuccessfulStatusCode && HasExpectedContentType;
 
-	/// <summary>
-	///
-	/// </summary>
 	internal bool SuccessOrKnownError =>
 		HasSuccessfulStatusCodeAndExpectedContentType
 			|| HttpStatusCode >= 400
@@ -109,35 +120,24 @@ public sealed class ApiCallDetails
 				&& HasExpectedContentType;
 
 	/// <summary>
-	///
+	/// The <see cref="Uri"/> of the request.
 	/// </summary>
 	public Uri? Uri { get; internal set; }
 
-	/// <summary>
-	///
-	/// </summary>
 	internal ITransportConfiguration TransportConfiguration { get; set; }
 
-	/// <summary>
-	///
-	/// </summary>
 	internal IReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; set; }
 		= EmptyReadOnly<string, IEnumerable<string>>.Dictionary;
 
 	/// <summary>
-	///
+	/// Tries to get the value of a header if present in the parsed headers.
 	/// </summary>
-	/// <param name="key"></param>
-	/// <param name="headerValues"></param>
-	/// <returns></returns>
-	// TODO: Nullable annotations
-	public bool TryGetHeader(string key, out IEnumerable<string> headerValues) =>
+	/// <param name="key">The name of the header to locate.</param>
+	/// <param name="headerValues"> When this method returns, the value associated with the specified key, if the
+	/// key is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
+	/// <returns>A <see cref="bool"/> indiciating whether the header was located.</returns>
+	public bool TryGetHeader(string key, [NotNullWhen(true)] out IEnumerable<string>? headerValues) =>
 		ParsedHeaders.TryGetValue(key, out headerValues);
-
-	/// <summary>
-	/// The error response if the server returned JSON describing a server error.
-	/// </summary>
-	internal ErrorResponse ErrorResponse { get; set; } = EmptyError.Instance;
 
 	/// <summary>
 	/// A string summarising the API call.

@@ -21,11 +21,12 @@
     <PackageReference Include="Nullean.VsTest.Pretty.TestLogger" Version="0.4.0" />
     <PackageReference Include="JunitXml.TestLogger" Version="3.1.12" />
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
-    <PackageReference Condition="'$(TargetFramework)' != 'net481'"  Include="Soenneker.Utils.AutoBogus" Version="2.1.388" />
+    <PackageReference Condition="'$(TargetFramework)' != 'net481'" Include="Soenneker.Utils.AutoBogus" Version="2.1.388" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Transport.VirtualizedCluster\Elastic.Transport.VirtualizedCluster.csproj" />
+    <ProjectReference Include="..\Elastic.Transport.Tests.Shared\Elastic.Transport.Tests.Shared.csproj" />
   </ItemGroup>
 
 </Project>

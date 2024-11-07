@@ -12,10 +12,15 @@ namespace Elastic.Transport;
 /// This interface abstracts the actual IO <see cref="ITransport{TConfiguration}"/> performs.
 /// <para><see cref="ITransport{TConfiguration}"/> holds a single instance of this class</para>
 /// <para>The instance to be used is provided to the constructor of <see cref="ITransportConfiguration"/> implementations</para>
-/// <para>Where its exposed under <see cref="ITransportConfiguration.Connection"/></para>
+/// <para>Where its exposed under <see cref="ITransportConfiguration.RequestInvoker"/></para>
 /// </summary>
 public interface IRequestInvoker : IDisposable
 {
+	/// <summary>
+	/// Exposes the <see cref="Transport.ResponseFactory"/> used by the <see cref="IRequestInvoker"/>.
+	/// </summary>
+	public ResponseFactory ResponseFactory { get; }
+
 	/// <summary>
 	/// Perform a request to the endpoint described by <paramref name="requestData"/> using its associated configuration.
 	/// </summary>
@@ -54,5 +59,4 @@ public interface IRequestInvoker : IDisposable
 	/// </returns>
 	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
 		where TResponse : TransportResponse, new();
-
 }

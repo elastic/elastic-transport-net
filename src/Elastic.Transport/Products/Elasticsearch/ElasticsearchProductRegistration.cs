@@ -80,11 +80,8 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	/// <inheritdoc cref="ProductRegistration.MetaHeaderProvider"/>
 	public override MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
 
-	/// <inheritdoc cref="ProductRegistration.ResponseBuilder"/>
-	public override ResponseBuilder ResponseBuilder => new ElasticsearchResponseBuilder();
-
-	/// <inheritdoc cref="ProductRegistration.DefaultMimeType"/>
-	public override string? DefaultMimeType => _clientMajorVersion.HasValue ? $"application/vnd.elasticsearch+json;compatible-with={_clientMajorVersion.Value}" : null;
+	/// <inheritdoc cref="ProductRegistration.DefaultContentType"/>
+	public override string? DefaultContentType => _clientMajorVersion.HasValue ? $"application/vnd.elasticsearch+json;compatible-with={_clientMajorVersion.Value}" : null;
 
 	/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 	public const string SniffPath = "_nodes/http,settings";
@@ -221,4 +218,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	{
 		[SemanticConventions.DbSystem] = "elasticsearch"
 	};
+
+	/// <inheritdoc/>
+	public override IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } = [new ElasticsearchResponseBuilder()];
 }

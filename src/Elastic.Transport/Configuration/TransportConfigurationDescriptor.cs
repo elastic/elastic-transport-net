@@ -19,7 +19,16 @@ namespace Elastic.Transport;
 /// <summary>
 /// Allows you to control how <see cref="ITransport{TConfiguration}"/> behaves and where/how it connects to Elastic Stack products
 /// </summary>
-public class TransportConfigurationDescriptor : TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>
+/// <remarks> <inheritdoc cref="TransportConfigurationDescriptor" path="/summary"/></remarks>
+/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
+/// <param name="invoker"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
+/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
+/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
+public class TransportConfigurationDescriptor(
+	NodePool nodePool,
+	IRequestInvoker? invoker = null,
+	Serializer? serializer = null,
+	ProductRegistration? productRegistration = null) : TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>(nodePool, invoker, serializer, productRegistration)
 {
 	/// <summary>
 	/// Creates a new instance of <see cref="TransportConfigurationDescriptor"/>
@@ -42,19 +51,6 @@ public class TransportConfigurationDescriptor : TransportConfigurationDescriptor
 	/// </summary>
 	public TransportConfigurationDescriptor(string cloudId, Base64ApiKey credentials, ProductRegistration? productRegistration = null)
 		: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
-
-	/// <summary> <inheritdoc cref="TransportConfigurationDescriptor" path="/summary"/></summary>
-	/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
-	/// <param name="invoker"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
-	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
-	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
-	public TransportConfigurationDescriptor(
-		NodePool nodePool,
-		IRequestInvoker? invoker = null,
-		Serializer? serializer = null,
-		ProductRegistration? productRegistration = null)
-		: base(nodePool, invoker, serializer, productRegistration) { }
-
 }
 
 /// <inheritdoc cref="TransportConfigurationDescriptor"/>>
@@ -73,8 +69,9 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	protected TransportConfigurationDescriptorBase(NodePool nodePool, IRequestInvoker? requestInvoker, Serializer? requestResponseSerializer, ProductRegistration? productRegistration)
 	{
 		_nodePool = nodePool;
+		_requestInvoker = requestInvoker ?? new HttpRequestInvoker(this);
 		_productRegistration = productRegistration ?? DefaultProductRegistration.Default;
-		_connection = requestInvoker ?? new HttpRequestInvoker();
+		_requestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		_requestResponseSerializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
 		_pipelineProvider = DefaultRequestPipelineFactory.Default;
 		_dateTimeProvider = nodePool.DateTimeProvider;
@@ -82,7 +79,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_metaHeaderProvider = productRegistration?.MetaHeaderProvider;
 		_urlFormatter = new UrlFormatter(this);
 
-		_accept = productRegistration?.DefaultMimeType;
+		_accept = productRegistration?.DefaultContentType;
 		_connectionLimit = TransportConfiguration.DefaultConnectionLimit;
 		_dnsRefreshTimeout = TransportConfiguration.DefaultDnsRefreshTimeout;
 		_memoryStreamFactory = TransportConfiguration.DefaultMemoryStreamFactory;
@@ -103,23 +100,23 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	}
 
 	private readonly SemaphoreSlim _bootstrapLock;
-	private readonly IRequestInvoker _connection;
 	private readonly NodePool _nodePool;
 	private readonly ProductRegistration _productRegistration;
 
 	//TODO these are not exposed globally
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
-	private IReadOnlyCollection<int>? _allowedStatusCodes;
-	private string? _contentType;
-	private bool? _disableSniff;
-	private Uri? _forceNode;
-	private string? _opaqueId;
-	private string? _runAs;
-	private RequestMetaData? _requestMetaData;
+	private readonly IReadOnlyCollection<int>? _allowedStatusCodes;
+	private readonly string? _contentType;
+	private readonly bool? _disableSniff;
+	private readonly Uri? _forceNode;
+	private readonly string? _opaqueId;
+	private readonly string? _runAs;
+	private readonly RequestMetaData? _requestMetaData;
+	private readonly IRequestInvoker? _requestInvoker;
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
 	private bool _prettyJson;
-	private string? _accept;
+	private readonly string? _accept;
 	private AuthorizationHeader? _authentication;
 	private X509CertificateCollection? _clientCertificates;
 	private bool? _disableDirectStreaming;
@@ -157,19 +154,20 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	private TimeSpan? _sniffInformationLifeSpan;
 	private bool _sniffsOnConnectionFault;
 	private bool _sniffsOnStartup;
-	private UrlFormatter _urlFormatter;
+	private readonly UrlFormatter _urlFormatter;
 	private UserAgent _userAgent;
-	private Func<HttpMethod, int, bool> _statusCodeToResponseSuccess;
+	private readonly Func<HttpMethod, int, bool> _statusCodeToResponseSuccess;
 	private TimeSpan _dnsRefreshTimeout;
 	private bool _disableMetaHeader;
-	private MetaHeaderProvider? _metaHeaderProvider;
+	private readonly MetaHeaderProvider? _metaHeaderProvider;
 	private HeadersList? _responseHeadersToParse;
 	private bool? _parseAllHeaders;
 	private DateTimeProvider _dateTimeProvider;
 	private RequestPipelineFactory _pipelineProvider;
+	private List<IResponseBuilder>? _responseBuilders;
 
 	SemaphoreSlim ITransportConfiguration.BootstrapLock => _bootstrapLock;
-	IRequestInvoker ITransportConfiguration.Connection => _connection;
+	IRequestInvoker ITransportConfiguration.RequestInvoker => _requestInvoker;
 	int ITransportConfiguration.ConnectionLimit => _connectionLimit;
 	NodePool ITransportConfiguration.NodePool => _nodePool;
 	ProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
@@ -202,7 +200,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	Func<HttpMethod, int, bool> ITransportConfiguration.StatusCodeToResponseSuccess => _statusCodeToResponseSuccess;
 	TimeSpan ITransportConfiguration.DnsRefreshTimeout => _dnsRefreshTimeout;
 	bool ITransportConfiguration.PrettyJson => _prettyJson;
-
+	IReadOnlyCollection<IResponseBuilder> ITransportConfiguration.ResponseBuilders => _responseBuilders ?? [];
 
 	HeadersList? IRequestConfiguration.ResponseHeadersToParse => _responseHeadersToParse;
 	string? IRequestConfiguration.RunAs => _runAs;
@@ -232,7 +230,6 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	bool? IRequestConfiguration.ParseAllHeaders => _parseAllHeaders;
 	TimeSpan? IRequestConfiguration.PingTimeout => _pingTimeout;
 	TimeSpan? IRequestConfiguration.RequestTimeout => _requestTimeout;
-
 
 	/// <summary>
 	/// Allows more specialized implementations of <see cref="TransportConfigurationDescriptorBase{T}"/> to use their own
@@ -302,14 +299,14 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	// ReSharper disable once MemberCanBePrivate.Global
 	public T GlobalQueryStringParameters(NameValueCollection queryStringParameters) => Assign(queryStringParameters, static (a, v) =>
 	{
-		a._queryStringParameters ??= new();
+		a._queryStringParameters ??= [];
 		a._queryStringParameters.Add(v);
 	});
 
 	/// <inheritdoc cref="IRequestConfiguration.Headers"/>
 	public T GlobalHeaders(NameValueCollection headers) => Assign(headers, static (a, v) =>
 	{
-		a._headers ??= new();
+		a._headers ??= [];
 		a._headers.Add(v);
 	});
 
@@ -374,6 +371,13 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	/// </summary>
 	/// <param name="predicate">Return true if you want the node to be used for API calls</param>
 	public T NodePredicate(Func<Node, bool> predicate) => Assign(predicate, static (a, v) => a._nodePredicate = v);
+
+	/// <inheritdoc cref="ITransportConfiguration.ResponseBuilders"/>
+	public T ResponseBuilder(IResponseBuilder responseBuilder) => Assign(responseBuilder, static (a, v) =>
+	{
+		a._responseBuilders ??= [];
+		a._responseBuilders.Add(v);
+	});
 
 	/// <summary>
 	/// Turns on settings that aid in debugging like DisableDirectStreaming() and PrettyJson()
@@ -452,7 +456,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	protected virtual void DisposeManagedResources()
 	{
 		_nodePool.Dispose();
-		_connection.Dispose();
+		_requestInvoker?.Dispose();
 		_bootstrapLock.Dispose();
 	}
 
@@ -467,5 +471,4 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	}
 
 	void IDisposable.Dispose() => DisposeManagedResources();
-
 }

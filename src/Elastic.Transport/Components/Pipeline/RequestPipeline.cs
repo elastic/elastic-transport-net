@@ -25,7 +25,6 @@ public class RequestPipeline
 	private readonly MemoryStreamFactory _memoryStreamFactory;
 	private readonly Func<Node, bool> _nodePredicate;
 	private readonly ProductRegistration _productRegistration;
-	private readonly ResponseBuilder _responseBuilder;
 
 	private RequestConfiguration? _pingAndSniffRequestConfiguration;
 	//private List<Audit>? _auditTrail;
@@ -38,11 +37,10 @@ public class RequestPipeline
 		_settings = requestData.ConnectionSettings;
 
 		_nodePool = requestData.ConnectionSettings.NodePool;
-		_requestInvoker = requestData.ConnectionSettings.Connection;
+		_requestInvoker = requestData.ConnectionSettings.RequestInvoker;
 		_dateTimeProvider = requestData.ConnectionSettings.DateTimeProvider;
 		_memoryStreamFactory = requestData.MemoryStreamFactory;
 		_productRegistration = requestData.ConnectionSettings.ProductRegistration;
-		_responseBuilder = _productRegistration.ResponseBuilder;
 		_nodePredicate = requestData.ConnectionSettings.NodePredicate ?? _productRegistration.NodePredicate;
 	}
 
@@ -150,8 +148,8 @@ public class RequestPipeline
 		{
 			//make sure we copy over the error body in case we disabled direct streaming.
 			var s = callDetails?.ResponseBodyInBytes == null ? Stream.Null : _memoryStreamFactory.Create(callDetails.ResponseBodyInBytes);
-			var m = callDetails?.ResponseMimeType ?? RequestData.DefaultMimeType;
-			response = _responseBuilder.ToResponse<TResponse>(endpoint, data, postData, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
+			var m = callDetails?.ResponseContentType ?? RequestData.DefaultContentType;
+			response = _requestInvoker.ResponseFactory.Create<TResponse>(endpoint, data, postData, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
 		}
 
 		response.ApiCallDetails.AuditTrail = auditTrail;

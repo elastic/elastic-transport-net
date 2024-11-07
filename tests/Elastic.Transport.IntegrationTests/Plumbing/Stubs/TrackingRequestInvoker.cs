@@ -15,6 +15,9 @@ public class TrackingRequestInvoker : IRequestInvoker
 	private TestableClientHandler _handler;
 	public int CallCount { get; private set; }
 	public HttpClientHandler LastHttpClientHandler => (HttpClientHandler)_handler.InnerHandler;
+
+	public ResponseFactory ResponseFactory => _requestInvoker.ResponseFactory;
+
 	private readonly HttpRequestInvoker _requestInvoker;
 
 	public TrackingRequestInvoker(Action<HttpResponseMessage> response) : this() => _response = response;

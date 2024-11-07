@@ -21,11 +21,8 @@ namespace Elastic.Transport.IntegrationTests.Http
 		public Task<JsonElement> Post([FromBody]JsonElement body) => Task.FromResult(body);
 	}
 
-	public class TransferEncodingChunkedTests : AssemblyServerTestsBase
+	public class TransferEncodingChunkedTests(TransportTestServer instance) : AssemblyServerTestsBase(instance)
 	{
-		public TransferEncodingChunkedTests(TransportTestServer instance) : base(instance) { }
-
-
 		private const string BodyString = "{\"query\":{\"match_all\":{}}}";
 		private static readonly PostData Body = PostData.String(BodyString);
 		private const string Path = "/chunked";
@@ -44,6 +41,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 					TransferEncodingChunked = transferEncodingChunked,
 					EnableHttpCompression = httpCompression
 			};
+
 			config = disableAutomaticProxyDetection.HasValue
 				? config with { DisableAutomaticProxyDetection = disableAutomaticProxyDetection.Value }
 				//make sure we the requests in debugging proxy

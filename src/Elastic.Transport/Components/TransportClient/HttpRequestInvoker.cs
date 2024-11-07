@@ -22,7 +22,9 @@ using static System.Net.DecompressionMethods;
 
 namespace Elastic.Transport;
 
-/// <summary> The default TransportClient implementation. Uses <see cref="HttpClient" />.</summary>
+/// <summary>
+/// The default <see cref="IRequestInvoker"/> implementation. Uses <see cref="HttpClient" /> to make requests.
+/// </summary>
 public class HttpRequestInvoker : IRequestInvoker
 {
 	private static readonly string MissingConnectionLimitMethodError =
@@ -32,18 +34,49 @@ public class HttpRequestInvoker : IRequestInvoker
 
 	private string _expectedCertificateFingerprint;
 
-	/// <inheritdoc cref="HttpRequestInvoker" />
-	public HttpRequestInvoker() => HttpClientFactory = new RequestDataHttpClientFactory(r => CreateHttpClientHandler(r));
+	/// <summary>
+	/// Create a new instance of the <see cref="HttpRequestInvoker"/>.
+	/// </summary>
+	public HttpRequestInvoker() : this(new TransportConfiguration()) { }
 
 	/// <summary>
-	/// Allows users to inject their own HttpMessageHandler, and optionally call our default implementation
+	/// Create a new instance of the <see cref="HttpRequestInvoker"/>.
 	/// </summary>
-	public HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler) =>
+	/// <param name="transportConfiguration">The <see cref="ITransportConfiguration"/> from which response builders can be loaded.</param>
+	public HttpRequestInvoker(ITransportConfiguration transportConfiguration) :
+		this(new DefaultResponseFactory(transportConfiguration)) { }
+
+	internal HttpRequestInvoker(ResponseFactory responseFactory)
+	{
+		ResponseFactory = responseFactory;
+		HttpClientFactory = new RequestDataHttpClientFactory(CreateHttpClientHandler);
+	}
+
+	/// <summary>
+	/// Allows consumers to inject their own HttpMessageHandler, and optionally call our default implementation.
+	/// </summary>
+	public HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler) :
+		this(wrappingHandler, new DefaultResponseFactory(new TransportConfiguration())) { }
+
+	/// <summary>
+	/// Allows consumers to inject their own HttpMessageHandler, and optionally call our default implementation.
+	/// </summary>
+	public HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler, ITransportConfiguration transportConfiguration) :
+		this(wrappingHandler, new DefaultResponseFactory(transportConfiguration))
+	{ }
+
+	internal HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler, ResponseFactory responseFactory)
+	{
+		ResponseFactory = responseFactory;
 		HttpClientFactory = new RequestDataHttpClientFactory(r =>
 		{
 			var defaultHandler = CreateHttpClientHandler(r);
 			return wrappingHandler(defaultHandler, r) ?? defaultHandler;
 		});
+	}
+
+	/// <inheritdoc />
+	public ResponseFactory ResponseFactory { get; }
 
 	/// <inheritdoc cref="RequestDataHttpClientFactory.InUseHandlers" />
 	public int InUseHandlers => HttpClientFactory.InUseHandlers;
@@ -73,7 +106,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		int? statusCode = null;
 		Stream responseStream = null;
 		Exception ex = null;
-		string mimeType = null;
+		string contentType = null;
 		long contentLength = -1;
 		IDisposable receivedResponse = DiagnosticSources.SingletonDisposable;
 		ReadOnlyDictionary<TcpState, int> tcpStats = null;
@@ -121,7 +154,7 @@ public class HttpRequestInvoker : IRequestInvoker
 				statusCode = (int)responseMessage.StatusCode;
 			}
 
-			mimeType = responseMessage.Content.Headers.ContentType?.ToString();
+			contentType = responseMessage.Content.Headers.ContentType?.ToString();
 			responseHeaders = ParseHeaders(requestData, responseMessage);
 
 			if (responseMessage.Content != null)
@@ -140,7 +173,7 @@ public class HttpRequestInvoker : IRequestInvoker
 #endif
 			}
 
-			// We often won't have the content length as responses are GZip compressed and the HttpContent ditches this when AutomaticDecompression is enabled.
+			// We often won't have the content length as most responses are GZip compressed and the HttpContent ditches this when AutomaticDecompression is enabled.
 			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
 		}
 		catch (TaskCanceledException e)
@@ -157,12 +190,12 @@ public class HttpRequestInvoker : IRequestInvoker
 		try
 		{
 			if (isAsync)
-				response = await requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponseAsync<TResponse>
-					(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+				response = await ResponseFactory.CreateAsync<TResponse>
+					(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
 						.ConfigureAwait(false);
 			else
-				response = requestData.ConnectionSettings.ProductRegistration.ResponseBuilder.ToResponse<TResponse>
-						(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, mimeType, contentLength, threadPoolStats, tcpStats);
+				response = ResponseFactory.Create<TResponse>
+						(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable

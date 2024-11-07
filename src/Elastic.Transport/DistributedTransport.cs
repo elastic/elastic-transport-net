@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -47,7 +46,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	{
 		configuration.ThrowIfNull(nameof(configuration));
 		configuration.NodePool.ThrowIfNull(nameof(configuration.NodePool));
-		configuration.Connection.ThrowIfNull(nameof(configuration.Connection));
+		configuration.RequestInvoker.ThrowIfNull(nameof(configuration.RequestInvoker));
 		configuration.RequestResponseSerializer.ThrowIfNull(nameof(configuration.RequestResponseSerializer));
 
 		_productRegistration = configuration.ProductRegistration;
@@ -69,11 +68,9 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		in EndpointPath path,
 		PostData? data,
 		in OpenTelemetryData openTelemetryData,
-		IRequestConfiguration? localConfiguration,
-		CustomResponseBuilder? responseBuilder
-	)
-		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(isAsync: false, path, data, openTelemetryData, localConfiguration, responseBuilder)
+		IRequestConfiguration? localConfiguration
+	) where TResponse : TransportResponse, new() =>
+		RequestCoreAsync<TResponse>(isAsync: false, path, data, openTelemetryData, localConfiguration)
 			.EnsureCompleted();
 
 	/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>
@@ -82,11 +79,9 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		PostData? data,
 		in OpenTelemetryData openTelemetryData,
 		IRequestConfiguration? localConfiguration,
-		CustomResponseBuilder? responseBuilder,
 		CancellationToken cancellationToken = default
-	)
-		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(isAsync: true, path, data, openTelemetryData, localConfiguration, responseBuilder, cancellationToken)
+	) where TResponse : TransportResponse, new() =>
+		RequestCoreAsync<TResponse>(isAsync: true, path, data, openTelemetryData, localConfiguration, cancellationToken)
 			.AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(
@@ -95,10 +90,8 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		PostData? data,
 		OpenTelemetryData openTelemetryData,
 		IRequestConfiguration? localConfiguration,
-		CustomResponseBuilder? customResponseBuilder,
 		CancellationToken cancellationToken = default
-	)
-		where TResponse : TransportResponse, new()
+	) where TResponse : TransportResponse, new()
 	{
 		Activity activity = null;
 
@@ -111,8 +104,8 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			//unless per request configuration or custom response builder is provided we can reuse a request data
 			//that is specific to this transport
 			var requestData =
-				localConfiguration != null || customResponseBuilder != null
-					? new RequestData(Configuration, localConfiguration, customResponseBuilder)
+				localConfiguration != null
+					? new RequestData(Configuration, localConfiguration)
 					: TransportRequestData;
 
 			Configuration.OnRequestDataCreated?.Invoke(requestData);
