@@ -85,6 +85,17 @@ public sealed class ApiCallDetails
 	/// <summary>
 	/// The value of the Content-Type header in the response.
 	/// </summary>
+	[Obsolete("This property has been retired and replaced by ResponseContentType. " +
+		"Prefer using the updated property as this will be removed in a future release.")]
+	public string ResponseMimeType
+	{
+		get => ResponseContentType;
+		set => ResponseContentType = value;
+	}
+
+	/// <summary>
+	/// The value of the Content-Type header in the response.
+	/// </summary>
 	public string ResponseContentType { get; set; }
 
 	/// <summary>
