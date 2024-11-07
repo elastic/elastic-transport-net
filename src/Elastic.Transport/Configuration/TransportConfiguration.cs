@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net.Security;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Elastic.Transport.Products;
@@ -43,7 +42,7 @@ public record TransportConfiguration : ITransportConfiguration
 #pragma warning disable 1570
 	/// <summary>
 	/// The default concurrent connection limit for outgoing http requests. Defaults to <c>80</c>
-#if !NETFRAMEWORK	/// <para>Except for <see cref="HttpClientHandler"/> implementations based on curl, which defaults to <see cref="Environment.ProcessorCount"/></para>
+#if !NETFRAMEWORK    /// <para>Except for <see cref="HttpClientHandler"/> implementations based on curl, which defaults to <see cref="Environment.ProcessorCount"/></para>                                                                                                                                                        
 #endif
 	/// </summary>
 #pragma warning restore 1570
@@ -51,7 +50,7 @@ public record TransportConfiguration : ITransportConfiguration
 	public static readonly int DefaultConnectionLimit = UsingCurlHandler ? Environment.ProcessorCount : 80;
 
 	/// <summary>
-	/// Creates a new instance of <see cref="TransportConfigurationDescriptor"/>
+	/// Creates a new instance of <see cref="TransportConfiguration"/>
 	/// </summary>
 	/// <param name="uri">The root of the Elastic stack product node we want to connect to. Defaults to http://localhost:9200</param>
 	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
@@ -74,30 +73,28 @@ public record TransportConfiguration : ITransportConfiguration
 
 	/// <summary> <inheritdoc cref="TransportConfigurationDescriptor" path="/summary"/></summary>
 	/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
-	/// <param name="invoker"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
+	/// <param name="requestInvoker"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
 	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
-	public TransportConfiguration(
+	internal TransportConfiguration(
 		NodePool nodePool,
-		IRequestInvoker? invoker = null,
+		IRequestInvoker? requestInvoker = null,
 		Serializer? serializer = null,
 		ProductRegistration? productRegistration = null
 	)
 	{
 		//non init properties
 		NodePool = nodePool;
+		RequestInvoker = requestInvoker ?? new HttpRequestInvoker(this);
 		ProductRegistration = productRegistration ?? DefaultProductRegistration.Default;
-		Connection = invoker ?? new HttpRequestInvoker();
-		Accept = productRegistration?.DefaultMimeType;
+		Accept = productRegistration?.DefaultContentType;
 		RequestResponseSerializer = serializer ?? new LowLevelRequestResponseSerializer();
-
 		ConnectionLimit = DefaultConnectionLimit;
 		DnsRefreshTimeout = DefaultDnsRefreshTimeout;
 		MemoryStreamFactory = DefaultMemoryStreamFactory;
 		SniffsOnConnectionFault = true;
 		SniffsOnStartup = true;
 		SniffInformationLifeSpan = TimeSpan.FromHours(1);
-
 		MetaHeaderProvider = productRegistration?.MetaHeaderProvider;
 		UrlFormatter = new UrlFormatter(this);
 		StatusCodeToResponseSuccess = ProductRegistration.HttpStatusCodeClassifier;
@@ -115,8 +112,12 @@ public record TransportConfiguration : ITransportConfiguration
 	/// Expert usage: Create a new transport configuration based of a previously configured instance
 	public TransportConfiguration(ITransportConfiguration config)
 	{
+#if NET8_0_OR_GREATER
+		ArgumentNullException.ThrowIfNull(config);
+#else
 		if (config is null)
 			throw new ArgumentNullException(nameof(config));
+#endif
 
 		Accept = config.Accept;
 		AllowedStatusCodes = config.AllowedStatusCodes;
@@ -124,7 +125,6 @@ public record TransportConfiguration : ITransportConfiguration
 		BootstrapLock = config.BootstrapLock;
 		CertificateFingerprint = config.CertificateFingerprint;
 		ClientCertificates = config.ClientCertificates;
-		Connection = config.Connection;
 		ConnectionLimit = config.ConnectionLimit;
 		ContentType = config.ContentType;
 		DeadTimeout = config.DeadTimeout;
@@ -160,6 +160,7 @@ public record TransportConfiguration : ITransportConfiguration
 		ProxyPassword = config.ProxyPassword;
 		ProxyUsername = config.ProxyUsername;
 		QueryStringParameters = config.QueryStringParameters;
+		RequestInvoker = config.RequestInvoker;
 		RequestMetaData = config.RequestMetaData;
 		RequestResponseSerializer = config.RequestResponseSerializer;
 		RequestTimeout = config.RequestTimeout;
@@ -200,10 +201,9 @@ public record TransportConfiguration : ITransportConfiguration
 	/// <inheritdoc />
 	public SemaphoreSlim BootstrapLock { get; } = new(1, 1);
 	/// <inheritdoc />
-	public IRequestInvoker Connection { get; }
+	public IRequestInvoker RequestInvoker { get; }
 	/// <inheritdoc />
 	public Serializer RequestResponseSerializer { get; }
-
 
 	/// <inheritdoc />
 	// ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -263,7 +263,7 @@ public record TransportConfiguration : ITransportConfiguration
 	public void Dispose()
 	{
 		NodePool.Dispose();
-		Connection.Dispose();
+		RequestInvoker.Dispose();
 		BootstrapLock.Dispose();
 	}
 
@@ -322,6 +322,8 @@ public record TransportConfiguration : ITransportConfiguration
 	public MetaHeaderProvider? MetaHeaderProvider { get; init; }
 	/// <inheritdoc />
 	public bool DisableMetaHeader { get; init; }
+	/// <inheritdoc />
+	public IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; init; } = [];
 	// ReSharper restore UnusedAutoPropertyAccessor.Global
 }
 

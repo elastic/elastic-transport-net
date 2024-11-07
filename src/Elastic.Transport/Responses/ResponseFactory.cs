@@ -17,15 +17,12 @@ namespace Elastic.Transport;
 /// <summary>
 /// Builds a <see cref="TransportResponse"/> from the provided response data.
 /// </summary>
-public abstract class ResponseBuilder
+public abstract class ResponseFactory
 {
-	/// <summary> Exposes a default response builder to implementers without sharing more internal types to handle empty errors</summary>
-	public static ResponseBuilder Default { get; } = new DefaultResponseBuilder<EmptyError>();
-
 	/// <summary>
 	/// Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
 	/// </summary>
-	public abstract TResponse ToResponse<TResponse>(
+	public abstract TResponse Create<TResponse>(
 		Endpoint endpoint,
 		RequestData requestData,
 		PostData? postData,
@@ -33,17 +30,16 @@ public abstract class ResponseBuilder
 		int? statusCode,
 		Dictionary<string, IEnumerable<string>>? headers,
 		Stream responseStream,
-		string? mimeType,
+		string? contentType,
 		long contentLength,
 		IReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats,
 		IReadOnlyDictionary<TcpState, int>? tcpStats
-
 	) where TResponse : TransportResponse, new();
 
 	/// <summary>
 	/// Create an instance of <typeparamref name="TResponse" /> from <paramref name="responseStream" />
 	/// </summary>
-	public abstract Task<TResponse> ToResponseAsync<TResponse>(
+	public abstract Task<TResponse> CreateAsync<TResponse>(
 		Endpoint endpoint,
 		RequestData requestData,
 		PostData? postData,
@@ -51,24 +47,25 @@ public abstract class ResponseBuilder
 		int? statusCode,
 		Dictionary<string, IEnumerable<string>>? headers,
 		Stream responseStream,
-		string? mimeType,
+		string? contentType,
 		long contentLength,
 		IReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats,
 		IReadOnlyDictionary<TcpState, int>? tcpStats,
 		CancellationToken cancellationToken = default
 	) where TResponse : TransportResponse, new();
 
-	internal static ApiCallDetails Initialize(
+	internal static ApiCallDetails InitializeApiCallDetails(
 		Endpoint endpoint,
 		RequestData requestData,
 		PostData? postData,
 		Exception exception,
 		int? statusCode,
-		Dictionary<string, IEnumerable<string>> headers, string mimeType,
+		Dictionary<string, IEnumerable<string>> headers, 
+		string contentType,
 		IReadOnlyDictionary<string,
-		ThreadPoolStatistics> threadPoolStats, IReadOnlyDictionary<TcpState, int> tcpStats,
-		long contentLength
-	)
+		ThreadPoolStatistics> threadPoolStats, 
+		IReadOnlyDictionary<TcpState, int> tcpStats,
+		long contentLength)
 	{
 		var hasSuccessfulStatusCode = false;
 		var allowedStatusCodes = requestData.AllowedStatusCodes;
@@ -83,7 +80,7 @@ public abstract class ResponseBuilder
 
 		// We don't validate the content-type (MIME type) for HEAD requests or responses that have no content (204 status code).
 		// Elastic Cloud responses to HEAD requests strip the content-type header so we want to avoid validation in that case.
-		var hasExpectedContentType = !MayHaveBody(statusCode, endpoint.Method, contentLength) || ValidateResponseContentType(requestData.Accept, mimeType);
+		var hasExpectedContentType = !MayHaveBody(statusCode, endpoint.Method, contentLength) || ValidateResponseContentType(requestData.Accept, contentType);
 
 		var details = new ApiCallDetails
 		{
@@ -96,7 +93,7 @@ public abstract class ResponseBuilder
 			HttpMethod = endpoint.Method,
 			TcpStats = tcpStats,
 			ThreadPoolStats = threadPoolStats,
-			ResponseMimeType = mimeType,
+			ResponseContentType = contentType,
 			TransportConfiguration = requestData.ConnectionSettings
 		};
 
@@ -114,26 +111,25 @@ public abstract class ResponseBuilder
 	protected static bool MayHaveBody(int? statusCode, HttpMethod httpMethod, long contentLength) =>
 		contentLength != 0 && (!statusCode.HasValue || statusCode.Value != 204 && httpMethod != HttpMethod.HEAD);
 
-	internal static bool ValidateResponseContentType(string accept, string responseMimeType)
+	internal static bool ValidateResponseContentType(string accept, string responseContentType)
 	{
-		if (string.IsNullOrEmpty(responseMimeType)) return false;
+		if (string.IsNullOrEmpty(responseContentType)) return false;
 
-		if (accept == responseMimeType)
+		if (accept == responseContentType)
 			return true;
 
 		// TODO - Performance: Review options to avoid the replace here and compare more efficiently.
 		var trimmedAccept = accept.Replace(" ", "");
-		var trimmedResponseMimeType = responseMimeType.Replace(" ", "");
+		var normalizedResponseContentType = responseContentType.Replace(" ", "");
 
-		return trimmedResponseMimeType.Equals(trimmedAccept, StringComparison.OrdinalIgnoreCase)
-			|| trimmedResponseMimeType.StartsWith(trimmedAccept, StringComparison.OrdinalIgnoreCase)
+		return normalizedResponseContentType.Equals(trimmedAccept, StringComparison.OrdinalIgnoreCase)
+			|| normalizedResponseContentType.StartsWith(trimmedAccept, StringComparison.OrdinalIgnoreCase)
 
 			// ES specific fallback required because:
 			// - 404 responses from ES8 don't include the vendored header
 			// - ES8 EQL responses don't include vendored type
 
 			|| trimmedAccept.Contains("application/vnd.elasticsearch+json")
-			&& trimmedResponseMimeType.StartsWith(RequestData.DefaultMimeType, StringComparison.OrdinalIgnoreCase);
+			&& normalizedResponseContentType.StartsWith(RequestData.DefaultContentType, StringComparison.OrdinalIgnoreCase);
 	}
-
 }

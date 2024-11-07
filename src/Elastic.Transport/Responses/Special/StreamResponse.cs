@@ -20,20 +20,20 @@ public class StreamResponse : TransportResponse<Stream>, IDisposable
 	/// <summary>
 	/// The MIME type of the response, if present.
 	/// </summary>
-	public string MimeType { get; }
+	public string ContentType { get; }
 
 	/// <inheritdoc cref="StreamResponse"/>
 	public StreamResponse()
 	{
 		Body = Stream.Null;
-		MimeType = string.Empty;
+		ContentType = string.Empty;
 	}
 
 	/// <inheritdoc cref="StreamResponse"/>
-	public StreamResponse(Stream body, string? mimeType)
+	public StreamResponse(Stream body, string? contentType)
 	{
 		Body = body;
-		MimeType = mimeType ?? string.Empty;
+		ContentType = contentType ?? string.Empty;
 	}
 
 	internal override bool LeaveOpen => true;

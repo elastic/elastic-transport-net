@@ -15,7 +15,7 @@ public static class ElasticsearchErrorExtensions
 	public static bool TryGetElasticsearchServerError(this StringResponse response, out ElasticsearchServerError serverError)
 	{
 		serverError = null;
-		if (string.IsNullOrEmpty(response.Body) || response.ApiCallDetails.ResponseMimeType != RequestData.DefaultMimeType)
+		if (string.IsNullOrEmpty(response.Body) || response.ApiCallDetails.ResponseContentType != RequestData.DefaultContentType)
 			return false;
 
 		var settings = response.ApiCallDetails.TransportConfiguration;
@@ -27,7 +27,7 @@ public static class ElasticsearchErrorExtensions
 	public static bool TryGetElasticsearchServerError(this BytesResponse response, out ElasticsearchServerError serverError)
 	{
 		serverError = null;
-		if (response.Body == null || response.Body.Length == 0 || response.ApiCallDetails.ResponseMimeType != RequestData.DefaultMimeType)
+		if (response.Body == null || response.Body.Length == 0 || response.ApiCallDetails.ResponseContentType != RequestData.DefaultContentType)
 			return false;
 
 		var settings = response.ApiCallDetails.TransportConfiguration;
@@ -43,7 +43,7 @@ public static class ElasticsearchErrorExtensions
 	{
 		serverError = null;
 		var bytes = response.ApiCallDetails.ResponseBodyInBytes;
-		if (bytes == null || response.ApiCallDetails.ResponseMimeType != RequestData.DefaultMimeType)
+		if (bytes == null || response.ApiCallDetails.ResponseContentType != RequestData.DefaultContentType)
 			return false;
 
 		var settings = response.ApiCallDetails.TransportConfiguration;

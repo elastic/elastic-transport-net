@@ -80,11 +80,11 @@ public abstract class RuleBase<TRule> : IRule
 			r = ms.ToArray();
 		}
 		Self.ReturnResponse = r;
-		Self.ReturnContentType = RequestData.DefaultMimeType;
+		Self.ReturnContentType = RequestData.DefaultContentType;
 		return (TRule)this;
 	}
 
-	public TRule ReturnByteResponse(byte[] response, string responseContentType = RequestData.DefaultMimeType)
+	public TRule ReturnByteResponse(byte[] response, string responseContentType = RequestData.DefaultContentType)
 	{
 		Self.ReturnResponse = response;
 		Self.ReturnContentType = responseContentType;

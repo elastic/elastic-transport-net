@@ -15,7 +15,7 @@ public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFac
 	{
 		DateTimeProvider = dateTimeProvider;
 		Configuration = configuration;
-		Pipeline = Create(new RequestData(Configuration, null, null), DateTimeProvider);
+		Pipeline = Create(new RequestData(Configuration, null), DateTimeProvider);
 		RequestHandler = new DistributedTransport<TConfiguration>(Configuration, this, DateTimeProvider);
 	}
 
@@ -28,3 +28,4 @@ public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFac
 	public override RequestPipeline Create(RequestData requestData, DateTimeProvider dateTimeProvider) =>
 			new DefaultRequestPipeline(requestData, DateTimeProvider);
 }
+#nullable restore
