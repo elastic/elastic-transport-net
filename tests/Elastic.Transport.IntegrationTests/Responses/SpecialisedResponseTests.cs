@@ -21,22 +21,102 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 	private const string Path = "/specialresponse";
 	private const string EmptyJson = "{}";
 	private static readonly byte[] EmptyJsonBytes = [(byte)'{', (byte)'}'];
-	private const string LargeJson = "[{\"_id\":\"672b13c7666cae7721b7f5c8\",\"index\":0,\"guid\":\"f8a9356c-660b-4f4f-a1c2-84048e0599b9\",\"isActive\":false,\"balance\":\"$3,856.23\"," +
-		"\"picture\":\"http://placehold.it/32x32\",\"age\":29,\"eyeColor\":\"green\",\"name\":\"Noemi Reed\",\"gender\":\"female\",\"company\":\"LUNCHPOD\",\"email\":" +
-		"\"noemireed@lunchpod.com\",\"phone\":\"+1 (961) 417-3668\",\"address\":\"954 Cameron Court, Onton, South Dakota, 1148\",\"about\":\"Qui ad id veniam aute amet " +
-		"commodo officia est cillum. Elit nostrud Lorem tempor duis. Commodo velit nulla nisi velit laborum qui minim nostrud aute dolor tempor officia. Commodo proident " +
-		"nulla eu adipisicing incididunt eu. Quis nostrud Lorem amet deserunt pariatur ea elit adipisicing qui. Voluptate exercitation id esse tempor occaecat.\\r\\n\"," +
-		"\"registered\":\"2017-02-28T04:33:12 -00:00\",\"latitude\":30.32678,\"longitude\":-156.977981,\"tags\":[\"sit\",\"culpa\",\"cillum\",\"labore\",\"in\",\"labore\"," +
-		"\"quis\"],\"friends\":[{\"id\":0,\"name\":\"Good Lyons\"},{\"id\":1,\"name\":\"Mccarthy Delaney\"},{\"id\":2,\"name\":\"Winters Combs\"}],\"greeting\":\"Hello, " +
-		"Noemi Reed! You have 8 unread messages.\",\"favoriteFruit\":\"strawberry\"},{\"_id\":\"672b13c741693abd9d0173a9\",\"index\":1,\"guid\":" +
-		"\"fa3d27ec-213c-4365-92e9-39774eec9d01\",\"isActive\":false,\"balance\":\"$2,275.63\",\"picture\":\"http://placehold.it/32x32\",\"age\":23,\"eyeColor\":\"brown\"," +
-		"\"name\":\"Cooley Williams\",\"gender\":\"male\",\"company\":\"GALLAXIA\",\"email\":\"cooleywilliams@gallaxia.com\",\"phone\":\"+1 (961) 439-2700\",\"address\":" +
-		"\"791 Montgomery Place, Garfield, Guam, 9900\",\"about\":\"Officia consectetur do quis id cillum quis esse. Aliqua deserunt eiusmod laboris cupidatat enim commodo " +
-		"est Lorem id nisi mollit non. Eiusmod adipisicing pariatur culpa nostrud incididunt dolor commodo fugiat amet ex dolor ex. Nostrud incididunt consequat ullamco " +
-		"pariatur cupidatat nulla eu voluptate cupidatat nulla. Mollit est id adipisicing ad mollit exercitation. Ullamco non ad aliquip ea sit culpa pariatur commodo " +
-		"veniam. In occaecat et tempor ea Lorem eu incididunt sit commodo officia.\\r\\n\",\"registered\":\"2019-05-25T11:41:44 -01:00\",\"latitude\":-85.996713,\"longitude\"" +
-		":-140.910029,\"tags\":[\"esse\",\"qui\",\"magna\",\"et\",\"irure\",\"est\",\"in\"],\"friends\":[{\"id\":0,\"name\":\"Pamela Castillo\"},{\"id\":1,\"name\"" +
-		":\"Suzanne Herman\"},{\"id\":2,\"name\":\"Gonzales Bush\"}],\"greeting\":\"Hello, Cooley Williams! You have 8 unread messages.\",\"favoriteFruit\":\"apple\"}]";
+
+	// language=json
+	private const string LargeJson = """
+		[
+		  {
+		    "_id": "672b13c7666cae7721b7f5c8",
+		    "index": 0,
+		    "guid": "f8a9356c-660b-4f4f-a1c2-84048e0599b9",
+		    "isActive": false,
+		    "balance": "$3,856.23",
+		    "picture": "http://placehold.it/32x32",
+		    "age": 29,
+		    "eyeColor": "green",
+		    "name": "Noemi Reed",
+		    "gender": "female",
+		    "company": "LUNCHPOD",
+		    "email": "noemireed@lunchpod.com",
+		    "phone": "+1 (961) 417-3668",
+		    "address": "954 Cameron Court, Onton, South Dakota, 1148",
+		    "about": "Qui ad id veniam aute amet commodo officia est cillum. Elit nostrud Lorem tempor duis. Commodo velit nulla nisi velit laborum qui minim nostrud aute dolor tempor officia. Commodo proident nulla eu adipisicing incididunt eu. Quis nostrud Lorem amet deserunt pariatur ea elit adipisicing qui. Voluptate exercitation id esse tempor occaecat.\r\n",
+		    "registered": "2017-02-28T04:33:12 -00:00",
+		    "latitude": 30.32678,
+		    "longitude": -156.977981,
+		    "tags": [
+		      "sit",
+		      "culpa",
+		      "cillum",
+		      "labore",
+		      "in",
+		      "labore",
+		      "quis"
+		    ],
+		    "friends": [
+		      {
+		        "id": 0,
+		        "name": "Good Lyons"
+		      },
+		      {
+		        "id": 1,
+		        "name": "Mccarthy Delaney"
+		      },
+		      {
+		        "id": 2,
+		        "name": "Winters Combs"
+		      }
+		    ],
+		    "greeting": "Hello, Noemi Reed! You have 8 unread messages.",
+		    "favoriteFruit": "strawberry"
+		  },
+		  {
+		    "_id": "672b13c741693abd9d0173a9",
+		    "index": 1,
+		    "guid": "fa3d27ec-213c-4365-92e9-39774eec9d01",
+		    "isActive": false,
+		    "balance": "$2,275.63",
+		    "picture": "http://placehold.it/32x32",
+		    "age": 23,
+		    "eyeColor": "brown",
+		    "name": "Cooley Williams",
+		    "gender": "male",
+		    "company": "GALLAXIA",
+		    "email": "cooleywilliams@gallaxia.com",
+		    "phone": "+1 (961) 439-2700",
+		    "address": "791 Montgomery Place, Garfield, Guam, 9900",
+		    "about": "Officia consectetur do quis id cillum quis esse. Aliqua deserunt eiusmod laboris cupidatat enim commodo est Lorem id nisi mollit non. Eiusmod adipisicing pariatur culpa nostrud incididunt dolor commodo fugiat amet ex dolor ex. Nostrud incididunt consequat ullamco pariatur cupidatat nulla eu voluptate cupidatat nulla. Mollit est id adipisicing ad mollit exercitation. Ullamco non ad aliquip ea sit culpa pariatur commodo veniam. In occaecat et tempor ea Lorem eu incididunt sit commodo officia.\r\n",
+		    "registered": "2019-05-25T11:41:44 -01:00",
+		    "latitude": -85.996713,
+		    "longitude": -140.910029,
+		    "tags": [
+		      "esse",
+		      "qui",
+		      "magna",
+		      "et",
+		      "irure",
+		      "est",
+		      "in"
+		    ],
+		    "friends": [
+		      {
+		        "id": 0,
+		        "name": "Pamela Castillo"
+		      },
+		      {
+		        "id": 1,
+		        "name": "Suzanne Herman"
+		      },
+		      {
+		        "id": 2,
+		        "name": "Gonzales Bush"
+		      }
+		    ],
+		    "greeting": "Hello, Cooley Williams! You have 8 unread messages.",
+		    "favoriteFruit": "apple"
+		  }
+		]
+		""";
 
 	[Fact]
 	public async Task VoidResponse_ShouldReturnExpectedResponse()
