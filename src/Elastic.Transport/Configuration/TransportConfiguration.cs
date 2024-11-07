@@ -85,7 +85,7 @@ public record TransportConfiguration : ITransportConfiguration
 	{
 		//non init properties
 		NodePool = nodePool;
-		RequestInvoker = requestInvoker ?? new HttpRequestInvoker(this);
+		RequestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		ProductRegistration = productRegistration ?? DefaultProductRegistration.Default;
 		RequestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		RequestResponseSerializer = serializer ?? new LowLevelRequestResponseSerializer();

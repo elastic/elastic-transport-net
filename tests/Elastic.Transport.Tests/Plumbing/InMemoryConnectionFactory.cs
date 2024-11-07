@@ -11,7 +11,7 @@ namespace Elastic.Transport.Tests.Plumbing
 	{
 		public static TransportConfiguration Create(ProductRegistration productRegistration = null)
 		{
-			var invoker = new InMemoryRequestInvoker(productRegistration);
+			var invoker = new InMemoryRequestInvoker();
 			var pool = new SingleNodePool(new Uri("http://localhost:9200"));
 			var settings = new TransportConfiguration(pool, invoker, productRegistration: productRegistration);
 			return settings;

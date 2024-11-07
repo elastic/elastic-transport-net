@@ -69,7 +69,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	protected TransportConfigurationDescriptorBase(NodePool nodePool, IRequestInvoker? requestInvoker, Serializer? requestResponseSerializer, ProductRegistration? productRegistration)
 	{
 		_nodePool = nodePool;
-		_requestInvoker = requestInvoker ?? new HttpRequestInvoker(this);
+		_requestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		_productRegistration = productRegistration ?? DefaultProductRegistration.Default;
 		_requestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		_requestResponseSerializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
