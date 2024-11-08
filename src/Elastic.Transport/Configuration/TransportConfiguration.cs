@@ -76,7 +76,7 @@ public record TransportConfiguration : ITransportConfiguration
 	/// <param name="requestInvoker"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
 	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
-	internal TransportConfiguration(
+	public TransportConfiguration(
 		NodePool nodePool,
 		IRequestInvoker? requestInvoker = null,
 		Serializer? serializer = null,
