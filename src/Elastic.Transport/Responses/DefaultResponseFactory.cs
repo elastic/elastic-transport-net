@@ -20,7 +20,7 @@ namespace Elastic.Transport;
 /// <remarks>
 /// Create an instance of the factory using the provided configuration.
 /// </remarks>
-internal sealed class DefaultResponseFactory(ITransportConfiguration transportConfiguration) : ResponseFactory
+internal sealed class DefaultResponseFactory : ResponseFactory
 {
 	private readonly ConcurrentDictionary<Type, IResponseBuilder> _resolvedBuilders = new()
 	{
@@ -30,8 +30,6 @@ internal sealed class DefaultResponseFactory(ITransportConfiguration transportCo
 		[typeof(DynamicResponse)] = new DynamicResponseBuilder(),
 		[typeof(VoidResponse)] = new VoidResponseBuilder()
 	};
-
-	private readonly ITransportConfiguration? _transportConfiguration = transportConfiguration;
 
 	/// <inheritdoc/>
 	public override TResponse Create<TResponse>(
@@ -87,7 +85,8 @@ internal sealed class DefaultResponseFactory(ITransportConfiguration transportCo
 
 		TResponse? response = null;
 
-		if (MayHaveBody(statusCode, endpoint.Method, contentLength) && TryResolveBuilder<TResponse>(out var builder))
+		if (MayHaveBody(statusCode, endpoint.Method, contentLength)
+			&& TryResolveBuilder<TResponse>(requestData.ProductResponseBuilders, requestData.ResponseBuilders, out var builder))
 		{
 			var ownsStream = false;
 
@@ -122,17 +121,19 @@ internal sealed class DefaultResponseFactory(ITransportConfiguration transportCo
 		response ??= new TResponse();
 		response.ApiCallDetails = details;
 		return response;
-	}	
+	}
 
-	private	bool TryResolveBuilder<TResponse>(out IResponseBuilder builder) where TResponse : TransportResponse, new()
+	private bool TryResolveBuilder<TResponse>(IReadOnlyCollection<IResponseBuilder> productResponseBuilders,
+		IReadOnlyCollection<IResponseBuilder> responseBuilders, out IResponseBuilder builder
+	) where TResponse : TransportResponse, new()
 	{
 		if (_resolvedBuilders.TryGetValue(typeof(TResponse), out builder))
 			return true;
 
-		if (TryFindResponseBuilder(_transportConfiguration.ResponseBuilders, _resolvedBuilders, ref builder))
+		if (TryFindResponseBuilder(responseBuilders, _resolvedBuilders, ref builder))
 			return true;
 
-		return TryFindResponseBuilder(_transportConfiguration.ProductRegistration.ResponseBuilders, _resolvedBuilders, ref builder);
+		return TryFindResponseBuilder(productResponseBuilders, _resolvedBuilders, ref builder);
 
 		static bool TryFindResponseBuilder(IEnumerable<IResponseBuilder> responseBuilders, ConcurrentDictionary<Type, IResponseBuilder> resolvedBuilders, ref IResponseBuilder builder)
 		{

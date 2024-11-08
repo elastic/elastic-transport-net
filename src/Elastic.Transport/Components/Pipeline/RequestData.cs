@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Security.Cryptography.X509Certificates;
 using Elastic.Transport.Extensions;
+using Elastic.Transport.Products;
 
 namespace Elastic.Transport;
 
@@ -40,6 +41,9 @@ public sealed record RequestData
 		ProxyPassword = global.ProxyPassword;
 		DisableAutomaticProxyDetection = global.DisableAutomaticProxyDetection;
 		UserAgent = global.UserAgent;
+		ResponseBuilders = global.ResponseBuilders;
+		ProductResponseBuilders = global.ProductRegistration.ResponseBuilders;
+
 		KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
 		KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
 		RunAs = local?.RunAs ?? global.RunAs;
@@ -87,6 +91,12 @@ public sealed record RequestData
 			Headers.Add(OpaqueIdHeader, local.OpaqueId);
 		}
 	}
+
+	/// <inheritdoc cref="ITransportConfiguration.ResponseBuilders"/>
+	public IReadOnlyCollection<IResponseBuilder> ProductResponseBuilders { get; }
+
+	/// <inheritdoc cref="ITransportConfiguration.ResponseBuilders"/>
+	public IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; }
 
 	/// <inheritdoc cref="ITransportConfiguration.MemoryStreamFactory"/>
 	public MemoryStreamFactory MemoryStreamFactory { get; }

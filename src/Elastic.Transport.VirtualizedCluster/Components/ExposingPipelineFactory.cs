@@ -11,21 +11,16 @@ namespace Elastic.Transport.VirtualizedCluster.Components;
 public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFactory
 	where TConfiguration : class, ITransportConfiguration
 {
-	public ExposingPipelineFactory(TConfiguration configuration, DateTimeProvider dateTimeProvider)
+	public ExposingPipelineFactory(TConfiguration configuration)
 	{
-		DateTimeProvider = dateTimeProvider;
 		Configuration = configuration;
-		Pipeline = Create(new RequestData(Configuration, null), DateTimeProvider);
-		RequestHandler = new DistributedTransport<TConfiguration>(Configuration, this, DateTimeProvider);
+		Transport = new DistributedTransport<TConfiguration>(Configuration);
 	}
 
-	// ReSharper disable once MemberCanBePrivate.Global
-	public RequestPipeline Pipeline { get; }
-	private DateTimeProvider DateTimeProvider { get; }
 	private TConfiguration Configuration { get; }
-	public ITransport<TConfiguration> RequestHandler { get; }
+	public ITransport<TConfiguration> Transport { get; }
 
-	public override RequestPipeline Create(RequestData requestData, DateTimeProvider dateTimeProvider) =>
-			new DefaultRequestPipeline(requestData, DateTimeProvider);
+	public override RequestPipeline Create(RequestData requestData) =>
+			new RequestPipeline(requestData);
 }
 #nullable restore

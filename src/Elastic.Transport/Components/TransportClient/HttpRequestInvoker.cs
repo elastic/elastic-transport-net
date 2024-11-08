@@ -37,14 +37,7 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// <summary>
 	/// Create a new instance of the <see cref="HttpRequestInvoker"/>.
 	/// </summary>
-	public HttpRequestInvoker() : this(new TransportConfiguration()) { }
-
-	/// <summary>
-	/// Create a new instance of the <see cref="HttpRequestInvoker"/>.
-	/// </summary>
-	/// <param name="transportConfiguration">The <see cref="ITransportConfiguration"/> from which response builders can be loaded.</param>
-	public HttpRequestInvoker(ITransportConfiguration transportConfiguration) :
-		this(new DefaultResponseFactory(transportConfiguration)) { }
+	public HttpRequestInvoker() : this(new DefaultResponseFactory()) { }
 
 	internal HttpRequestInvoker(ResponseFactory responseFactory)
 	{
@@ -56,13 +49,13 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// Allows consumers to inject their own HttpMessageHandler, and optionally call our default implementation.
 	/// </summary>
 	public HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler) :
-		this(wrappingHandler, new DefaultResponseFactory(new TransportConfiguration())) { }
+		this(wrappingHandler, new DefaultResponseFactory()) { }
 
 	/// <summary>
 	/// Allows consumers to inject their own HttpMessageHandler, and optionally call our default implementation.
 	/// </summary>
 	public HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler, ITransportConfiguration transportConfiguration) :
-		this(wrappingHandler, new DefaultResponseFactory(transportConfiguration))
+		this(wrappingHandler, new DefaultResponseFactory())
 	{ }
 
 	internal HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler, ResponseFactory responseFactory)

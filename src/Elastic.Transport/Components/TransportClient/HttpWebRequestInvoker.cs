@@ -45,15 +45,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	/// <summary>
 	/// Create a new instance of the <see cref="HttpWebRequestInvoker"/>.
 	/// </summary>
-	public HttpWebRequestInvoker() : this(new TransportConfiguration()) { }
-
-	/// <summary>
-	/// Create a new instance of the <see cref="HttpWebRequestInvoker"/>.
-	/// </summary>
-	/// <param name="transportConfiguration">The <see cref="ITransportConfiguration"/> from which response builders can be loaded.</param>
-	public HttpWebRequestInvoker(ITransportConfiguration transportConfiguration) :
-		this(new DefaultResponseFactory(transportConfiguration))
-	{ }
+	public HttpWebRequestInvoker() : this(new DefaultResponseFactory()) { }
 
 	internal HttpWebRequestInvoker(ResponseFactory responseFactory) => ResponseFactory = responseFactory;
 

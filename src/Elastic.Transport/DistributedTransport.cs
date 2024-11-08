@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
+using Elastic.Transport.Diagnostics.Auditing;
 using Elastic.Transport.Extensions;
 using Elastic.Transport.Products;
 
@@ -22,27 +23,12 @@ namespace Elastic.Transport;
 public sealed class DistributedTransport : DistributedTransport<ITransportConfiguration>
 {
 	/// <summary>
-	///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
-	///     different
-	///     nodes
+	/// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
+	/// different nodes
 	/// </summary>
-	/// <param name="configurationValues">The configuration to use for this transport</param>
-	public DistributedTransport(ITransportConfiguration configurationValues) : base(configurationValues, null, null) { }
-
-	/// <summary>
-	///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
-	///     different
-	///     nodes
-	/// </summary>
-	/// <param name="configurationValues">The configuration to use for this transport</param>
-	/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
-	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
-	internal DistributedTransport(
-		ITransportConfiguration configurationValues,
-		RequestPipelineFactory? pipelineProvider = null,
-		DateTimeProvider? dateTimeProvider = null
-	)
-		: base(configurationValues, pipelineProvider, dateTimeProvider) { }
+	/// <param name="configuration">The configuration to use for this transport</param>
+	public DistributedTransport(ITransportConfiguration configuration)
+		: base(configuration) { }
 }
 
 /// <inheritdoc cref="ITransport{TConfiguration}" />
@@ -52,35 +38,26 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	private readonly ProductRegistration _productRegistration;
 
 	/// <summary>
-	///     Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
-	///     different
-	///     nodes
+	/// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
+	/// different nodes
 	/// </summary>
-	/// <param name="configurationValues">The configuration to use for this transport</param>
-	/// <param name="pipelineProvider">In charge of create a new pipeline, safe to pass null to use the default</param>
-	/// <param name="dateTimeProvider">The date time proved to use, safe to pass null to use the default</param>
-	public DistributedTransport(
-		TConfiguration configurationValues,
-		RequestPipelineFactory? pipelineProvider = null,
-		DateTimeProvider? dateTimeProvider = null
-	)
+	/// <param name="configuration">The configuration to use for this transport</param>
+	public DistributedTransport(TConfiguration configuration)
 	{
-		configurationValues.ThrowIfNull(nameof(configurationValues));
-		configurationValues.NodePool.ThrowIfNull(nameof(configurationValues.NodePool));
-		configurationValues.RequestInvoker.ThrowIfNull(nameof(configurationValues.RequestInvoker));
-		configurationValues.RequestResponseSerializer.ThrowIfNull(nameof(configurationValues
-			.RequestResponseSerializer));
+		configuration.ThrowIfNull(nameof(configuration));
+		configuration.NodePool.ThrowIfNull(nameof(configuration.NodePool));
+		configuration.RequestInvoker.ThrowIfNull(nameof(configuration.RequestInvoker));
+		configuration.RequestResponseSerializer.ThrowIfNull(nameof(configuration.RequestResponseSerializer));
 
-		_productRegistration = configurationValues.ProductRegistration;
-
-		Configuration = configurationValues;
+		_productRegistration = configuration.ProductRegistration;
+		Configuration = configuration;
+		MemoryStreamFactory = configuration.MemoryStreamFactory;
 		TransportRequestData = new RequestData(Configuration);
-		RequestPipelineFactory = pipelineProvider ?? new DefaultRequestPipelineFactory();
-		DateTimeProvider = dateTimeProvider ?? DefaultDateTimeProvider.Default;
+		TransportPipeline = Configuration.PipelineProvider.Create(TransportRequestData);
 	}
 
-	private DateTimeProvider DateTimeProvider { get; }
-	private RequestPipelineFactory RequestPipelineFactory { get; }
+	private RequestPipeline TransportPipeline { get; }
+	private MemoryStreamFactory MemoryStreamFactory { get; }
 	private RequestData TransportRequestData { get; }
 
 	/// <inheritdoc cref="ITransport{TConfiguration}.Configuration"/>
@@ -133,12 +110,14 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 			Configuration.OnRequestDataCreated?.Invoke(requestData);
 
-			using var pipeline = RequestPipelineFactory.Create(requestData, DateTimeProvider);
+			var pipeline = requestData == TransportRequestData ? TransportPipeline : Configuration.PipelineProvider.Create(requestData);
+			var startedOn = Configuration.DateTimeProvider.Now();
+			var auditor = Configuration.DisableAuditTrail.GetValueOrDefault(false) ? null : new Auditor(Configuration.DateTimeProvider);
 
 			if (isAsync)
-				await pipeline.FirstPoolUsageAsync(Configuration.BootstrapLock, cancellationToken).ConfigureAwait(false);
+				await pipeline.FirstPoolUsageAsync(Configuration.BootstrapLock, auditor, cancellationToken).ConfigureAwait(false);
 			else
-				pipeline.FirstPoolUsage(Configuration.BootstrapLock);
+				pipeline.FirstPoolUsage(Configuration.BootstrapLock, auditor);
 
 			TResponse response = null;
 
@@ -179,10 +158,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				try
 				{
 					if (isAsync)
-						response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, data, cancellationToken)
+						response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, data, auditor, cancellationToken)
 							.ConfigureAwait(false);
 					else
-						response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData, data);
+						response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData, data, auditor);
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 				{
@@ -194,12 +173,12 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				}
 				catch (Exception killerException)
 				{
-					ThrowUnexpectedTransportException(killerException, seenExceptions, endpoint, response, pipeline);
+					ThrowUnexpectedTransportException(killerException, seenExceptions, endpoint, response, auditor);
 				}
 			}
 			else
 			{
-				foreach (var node in pipeline.NextNode())
+				foreach (var node in pipeline.NextNode(startedOn, auditor))
 				{
 					attemptedNodes++;
 					endpoint = endpoint with { Node = node };
@@ -215,23 +194,23 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 						if (_productRegistration.SupportsSniff)
 						{
 							if (isAsync)
-								await pipeline.SniffOnStaleClusterAsync(cancellationToken).ConfigureAwait(false);
+								await pipeline.SniffOnStaleClusterAsync(auditor, cancellationToken).ConfigureAwait(false);
 							else
-								pipeline.SniffOnStaleCluster();
+								pipeline.SniffOnStaleCluster(auditor);
 						}
 						if (_productRegistration.SupportsPing)
 						{
 							if (isAsync)
-								await PingAsync(pipeline, node, cancellationToken).ConfigureAwait(false);
+								await PingAsync(pipeline, node, auditor, cancellationToken).ConfigureAwait(false);
 							else
-								Ping(pipeline, node);
+								Ping(pipeline, node, auditor);
 						}
 
 						if (isAsync)
-							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, data, cancellationToken)
+							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, requestData, data, auditor, cancellationToken)
 								.ConfigureAwait(false);
 						else
-							response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData, data);
+							response = pipeline.CallProductEndpoint<TResponse>(endpoint, requestData, data, auditor);
 
 						if (!response.ApiCallDetails.SuccessOrKnownError)
 						{
@@ -240,9 +219,9 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 							if (_productRegistration.SupportsSniff)
 							{
 								if (isAsync)
-									await pipeline.SniffOnConnectionFailureAsync(cancellationToken).ConfigureAwait(false);
+									await pipeline.SniffOnConnectionFailureAsync(auditor, cancellationToken).ConfigureAwait(false);
 								else
-									pipeline.SniffOnConnectionFailure();
+									pipeline.SniffOnConnectionFailure(auditor);
 							}
 						}
 					}
@@ -258,19 +237,19 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 					catch (Exception killerException)
 					{
 						if (killerException is OperationCanceledException && cancellationToken.IsCancellationRequested)
-							pipeline.AuditCancellationRequested();
+							pipeline.AuditCancellationRequested(auditor);
 
 						throw new UnexpectedTransportException(killerException, seenExceptions)
 						{
 							Endpoint = endpoint,
 							ApiCallDetails = response?.ApiCallDetails,
-							AuditTrail = pipeline.AuditTrail
+							AuditTrail = auditor
 						};
 					}
 
 					if (cancellationToken.IsCancellationRequested)
 					{
-						pipeline.AuditCancellationRequested();
+						pipeline.AuditCancellationRequested(auditor);
 						break;
 					}
 
@@ -288,7 +267,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
 			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportAttemptedNodes, attemptedNodes);
 
-			return FinalizeResponse(endpoint, requestData, data, pipeline, seenExceptions, response);
+			return FinalizeResponse(endpoint, requestData, data, pipeline, startedOn, auditor, seenExceptions, response);
 		}
 		finally
 		{
@@ -299,13 +278,13 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	private static void ThrowUnexpectedTransportException<TResponse>(Exception killerException,
 		List<PipelineException> seenExceptions,
 		Endpoint endpoint,
-		TResponse response, RequestPipeline pipeline
+		TResponse response, IReadOnlyCollection<Audit>? auditTrail
 	) where TResponse : TransportResponse, new() =>
 		throw new UnexpectedTransportException(killerException, seenExceptions)
 		{
 			Endpoint = endpoint,
 			ApiCallDetails = response?.ApiCallDetails,
-			AuditTrail = pipeline.AuditTrail
+			AuditTrail = auditTrail
 		};
 
 	private static void HandlePipelineException<TResponse>(
@@ -320,19 +299,25 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		seenExceptions.Add(ex);
 	}
 
-	private TResponse FinalizeResponse<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, RequestPipeline pipeline,
+	private TResponse FinalizeResponse<TResponse>(
+		Endpoint endpoint,
+		RequestData requestData,
+		PostData? postData,
+		RequestPipeline pipeline,
+		DateTimeOffset startedOn,
+		Auditor auditor,
 		List<PipelineException>? seenExceptions,
 		TResponse? response
 	) where TResponse : TransportResponse, new()
 	{
 		if (endpoint.IsEmpty) //foreach never ran
-			pipeline.ThrowNoNodesAttempted(endpoint, seenExceptions);
+			pipeline.ThrowNoNodesAttempted(endpoint, auditor, seenExceptions);
 
 		var callDetails = GetMostRecentCallDetails(response, seenExceptions);
-		var clientException = pipeline.CreateClientException(response, callDetails, endpoint, requestData, seenExceptions);
+		var clientException = pipeline.CreateClientException(response, callDetails, endpoint, auditor, startedOn, seenExceptions);
 
 		if (response?.ApiCallDetails == null)
-			pipeline.BadResponse(ref response, callDetails, endpoint, requestData, postData, clientException);
+			pipeline.BadResponse(ref response, callDetails, endpoint, requestData, postData, clientException, auditor);
 
 		HandleTransportException(requestData, clientException, response);
 		return response;
@@ -359,8 +344,8 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				a.OriginalException = clientException;
 			//On .NET Core the TransportClient implementation throws exceptions on bad responses
 			//This causes it to behave differently to .NET FULL. We already wrapped the WebException
-			//under TransportException and it exposes way more information as part of it's
-			//exception message e.g the the root cause of the server error body.
+			//under TransportException, and it exposes way more information as part of its
+			//exception message e.g. the root cause of the server error body.
 #if NETFRAMEWORK
 			if (a.OriginalException is WebException)
 				a.OriginalException = clientException;
@@ -371,30 +356,30 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		if (data != null && clientException != null && data.ThrowExceptions) throw clientException;
 	}
 
-	private void Ping(RequestPipeline pipeline, Node node)
+	private void Ping(RequestPipeline pipeline, Node node, Auditor? auditor)
 	{
 		try
 		{
-			pipeline.Ping(node);
+			pipeline.Ping(node, auditor);
 		}
 		catch (PipelineException e) when (e.Recoverable)
 		{
 			if (_productRegistration.SupportsSniff)
-				pipeline.SniffOnConnectionFailure();
+				pipeline.SniffOnConnectionFailure(auditor);
 			throw;
 		}
 	}
 
-	private async Task PingAsync(RequestPipeline pipeline, Node node, CancellationToken cancellationToken)
+	private async Task PingAsync(RequestPipeline pipeline, Node node, Auditor? auditor, CancellationToken cancellationToken)
 	{
 		try
 		{
-			await pipeline.PingAsync(node, cancellationToken).ConfigureAwait(false);
+			await pipeline.PingAsync(node, auditor, cancellationToken).ConfigureAwait(false);
 		}
 		catch (PipelineException e) when (e.Recoverable)
 		{
 			if (_productRegistration.SupportsSniff)
-				await pipeline.SniffOnConnectionFailureAsync(cancellationToken).ConfigureAwait(false);
+				await pipeline.SniffOnConnectionFailureAsync(auditor, cancellationToken).ConfigureAwait(false);
 			throw;
 		}
 	}

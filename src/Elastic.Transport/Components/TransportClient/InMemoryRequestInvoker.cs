@@ -29,15 +29,11 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	/// Every request will succeed with this overload, note that it won't actually return mocked responses
 	/// so using this overload might fail if you are using it to test high level bits that need to deserialize the response.
 	/// </summary>
-	public InMemoryRequestInvoker() : this(null) { }
-
-	/// <inheritdoc cref="InMemoryRequestInvoker()"/>
-	public InMemoryRequestInvoker(ProductRegistration? productRegistration)
+	public InMemoryRequestInvoker()
 	{
 		_statusCode = 200;
 
-		productRegistration ??= DefaultProductRegistration.Default;
-		ResponseFactory = new DefaultResponseFactory(new TransportConfiguration(null, productRegistration));
+		ResponseFactory = new DefaultResponseFactory();
 	}
 
 	/// <inheritdoc cref="InMemoryRequestInvoker"/>
@@ -49,7 +45,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 		_contentType = contentType;
 		_headers = headers;
 
-		ResponseFactory = new DefaultResponseFactory(new TransportConfiguration(null, DefaultProductRegistration.Default));
+		ResponseFactory = new DefaultResponseFactory();
 	}
 
 	/// <inheritdoc />

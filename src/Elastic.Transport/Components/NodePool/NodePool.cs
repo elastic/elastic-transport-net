@@ -20,12 +20,13 @@ public abstract class NodePool : IDisposable
 {
 	private bool _disposed;
 
-	internal NodePool() { }
-
 	/// <summary>
 	/// The last time that this instance was updated.
 	/// </summary>
-	public abstract DateTimeOffset LastUpdate { get; protected set; }
+	public abstract DateTimeOffset? LastUpdate { get; protected set; }
+
+	/// <inheritdoc cref="DateTimeProvider"/>>
+	public DateTimeProvider DateTimeProvider { get; set; } = DefaultDateTimeProvider.Default;
 
 	/// <summary>
 	/// Returns the default maximum retries for the connection pool implementation.
@@ -82,10 +83,7 @@ public abstract class NodePool : IDisposable
 	/// <param name="disposing"></param>
 	protected virtual void Dispose(bool disposing)
 	{
-		if (!_disposed)
-		{
-			_disposed = true;
-		}
+		if (!_disposed) _disposed = true;
 	}
 
 	/// <summary>
@@ -93,7 +91,7 @@ public abstract class NodePool : IDisposable
 	/// e.g Thread A might get 1,2,3,4,5 and thread B will get 2,3,4,5,1.
 	/// if there are no live nodes yields a different dead node to try once
 	/// </summary>
-	public abstract IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null);
+	public abstract IEnumerable<Node> CreateView(Auditor? auditor = null);
 
 	/// <summary>
 	/// Reseeds the nodes. The implementation is responsible for thread safety.

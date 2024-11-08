@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
 
@@ -89,18 +90,4 @@ public readonly struct HeadersList : IEnumerable<string>
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-	internal struct EmptyEnumerator<T> : IEnumerator<T>
-	{
-		public T Current => default;
-		object IEnumerator.Current => Current;
-		public bool MoveNext() => false;
-
-		public void Reset()
-		{
-		}
-
-		public void Dispose()
-		{
-		}
-	}
 }

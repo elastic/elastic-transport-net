@@ -22,16 +22,13 @@ public class SniffingNodePool : StaticNodePool
 	private readonly ReaderWriterLockSlim _readerWriter = new();
 
 	/// <inheritdoc cref="SniffingNodePool"/>>
-	public SniffingNodePool(IEnumerable<Uri> uris, bool randomize = true, DateTimeProvider dateTimeProvider = null)
-		: base(uris, randomize, dateTimeProvider) { }
+	public SniffingNodePool(IEnumerable<Uri> uris, bool randomize = true) : base(uris, randomize) { }
 
 	/// <inheritdoc cref="SniffingNodePool"/>>
-	public SniffingNodePool(IEnumerable<Node> nodes, bool randomize = true, DateTimeProvider dateTimeProvider = null)
-		: base(nodes, randomize, dateTimeProvider) { }
+	public SniffingNodePool(IEnumerable<Node> nodes, bool randomize = true) : base(nodes, randomize) { }
 
 	/// <inheritdoc cref="SniffingNodePool"/>>
-	public SniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer, DateTimeProvider dateTimeProvider = null)
-		: base(nodes, nodeScorer, dateTimeProvider) { }
+	public SniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer) : base(nodes, nodeScorer) { }
 
 	/// <inheritdoc />
 	public override IReadOnlyCollection<Node> Nodes
@@ -81,12 +78,12 @@ public class SniffingNodePool : StaticNodePool
 	}
 
 	/// <inheritdoc />
-	public override IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null)
+	public override IEnumerable<Node> CreateView(Auditor? auditor)
 	{
 		_readerWriter.EnterReadLock();
 		try
 		{
-			return base.CreateView(audit);
+			return base.CreateView(auditor);
 		}
 		finally
 		{

@@ -28,37 +28,36 @@ public class StaticNodePool : NodePool
 	private readonly Func<Node, float> _nodeScorer;
 
 	/// <inheritdoc cref="StaticNodePool"/>
-	public StaticNodePool(IEnumerable<Uri> uris, bool randomize = true, DateTimeProvider dateTimeProvider = null)
-		: this(uris.Select(uri => new Node(uri)), randomize, null, dateTimeProvider) { }
+	public StaticNodePool(IEnumerable<Uri> uris, bool randomize = true)
+		: this(uris.Select(uri => new Node(uri)), randomize, null) { }
 
 	/// <inheritdoc cref="StaticNodePool"/>
-	public StaticNodePool(IEnumerable<Node> nodes, bool randomize = true, DateTimeProvider dateTimeProvider = null)
-		: this(nodes, randomize, null, dateTimeProvider) { }
+	public StaticNodePool(IEnumerable<Node> nodes, bool randomize = true)
+		: this(nodes, randomize, null) { }
 
 	/// <inheritdoc cref="StaticNodePool"/>
-	protected StaticNodePool(IEnumerable<Node> nodes, bool randomize, int? randomizeSeed = null, DateTimeProvider dateTimeProvider = null)
+	protected StaticNodePool(IEnumerable<Node> nodes, bool randomize, int? randomizeSeed = null)
 	{
 		Randomize = randomize;
 		Random = !randomize || !randomizeSeed.HasValue
 			? new Random()
 			: new Random(randomizeSeed.Value);
 
-		Initialize(nodes, dateTimeProvider);
+		Initialize(nodes);
 	}
 
 	//this constructor is protected because nodeScorer only makes sense on subclasses that support reseeding otherwise just manually sort `nodes` before instantiating.
 	/// <inheritdoc cref="StaticNodePool"/>
-	protected StaticNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer = null, DateTimeProvider dateTimeProvider = null)
+	protected StaticNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer = null)
 	{
 		_nodeScorer = nodeScorer;
-		Initialize(nodes, dateTimeProvider);
+		Initialize(nodes);
 	}
 
-	private void Initialize(IEnumerable<Node> nodes, DateTimeProvider dateTimeProvider)
+	private void Initialize(IEnumerable<Node> nodes)
 	{
 		var nodesProvided = nodes?.ToList() ?? throw new ArgumentNullException(nameof(nodes));
 		nodesProvided.ThrowIfEmpty(nameof(nodes));
-		DateTimeProvider = dateTimeProvider ?? Elastic.Transport.DefaultDateTimeProvider.Default;
 
 		string scheme = null;
 		foreach (var node in nodesProvided)
@@ -76,11 +75,10 @@ public class StaticNodePool : NodePool
 		InternalNodes = SortNodes(nodesProvided)
 			.DistinctByCustom(n => n.Uri)
 			.ToList();
-		LastUpdate = DateTimeProvider.Now();
 	}
 
 	/// <inheritdoc />
-	public override DateTimeOffset LastUpdate { get; protected set; }
+	public override DateTimeOffset? LastUpdate { get; protected set; }
 
 	/// <inheritdoc />
 	public override int MaxRetries => InternalNodes.Count - 1;
@@ -112,9 +110,6 @@ public class StaticNodePool : NodePool
 		}
 	}
 
-	/// <inheritdoc cref="DateTimeProvider"/>>
-	protected DateTimeProvider DateTimeProvider { get; private set; }
-
 	/// <summary>
 	/// The list of nodes we are operating over. This is protected so that subclasses that DO implement <see cref="SupportsReseeding"/>
 	/// can update this list. Its up to subclasses to make this thread safe.
@@ -137,7 +132,7 @@ public class StaticNodePool : NodePool
 	/// e.g Thread A might get 1,2,3,4,5 and thread B will get 2,3,4,5,1.
 	/// if there are no live nodes yields a different dead node to try once
 	/// </summary>
-	public override IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null)
+	public override IEnumerable<Node> CreateView(Auditor? auditor)
 	{
 		var nodes = AliveNodes;
 
@@ -146,13 +141,13 @@ public class StaticNodePool : NodePool
 		if (nodes.Count == 0)
 		{
 			//could not find a suitable node retrying on first node off globalCursor
-			yield return RetryInternalNodes(globalCursor, audit);
+			yield return RetryInternalNodes(globalCursor, auditor);
 
 			yield break;
 		}
 
 		var localCursor = globalCursor % nodes.Count;
-		foreach (var aliveNode in SelectAliveNodes(localCursor, nodes, audit)) yield return aliveNode;
+		foreach (var aliveNode in SelectAliveNodes(localCursor, nodes, auditor)) yield return aliveNode;
 	}
 
 	/// <inheritdoc />
@@ -164,14 +159,13 @@ public class StaticNodePool : NodePool
 	/// <paramref name="globalCursor"/>
 	/// </summary>
 	/// <param name="globalCursor"></param>
-	/// <param name="audit">Trace action to document the fact all nodes were dead and were resurrecting one at random</param>
-	protected Node RetryInternalNodes(int globalCursor, Action<AuditEvent, Node> audit = null)
+	/// <param name="auditor">Trace action to document the fact all nodes were dead and were resurrecting one at random</param>
+	protected Node RetryInternalNodes(int globalCursor, Auditor? auditor = null)
 	{
-		audit?.Invoke(AuditEvent.AllNodesDead, null);
+		auditor?.Emit(AuditEvent.AllNodesDead);
 		var node = InternalNodes[globalCursor % InternalNodes.Count];
 		node.IsResurrected = true;
-		audit?.Invoke(AuditEvent.Resurrection, node);
-
+		auditor?.Emit(AuditEvent.Resurrection, node);
 		return node;
 	}
 
@@ -181,8 +175,8 @@ public class StaticNodePool : NodePool
 	/// </summary>
 	/// <param name="cursor">The starting point into <paramref name="aliveNodes"/> from wich to start.</param>
 	/// <param name="aliveNodes"></param>
-	/// <param name="audit">Trace action to notify if a resurrection occured</param>
-	protected static IEnumerable<Node> SelectAliveNodes(int cursor, IReadOnlyList<Node> aliveNodes, Action<AuditEvent, Node> audit = null)
+	/// <param name="auditor">Trace action to notify if a resurrection occured</param>
+	protected static IEnumerable<Node> SelectAliveNodes(int cursor, IReadOnlyList<Node> aliveNodes, Auditor? auditor = null)
 	{
 		// ReSharper disable once ForCanBeConvertedToForeach
 		for (var attempts = 0; attempts < aliveNodes.Count; attempts++)
@@ -192,7 +186,7 @@ public class StaticNodePool : NodePool
 			//if this node is not alive or no longer dead mark it as resurrected
 			if (!node.IsAlive)
 			{
-				audit?.Invoke(AuditEvent.Resurrection, node);
+				auditor?.Emit(AuditEvent.Resurrection, node);
 				node.IsResurrected = true;
 			}
 
@@ -209,6 +203,4 @@ public class StaticNodePool : NodePool
 			? nodes.OrderByDescending(_nodeScorer)
 			: nodes.OrderBy(n => Randomize ? Random.Next() : 1);
 
-	/// <inheritdoc />
-	protected override void Dispose(bool disposing) => base.Dispose(disposing);
 }

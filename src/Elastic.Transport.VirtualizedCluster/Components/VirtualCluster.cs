@@ -19,14 +19,14 @@ public class VirtualCluster
 		InternalNodes = nodes.ToList();
 	}
 
-	public List<IClientCallRule> ClientCallRules { get; } = new List<IClientCallRule>();
-	public TestableDateTimeProvider DateTimeProvider { get; } = new TestableDateTimeProvider();
+	public List<IClientCallRule> ClientCallRules { get; } = new();
+	private TestableDateTimeProvider TestDateTimeProvider { get; } = new();
 
 	protected List<Node> InternalNodes { get; }
 	public IReadOnlyList<Node> Nodes => InternalNodes;
-	public List<IRule> PingingRules { get; } = new List<IRule>();
+	public List<IRule> PingingRules { get; } = new();
 
-	public List<ISniffRule> SniffingRules { get; } = new List<ISniffRule>();
+	public List<ISniffRule> SniffingRules { get; } = new();
 	internal string PublishAddressOverride { get; private set; }
 
 	internal bool SniffShouldReturnFqnd { get; private set; }
@@ -73,25 +73,27 @@ public class VirtualCluster
 	public SealedVirtualCluster SingleNodeConnection(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
 	{
 		var nodes = seedNodesSelector?.Invoke(InternalNodes) ?? InternalNodes;
-		return new SealedVirtualCluster(this, new SingleNodePool(nodes.First().Uri), DateTimeProvider, ProductRegistration);
+		return new SealedVirtualCluster(this, new SingleNodePool(nodes.First().Uri), TestDateTimeProvider, ProductRegistration);
 	}
 
 	public SealedVirtualCluster StaticNodePool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
 	{
 		var nodes = seedNodesSelector?.Invoke(InternalNodes) ?? InternalNodes;
-		return new SealedVirtualCluster(this, new StaticNodePool(nodes, false, DateTimeProvider), DateTimeProvider, ProductRegistration);
+		var dateTimeProvider = TestDateTimeProvider;
+		var nodePool = new StaticNodePool(nodes, false) { DateTimeProvider = dateTimeProvider };
+		return new SealedVirtualCluster(this, nodePool , TestDateTimeProvider, ProductRegistration);
 	}
 
 	public SealedVirtualCluster SniffingNodePool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
 	{
 		var nodes = seedNodesSelector?.Invoke(InternalNodes) ?? InternalNodes;
-		return new SealedVirtualCluster(this, new SniffingNodePool(nodes, false, DateTimeProvider), DateTimeProvider, ProductRegistration);
+		return new SealedVirtualCluster(this, new SniffingNodePool(nodes, false) { DateTimeProvider = TestDateTimeProvider }, TestDateTimeProvider, ProductRegistration);
 	}
 
 	public SealedVirtualCluster StickyNodePool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
 	{
 		var nodes = seedNodesSelector?.Invoke(InternalNodes) ?? InternalNodes;
-		return new SealedVirtualCluster(this, new StickyNodePool(nodes, DateTimeProvider), DateTimeProvider, ProductRegistration);
+		return new SealedVirtualCluster(this, new StickyNodePool(nodes) { DateTimeProvider = TestDateTimeProvider}, TestDateTimeProvider, ProductRegistration);
 	}
 
 	public SealedVirtualCluster StickySniffingNodePool(Func<Node, float> sorter = null,
@@ -99,6 +101,6 @@ public class VirtualCluster
 	)
 	{
 		var nodes = seedNodesSelector?.Invoke(InternalNodes) ?? InternalNodes;
-		return new SealedVirtualCluster(this, new StickySniffingNodePool(nodes, sorter, DateTimeProvider), DateTimeProvider, ProductRegistration);
+		return new SealedVirtualCluster(this, new StickySniffingNodePool(nodes, sorter) { DateTimeProvider = TestDateTimeProvider }, TestDateTimeProvider, ProductRegistration);
 	}
 }

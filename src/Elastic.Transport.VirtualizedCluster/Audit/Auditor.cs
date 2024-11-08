@@ -34,7 +34,7 @@ public sealed class Auditor
 
 	public IEnumerable<Diagnostics.Auditing.Audit> AsyncAuditTrail { get; set; }
 	public IEnumerable<Diagnostics.Auditing.Audit> AuditTrail { get; set; }
-	public Func<Components.VirtualizedCluster> Cluster { get; set; }
+	public Func<Components.VirtualizedCluster> Cluster { get; }
 
 	public TransportResponse Response { get; internal set; }
 	public TransportResponse ResponseAsync { get; internal set; }

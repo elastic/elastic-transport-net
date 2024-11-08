@@ -12,16 +12,15 @@ namespace Elastic.Transport;
 public class SingleNodePool : NodePool
 {
 	/// <inheritdoc cref="SingleNodePool"/>
-	public SingleNodePool(Uri uri, DateTimeProvider dateTimeProvider = null)
+	public SingleNodePool(Uri uri)
 	{
 		var node = new Node(uri);
 		UsingSsl = node.Uri.Scheme == "https";
 		Nodes = new List<Node> { node };
-		LastUpdate = (dateTimeProvider ?? DefaultDateTimeProvider.Default).Now();
 	}
 
 	/// <inheritdoc />
-	public override DateTimeOffset LastUpdate { get; protected set; }
+	public override DateTimeOffset? LastUpdate { get; protected set; }
 
 	/// <inheritdoc />
 	public override int MaxRetries => 0;
@@ -39,11 +38,8 @@ public class SingleNodePool : NodePool
 	public override bool UsingSsl { get; protected set; }
 
 	/// <inheritdoc />
-	public override IEnumerable<Node> CreateView(Action<AuditEvent, Node> audit = null) => Nodes;
+	public override IEnumerable<Node> CreateView(Auditor? auditor) => Nodes;
 
 	/// <inheritdoc />
 	public override void Reseed(IEnumerable<Node> nodes) { } //ignored
-
-	/// <inheritdoc />
-	protected override void Dispose(bool disposing) => base.Dispose(disposing);
 }

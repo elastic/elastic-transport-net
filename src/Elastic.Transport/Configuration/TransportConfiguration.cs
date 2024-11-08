@@ -42,7 +42,7 @@ public record TransportConfiguration : ITransportConfiguration
 #pragma warning disable 1570
 	/// <summary>
 	/// The default concurrent connection limit for outgoing http requests. Defaults to <c>80</c>
-#if !NETFRAMEWORK    /// <para>Except for <see cref="HttpClientHandler"/> implementations based on curl, which defaults to <see cref="Environment.ProcessorCount"/></para>                                                                                                                                                        
+#if !NETFRAMEWORK    /// <para>Except for <see cref="HttpClientHandler"/> implementations based on curl, which defaults to <see cref="Environment.ProcessorCount"/></para>
 #endif
 	/// </summary>
 #pragma warning restore 1570
@@ -85,18 +85,23 @@ public record TransportConfiguration : ITransportConfiguration
 	{
 		//non init properties
 		NodePool = nodePool;
-		RequestInvoker = requestInvoker ?? new HttpRequestInvoker(this);
+		RequestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		ProductRegistration = productRegistration ?? DefaultProductRegistration.Default;
-		Accept = productRegistration?.DefaultContentType;
 		RequestResponseSerializer = serializer ?? new LowLevelRequestResponseSerializer();
+		DateTimeProvider = nodePool.DateTimeProvider;
+		MetaHeaderProvider = productRegistration?.MetaHeaderProvider;
+		UrlFormatter = new UrlFormatter(this);
+
+		PipelineProvider = DefaultRequestPipelineFactory.Default;
+
+		Accept = productRegistration?.DefaultContentType;
 		ConnectionLimit = DefaultConnectionLimit;
 		DnsRefreshTimeout = DefaultDnsRefreshTimeout;
 		MemoryStreamFactory = DefaultMemoryStreamFactory;
 		SniffsOnConnectionFault = true;
 		SniffsOnStartup = true;
 		SniffInformationLifeSpan = TimeSpan.FromHours(1);
-		MetaHeaderProvider = productRegistration?.MetaHeaderProvider;
-		UrlFormatter = new UrlFormatter(this);
+
 		StatusCodeToResponseSuccess = ProductRegistration.HttpStatusCodeClassifier;
 		UserAgent = UserAgent.Create(ProductRegistration.Name, ProductRegistration.GetType());
 
@@ -119,6 +124,9 @@ public record TransportConfiguration : ITransportConfiguration
 			throw new ArgumentNullException(nameof(config));
 #endif
 
+		// it's important url formatter is repointed to the new instance of ITransportConfiguration
+		UrlFormatter = new UrlFormatter(this);
+
 		Accept = config.Accept;
 		AllowedStatusCodes = config.AllowedStatusCodes;
 		Authentication = config.Authentication;
@@ -127,6 +135,7 @@ public record TransportConfiguration : ITransportConfiguration
 		ClientCertificates = config.ClientCertificates;
 		ConnectionLimit = config.ConnectionLimit;
 		ContentType = config.ContentType;
+		DateTimeProvider = config.DateTimeProvider;
 		DeadTimeout = config.DeadTimeout;
 		DisableAuditTrail = config.DisableAuditTrail;
 		DisableAutomaticProxyDetection = config.DisableAutomaticProxyDetection;
@@ -154,6 +163,7 @@ public record TransportConfiguration : ITransportConfiguration
 		OpaqueId = config.OpaqueId;
 		ParseAllHeaders = config.ParseAllHeaders;
 		PingTimeout = config.PingTimeout;
+		PipelineProvider = config.PipelineProvider;
 		PrettyJson = config.PrettyJson;
 		ProductRegistration = config.ProductRegistration;
 		ProxyAddress = config.ProxyAddress;
@@ -174,7 +184,6 @@ public record TransportConfiguration : ITransportConfiguration
 		StatusCodeToResponseSuccess = config.StatusCodeToResponseSuccess;
 		ThrowExceptions = config.ThrowExceptions;
 		TransferEncodingChunked = config.TransferEncodingChunked;
-		UrlFormatter = config.UrlFormatter;
 		UserAgent = config.UserAgent;
 	}
 
@@ -204,6 +213,11 @@ public record TransportConfiguration : ITransportConfiguration
 	public IRequestInvoker RequestInvoker { get; }
 	/// <inheritdoc />
 	public Serializer RequestResponseSerializer { get; }
+	/// <inheritdoc />
+	public DateTimeProvider DateTimeProvider { get; }
+
+	/// <inheritdoc />
+	public RequestPipelineFactory PipelineProvider { get; init; }
 
 	/// <inheritdoc />
 	// ReSharper disable UnusedAutoPropertyAccessor.Global

@@ -69,22 +69,26 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	protected TransportConfigurationDescriptorBase(NodePool nodePool, IRequestInvoker? requestInvoker, Serializer? requestResponseSerializer, ProductRegistration? productRegistration)
 	{
 		_nodePool = nodePool;
-		_requestInvoker = requestInvoker ?? new HttpRequestInvoker(this);
+		_requestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		_productRegistration = productRegistration ?? DefaultProductRegistration.Default;
-		_accept = productRegistration?.DefaultContentType;
-		_bootstrapLock = new(1, 1);
 		_requestResponseSerializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
+		_pipelineProvider = DefaultRequestPipelineFactory.Default;
+		_dateTimeProvider = nodePool.DateTimeProvider;
+		_bootstrapLock = new(1, 1);
+		_metaHeaderProvider = productRegistration?.MetaHeaderProvider;
+		_urlFormatter = new UrlFormatter(this);
+
+		_accept = productRegistration?.DefaultContentType;
 		_connectionLimit = TransportConfiguration.DefaultConnectionLimit;
 		_dnsRefreshTimeout = TransportConfiguration.DefaultDnsRefreshTimeout;
 		_memoryStreamFactory = TransportConfiguration.DefaultMemoryStreamFactory;
 		_sniffsOnConnectionFault = true;
 		_sniffsOnStartup = true;
 		_sniffInformationLifeSpan = TimeSpan.FromHours(1);
-		_metaHeaderProvider = productRegistration?.MetaHeaderProvider;
-		_urlFormatter = new UrlFormatter(this);
+
 		_statusCodeToResponseSuccess = _productRegistration.HttpStatusCodeClassifier;
 		_userAgent = Transport.UserAgent.Create(_productRegistration.Name, _productRegistration.GetType());
-		
+
 		if (nodePool is CloudNodePool cloudPool)
 		{
 			_authentication = cloudPool.AuthenticationHeader;
@@ -157,6 +161,8 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	private readonly MetaHeaderProvider? _metaHeaderProvider;
 	private HeadersList? _responseHeadersToParse;
 	private bool? _parseAllHeaders;
+	private DateTimeProvider _dateTimeProvider;
+	private RequestPipelineFactory _pipelineProvider;
 	private List<IResponseBuilder>? _responseBuilders;
 
 	SemaphoreSlim ITransportConfiguration.BootstrapLock => _bootstrapLock;
@@ -164,6 +170,10 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	int ITransportConfiguration.ConnectionLimit => _connectionLimit;
 	NodePool ITransportConfiguration.NodePool => _nodePool;
 	ProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
+
+	DateTimeProvider? ITransportConfiguration.DateTimeProvider => _dateTimeProvider;
+	RequestPipelineFactory? ITransportConfiguration.PipelineProvider => _pipelineProvider;
+
 	TimeSpan? ITransportConfiguration.DeadTimeout => _deadTimeout;
 	bool ITransportConfiguration.DisableAutomaticProxyDetection => _disableAutomaticProxyDetection;
 	TimeSpan? ITransportConfiguration.KeepAliveInterval => _keepAliveInterval;
@@ -427,6 +437,9 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 
 	/// <inheritdoc cref="ITransportConfiguration.MemoryStreamFactory"/>
 	public T MemoryStreamFactory(MemoryStreamFactory memoryStreamFactory) => Assign(memoryStreamFactory, static (a, v) => a._memoryStreamFactory = v);
+
+	/// <inheritdoc cref="ITransportConfiguration.PipelineProvider"/>>
+	public T PipelineProvider(RequestPipelineFactory provider) => Assign(provider, static (a, v) => a._pipelineProvider = v);
 
 	/// <inheritdoc cref="IRequestConfiguration.EnableTcpStats"/>>
 	public T EnableTcpStats(bool enableTcpStats = true) => Assign(enableTcpStats, static (a, v) => a._enableTcpStats = v);

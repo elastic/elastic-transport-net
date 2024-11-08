@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Elastic.Transport.Diagnostics;
 
-/// <summary> Provides a typed listener to  actions that <see cref="DefaultRequestPipeline"/> takes e.g sniff, ping, or making an API call </summary>;
+/// <summary> Provides a typed listener to  actions that <see cref="RequestPipeline"/> takes e.g sniff, ping, or making an API call </summary>;
 internal sealed class RequestPipelineDiagnosticObserver : TypedDiagnosticObserver<RequestData, ApiCallDetails>
 {
 	/// <inheritdoc cref="RequestPipelineDiagnosticObserver"/>

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System;
-using System.Collections.Generic;
 
 namespace Elastic.Transport.Diagnostics.Auditing;
 
@@ -13,36 +12,28 @@ internal class Auditable : IDisposable
 
 	private readonly DateTimeProvider _dateTimeProvider;
 
-	public Auditable(AuditEvent type, ref List<Audit> auditTrail, DateTimeProvider dateTimeProvider, Node node)
+	public Auditable(AuditEvent type, DateTimeProvider dateTimeProvider, Node? node)
 	{
-		auditTrail ??= new List<Audit>();
-
 		_dateTimeProvider = dateTimeProvider;
 
 		var started = _dateTimeProvider.Now();
-
 		_audit = new Audit(type, started)
 		{
 			Node = node
 		};
-
-		auditTrail.Add(_audit);
 	}
 
 	public AuditEvent Event
 	{
-		set => _audit.Event = value;
+		set => Audit.Event = value;
 	}
 
 	public Exception Exception
 	{
-		set => _audit.Exception = value;
+		set => Audit.Exception = value;
 	}
 
-	public string PathAndQuery
-	{
-		set => _audit.PathAndQuery = value;
-	}
+	public Audit Audit => _audit;
 
-	public void Dispose() => _audit.Ended = _dateTimeProvider.Now();
+	public void Dispose() => Audit.Ended = _dateTimeProvider.Now();
 }

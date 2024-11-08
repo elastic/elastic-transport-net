@@ -25,7 +25,7 @@ public class TransportException : Exception
 	public TransportException(string message) : base(message) => FailureReason = PipelineFailure.Unexpected;
 
 	/// <inheritdoc cref="TransportException"/>
-	public TransportException(PipelineFailure failure, string message, Exception innerException)
+	public TransportException(PipelineFailure failure, string message, Exception? innerException = null)
 		: base(message, innerException) => FailureReason = failure;
 
 	/// <inheritdoc cref="TransportException"/>
@@ -41,7 +41,7 @@ public class TransportException : Exception
 	/// The audit trail keeping track of what happened during the invocation of
 	/// a request, up until the moment of this exception.
 	/// </summary>
-	public IEnumerable<Audit> AuditTrail { get; internal set; }
+	public IReadOnlyCollection<Audit>? AuditTrail { get; internal init; }
 
 	/// <summary>
 	/// The reason this exception occurred was one of the well defined exit points as modelled by
