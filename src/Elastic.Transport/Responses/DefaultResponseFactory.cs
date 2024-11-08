@@ -11,7 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
 using Elastic.Transport.Extensions;
-using Elastic.Transport.Products;
 
 namespace Elastic.Transport;
 
@@ -31,8 +30,6 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		[typeof(DynamicResponse)] = new DynamicResponseBuilder(),
 		[typeof(VoidResponse)] = new VoidResponseBuilder()
 	};
-
-	//private readonly ITransportConfiguration? _transportConfiguration = transportConfiguration;
 
 	/// <inheritdoc/>
 	public override TResponse Create<TResponse>(
@@ -89,7 +86,7 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		TResponse? response = null;
 
 		if (MayHaveBody(statusCode, endpoint.Method, contentLength)
-			&& TryResolveBuilder<TResponse>(out var builder, requestData.ProductResponseBuilders, requestData.ResponseBuilders))
+			&& TryResolveBuilder<TResponse>(requestData.ProductResponseBuilders, requestData.ResponseBuilders, out var builder))
 		{
 			var ownsStream = false;
 
@@ -126,10 +123,8 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		return response;
 	}
 
-	private	bool TryResolveBuilder<TResponse>(
-		out IResponseBuilder builder,
-		IReadOnlyCollection<IResponseBuilder> productResponseBuilders,
-		IReadOnlyCollection<IResponseBuilder> responseBuilders
+	private bool TryResolveBuilder<TResponse>(IReadOnlyCollection<IResponseBuilder> productResponseBuilders,
+		IReadOnlyCollection<IResponseBuilder> responseBuilders, out IResponseBuilder builder
 	) where TResponse : TransportResponse, new()
 	{
 		if (_resolvedBuilders.TryGetValue(typeof(TResponse), out builder))

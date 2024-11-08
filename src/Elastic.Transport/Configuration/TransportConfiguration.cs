@@ -87,7 +87,6 @@ public record TransportConfiguration : ITransportConfiguration
 		NodePool = nodePool;
 		RequestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		ProductRegistration = productRegistration ?? DefaultProductRegistration.Default;
-		RequestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		RequestResponseSerializer = serializer ?? new LowLevelRequestResponseSerializer();
 		DateTimeProvider = nodePool.DateTimeProvider;
 		MetaHeaderProvider = productRegistration?.MetaHeaderProvider;

@@ -110,7 +110,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 			Configuration.OnRequestDataCreated?.Invoke(requestData);
 
-			var pipeline = requestData == TransportRequestData ? TransportPipeline :Configuration.PipelineProvider.Create(requestData);
+			var pipeline = requestData == TransportRequestData ? TransportPipeline : Configuration.PipelineProvider.Create(requestData);
 			var startedOn = Configuration.DateTimeProvider.Now();
 			var auditor = Configuration.DisableAuditTrail.GetValueOrDefault(false) ? null : new Auditor(Configuration.DateTimeProvider);
 

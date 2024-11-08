@@ -71,7 +71,6 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_nodePool = nodePool;
 		_requestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		_productRegistration = productRegistration ?? DefaultProductRegistration.Default;
-		_requestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		_requestResponseSerializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
 		_pipelineProvider = DefaultRequestPipelineFactory.Default;
 		_dateTimeProvider = nodePool.DateTimeProvider;

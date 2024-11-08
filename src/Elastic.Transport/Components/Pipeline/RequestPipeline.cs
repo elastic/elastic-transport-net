@@ -44,8 +44,6 @@ public class RequestPipeline
 		_nodePredicate = requestData.ConnectionSettings.NodePredicate ?? _productRegistration.NodePredicate;
 	}
 
-	/// A list of <see cref="Audit"/> events
-	//public IEnumerable<Audit>? AuditTrail => _auditTrail;
 
 	private RequestConfiguration PingAndSniffRequestConfiguration
 	{
