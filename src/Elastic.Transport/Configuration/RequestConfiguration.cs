@@ -181,7 +181,7 @@ public record RequestConfiguration : IRequestConfiguration
 		Accept = config.Accept;
 		AllowedStatusCodes = config.AllowedStatusCodes;
 		Authentication = config.Authentication;
-		ClientCertificates = config.ClientCertificates;
+		ClientCertificates = (config.ClientCertificates is null) ? null : new X509CertificateCollection(config.ClientCertificates);
 		ContentType = config.ContentType;
 		DisableDirectStreaming = config.DisableDirectStreaming;
 		DisableAuditTrail = config.DisableAuditTrail;
@@ -231,16 +231,10 @@ public record RequestConfiguration : IRequestConfiguration
 	public bool? DisablePings { get; init; }
 
 	/// <inheritdoc />
-	public bool? DisablePing { get; init; } // TODO: ?
-
-	/// <inheritdoc />
 	public bool? DisableSniff { get; init; }
 
 	/// <inheritdoc />
 	public bool? HttpPipeliningEnabled { get; init; }
-
-	/// <inheritdoc />
-	public bool? EnableHttpPipelining { get; init; } = true; // TODO: ?
 
 	/// <inheritdoc />
 	public bool? EnableHttpCompression { get; init; }
@@ -306,7 +300,7 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 		_accept = config.Accept;
 		_allowedStatusCodes= config.AllowedStatusCodes;
 		_authentication = config.Authentication;
-		_clientCertificates = config.ClientCertificates;
+		_clientCertificates = (config.ClientCertificates is null) ? null : new X509CertificateCollection(config.ClientCertificates);;
 		_contentType = config.ContentType;
 		_disableDirectStreaming = config.DisableDirectStreaming;
 		_disableAuditTrail = config.DisableAuditTrail;
@@ -341,8 +335,10 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 	private bool? _disablePings;
 	private bool? _disableSniff;
 	private bool? _httpPipeliningEnabled;
+	private bool? _enableHttpCompression;
 	private Uri? _forceNode;
 	private int? _maxRetries;
+	private TimeSpan? _maxRetryTimeout; 
 	private string? _opaqueId;
 	private bool? _parseAllHeaders;
 	private TimeSpan? _pingTimeout;
@@ -355,11 +351,6 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 	private bool? _enableTcpStats;
 	private bool? _enableThreadPoolStats;
 	private RequestMetaData? _requestMetaData;
-
-#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
-	private bool? _enableHttpCompression; // TODO: ?
-	private TimeSpan? _maxRetryTimeout;   // TODO: ?
-#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
 	/// <inheritdoc cref="IRequestConfiguration.RunAs"/>
 	public RequestConfigurationDescriptor RunAs(string username)
@@ -466,6 +457,13 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 		return this;
 	}
 
+	/// <inheritdoc cref="IRequestConfiguration.MaxRetryTimeout"/>
+	public RequestConfigurationDescriptor MaxRetries(TimeSpan? timeout)
+	{
+		_maxRetryTimeout = timeout;
+		return this;
+	}
+
 	/// <inheritdoc cref="AuthorizationHeader"/>
 	public RequestConfigurationDescriptor Authentication(AuthorizationHeader authentication)
 	{
@@ -477,6 +475,13 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 	public RequestConfigurationDescriptor EnableHttpPipelining(bool enable = true)
 	{
 		_httpPipeliningEnabled = enable;
+		return this;
+	}
+
+	/// <inheritdoc cref="IRequestConfiguration.EnableHttpCompression"/>
+	public RequestConfigurationDescriptor EnableHttpCompression(bool enable = true)
+	{
+		_enableHttpCompression = enable;
 		return this;
 	}
 

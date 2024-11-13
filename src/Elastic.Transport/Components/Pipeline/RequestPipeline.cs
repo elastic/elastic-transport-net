@@ -58,7 +58,7 @@ public class RequestPipeline
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
 				Authentication = _requestData.AuthenticationHeader,
-				EnableHttpPipelining = _requestData.HttpPipeliningEnabled,
+				HttpPipeliningEnabled = _requestData.HttpPipeliningEnabled,
 				ForceNode = _requestData.ForceNode
 			};
 
