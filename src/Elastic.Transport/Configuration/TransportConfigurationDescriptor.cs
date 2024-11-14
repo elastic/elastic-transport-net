@@ -161,7 +161,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	private readonly MetaHeaderProvider? _metaHeaderProvider;
 	private HeadersList? _responseHeadersToParse;
 	private bool? _parseAllHeaders;
-	private DateTimeProvider _dateTimeProvider;
+	private readonly DateTimeProvider _dateTimeProvider;
 	private RequestPipelineFactory _pipelineProvider;
 	private List<IResponseBuilder>? _responseBuilders;
 
@@ -199,8 +199,8 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	Func<HttpMethod, int, bool> ITransportConfiguration.StatusCodeToResponseSuccess => _statusCodeToResponseSuccess;
 	TimeSpan ITransportConfiguration.DnsRefreshTimeout => _dnsRefreshTimeout;
 	bool ITransportConfiguration.PrettyJson => _prettyJson;
-	IReadOnlyCollection<IResponseBuilder> ITransportConfiguration.ResponseBuilders => _responseBuilders ?? [];
 
+	IReadOnlyCollection<IResponseBuilder> IRequestConfiguration.ResponseBuilders => _responseBuilders ?? [];
 	HeadersList? IRequestConfiguration.ResponseHeadersToParse => _responseHeadersToParse;
 	string? IRequestConfiguration.RunAs => _runAs;
 	bool? IRequestConfiguration.ThrowExceptions => _throwExceptions;
@@ -371,7 +371,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	/// <param name="predicate">Return true if you want the node to be used for API calls</param>
 	public T NodePredicate(Func<Node, bool> predicate) => Assign(predicate, static (a, v) => a._nodePredicate = v);
 
-	/// <inheritdoc cref="ITransportConfiguration.ResponseBuilders"/>
+	/// <inheritdoc cref="IRequestConfiguration.ResponseBuilders"/>
 	public T ResponseBuilder(IResponseBuilder responseBuilder) => Assign(responseBuilder, static (a, v) =>
 	{
 		a._responseBuilders ??= [];

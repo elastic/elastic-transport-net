@@ -86,7 +86,7 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		TResponse? response = null;
 
 		if (MayHaveBody(statusCode, endpoint.Method, contentLength)
-			&& TryResolveBuilder<TResponse>(requestData.ProductResponseBuilders, requestData.ResponseBuilders, out var builder))
+			&& TryResolveBuilder<TResponse>(requestData.ResponseBuilders, requestData.ProductResponseBuilders, out var builder))
 		{
 			var ownsStream = false;
 
@@ -115,7 +115,7 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 			}
 
 			if (ownsStream && (response is null || !response.LeaveOpen))
-				responseStream.Dispose();
+				responseStream?.Dispose();
 		}
 
 		response ??= new TResponse();
@@ -123,8 +123,8 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		return response;
 	}
 
-	private bool TryResolveBuilder<TResponse>(IReadOnlyCollection<IResponseBuilder> productResponseBuilders,
-		IReadOnlyCollection<IResponseBuilder> responseBuilders, out IResponseBuilder builder
+	private bool TryResolveBuilder<TResponse>(IReadOnlyCollection<IResponseBuilder> responseBuilders,
+		IReadOnlyCollection<IResponseBuilder> productResponseBuilders, out IResponseBuilder builder
 	) where TResponse : TransportResponse, new()
 	{
 		if (_resolvedBuilders.TryGetValue(typeof(TResponse), out builder))

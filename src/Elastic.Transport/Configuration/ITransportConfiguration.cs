@@ -210,9 +210,4 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	/// about the client and runtime.
 	/// </summary>
 	bool DisableMetaHeader { get; }
-
-	/// <summary>
-	/// Additional response builders to apply.
-	/// </summary>
-	IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; }
 }

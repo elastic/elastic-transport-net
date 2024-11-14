@@ -199,8 +199,8 @@ public class HttpRequestInvoker : IRequestInvoker
 			}
 			else
 			{
-				responseStream.Dispose();
-				receivedResponse.Dispose();
+				responseStream?.Dispose();
+				receivedResponse?.Dispose();
 			}
 
 			if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
@@ -218,8 +218,8 @@ public class HttpRequestInvoker : IRequestInvoker
 		catch
 		{
 			// if there's an exception, ensure we always release the stream and response so that the connection is freed.
-			responseStream.Dispose();
-			receivedResponse.Dispose();
+			responseStream?.Dispose();
+			receivedResponse?.Dispose();
 			throw;
 		}
 	}
