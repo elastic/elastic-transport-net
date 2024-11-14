@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 
 using Elastic.Transport.Extensions;
@@ -49,6 +50,7 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 		_responseHeadersToParse = (config.ResponseHeadersToParse is null) ? null : new HeadersList(config.ResponseHeadersToParse);
 		_parseAllHeaders = config.ParseAllHeaders;
 		_requestMetaData = config.RequestMetaData;
+		_responseBuilders = [.. config.ResponseBuilders];
 	}
 
 	private string? _accept;
@@ -336,5 +338,5 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 
 	RequestMetaData? IRequestConfiguration.RequestMetaData => _requestMetaData;
 
-	IReadOnlyCollection<IResponseBuilder> IRequestConfiguration.ResponseBuilders => _responseBuilders;
+	IReadOnlyCollection<IResponseBuilder> IRequestConfiguration.ResponseBuilders => _responseBuilders ?? [];
 }

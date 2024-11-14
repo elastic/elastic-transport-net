@@ -38,7 +38,7 @@ public class RequestConfigurationTests
 	public void CopiesAllProperties()
 	{
 		var autoFaker = new AutoFaker<RequestConfiguration>();
-		autoFaker.RuleFor(x => x.ClientCertificates, f => new X509CertificateCollection());
+		autoFaker.RuleFor(x => x.ClientCertificates, f => []);
 
 		var config = autoFaker.Generate();
 		config.Accept.Should().NotBeEmpty();

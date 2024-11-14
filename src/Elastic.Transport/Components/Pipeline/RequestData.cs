@@ -40,9 +40,6 @@ public sealed record RequestData
 		ProxyPassword = global.ProxyPassword;
 		DisableAutomaticProxyDetection = global.DisableAutomaticProxyDetection;
 		UserAgent = global.UserAgent;
-		ResponseBuilders = local?.ResponseBuilders ?? global.ResponseBuilders;
-		ProductResponseBuilders = global.ProductRegistration.ResponseBuilders;
-
 		KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
 		KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
 		RunAs = local?.RunAs ?? global.RunAs;
@@ -89,8 +86,36 @@ public sealed record RequestData
 			Headers ??= [];
 			Headers.Add(OpaqueIdHeader, local.OpaqueId);
 		}
-	}
 
+		// If there are builders set at the transport level and on the request config, we combine them,
+		// prioritising the request config response builders as most specific.
+		if (local is not null && local.ResponseBuilders.Count > 0 && global.ResponseBuilders.Count > 0)
+		{
+			var builders = new IResponseBuilder[local.ResponseBuilders.Count + global.ResponseBuilders.Count];
+
+			var counter = 0;
+			foreach (var builder in local.ResponseBuilders)
+			{
+				builders[counter++] = builder;
+			}
+			foreach (var builder in global.ResponseBuilders)
+			{
+				builders[counter++] = builder;
+			}
+
+			ResponseBuilders = builders;
+		}
+		else if (local is not null && local.ResponseBuilders.Count > 0)
+		{
+			ResponseBuilders = local.ResponseBuilders;
+		}
+		else
+		{
+			ResponseBuilders = global.ResponseBuilders;
+		}
+
+		ProductResponseBuilders = global.ProductRegistration.ResponseBuilders;
+	}
 
 	/// <inheritdoc cref="ITransportConfiguration.MemoryStreamFactory"/>
 	public MemoryStreamFactory MemoryStreamFactory { get; }

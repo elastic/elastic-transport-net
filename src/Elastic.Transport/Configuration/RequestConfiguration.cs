@@ -64,6 +64,7 @@ public record RequestConfiguration : IRequestConfiguration
 		ResponseHeadersToParse = (config.ResponseHeadersToParse is null) ? null : new HeadersList(config.ResponseHeadersToParse);
 		ParseAllHeaders = config.ParseAllHeaders;
 		RequestMetaData = config.RequestMetaData;
+		ResponseBuilders = config.ResponseBuilders;
 	}
 
 	/// <inheritdoc />
