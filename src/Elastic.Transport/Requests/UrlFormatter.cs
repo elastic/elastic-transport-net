@@ -4,15 +4,16 @@
 
 using System;
 using System.Collections;
-using System.Runtime.Serialization;
+using System.Globalization;
 using System.Text;
+
 using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
 
 /// <summary>
 /// A formatter that can utilize <see cref="ITransportConfiguration" /> to resolve <see cref="IUrlParameter" />'s passed
-/// as format arguments. It also handles known string representations for e.g bool/Enums/IEnumerable.
+/// as format arguments. It also handles known string representations for e.g. bool/Enums/IEnumerable.
 /// </summary>
 public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 {
@@ -39,26 +40,32 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 	public object? GetFormat(Type formatType) => formatType == typeof(ICustomFormatter) ? this : null;
 
 	/// <inheritdoc cref="CreateString(object, ITransportConfiguration)"/>
-	public string? CreateString(object? value) => CreateString(value, _settings);
+	public string CreateString(object? value) => CreateString(value, _settings);
 
 	/// <summary> Creates a query string representation for <paramref name="value"/> </summary>
-	public static string? CreateString(object? value, ITransportConfiguration settings) =>
+	public static string CreateString(object? value, ITransportConfiguration settings) =>
 		value switch
 		{
-			null => null,
+			null => string.Empty,
 			string s => s,
 			string[] ss => string.Join(",", ss),
 			Enum e => e.GetStringValue(),
 			bool b => b ? "true" : "false",
 			DateTimeOffset offset => offset.ToString("o"),
 			TimeSpan timeSpan => timeSpan.ToTimeUnit(),
+			// Custom `IUrlParameter.GetString()` implementations should take precedence over collection
+			// specializations.
+			IUrlParameter urlParam => urlParam.GetString(settings),
 			// Special handling to support non-zero based arrays
 			Array pns => CreateStringFromArray(pns, settings),
 			// Performance optimization for directly indexable collections
 			IList pns => CreateStringFromIList(pns, settings),
 			// Generic implementation for all other collections
 			IEnumerable pns => CreateStringFromIEnumerable(pns, settings),
-			_ => ResolveUrlParameterOrDefault(value, settings)
+			// Generic implementation for `IFormattable` types
+			IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
+			// Last resort fallback
+			_ => value.ToString() ?? string.Empty
 		};
 
 	private static string CreateStringFromArray(Array value, ITransportConfiguration settings)
@@ -67,8 +74,9 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 		{
 			case 0:
 				return string.Empty;
+
 			case 1:
-				return ResolveUrlParameterOrDefault(value.GetValue(value.GetLowerBound(0)), settings);
+				return CreateString(value.GetValue(value.GetLowerBound(0)), settings);
 		}
 
 		var sb = new StringBuilder();
@@ -78,7 +86,7 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 			if (sb.Length != 0)
 				sb.Append(',');
 
-			sb.Append(ResolveUrlParameterOrDefault(value.GetValue(i), settings));
+			sb.Append(CreateString(value.GetValue(i), settings));
 		}
 
 		return sb.ToString();
@@ -90,8 +98,9 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 		{
 			case 0:
 				return string.Empty;
+
 			case 1:
-				return ResolveUrlParameterOrDefault(value[0], settings);
+				return CreateString(value[0], settings);
 		}
 
 		var sb = new StringBuilder();
@@ -101,7 +110,7 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 			if (sb.Length != 0)
 				sb.Append(',');
 
-			sb.Append(ResolveUrlParameterOrDefault(value[i], settings));
+			sb.Append(CreateString(value[i], settings));
 		}
 
 		return sb.ToString();
@@ -116,36 +125,9 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 			if (sb.Length != 0)
 				sb.Append(',');
 
-			sb.Append(ResolveUrlParameterOrDefault(v, settings));
+			sb.Append(CreateString(v, settings));
 		}
 
 		return sb.ToString();
-	}
-
-	private static string ResolveUrlParameterOrDefault(object? value, ITransportConfiguration settings) =>
-		value switch
-		{
-			null => string.Empty,
-			IUrlParameter urlParam => urlParam.GetString(settings),
-			_ => GetEnumMemberName(value) ?? value.ToString() ?? string.Empty
-		};
-
-	private static string? GetEnumMemberName(object value)
-	{
-		var type = value.GetType();
-		if (!type.IsEnum)
-			return null;
-
-		var name = Enum.GetName(type, value);
-		if (name is null)
-			return null;
-
-		var field = type.GetField(name);
-		if (field is null)
-			return null;
-
-		return Attribute.GetCustomAttribute(field, typeof(EnumMemberAttribute)) is EnumMemberAttribute attribute
-			? attribute.Value
-			: null;
 	}
 }
