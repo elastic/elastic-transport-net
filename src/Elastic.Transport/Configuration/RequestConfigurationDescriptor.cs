@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 
 using Elastic.Transport.Extensions;
@@ -19,10 +18,14 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 	public RequestConfigurationDescriptor() { }
 
 	/// <inheritdoc cref="IRequestConfiguration"/>
-	public RequestConfigurationDescriptor(IRequestConfiguration? config)
+	public RequestConfigurationDescriptor(IRequestConfiguration config)
 	{
+#if NET
+		ArgumentNullException.ThrowIfNull(config);
+#else
 		if (config is null)
-			return;
+			throw new ArgumentNullException(nameof(config));
+#endif
 
 		_accept = config.Accept;
 		_allowedStatusCodes= config.AllowedStatusCodes;
