@@ -20,16 +20,18 @@ namespace Elastic.Transport;
 /// Allows you to control how <see cref="ITransport{TConfiguration}"/> behaves and where/how it connects to Elastic Stack products
 /// </summary>
 /// <remarks> <inheritdoc cref="TransportConfigurationDescriptor" path="/summary"/></remarks>
-/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
-/// <param name="invoker"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
-/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
-/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
-public class TransportConfigurationDescriptor(
-	NodePool nodePool,
-	IRequestInvoker? invoker = null,
-	Serializer? serializer = null,
-	ProductRegistration? productRegistration = null) : TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>(nodePool, invoker, serializer, productRegistration)
+public class TransportConfigurationDescriptor : TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>
 {
+	/// <summary>
+	/// Creates a new instance of <see cref="TransportConfigurationDescriptor"/>
+	/// </summary>
+	/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
+	/// <param name="invoker"><inheritdoc cref="IRequestInvoker" path="/summary"/></param>
+	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
+	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
+	public TransportConfigurationDescriptor(NodePool nodePool, IRequestInvoker? invoker = null, Serializer? serializer = null, ProductRegistration? productRegistration = null)
+		: base(nodePool, invoker, serializer, productRegistration) { }
+
 	/// <summary>
 	/// Creates a new instance of <see cref="TransportConfigurationDescriptor"/>
 	/// </summary>
@@ -51,6 +53,15 @@ public class TransportConfigurationDescriptor(
 	/// </summary>
 	public TransportConfigurationDescriptor(string cloudId, Base64ApiKey credentials, ProductRegistration? productRegistration = null)
 		: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
+
+	/// <summary>
+	/// Creates a new instance of <see cref="TransportConfigurationDescriptor"/>
+	/// <para>
+	///		Expert usage: Create a new transport configuration based of a previously configured instance.
+	/// </para>
+	/// </summary>
+	public TransportConfigurationDescriptor(ITransportConfiguration config)
+		: base(config) { }
 }
 
 /// <inheritdoc cref="TransportConfigurationDescriptor"/>>
@@ -96,6 +107,79 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		}
 
 		_responseHeadersToParse = new HeadersList(_productRegistration.ResponseHeadersToParse);
+	}
+
+	/// Expert usage: Create a new transport configuration based of a previously configured instance
+	protected TransportConfigurationDescriptorBase(ITransportConfiguration config)
+	{
+#if NET
+		ArgumentNullException.ThrowIfNull(config);
+#else
+		if (config is null)
+			throw new ArgumentNullException(nameof(config));
+#endif
+
+		// it's important url formatter is repointed to the new instance of ITransportConfiguration
+		_urlFormatter = new UrlFormatter(this);
+
+		_accept = config.Accept;
+		_allowedStatusCodes = config.AllowedStatusCodes;
+		_authentication = config.Authentication;
+		_bootstrapLock = config.BootstrapLock;
+		_certificateFingerprint = config.CertificateFingerprint;
+		_clientCertificates = config.ClientCertificates;
+		_connectionLimit = config.ConnectionLimit;
+		_contentType = config.ContentType;
+		_dateTimeProvider = config.DateTimeProvider;
+		_deadTimeout = config.DeadTimeout;
+		_disableAuditTrail = config.DisableAuditTrail;
+		_disableAutomaticProxyDetection = config.DisableAutomaticProxyDetection;
+		_disableDirectStreaming = config.DisableDirectStreaming;
+		_disableMetaHeader = config.DisableMetaHeader;
+		_disablePings = config.DisablePings;
+		_disableSniff = config.DisableSniff;
+		_dnsRefreshTimeout = config.DnsRefreshTimeout;
+		_enableHttpCompression = config.EnableHttpCompression;
+		_enableTcpStats = config.EnableTcpStats;
+		_enableThreadPoolStats = config.EnableThreadPoolStats;
+		_forceNode = config.ForceNode;
+		_headers = config.Headers;
+		_httpPipeliningEnabled = config.HttpPipeliningEnabled;
+		_keepAliveInterval = config.KeepAliveInterval;
+		_keepAliveTime = config.KeepAliveTime;
+		_maxDeadTimeout = config.MaxDeadTimeout;
+		_maxRetries = config.MaxRetries;
+		_maxRetryTimeout = config.MaxRetryTimeout;
+		_memoryStreamFactory = config.MemoryStreamFactory;
+		_nodePool = config.NodePool;
+		_nodePredicate = config.NodePredicate;
+		_onRequestCompleted = config.OnRequestCompleted;
+		_onRequestDataCreated = config.OnRequestDataCreated;
+		_opaqueId = config.OpaqueId;
+		_parseAllHeaders = config.ParseAllHeaders;
+		_pingTimeout = config.PingTimeout;
+		_pipelineProvider = config.PipelineProvider;
+		_prettyJson = config.PrettyJson;
+		_productRegistration = config.ProductRegistration;
+		_proxyAddress = config.ProxyAddress;
+		_proxyPassword = config.ProxyPassword;
+		_proxyUsername = config.ProxyUsername;
+		_queryStringParameters = config.QueryStringParameters;
+		_requestInvoker = config.RequestInvoker;
+		_requestMetaData = config.RequestMetaData;
+		_requestResponseSerializer = config.RequestResponseSerializer;
+		_requestTimeout = config.RequestTimeout;
+		_responseHeadersToParse = config.ResponseHeadersToParse;
+		_runAs = config.RunAs;
+		_serverCertificateValidationCallback = config.ServerCertificateValidationCallback;
+		_skipDeserializationForStatusCodes = config.SkipDeserializationForStatusCodes;
+		_sniffInformationLifeSpan = config.SniffInformationLifeSpan;
+		_sniffsOnConnectionFault = config.SniffsOnConnectionFault;
+		_sniffsOnStartup = config.SniffsOnStartup;
+		_statusCodeToResponseSuccess = config.StatusCodeToResponseSuccess;
+		_throwExceptions = config.ThrowExceptions;
+		_transferEncodingChunked = config.TransferEncodingChunked;
+		_userAgent = config.UserAgent;
 	}
 
 	private readonly SemaphoreSlim _bootstrapLock;

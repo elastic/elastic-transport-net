@@ -46,12 +46,14 @@ public class TransportConfigurationTests
 		autoFaker.RuleFor(x => x.ClientCertificates, f => new X509CertificateCollection());
 
 		var config = autoFaker.Generate();
-		var newConfig = new TransportConfiguration(config);
-
 		config.Accept.Should().NotBeEmpty();
 		config.ClientCertificates.Should().NotBeNull();
 
+		ITransportConfiguration newConfig = new TransportConfiguration(config);
 		config.Should().BeEquivalentTo(newConfig);
+
+		ITransportConfiguration newDescriptor = new TransportConfigurationDescriptor(config);
+		config.Should().BeEquivalentTo(newDescriptor);
 	}
 #endif
 }

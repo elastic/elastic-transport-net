@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Security.Cryptography.X509Certificates;
 
-using Elastic.Transport.Extensions;
-
 namespace Elastic.Transport;
 
 /// <inheritdoc cref="IRequestConfiguration"/>
@@ -31,7 +29,7 @@ public record RequestConfiguration : IRequestConfiguration
 	/// <inheritdoc cref="IRequestConfiguration"/>
 	public RequestConfiguration(IRequestConfiguration config)
 	{
-#if NET8_0_OR_GREATER
+#if NET
 		ArgumentNullException.ThrowIfNull(config);
 #else
 		if (config is null)

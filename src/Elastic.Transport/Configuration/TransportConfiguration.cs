@@ -117,7 +117,7 @@ public record TransportConfiguration : ITransportConfiguration
 	/// Expert usage: Create a new transport configuration based of a previously configured instance
 	public TransportConfiguration(ITransportConfiguration config)
 	{
-#if NET8_0_OR_GREATER
+#if NET
 		ArgumentNullException.ThrowIfNull(config);
 #else
 		if (config is null)
