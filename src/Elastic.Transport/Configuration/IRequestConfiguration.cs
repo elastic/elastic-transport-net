@@ -152,4 +152,10 @@ public interface IRequestConfiguration
 	/// Holds additional meta data about the request.
 	/// </summary>
 	RequestMetaData? RequestMetaData { get; }
+
+	/// <summary>
+	/// The user agent string to send with requests. Useful for debugging purposes to understand client and framework
+	/// versions that initiate requests to Elasticsearch
+	/// </summary>
+	UserAgent? UserAgent { get; }
 }

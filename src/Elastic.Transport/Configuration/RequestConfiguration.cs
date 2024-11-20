@@ -21,6 +21,9 @@ public record RequestConfiguration : IRequestConfiguration
 	/// <summary> The default ping timeout when the connection is over HTTPS. Defaults to 5 seconds </summary>
 	public static readonly TimeSpan DefaultPingTimeoutOnSsl = TimeSpan.FromSeconds(5);
 
+	/// <summary> The default user-agent.</summary>
+	public static readonly UserAgent DefaultUserAgent = UserAgent.Create("elastic-transport-net");
+
 	/// <inheritdoc cref="IRequestConfiguration"/>
 	public RequestConfiguration()
 	{
@@ -63,6 +66,7 @@ public record RequestConfiguration : IRequestConfiguration
 		ParseAllHeaders = config.ParseAllHeaders;
 		RequestMetaData = config.RequestMetaData;
 		ResponseBuilders = config.ResponseBuilders;
+		UserAgent = config.UserAgent;
 	}
 
 	/// <inheritdoc />
@@ -145,4 +149,7 @@ public record RequestConfiguration : IRequestConfiguration
 
 	/// <inheritdoc />
 	public RequestMetaData? RequestMetaData { get; init; }
+
+	/// <inheritdoc />
+	public UserAgent? UserAgent { get; init; }
 }

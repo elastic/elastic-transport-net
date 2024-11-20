@@ -171,12 +171,6 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	UrlFormatter UrlFormatter { get; }
 
 	/// <summary>
-	/// The user agent string to send with requests. Useful for debugging purposes to understand client and framework
-	/// versions that initiate requests to Elasticsearch
-	/// </summary>
-	UserAgent UserAgent { get; }
-
-	/// <summary>
 	/// Allow you to override the status code inspection that sets <see cref="ApiCallDetails.HasSuccessfulStatusCode"/>
 	/// <para>
 	/// Defaults to validating the statusCode is greater or equal to 200 and less than 300

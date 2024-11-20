@@ -39,7 +39,7 @@ public sealed record RequestData
 		ProxyUsername = global.ProxyUsername;
 		ProxyPassword = global.ProxyPassword;
 		DisableAutomaticProxyDetection = global.DisableAutomaticProxyDetection;
-		UserAgent = global.UserAgent;
+		UserAgent = global.UserAgent ?? local?.UserAgent ?? RequestConfiguration.DefaultUserAgent;
 		KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
 		KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
 		RunAs = local?.RunAs ?? global.RunAs;
@@ -135,7 +135,7 @@ public sealed record RequestData
 	public string? ProxyUsername { get; }
 	/// <inheritdoc cref="ITransportConfiguration.SkipDeserializationForStatusCodes"/>
 	public IReadOnlyCollection<int> SkipDeserializationForStatusCodes { get; }
-	/// <inheritdoc cref="ITransportConfiguration.UserAgent"/>
+	/// <inheritdoc cref="IRequestConfiguration.UserAgent"/>
 	public UserAgent UserAgent { get; }
 	/// <inheritdoc cref="ITransportConfiguration.DnsRefreshTimeout"/>
 	public TimeSpan DnsRefreshTimeout { get; }

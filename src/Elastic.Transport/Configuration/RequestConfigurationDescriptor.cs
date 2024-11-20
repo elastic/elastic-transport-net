@@ -54,6 +54,7 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 		_parseAllHeaders = config.ParseAllHeaders;
 		_requestMetaData = config.RequestMetaData;
 		_responseBuilders = [.. config.ResponseBuilders];
+		_userAgent = config.UserAgent;
 	}
 
 	private string? _accept;
@@ -83,6 +84,7 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 	private bool? _enableThreadPoolStats;
 	private RequestMetaData? _requestMetaData;
 	private List<IResponseBuilder>? _responseBuilders;
+	private UserAgent? _userAgent;
 
 	/// <inheritdoc cref="IRequestConfiguration.RunAs"/>
 	public RequestConfigurationDescriptor RunAs(string username)
@@ -289,6 +291,13 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 		return this;
 	}
 
+	/// <inheritdoc cref="IRequestConfiguration.UserAgent" />
+	public RequestConfigurationDescriptor UserAgent(UserAgent userAgent)
+	{
+		_userAgent = userAgent;
+		return this;
+	}
+
 	string? IRequestConfiguration.Accept => _accept;
 
 	IReadOnlyCollection<int>? IRequestConfiguration.AllowedStatusCodes => _allowedStatusCodes;
@@ -342,4 +351,6 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 	RequestMetaData? IRequestConfiguration.RequestMetaData => _requestMetaData;
 
 	IReadOnlyCollection<IResponseBuilder> IRequestConfiguration.ResponseBuilders => _responseBuilders ?? [];
+
+	UserAgent? IRequestConfiguration.UserAgent => _userAgent;
 }
