@@ -10,13 +10,13 @@ namespace Elastic.Transport;
 
 internal class BytesResponseBuilder : TypedResponseBuilder<BytesResponse>
 {
-	protected override BytesResponse Build(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength) =>
-		BuildCoreAsync(false, apiCallDetails, requestData, responseStream).EnsureCompleted();
+	protected override BytesResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
+		BuildCoreAsync(false, apiCallDetails, boundConfiguration, responseStream).EnsureCompleted();
 
-	protected override Task<BytesResponse> BuildAsync(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
-		BuildCoreAsync(true, apiCallDetails, requestData, responseStream, cancellationToken).AsTask();
+	protected override Task<BytesResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
+		BuildCoreAsync(true, apiCallDetails, boundConfiguration, responseStream, cancellationToken).AsTask();
 
-	private static async ValueTask<BytesResponse> BuildCoreAsync(bool isAsync, ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, CancellationToken cancellationToken = default)
+	private static async ValueTask<BytesResponse> BuildCoreAsync(bool isAsync, ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, CancellationToken cancellationToken = default)
 	{
 		BytesResponse response;
 
@@ -26,7 +26,7 @@ internal class BytesResponseBuilder : TypedResponseBuilder<BytesResponse>
 			return response;
 		}
 
-		var tempStream = requestData.MemoryStreamFactory.Create();
+		var tempStream = boundConfiguration.MemoryStreamFactory.Create();
 		await responseStream.CopyToAsync(tempStream, BufferedResponseHelpers.BufferSize, cancellationToken).ConfigureAwait(false);
 		apiCallDetails.ResponseBodyInBytes = BufferedResponseHelpers.SwapStreams(ref responseStream, ref tempStream);
 		response = new BytesResponse(apiCallDetails.ResponseBodyInBytes);

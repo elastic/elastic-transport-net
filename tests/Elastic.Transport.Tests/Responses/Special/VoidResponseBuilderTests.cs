@@ -23,13 +23,13 @@ public class VoidResponseBuilderTests
 
 		var config = new TransportConfiguration();
 		var apiCallDetails = new ApiCallDetails();
-		var requestData = new RequestData(config);
+		var boundConfiguration = new BoundConfiguration(config);
 		var stream = new MemoryStream(Data);
 
-		var result = await sut.BuildAsync<VoidResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		var result = await sut.BuildAsync<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 		result.Body.Should().BeOfType(typeof(VoidBody));
 
-		result = sut.Build<VoidResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		result = sut.Build<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 		result.Body.Should().BeOfType(typeof(VoidBody));
 	}
 
@@ -40,13 +40,13 @@ public class VoidResponseBuilderTests
 
 		var config = new TransportConfiguration() { DisableDirectStreaming = true };
 		var apiCallDetails = new ApiCallDetails() { ResponseBodyInBytes = Data };
-		var requestData = new RequestData(config);
+		var boundConfiguration = new BoundConfiguration(config);
 		var stream = new MemoryStream(Data);
 
-		var result = await sut.BuildAsync<VoidResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		var result = await sut.BuildAsync<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 		result.Body.Should().BeOfType(typeof(VoidBody));
 
-		result = sut.Build<VoidResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		result = sut.Build<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 		result.Body.Should().BeOfType(typeof(VoidBody));
 	}
 }

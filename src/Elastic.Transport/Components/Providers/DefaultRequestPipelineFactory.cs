@@ -13,6 +13,6 @@ internal sealed class DefaultRequestPipelineFactory : RequestPipelineFactory
 	/// <summary>
 	/// returns instances of <see cref="RequestPipeline"/>
 	/// </summary>
-	public override RequestPipeline Create(RequestData requestData) =>
-			new RequestPipeline(requestData);
+	public override RequestPipeline Create(BoundConfiguration boundConfiguration) =>
+			new RequestPipeline(boundConfiguration);
 }

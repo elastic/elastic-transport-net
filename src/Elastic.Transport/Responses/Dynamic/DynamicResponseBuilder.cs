@@ -16,19 +16,19 @@ namespace Elastic.Transport;
 
 internal class DynamicResponseBuilder : TypedResponseBuilder<DynamicResponse>
 {
-	protected override DynamicResponse Build(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength) =>
-		BuildCoreAsync(false, apiCallDetails, requestData, responseStream, contentType, contentLength).EnsureCompleted();
+	protected override DynamicResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
+		BuildCoreAsync(false, apiCallDetails, boundConfiguration, responseStream, contentType, contentLength).EnsureCompleted();
 
-	protected override Task<DynamicResponse> BuildAsync(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
-		BuildCoreAsync(true, apiCallDetails, requestData, responseStream, contentType, contentLength, cancellationToken).AsTask();
+	protected override Task<DynamicResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
+		BuildCoreAsync(true, apiCallDetails, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).AsTask();
 
-	private static async ValueTask<DynamicResponse> BuildCoreAsync(bool isAsync, ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream,
+	private static async ValueTask<DynamicResponse> BuildCoreAsync(bool isAsync, ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream,
 		string contentType, long contentLength, CancellationToken cancellationToken = default)
 	{
 		DynamicResponse response;
 
 		//if not json store the result under "body"
-		if (contentType == null || !contentType.StartsWith(RequestData.DefaultContentType))
+		if (contentType == null || !contentType.StartsWith(BoundConfiguration.DefaultContentType))
 		{
 			DynamicDictionary dictionary;
 			string stringValue;

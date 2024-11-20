@@ -154,7 +154,6 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_nodePool = config.NodePool;
 		_nodePredicate = config.NodePredicate;
 		_onRequestCompleted = config.OnRequestCompleted;
-		_onRequestDataCreated = config.OnRequestDataCreated;
 		_opaqueId = config.OpaqueId;
 		_parseAllHeaders = config.ParseAllHeaders;
 		_pingTimeout = config.PingTimeout;
@@ -225,7 +224,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	private MemoryStreamFactory _memoryStreamFactory;
 	private Func<Node, bool>? _nodePredicate;
 	private Action<ApiCallDetails>? _onRequestCompleted;
-	private Action<RequestData>? _onRequestDataCreated;
+	private Action<BoundConfiguration>? _onConfigurationBound;
 	private string? _proxyAddress;
 	private string? _proxyPassword;
 	private string? _proxyUsername;
@@ -266,7 +265,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	MemoryStreamFactory ITransportConfiguration.MemoryStreamFactory => _memoryStreamFactory;
 	Func<Node, bool>? ITransportConfiguration.NodePredicate => _nodePredicate;
 	Action<ApiCallDetails>? ITransportConfiguration.OnRequestCompleted => _onRequestCompleted;
-	Action<RequestData>? ITransportConfiguration.OnRequestDataCreated => _onRequestDataCreated;
+	Action<BoundConfiguration>? ITransportConfiguration.OnConfigurationBound => _onConfigurationBound;
 	string? ITransportConfiguration.ProxyAddress => _proxyAddress;
 	string? ITransportConfiguration.ProxyPassword => _proxyPassword;
 	string? ITransportConfiguration.ProxyUsername => _proxyUsername;
@@ -328,7 +327,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 
 	private static void DefaultCompletedRequestHandler(ApiCallDetails response) { }
 
-	private static void DefaultRequestDataCreated(RequestData response) { }
+	private static void DefaultBoundConfigurationCreated(BoundConfiguration boundConfiguration) { }
 
 	/// <summary> Assign a private value and return the current <typeparamref name="T"/> </summary>
 	// ReSharper disable once MemberCanBePrivate.Global
@@ -439,9 +438,9 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	public T OnRequestCompleted(Action<ApiCallDetails> handler) =>
 		Assign(handler, static (a, v) => a._onRequestCompleted += v ?? DefaultCompletedRequestHandler);
 
-	/// <inheritdoc cref="ITransportConfiguration.OnRequestDataCreated"/>
-	public T OnRequestDataCreated(Action<RequestData> handler) =>
-		Assign(handler, static (a, v) => a._onRequestDataCreated += v ?? DefaultRequestDataCreated);
+	/// <inheritdoc cref="ITransportConfiguration.OnConfigurationBound"/>
+	public T OnBoundConfigurationCreated(Action<BoundConfiguration> handler) =>
+		Assign(handler, static (a, v) => a._onConfigurationBound += v ?? DefaultBoundConfigurationCreated);
 
 	/// <inheritdoc cref="AuthorizationHeader"/>
 	public T Authentication(AuthorizationHeader header) => Assign(header, static (a, v) => a._authentication = v);

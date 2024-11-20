@@ -20,30 +20,28 @@ public class RequestPipeline
 {
 	private readonly IRequestInvoker _requestInvoker;
 	private readonly NodePool _nodePool;
-	private readonly RequestData _requestData;
+	private readonly BoundConfiguration _boundConfiguration;
 	private readonly DateTimeProvider _dateTimeProvider;
 	private readonly MemoryStreamFactory _memoryStreamFactory;
 	private readonly Func<Node, bool> _nodePredicate;
 	private readonly ProductRegistration _productRegistration;
 
 	private RequestConfiguration? _pingAndSniffRequestConfiguration;
-	//private List<Audit>? _auditTrail;
+
 	private readonly ITransportConfiguration _settings;
 
 	/// <inheritdoc cref="RequestPipeline" />
-	internal RequestPipeline(RequestData requestData)
+	internal RequestPipeline(BoundConfiguration boundConfiguration)
 	{
-		_requestData = requestData;
-		_settings = requestData.ConnectionSettings;
-
-		_nodePool = requestData.ConnectionSettings.NodePool;
-		_requestInvoker = requestData.ConnectionSettings.RequestInvoker;
-		_dateTimeProvider = requestData.ConnectionSettings.DateTimeProvider;
-		_memoryStreamFactory = requestData.MemoryStreamFactory;
-		_productRegistration = requestData.ConnectionSettings.ProductRegistration;
-		_nodePredicate = requestData.ConnectionSettings.NodePredicate ?? _productRegistration.NodePredicate;
+		_boundConfiguration = boundConfiguration;
+		_settings = boundConfiguration.ConnectionSettings;
+		_nodePool = boundConfiguration.ConnectionSettings.NodePool;
+		_requestInvoker = boundConfiguration.ConnectionSettings.RequestInvoker;
+		_dateTimeProvider = boundConfiguration.ConnectionSettings.DateTimeProvider;
+		_memoryStreamFactory = boundConfiguration.MemoryStreamFactory;
+		_productRegistration = boundConfiguration.ConnectionSettings.ProductRegistration;
+		_nodePredicate = boundConfiguration.ConnectionSettings.NodePredicate ?? _productRegistration.NodePredicate;
 	}
-
 
 	private RequestConfiguration PingAndSniffRequestConfiguration
 	{
@@ -57,9 +55,9 @@ public class RequestPipeline
 			{
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
-				Authentication = _requestData.AuthenticationHeader,
-				HttpPipeliningEnabled = _requestData.HttpPipeliningEnabled,
-				ForceNode = _requestData.ForceNode
+				Authentication = _boundConfiguration.AuthenticationHeader,
+				HttpPipeliningEnabled = _boundConfiguration.HttpPipeliningEnabled,
+				ForceNode = _boundConfiguration.ForceNode
 			};
 
 			return _pingAndSniffRequestConfiguration;
@@ -74,7 +72,7 @@ public class RequestPipeline
 
 	private bool IsTakingTooLong(DateTimeOffset startedOn)
 	{
-		var timeout = _settings.MaxRetryTimeout.GetValueOrDefault(RequestTimeout);
+		var timeout = RequestTimeout;
 		var now = _dateTimeProvider.Now();
 
 		//we apply a soft margin so that if a request times out at 59 seconds when the maximum is 60 we also abort.
@@ -85,7 +83,7 @@ public class RequestPipeline
 		return tookToLong;
 	}
 
-	private int MaxRetries => _requestData.MaxRetries;
+	private int MaxRetries => _boundConfiguration.MaxRetries;
 
 	private bool Refresh { get; set; }
 
@@ -121,11 +119,11 @@ public class RequestPipeline
 		}
 	}
 
-	private TimeSpan PingTimeout => _requestData.PingTimeout;
+	private TimeSpan PingTimeout => _boundConfiguration.PingTimeout;
 
-	private bool RequestDisabledSniff => _requestData.DisableSniff;
+	private bool RequestDisabledSniff => _boundConfiguration.DisableSniff;
 
-	private TimeSpan RequestTimeout => _requestData.RequestTimeout;
+	private TimeSpan RequestTimeout => _boundConfiguration.RequestTimeout;
 
 	/// Emit <see cref="AuditEvent.CancellationRequested"/> event
 	public void AuditCancellationRequested(Auditor? auditor) => auditor?.Emit(CancellationRequested);
@@ -135,7 +133,7 @@ public class RequestPipeline
 		ref TResponse? response,
 		ApiCallDetails? callDetails,
 		Endpoint endpoint,
-		RequestData data,
+		BoundConfiguration boundConfiguration,
 		PostData? postData,
 		TransportException exception,
 		IReadOnlyCollection<Audit>? auditTrail
@@ -146,25 +144,25 @@ public class RequestPipeline
 		{
 			//make sure we copy over the error body in case we disabled direct streaming.
 			var s = callDetails?.ResponseBodyInBytes == null ? Stream.Null : _memoryStreamFactory.Create(callDetails.ResponseBodyInBytes);
-			var m = callDetails?.ResponseContentType ?? RequestData.DefaultContentType;
-			response = _requestInvoker.ResponseFactory.Create<TResponse>(endpoint, data, postData, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
+			var m = callDetails?.ResponseContentType ?? BoundConfiguration.DefaultContentType;
+			response = _requestInvoker.ResponseFactory.Create<TResponse>(endpoint, boundConfiguration, postData, exception, callDetails?.HttpStatusCode, null, s, m, callDetails?.ResponseBodyInBytes?.Length ?? -1, null, null);
 		}
 
 		response.ApiCallDetails.AuditTrail = auditTrail;
 	}
 
 	/// Call the product's API endpoint ensuring rich enough exceptions are thrown
-	public TResponse CallProductEndpoint<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, Auditor? auditor)
+	public TResponse CallProductEndpoint<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Auditor? auditor)
 		where TResponse : TransportResponse, new()
-		=> CallProductEndpointCoreAsync<TResponse>(false, endpoint, requestData, postData, auditor).EnsureCompleted();
+		=> CallProductEndpointCoreAsync<TResponse>(false, endpoint, boundConfiguration, postData, auditor).EnsureCompleted();
 
 	/// Call the product's API endpoint ensuring rich enough exceptions are thrown
-	public Task<TResponse> CallProductEndpointAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, Auditor? auditor, CancellationToken cancellationToken = default)
+	public Task<TResponse> CallProductEndpointAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Auditor? auditor, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
-		=> CallProductEndpointCoreAsync<TResponse>(true, endpoint, requestData, postData, auditor, cancellationToken).AsTask();
+		=> CallProductEndpointCoreAsync<TResponse>(true, endpoint, boundConfiguration, postData, auditor, cancellationToken).AsTask();
 
 	private async ValueTask<TResponse> CallProductEndpointCoreAsync<TResponse>(
-		bool isAsync, Endpoint endpoint, RequestData requestData, PostData? postData, Auditor? auditor, CancellationToken cancellationToken = default)
+		bool isAsync, Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Auditor? auditor, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
 		using var audit = auditor?.Add(HealthyResponse, _dateTimeProvider, endpoint.Node);
@@ -174,9 +172,9 @@ public class RequestPipeline
 			TResponse response;
 
 			if (isAsync)
-				response = await _requestInvoker.RequestAsync<TResponse>(endpoint, requestData, postData, cancellationToken).ConfigureAwait(false);
+				response = await _requestInvoker.RequestAsync<TResponse>(endpoint, boundConfiguration, postData, cancellationToken).ConfigureAwait(false);
 			else
-				response = _requestInvoker.Request<TResponse>(endpoint, requestData, postData);
+				response = _requestInvoker.Request<TResponse>(endpoint, boundConfiguration, postData);
 
 			response.ApiCallDetails.AuditTrail = auditor;
 
@@ -359,9 +357,9 @@ public class RequestPipeline
 	/// returns a consistent enumerable view into the available nodes
 	public IEnumerable<Node> NextNode(DateTimeOffset startedOn, Auditor? auditor)
 	{
-		if (_requestData.ForceNode != null)
+		if (_boundConfiguration.ForceNode != null)
 		{
-			yield return new Node(_requestData.ForceNode);
+			yield return new Node(_boundConfiguration.ForceNode);
 
 			yield break;
 		}
@@ -415,9 +413,9 @@ public class RequestPipeline
 		try
 		{
 			if (isAsync)
-				response = await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, _requestData, cancellationToken).ConfigureAwait(false);
+				response = await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, _boundConfiguration, cancellationToken).ConfigureAwait(false);
 			else
-				response = _productRegistration.Ping(_requestInvoker, pingEndpoint, _requestData);
+				response = _productRegistration.Ping(_requestInvoker, pingEndpoint, _boundConfiguration);
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
@@ -464,11 +462,11 @@ public class RequestPipeline
 			{
 				if (isAsync)
 					result = await _productRegistration
-						.SniffAsync(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, _requestData, cancellationToken)
+						.SniffAsync(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, _boundConfiguration, cancellationToken)
 						.ConfigureAwait(false);
 				else
 					result = _productRegistration
-						.Sniff(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, _requestData);
+						.Sniff(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, _boundConfiguration);
 
 				ThrowBadAuthPipelineExceptionWhenNeeded(result.Item1.ApiCallDetails);
 
@@ -548,7 +546,7 @@ public class RequestPipeline
 			throw new UnexpectedTransportException(clientException, seenExceptions) { Endpoint = endpoint, AuditTrail = auditor };
 	}
 
-	private bool PingDisabled(Node node) => _requestData.DisablePings || !node.IsResurrected;
+	private bool PingDisabled(Node node) => _boundConfiguration.DisablePings || !node.IsResurrected;
 
 	private static void ThrowBadAuthPipelineExceptionWhenNeeded(ApiCallDetails details, TransportResponse? response = null)
 	{

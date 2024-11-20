@@ -130,9 +130,9 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.SniffAsync"/>
 	public override async Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker,
-		bool forceSsl, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
+		bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken)
 	{
-		var response = await requestInvoker.RequestAsync<SniffResponse>(endpoint, requestData, null, cancellationToken)
+		var response = await requestInvoker.RequestAsync<SniffResponse>(endpoint, boundConfiguration, null, cancellationToken)
 			.ConfigureAwait(false);
 		var nodes = response.ToNodes(forceSsl);
 		return Tuple.Create<TransportResponse, IReadOnlyCollection<Node>>(response,
@@ -141,9 +141,9 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.Sniff"/>
 	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl,
-		Endpoint endpoint, RequestData requestData)
+		Endpoint endpoint, BoundConfiguration boundConfiguration)
 	{
-		var response = requestInvoker.Request<SniffResponse>(endpoint, requestData, null);
+		var response = requestInvoker.Request<SniffResponse>(endpoint, boundConfiguration, null);
 		var nodes = response.ToNodes(forceSsl);
 		return Tuple.Create<TransportResponse, IReadOnlyCollection<Node>>(response,
 			new ReadOnlyCollection<Node>(nodes.ToArray()));
@@ -154,16 +154,16 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		new(new EndpointPath(HttpMethod.HEAD, string.Empty), node);
 
 	/// <inheritdoc cref="ProductRegistration.PingAsync"/>
-	public override async Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken)
+	public override async Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken)
 	{
-		var response = await requestInvoker.RequestAsync<VoidResponse>(endpoint, requestData, null, cancellationToken).ConfigureAwait(false);
+		var response = await requestInvoker.RequestAsync<VoidResponse>(endpoint, boundConfiguration, null, cancellationToken).ConfigureAwait(false);
 		return response;
 	}
 
 	/// <inheritdoc cref="ProductRegistration.Ping"/>
-	public override TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData)
+	public override TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration)
 	{
-		var response = requestInvoker.Request<VoidResponse>(endpoint, pingData, null);
+		var response = requestInvoker.Request<VoidResponse>(endpoint, boundConfiguration, null);
 		return response;
 	}
 

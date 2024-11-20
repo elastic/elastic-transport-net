@@ -937,14 +937,14 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 
 	private class TestResponseBuilder : TypedResponseBuilder<TestResponse>
 	{
-		protected override TestResponse Build(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength)
+		protected override TestResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength)
 		{
 			var sr = new StreamReader(responseStream);
 			var value = sr.ReadToEnd();
 			return new TestResponse { Value = value };
 		}
 
-		protected override async Task<TestResponse> BuildAsync(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream,
+		protected override async Task<TestResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream,
 			string contentType, long contentLength, CancellationToken cancellationToken = default)
 		{
 			var sr = new StreamReader(responseStream);

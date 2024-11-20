@@ -5,7 +5,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-// modified to be dedicated for RequestData only
+// modified to be dedicated for BoundConfiguration only
 
 #if !NETFRAMEWORK
 using System;
@@ -26,61 +26,61 @@ namespace Elastic.Transport;
 /// which can be written to directly. The ability to push data to the output stream differs from the
 /// <see cref="StreamContent"/> where data is pulled and not pushed.
 /// </summary>
-internal sealed class RequestDataContent : HttpContent
+internal sealed class BoundConfigurationContent : HttpContent
 {
-	private readonly RequestData _requestData;
+	private readonly BoundConfiguration _boundConfiguration;
 	private readonly PostData? _postData;
 
-	private readonly Func<RequestData, PostData?, CompleteTaskOnCloseStream, RequestDataContent, TransportContext, CancellationToken, Task>
+	private readonly Func<BoundConfiguration, PostData?, CompleteTaskOnCloseStream, BoundConfigurationContent, TransportContext, CancellationToken, Task>
 		_onStreamAvailableAsync;
 
-	private readonly Action<RequestData, PostData?, CompleteTaskOnCloseStream, RequestDataContent, TransportContext> _onStreamAvailable;
+	private readonly Action<BoundConfiguration, PostData?, CompleteTaskOnCloseStream, BoundConfigurationContent, TransportContext> _onStreamAvailable;
 	private readonly CancellationToken _token;
 
 	/// <summary> Constructor used in synchronous paths. </summary>
-	public RequestDataContent(RequestData requestData, PostData postData)
+	public BoundConfigurationContent(BoundConfiguration boundConfiguration, PostData postData)
 	{
-		_requestData = requestData;
+		_boundConfiguration = boundConfiguration;
 		_postData = postData;
 		_token = default;
 
-		Headers.TryAddWithoutValidation("Content-Type", requestData.ContentType);
+		Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 
-		if (requestData.HttpCompression)
+		if (boundConfiguration.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
 
 		_onStreamAvailable = OnStreamAvailable;
 		_onStreamAvailableAsync = OnStreamAvailableAsync;
 	}
 
-	private static void OnStreamAvailable(RequestData data, PostData? postData, Stream stream, HttpContent content, TransportContext context)
+	private static void OnStreamAvailable(BoundConfiguration boundConfiguration, PostData? postData, Stream stream, HttpContent content, TransportContext context)
 	{
 		if (postData == null)
 		{
 			stream.Dispose();
 			return;
 		}
-		if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
+		if (boundConfiguration.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
-		using (stream) postData.Write(stream, data.ConnectionSettings, data.DisableDirectStreaming);
+		using (stream) postData.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
 	}
 
 	/// <summary> Constructor used in asynchronous paths. </summary>
-	public RequestDataContent(RequestData requestData, CancellationToken token)
+	public BoundConfigurationContent(BoundConfiguration boundConfiguration, CancellationToken token)
 	{
-		_requestData = requestData;
+		_boundConfiguration = boundConfiguration;
 		_token = token;
 
-		Headers.TryAddWithoutValidation("Content-Type", requestData.ContentType);
+		Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 
-		if (requestData.HttpCompression)
+		if (boundConfiguration.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
 
 		_onStreamAvailable = OnStreamAvailable;
 		_onStreamAvailableAsync = OnStreamAvailableAsync;
 	}
 
-	private static async Task OnStreamAvailableAsync(RequestData data, PostData? postData, Stream stream, HttpContent content, TransportContext context, CancellationToken ctx = default)
+	private static async Task OnStreamAvailableAsync(BoundConfiguration boundConfiguration, PostData? postData, Stream stream, HttpContent content, TransportContext context, CancellationToken ctx = default)
 	{
 		if (postData == null)
 		{
@@ -91,14 +91,14 @@ internal sealed class RequestDataContent : HttpContent
 #endif
 			return;
 		}
-		if (data.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
+		if (boundConfiguration.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
 
 #if NET6_0_OR_GREATER
 		await using (stream.ConfigureAwait(false))
 #else
 		using (stream)
 #endif
-		await postData.WriteAsync(stream, data.ConnectionSettings, data.DisableDirectStreaming, ctx).ConfigureAwait(false);
+		await postData.WriteAsync(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, ctx).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -124,7 +124,7 @@ internal sealed class RequestDataContent : HttpContent
 		var source = CancellationTokenSource.CreateLinkedTokenSource(_token, cancellationToken);
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
 		var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
-		await _onStreamAvailableAsync(_requestData, _postData, wrappedStream, this, context, source.Token).ConfigureAwait(false);
+		await _onStreamAvailableAsync(_boundConfiguration, _postData, wrappedStream, this, context, source.Token).ConfigureAwait(false);
 		await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 
@@ -133,7 +133,7 @@ internal sealed class RequestDataContent : HttpContent
 	{
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
 		using var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
-		_onStreamAvailable(_requestData, _postData, wrappedStream, this, context);
+		_onStreamAvailable(_boundConfiguration, _postData, wrappedStream, this, context);
 		//await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 #endif

@@ -84,11 +84,11 @@ public sealed class DefaultProductRegistration : ProductRegistration
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.SniffAsync"/>
-	public override Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken) =>
+	public override Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.Sniff"/>
-	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, RequestData requestData) =>
+	public override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.CreatePingEndpoint"/>
@@ -96,11 +96,11 @@ public sealed class DefaultProductRegistration : ProductRegistration
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.PingAsync"/>
-	public override Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken) =>
+	public override Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc cref="ProductRegistration.Ping"/>
-	public override TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData) =>
+	public override TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration) =>
 		throw new NotImplementedException();
 
 	/// <inheritdoc/>

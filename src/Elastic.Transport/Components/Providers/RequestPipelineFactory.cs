@@ -10,5 +10,5 @@ public abstract class RequestPipelineFactory
 	internal RequestPipelineFactory() { }
 
 	/// <summary> Create an instance of <see cref="RequestPipeline"/> </summary>
-	public abstract RequestPipeline Create(RequestData requestData);
+	public abstract RequestPipeline Create(BoundConfiguration boundConfiguration);
 }

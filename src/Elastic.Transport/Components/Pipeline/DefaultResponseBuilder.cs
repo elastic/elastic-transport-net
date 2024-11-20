@@ -22,26 +22,26 @@ internal sealed class DefaultResponseBuilder : IResponseBuilder
 	bool IResponseBuilder.CanBuild<TResponse>() => true;
 
 	/// <inheritdoc/>
-	public TResponse Build<TResponse>(ApiCallDetails apiCallDetails, RequestData requestData,
+	public TResponse Build<TResponse>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration,
 		Stream responseStream, string contentType, long contentLength)
 		where TResponse : TransportResponse, new() =>
-			SetBodyCoreAsync<TResponse>(false, apiCallDetails, requestData, responseStream).EnsureCompleted();
+			SetBodyCoreAsync<TResponse>(false, apiCallDetails, boundConfiguration, responseStream).EnsureCompleted();
 
 	/// <inheritdoc/>
 	public Task<TResponse> BuildAsync<TResponse>(
-		ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength,
+		ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength,
 		CancellationToken cancellationToken) where TResponse : TransportResponse, new() =>
-			SetBodyCoreAsync<TResponse>(true, apiCallDetails, requestData, responseStream, cancellationToken).AsTask();
+			SetBodyCoreAsync<TResponse>(true, apiCallDetails, boundConfiguration, responseStream, cancellationToken).AsTask();
 
 	private static async ValueTask<TResponse> SetBodyCoreAsync<TResponse>(bool isAsync,
-		ApiCallDetails details, RequestData requestData, Stream responseStream, 
+		ApiCallDetails details, BoundConfiguration boundConfiguration, Stream responseStream, 
 		CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
 		TResponse response = null;
 
 		if (details.HttpStatusCode.HasValue &&
-			requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
+			boundConfiguration.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
 		{
 			return response;
 		}
@@ -51,9 +51,9 @@ internal sealed class DefaultResponseBuilder : IResponseBuilder
 			var beforeTicks = Stopwatch.GetTimestamp();
 
 			if (isAsync)
-				response = await requestData.ConnectionSettings.RequestResponseSerializer.DeserializeAsync<TResponse>(responseStream, cancellationToken).ConfigureAwait(false);
+				response = await boundConfiguration.ConnectionSettings.RequestResponseSerializer.DeserializeAsync<TResponse>(responseStream, cancellationToken).ConfigureAwait(false);
 			else
-				response = requestData.ConnectionSettings.RequestResponseSerializer.Deserialize<TResponse>(responseStream);
+				response = boundConfiguration.ConnectionSettings.RequestResponseSerializer.Deserialize<TResponse>(responseStream);
 
 			var deserializeResponseMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
 

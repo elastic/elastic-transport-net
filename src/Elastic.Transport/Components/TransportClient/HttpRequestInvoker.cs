@@ -42,26 +42,26 @@ public class HttpRequestInvoker : IRequestInvoker
 	internal HttpRequestInvoker(ResponseFactory responseFactory)
 	{
 		ResponseFactory = responseFactory;
-		HttpClientFactory = new RequestDataHttpClientFactory(CreateHttpClientHandler);
+		HttpClientFactory = new BoundConfigurationHttpClientFactory(CreateHttpClientHandler);
 	}
 
 	/// <summary>
 	/// Allows consumers to inject their own HttpMessageHandler, and optionally call our default implementation.
 	/// </summary>
-	public HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler) :
+	public HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler) :
 		this(wrappingHandler, new DefaultResponseFactory()) { }
 
 	/// <summary>
 	/// Allows consumers to inject their own HttpMessageHandler, and optionally call our default implementation.
 	/// </summary>
-	public HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler, ITransportConfiguration transportConfiguration) :
+	public HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler, ITransportConfiguration transportConfiguration) :
 		this(wrappingHandler, new DefaultResponseFactory())
 	{ }
 
-	internal HttpRequestInvoker(Func<HttpMessageHandler, RequestData, HttpMessageHandler> wrappingHandler, ResponseFactory responseFactory)
+	internal HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler, ResponseFactory responseFactory)
 	{
 		ResponseFactory = responseFactory;
-		HttpClientFactory = new RequestDataHttpClientFactory(r =>
+		HttpClientFactory = new BoundConfigurationHttpClientFactory(r =>
 		{
 			var defaultHandler = CreateHttpClientHandler(r);
 			return wrappingHandler(defaultHandler, r) ?? defaultHandler;
@@ -71,30 +71,30 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// <inheritdoc />
 	public ResponseFactory ResponseFactory { get; }
 
-	/// <inheritdoc cref="RequestDataHttpClientFactory.InUseHandlers" />
+	/// <inheritdoc cref="BoundConfigurationHttpClientFactory.InUseHandlers" />
 	public int InUseHandlers => HttpClientFactory.InUseHandlers;
 
-	/// <inheritdoc cref="RequestDataHttpClientFactory.RemovedHandlers" />
+	/// <inheritdoc cref="BoundConfigurationHttpClientFactory.RemovedHandlers" />
 	public int RemovedHandlers => HttpClientFactory.RemovedHandlers;
 
 	private static DiagnosticSource DiagnosticSource { get; } = new DiagnosticListener(DiagnosticSources.HttpConnection.SourceName);
 
-	private RequestDataHttpClientFactory HttpClientFactory { get; }
+	private BoundConfigurationHttpClientFactory HttpClientFactory { get; }
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}" />
-	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
+	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(false, endpoint, requestData, postData).EnsureCompleted();
+		RequestCoreAsync<TResponse>(false, endpoint, boundConfiguration, postData).EnsureCompleted();
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}" />
-	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(true, endpoint, requestData, postData, cancellationToken).AsTask();
+		RequestCoreAsync<TResponse>(true, endpoint, boundConfiguration, postData, cancellationToken).AsTask();
 
-	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken = default)
+	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
-		var client = GetClient(requestData);
+		var client = GetClient(boundConfiguration);
 		HttpResponseMessage responseMessage;
 		int? statusCode = null;
 		Stream responseStream = null;
@@ -110,22 +110,22 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		try
 		{
-			var requestMessage = CreateHttpRequestMessage(endpoint, requestData, isAsync);
+			var requestMessage = CreateHttpRequestMessage(endpoint, boundConfiguration, isAsync);
 
 			if (postData is not null)
 			{
 				if (isAsync)
-					await SetContentAsync(requestMessage, requestData, postData, cancellationToken).ConfigureAwait(false);
+					await SetContentAsync(requestMessage, boundConfiguration, postData, cancellationToken).ConfigureAwait(false);
 				else
-					SetContent(requestMessage, requestData, postData);
+					SetContent(requestMessage, boundConfiguration, postData);
 			}
 
 			using (requestMessage?.Content ?? (IDisposable)Stream.Null)
 			{
-				if (requestData.EnableTcpStats)
+				if (boundConfiguration.EnableTcpStats)
 					tcpStats = TcpStats.GetStates();
 
-				if (requestData.EnableThreadPoolStats)
+				if (boundConfiguration.EnableThreadPoolStats)
 					threadPoolStats = ThreadPoolStats.GetStats();
 
 				var prepareRequestMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
@@ -148,7 +148,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			}
 
 			contentType = responseMessage.Content.Headers.ContentType?.ToString();
-			responseHeaders = ParseHeaders(requestData, responseMessage);
+			responseHeaders = ParseHeaders(boundConfiguration, responseMessage);
 
 			if (responseMessage.Content != null)
 			{
@@ -184,11 +184,11 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			if (isAsync)
 				response = await ResponseFactory.CreateAsync<TResponse>
-					(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
 						.ConfigureAwait(false);
 			else
 				response = ResponseFactory.Create<TResponse>
-						(endpoint, requestData, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats);
+						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
@@ -206,7 +206,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
 				return response;
 
-			var attributes = requestData.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
+			var attributes = boundConfiguration.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
 
 			if (attributes is null) return response;
 
@@ -224,10 +224,10 @@ public class HttpRequestInvoker : IRequestInvoker
 		}
 	}
 
-	private static Dictionary<string, IEnumerable<string>>? ParseHeaders(RequestData requestData, HttpResponseMessage responseMessage)
+	private static Dictionary<string, IEnumerable<string>>? ParseHeaders(BoundConfiguration boundConfiguration, HttpResponseMessage responseMessage)
 	{
 		Dictionary<string, IEnumerable<string>>? responseHeaders = null;
-		var defaultHeadersForProduct = requestData.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
+		var defaultHeadersForProduct = boundConfiguration.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
 		foreach (var headerToParse in defaultHeadersForProduct)
 			if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 			{
@@ -235,14 +235,14 @@ public class HttpRequestInvoker : IRequestInvoker
 				responseHeaders.Add(headerToParse, values);
 			}
 
-		if (requestData.ParseAllHeaders)
+		if (boundConfiguration.ParseAllHeaders)
 			foreach (var header in responseMessage.Headers)
 			{
 				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(header.Key, header.Value);
 			}
-		else if (requestData.ResponseHeadersToParse is { Count:  > 0 })
-			foreach (var headerToParse in requestData.ResponseHeadersToParse)
+		else if (boundConfiguration.ResponseHeadersToParse is { Count:  > 0 })
+			foreach (var headerToParse in boundConfiguration.ResponseHeadersToParse)
 				if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 				{
 					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
@@ -252,26 +252,26 @@ public class HttpRequestInvoker : IRequestInvoker
 		return responseHeaders;
 	}
 
-	private HttpClient GetClient(RequestData requestData) => HttpClientFactory.CreateClient(requestData);
+	private HttpClient GetClient(BoundConfiguration boundConfiguration) => HttpClientFactory.CreateClient(boundConfiguration);
 
 	/// <summary>
-	/// Creates an instance of <see cref="HttpMessageHandler" /> using the <paramref name="requestData" />.
+	/// Creates an instance of <see cref="HttpMessageHandler" /> using the <paramref name="boundConfiguration" />.
 	/// This method is virtual so subclasses of <see cref="HttpRequestInvoker" /> can modify the instance if needed.
 	/// </summary>
-	/// <param name="requestData">An instance of <see cref="RequestData" /> describing where and how to call out to</param>
+	/// <param name="boundConfiguration">An instance of <see cref="BoundConfiguration" /> describing where and how to call out to</param>
 	/// <exception cref="Exception">
 	/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
 	/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 	/// </exception>
-	protected HttpMessageHandler CreateHttpClientHandler(RequestData requestData)
+	protected HttpMessageHandler CreateHttpClientHandler(BoundConfiguration boundConfiguration)
 	{
-		var handler = new HttpClientHandler { AutomaticDecompression = requestData.HttpCompression ? GZip | Deflate : None, };
+		var handler = new HttpClientHandler { AutomaticDecompression = boundConfiguration.HttpCompression ? GZip | Deflate : None, };
 
 		// same limit as desktop clr
-		if (requestData.ConnectionSettings.ConnectionLimit > 0)
+		if (boundConfiguration.ConnectionSettings.ConnectionLimit > 0)
 			try
 			{
-				handler.MaxConnectionsPerServer = requestData.ConnectionSettings.ConnectionLimit;
+				handler.MaxConnectionsPerServer = boundConfiguration.ConnectionSettings.ConnectionLimit;
 			}
 			catch (MissingMethodException e)
 			{
@@ -282,33 +282,33 @@ public class HttpRequestInvoker : IRequestInvoker
 				throw new Exception(MissingConnectionLimitMethodError, e);
 			}
 
-		if (!requestData.ProxyAddress.IsNullOrEmpty())
+		if (!boundConfiguration.ProxyAddress.IsNullOrEmpty())
 		{
-			var uri = new Uri(requestData.ProxyAddress);
+			var uri = new Uri(boundConfiguration.ProxyAddress);
 			var proxy = new WebProxy(uri);
-			if (!string.IsNullOrEmpty(requestData.ProxyUsername))
+			if (!string.IsNullOrEmpty(boundConfiguration.ProxyUsername))
 			{
-				var credentials = new NetworkCredential(requestData.ProxyUsername, requestData.ProxyPassword);
+				var credentials = new NetworkCredential(boundConfiguration.ProxyUsername, boundConfiguration.ProxyPassword);
 				proxy.Credentials = credentials;
 			}
 			handler.Proxy = proxy;
 		}
-		else if (requestData.DisableAutomaticProxyDetection) handler.UseProxy = false;
+		else if (boundConfiguration.DisableAutomaticProxyDetection) handler.UseProxy = false;
 
 		// Configure certificate validation
-		var callback = requestData.ConnectionSettings?.ServerCertificateValidationCallback;
+		var callback = boundConfiguration.ConnectionSettings?.ServerCertificateValidationCallback;
 		if (callback != null && handler.ServerCertificateCustomValidationCallback == null)
 		{
 			handler.ServerCertificateCustomValidationCallback = callback;
 		}
-		else if (!string.IsNullOrEmpty(requestData.ConnectionSettings.CertificateFingerprint))
+		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings.CertificateFingerprint))
 		{
 			handler.ServerCertificateCustomValidationCallback = (request, certificate, chain, policyErrors) =>
 			{
 				if (certificate is null && chain is null) return false;
 
 				// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
-				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(requestData.ConnectionSettings.CertificateFingerprint);
+				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings.CertificateFingerprint);
 
 				// If there is a chain, check each certificate up to the root
 				if (chain is not null)
@@ -325,10 +325,10 @@ public class HttpRequestInvoker : IRequestInvoker
 			};
 		}
 
-		if (requestData.ClientCertificates != null)
+		if (boundConfiguration.ClientCertificates != null)
 		{
 			handler.ClientCertificateOptions = ClientCertificateOption.Manual;
-			handler.ClientCertificates.AddRange(requestData.ClientCertificates);
+			handler.ClientCertificates.AddRange(boundConfiguration.ClientCertificates);
 		}
 
 		return handler;
@@ -345,41 +345,41 @@ public class HttpRequestInvoker : IRequestInvoker
 	}
 
 	/// <summary>
-	/// Creates an instance of <see cref="HttpRequestMessage" /> using the <paramref name="requestData" />.
+	/// Creates an instance of <see cref="HttpRequestMessage" /> using the <paramref name="boundConfiguration" />.
 	/// This method is virtual so subclasses of <see cref="HttpRequestInvoker" /> can modify the instance if needed.
 	/// </summary>
 	/// <param name="endpoint">An object describing where we want to call out to</param>
-	/// <param name="requestData">An object describing how we want to call out to</param>
+	/// <param name="boundConfiguration">An object describing how we want to call out to</param>
 	/// <param name="isAsync"></param>
 	/// <exception cref="Exception">
 	/// Can throw if <see cref="ITransportConfiguration.ConnectionLimit" /> is set but the platform does
 	/// not allow this to be set on <see cref="HttpClientHandler.MaxConnectionsPerServer" />
 	/// </exception>
-	internal HttpRequestMessage CreateHttpRequestMessage(Endpoint endpoint, RequestData requestData, bool isAsync)
+	internal HttpRequestMessage CreateHttpRequestMessage(Endpoint endpoint, BoundConfiguration boundConfiguration, bool isAsync)
 	{
-		var request = CreateRequestMessage(endpoint, requestData, isAsync);
-		SetAuthenticationIfNeeded(endpoint, requestData, request);
+		var request = CreateRequestMessage(endpoint, boundConfiguration, isAsync);
+		SetAuthenticationIfNeeded(endpoint, boundConfiguration, request);
 		return request;
 	}
 
 	/// <summary> Isolated hook for subclasses to set authentication on <paramref name="requestMessage" /> </summary>
 	/// <param name="requestMessage">The instance of <see cref="HttpRequestMessage" /> that needs authentication details</param>
 	/// <param name="endpoint">An object describing where we want to call out to</param>
-	/// <param name="requestData">An object describing how we want to call out to</param>
-	internal void SetAuthenticationIfNeeded(Endpoint endpoint, RequestData requestData, HttpRequestMessage requestMessage)
+	/// <param name="boundConfiguration">An object describing how we want to call out to</param>
+	internal void SetAuthenticationIfNeeded(Endpoint endpoint, BoundConfiguration boundConfiguration, HttpRequestMessage requestMessage)
 	{
 		//If user manually specifies an Authorization Header give it preference
-		if (requestData.Headers != null && requestData.Headers.HasKeys() && requestData.Headers.AllKeys.Contains("Authorization"))
+		if (boundConfiguration.Headers != null && boundConfiguration.Headers.HasKeys() && boundConfiguration.Headers.AllKeys.Contains("Authorization"))
 		{
-			var header = AuthenticationHeaderValue.Parse(requestData.Headers["Authorization"]);
+			var header = AuthenticationHeaderValue.Parse(boundConfiguration.Headers["Authorization"]);
 			requestMessage.Headers.Authorization = header;
 			return;
 		}
 
-		SetConfiguredAuthenticationHeaderIfNeeded(endpoint, requestData, requestMessage);
+		SetConfiguredAuthenticationHeaderIfNeeded(endpoint, boundConfiguration, requestMessage);
 	}
 
-	private static void SetConfiguredAuthenticationHeaderIfNeeded(Endpoint endpoint, RequestData requestData, HttpRequestMessage requestMessage)
+	private static void SetConfiguredAuthenticationHeaderIfNeeded(Endpoint endpoint, BoundConfiguration boundConfiguration, HttpRequestMessage requestMessage)
 	{
 		// Basic auth credentials take the following precedence (highest -> lowest):
 		// 1 - Specified with the URI (highest precedence)
@@ -393,10 +393,10 @@ public class HttpRequestInvoker : IRequestInvoker
 			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(endpoint.Uri.UserInfo));
 			scheme = BasicAuthentication.BasicAuthenticationScheme;
 		}
-		else if (requestData.AuthenticationHeader != null && requestData.AuthenticationHeader.TryGetAuthorizationParameters(out var v))
+		else if (boundConfiguration.AuthenticationHeader != null && boundConfiguration.AuthenticationHeader.TryGetAuthorizationParameters(out var v))
 		{
 			parameters = v;
-			scheme = requestData.AuthenticationHeader.AuthScheme;
+			scheme = boundConfiguration.AuthenticationHeader.AuthScheme;
 		}
 
 		if (parameters.IsNullOrEmpty()) return;
@@ -404,34 +404,34 @@ public class HttpRequestInvoker : IRequestInvoker
 		requestMessage.Headers.Authorization = new AuthenticationHeaderValue(scheme, parameters);
 	}
 
-	private static HttpRequestMessage CreateRequestMessage(Endpoint endpoint, RequestData requestData, bool isAsync)
+	private static HttpRequestMessage CreateRequestMessage(Endpoint endpoint, BoundConfiguration boundConfiguration, bool isAsync)
 	{
 		var method = ConvertHttpMethod(endpoint.Method);
 		var requestMessage = new HttpRequestMessage(method, endpoint.Uri);
 
-		if (requestData.Headers != null)
-			foreach (string key in requestData.Headers)
-				requestMessage.Headers.TryAddWithoutValidation(key, requestData.Headers.GetValues(key));
+		if (boundConfiguration.Headers != null)
+			foreach (string key in boundConfiguration.Headers)
+				requestMessage.Headers.TryAddWithoutValidation(key, boundConfiguration.Headers.GetValues(key));
 
 		requestMessage.Headers.Connection.Clear();
 		requestMessage.Headers.ConnectionClose = false;
-		requestMessage.Headers.TryAddWithoutValidation("Accept", requestData.Accept);
+		requestMessage.Headers.TryAddWithoutValidation("Accept", boundConfiguration.Accept);
 
-		var userAgent = requestData.UserAgent?.ToString();
+		var userAgent = boundConfiguration.UserAgent?.ToString();
 		if (!string.IsNullOrWhiteSpace(userAgent))
 		{
 			requestMessage.Headers.UserAgent.Clear();
 			requestMessage.Headers.UserAgent.TryParseAdd(userAgent);
 		}
 
-		if (!requestData.RunAs.IsNullOrEmpty())
-			requestMessage.Headers.Add(RequestData.RunAsSecurityHeader, requestData.RunAs);
+		if (!boundConfiguration.RunAs.IsNullOrEmpty())
+			requestMessage.Headers.Add(BoundConfiguration.RunAsSecurityHeader, boundConfiguration.RunAs);
 
-		if (requestData.MetaHeaderProvider is not null)
+		if (boundConfiguration.MetaHeaderProvider is not null)
 		{
-			foreach (var producer in requestData.MetaHeaderProvider.Producers)
+			foreach (var producer in boundConfiguration.MetaHeaderProvider.Producers)
 			{
-				var value = producer.ProduceHeaderValue(requestData, isAsync);
+				var value = producer.ProduceHeaderValue(boundConfiguration, isAsync);
 
 				if (!string.IsNullOrEmpty(value))
 					requestMessage.Headers.TryAddWithoutValidation(producer.HeaderName, value);
@@ -441,23 +441,23 @@ public class HttpRequestInvoker : IRequestInvoker
 		return requestMessage;
 	}
 
-	private static void SetContent(HttpRequestMessage message, RequestData requestData, PostData postData)
+	private static void SetContent(HttpRequestMessage message, BoundConfiguration boundConfiguration, PostData postData)
 	{
-		if (requestData.TransferEncodingChunked)
-			message.Content = new RequestDataContent(requestData, postData);
+		if (boundConfiguration.TransferEncodingChunked)
+			message.Content = new BoundConfigurationContent(boundConfiguration, postData);
 		else
 		{
-			var stream = requestData.MemoryStreamFactory.Create();
-			if (requestData.HttpCompression)
+			var stream = boundConfiguration.MemoryStreamFactory.Create();
+			if (boundConfiguration.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
-				postData.Write(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
+				postData.Write(zipStream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
 			}
 			else
-				postData.Write(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
+				postData.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
 
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
-			if (requestData.DisableDirectStreaming && !requestData.HttpCompression)
+			if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
 			{
 				message.Content = new ByteArrayContent(postData.WrittenBytes);
 				stream.Dispose();
@@ -468,30 +468,30 @@ public class HttpRequestInvoker : IRequestInvoker
 				message.Content = new StreamContent(stream);
 			}
 
-			if (requestData.HttpCompression)
+			if (boundConfiguration.HttpCompression)
 				message.Content.Headers.ContentEncoding.Add("gzip");
 
-			message.Content.Headers.TryAddWithoutValidation("Content-Type", requestData.ContentType);
+			message.Content.Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 		}
 	}
 
-	private static async Task SetContentAsync(HttpRequestMessage message, RequestData requestData, PostData postData, CancellationToken cancellationToken)
+	private static async Task SetContentAsync(HttpRequestMessage message, BoundConfiguration boundConfiguration, PostData postData, CancellationToken cancellationToken)
 	{
-		if (requestData.TransferEncodingChunked)
-			message.Content = new RequestDataContent(requestData, cancellationToken);
+		if (boundConfiguration.TransferEncodingChunked)
+			message.Content = new BoundConfigurationContent(boundConfiguration, cancellationToken);
 		else
 		{
-			var stream = requestData.MemoryStreamFactory.Create();
-			if (requestData.HttpCompression)
+			var stream = boundConfiguration.MemoryStreamFactory.Create();
+			if (boundConfiguration.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
-				await postData.WriteAsync(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
+				await postData.WriteAsync(zipStream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 			}
 			else
-				await postData.WriteAsync(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
+				await postData.WriteAsync(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
-			if (requestData.DisableDirectStreaming && !requestData.HttpCompression)
+			if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
 			{
 				message.Content = new ByteArrayContent(postData.WrittenBytes);
 #if DOTNETCORE_2_1_OR_HIGHER
@@ -506,10 +506,10 @@ public class HttpRequestInvoker : IRequestInvoker
 				message.Content = new StreamContent(stream);
 			}
 
-			if (requestData.HttpCompression)
+			if (boundConfiguration.HttpCompression)
 				message.Content.Headers.ContentEncoding.Add("gzip");
 
-			message.Content.Headers.TryAddWithoutValidation("Content-Type", requestData.ContentType);
+			message.Content.Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 		}
 	}
 
@@ -527,16 +527,16 @@ public class HttpRequestInvoker : IRequestInvoker
 		}
 	}
 
-	internal static int GetClientKey(RequestData requestData)
+	internal static int GetClientKey(BoundConfiguration boundConfiguration)
 	{
 		unchecked
 		{
-			var hashCode = requestData.RequestTimeout.GetHashCode();
-			hashCode = (hashCode * 397) ^ requestData.HttpCompression.GetHashCode();
-			hashCode = (hashCode * 397) ^ (requestData.ProxyAddress?.GetHashCode() ?? 0);
-			hashCode = (hashCode * 397) ^ (requestData.ProxyUsername?.GetHashCode() ?? 0);
-			hashCode = (hashCode * 397) ^ (requestData.ProxyPassword?.GetHashCode() ?? 0);
-			hashCode = (hashCode * 397) ^ requestData.DisableAutomaticProxyDetection.GetHashCode();
+			var hashCode = boundConfiguration.RequestTimeout.GetHashCode();
+			hashCode = (hashCode * 397) ^ boundConfiguration.HttpCompression.GetHashCode();
+			hashCode = (hashCode * 397) ^ (boundConfiguration.ProxyAddress?.GetHashCode() ?? 0);
+			hashCode = (hashCode * 397) ^ (boundConfiguration.ProxyUsername?.GetHashCode() ?? 0);
+			hashCode = (hashCode * 397) ^ (boundConfiguration.ProxyPassword?.GetHashCode() ?? 0);
+			hashCode = (hashCode * 397) ^ boundConfiguration.DisableAutomaticProxyDetection.GetHashCode();
 			return hashCode;
 		}
 	}

@@ -26,14 +26,14 @@ public class BytesResponseBuilderTests
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
 		var config = new TransportConfiguration() { MemoryStreamFactory = memoryStreamFactory };
 		var apiCallDetails = new ApiCallDetails();
-		var requestData = new RequestData(config);
+		var boundConfiguration = new BoundConfiguration(config);
 		var stream = new MemoryStream(Data);
 
-		var result = await sut.BuildAsync<BytesResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		var result = await sut.BuildAsync<BytesResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 
 		Validate(memoryStreamFactory, result);
 
-		result = sut.Build<BytesResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		result = sut.Build<BytesResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 
 		Validate(memoryStreamFactory, result);
 
@@ -54,17 +54,17 @@ public class BytesResponseBuilderTests
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
 		var config = new TransportConfiguration() { DisableDirectStreaming = true, MemoryStreamFactory = memoryStreamFactory };
 		var apiCallDetails = new ApiCallDetails() { ResponseBodyInBytes = Data };
-		var requestData = new RequestData(config);
+		var boundConfiguration = new BoundConfiguration(config);
 		var stream = new MemoryStream(Data);
 
-		var result = await sut.BuildAsync<BytesResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		var result = await sut.BuildAsync<BytesResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 
 		Validate(memoryStreamFactory, result);
 
 		memoryStreamFactory.Reset();
 		stream.Position = 0;
 
-		result = sut.Build<BytesResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		result = sut.Build<BytesResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 
 		Validate(memoryStreamFactory, result);
 

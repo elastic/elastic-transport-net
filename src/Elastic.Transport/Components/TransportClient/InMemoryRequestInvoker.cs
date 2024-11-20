@@ -36,7 +36,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	}
 
 	/// <inheritdoc cref="InMemoryRequestInvoker"/>
-	public InMemoryRequestInvoker(byte[] responseBody, int statusCode = 200, Exception? exception = null, string contentType = RequestData.DefaultContentType, Dictionary<string, IEnumerable<string>> headers = null)
+	public InMemoryRequestInvoker(byte[] responseBody, int statusCode = 200, Exception? exception = null, string contentType = BoundConfiguration.DefaultContentType, Dictionary<string, IEnumerable<string>> headers = null)
 	{
 		_responseBody = responseBody;
 		_statusCode = statusCode;
@@ -53,26 +53,26 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	void IDisposable.Dispose() { }
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
-	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
+	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
 		where TResponse : TransportResponse, new() =>
-		BuildResponse<TResponse>(endpoint, requestData, postData);
+		BuildResponse<TResponse>(endpoint, boundConfiguration, postData);
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
-	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new() =>
-		BuildResponseAsync<TResponse>(endpoint, requestData, postData, cancellationToken);
+		BuildResponseAsync<TResponse>(endpoint, boundConfiguration, postData, cancellationToken);
 
 	/// <summary>
 	/// Allow subclasses to provide their own implementations for <see cref="IRequestInvoker.Request{TResponse}"/> while reusing the more complex logic
 	/// to create a response
 	/// </summary>
 	/// <param name="endpoint">An instance of <see cref="Endpoint"/> describing where to call out to</param>
-	/// <param name="requestData">An instance of <see cref="RequestData"/> describing how to call out to</param>
+	/// <param name="boundConfiguration">An instance of <see cref="BoundConfiguration"/> describing how to call out to</param>
 	/// <param name="postData">Optional data to post</param>
 	/// <param name="responseBody">The bytes intended to be used as return</param>
 	/// <param name="statusCode">The status code that the responses <see cref="TransportResponse.ApiCallDetails"/> should return</param>
 	/// <param name="contentType"></param>
-	public TResponse BuildResponse<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, byte[]? responseBody = null, int? statusCode = null,
+	public TResponse BuildResponse<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, byte[]? responseBody = null, int? statusCode = null,
 		string? contentType = null)
 		where TResponse : TransportResponse, new()
 	{
@@ -81,26 +81,26 @@ public class InMemoryRequestInvoker : IRequestInvoker
 
 		if (data is not null)
 		{
-			using var stream = requestData.MemoryStreamFactory.Create();
-			if (requestData.HttpCompression)
+			using var stream = boundConfiguration.MemoryStreamFactory.Create();
+			if (boundConfiguration.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-				data.Write(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
+				data.Write(zipStream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
 			}
 			else
 			{
-				data.Write(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming);
+				data.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
 			}
 		}
 
 		var sc = statusCode ?? _statusCode;
-		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
+		Stream responseStream = body != null ? boundConfiguration.MemoryStreamFactory.Create(body) : boundConfiguration.MemoryStreamFactory.Create(EmptyBody);
 
-		return ResponseFactory.Create<TResponse>(endpoint, requestData, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? RequestData.DefaultContentType, body?.Length ?? 0, null, null);
+		return ResponseFactory.Create<TResponse>(endpoint, boundConfiguration, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? BoundConfiguration.DefaultContentType, body?.Length ?? 0, null, null);
 	}
 
 	/// <inheritdoc cref="BuildResponse{TResponse}"/>>
-	public async Task<TResponse> BuildResponseAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken,
+	public async Task<TResponse> BuildResponseAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken,
 		byte[]? responseBody = null, int? statusCode = null, string? contentType = null)
 		where TResponse : TransportResponse, new()
 	{
@@ -109,24 +109,24 @@ public class InMemoryRequestInvoker : IRequestInvoker
 
 		if (data is not null)
 		{
-			using var stream = requestData.MemoryStreamFactory.Create();
+			using var stream = boundConfiguration.MemoryStreamFactory.Create();
 
-			if (requestData.HttpCompression)
+			if (boundConfiguration.HttpCompression)
 			{
 				using var zipStream = new GZipStream(stream, CompressionMode.Compress);
-				await data.WriteAsync(zipStream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
+				await data.WriteAsync(zipStream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 			}
 			else
 			{
-				await data.WriteAsync(stream, requestData.ConnectionSettings, requestData.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
+				await data.WriteAsync(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
 			}
 		}
 		var sc = statusCode ?? _statusCode;
 
-		Stream responseStream = body != null ? requestData.MemoryStreamFactory.Create(body) : requestData.MemoryStreamFactory.Create(EmptyBody);
+		Stream responseStream = body != null ? boundConfiguration.MemoryStreamFactory.Create(body) : boundConfiguration.MemoryStreamFactory.Create(EmptyBody);
 
 		return await ResponseFactory
-			.CreateAsync<TResponse>(endpoint, requestData, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
+			.CreateAsync<TResponse>(endpoint, boundConfiguration, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
 			.ConfigureAwait(false);
 	}
 }

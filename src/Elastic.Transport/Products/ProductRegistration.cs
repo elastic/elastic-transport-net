@@ -56,40 +56,40 @@ public abstract class ProductRegistration
 	public abstract HeadersList ResponseHeadersToParse { get; }
 
 	/// <summary>
-	/// Create an instance of <see cref="RequestData"/> that describes where and how to ping see <paramref name="node" />
-	/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
+	/// Create an instance of <see cref="BoundConfiguration"/> that describes where and how to ping see <paramref name="node" />
+	/// <para>All the parameters of this method correspond with <see cref="BoundConfiguration"/>'s constructor</para>
 	/// </summary>
 	public abstract Endpoint CreatePingEndpoint(Node node, IRequestConfiguration requestConfiguration);
 
 	/// <summary>
-	/// Provide an implementation that performs the ping directly using <see cref="IRequestInvoker.RequestAsync{TResponse}"/> and the <see cref="RequestData"/>
+	/// Provide an implementation that performs the ping directly using <see cref="IRequestInvoker.RequestAsync{TResponse}"/> and the <see cref="BoundConfiguration"/>
 	/// return by <see cref="CreatePingEndpoint"/>
 	/// </summary>
-	public abstract Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken);
+	public abstract Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Provide an implementation that performs the ping directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
+	/// Provide an implementation that performs the ping directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="BoundConfiguration"/>
 	/// return by <see cref="CreatePingEndpoint"/>
 	/// </summary>
-	public abstract TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, RequestData pingData);
+	public abstract TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration);
 
 	/// <summary>
-	/// Create an instance of <see cref="RequestData"/> that describes where and how to sniff the cluster using <paramref name="node" />
-	/// <para>All the parameters of this method correspond with <see cref="RequestData"/>'s constructor</para>
+	/// Create an instance of <see cref="BoundConfiguration"/> that describes where and how to sniff the cluster using <paramref name="node" />
+	/// <para>All the parameters of this method correspond with <see cref="BoundConfiguration"/>'s constructor</para>
 	/// </summary>
 	public abstract Endpoint CreateSniffEndpoint(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings);
 
 	/// <summary>
-	/// Provide an implementation that performs the sniff directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
+	/// Provide an implementation that performs the sniff directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="BoundConfiguration"/>
 	/// return by <see cref="CreateSniffEndpoint"/>
 	/// </summary>
-	public abstract Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, RequestData requestData, CancellationToken cancellationToken);
+	public abstract Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken);
 
 	/// <summary>
-	/// Provide an implementation that performs the sniff directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="RequestData"/>
+	/// Provide an implementation that performs the sniff directly using <see cref="IRequestInvoker.Request{TResponse}"/> and the <see cref="BoundConfiguration"/>
 	/// return by <see cref="CreateSniffEndpoint"/>
 	/// </summary>
-	public abstract Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, RequestData requestData);
+	public abstract Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration);
 
 	/// <summary> Allows certain nodes to be queried first to obtain sniffing information </summary>
 	public abstract int SniffOrder(Node node);

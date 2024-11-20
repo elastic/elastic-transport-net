@@ -33,7 +33,6 @@ public interface ITransport
 	)
 		where TResponse : TransportResponse, new();
 
-
 	/// <summary>
 	/// Orchestrate a request asynchronously into a <see cref="NodePool"/> using the workflow defined in the <see cref="RequestPipeline"/>.
 	/// </summary>

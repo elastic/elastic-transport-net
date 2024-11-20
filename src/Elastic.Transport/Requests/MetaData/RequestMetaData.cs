@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Generic;
-using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
 
@@ -21,7 +20,7 @@ public sealed class RequestMetaData
 
 	internal bool TryAddMetaData(string key, string value)
 	{
-		_metaDataItems ??= new();
+		_metaDataItems ??= [];
 
 #if NETSTANDARD2_1 || NET6_0_OR_GREATER
 		return _metaDataItems.TryAdd(key, value);
