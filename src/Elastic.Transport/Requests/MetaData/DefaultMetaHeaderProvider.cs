@@ -72,7 +72,7 @@ public sealed class DefaultMetaHeaderProducer : MetaHeaderProducer
 				: _syncMetaDataHeader.ToString();
 
 			// TODO - Cache values against key to avoid allocating a string each time
-			if (boundConfiguration.RequestMetaData.Items.TryGetValue(RequestMetaData.HelperKey, out var helperSuffix))
+			if (boundConfiguration.RequestMetaData is not null && boundConfiguration.RequestMetaData.Items.TryGetValue(RequestMetaData.HelperKey, out var helperSuffix))
 				headerValue = $"{headerValue},h={helperSuffix}";
 
 			return headerValue;

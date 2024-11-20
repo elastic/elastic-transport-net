@@ -5,7 +5,9 @@
 using System;
 using System.Diagnostics;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace Elastic.Transport.Diagnostics;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
 
 /// <summary>
 /// Activity information for OpenTelemetry instrumentation.
@@ -37,7 +39,7 @@ public static class OpenTelemetry
 	internal static bool CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested => ElasticTransportActivitySource.HasListeners() &&
 		((Activity.Current?.Source.Name.Equals(ElasticTransportActivitySourceName, StringComparison.Ordinal) ?? false) && (Activity.Current?.IsAllDataRequested ?? false));
 
-	internal static void SetCommonAttributes(Activity? activity, OpenTelemetryData openTelemetryData, ITransportConfiguration settings)
+	internal static void SetCommonAttributes(Activity? activity, ITransportConfiguration settings)
 	{
 		if (activity is null)
 			return;
@@ -51,20 +53,7 @@ public static class OpenTelemetry
 		}
 
 		var productSchemaVersion = string.Empty;
-		if (openTelemetryData.SpanAttributes is not null)
-		{
-			foreach (var attribute in openTelemetryData.SpanAttributes)
-			{
-				activity?.SetTag(attribute.Key, attribute.Value);
-
-				if (attribute.Key.Equals(OpenTelemetryAttributes.DbElasticsearchSchemaUrl, StringComparison.Ordinal))
-				{
-					if (attribute.Value is string schemaVersion)
-						productSchemaVersion = schemaVersion;
-				}
-			}
-		}
-
+		
 		// We add the client schema version only when it differs from the product schema version
 		if (!productSchemaVersion.Equals(OpenTelemetrySchemaVersion, StringComparison.Ordinal))
 			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportSchemaVersion, OpenTelemetrySchemaVersion);

@@ -2,9 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Elastic.Transport.Diagnostics;
 
 namespace Elastic.Transport;
 
@@ -20,7 +21,7 @@ public interface ITransport
 	/// <typeparam name="TResponse">The type to deserialize the response body into.</typeparam>
 	/// <param name="path">The path of the request.</param>
 	/// <param name="postData">The data to be included as the body of the HTTP request.</param>
-	/// <param name="openTelemetryData">Data to be used to control the OpenTelemetry instrumentation.</param>
+	/// <param name="configureActivity">An optional <see cref="Action"/> used to configure the <see cref="Activity"/>.</param>
 	/// <param name="localConfiguration">Per request configuration</param>
 	/// Allows callers to override completely how `TResponse` should be deserialized to a `TResponse` that implements <see cref="TransportResponse"/> instance.
 	/// <para>Expert setting only</para>
@@ -28,7 +29,7 @@ public interface ITransport
 	public TResponse Request<TResponse>(
 		in EndpointPath path,
 		PostData? postData,
-		in OpenTelemetryData openTelemetryData,
+		Action<Activity>? configureActivity,
 		IRequestConfiguration? localConfiguration
 	)
 		where TResponse : TransportResponse, new();
@@ -40,7 +41,7 @@ public interface ITransport
 	/// <param name="path">The path of the request.</param>
 	/// <param name="postData">The data to be included as the body of the HTTP request.</param>
 	/// <param name="cancellationToken">The cancellation token to use.</param>
-	/// <param name="openTelemetryData">Data to be used to control the OpenTelemetry instrumentation.</param>
+	/// <param name="configureActivity">An optional <see cref="Action"/> used to configure the <see cref="Activity"/>.</param>
 	/// <param name="localConfiguration">Per request configuration</param>
 	/// Allows callers to override completely how `TResponse` should be deserialized to a `TResponse` that implements <see cref="TransportResponse"/> instance.
 	/// <para>Expert setting only</para>
@@ -48,7 +49,7 @@ public interface ITransport
 	public Task<TResponse> RequestAsync<TResponse>(
 		in EndpointPath path,
 		PostData? postData,
-		in OpenTelemetryData openTelemetryData,
+		Action<Activity>? configureActivity,
 		IRequestConfiguration? localConfiguration,
 		CancellationToken cancellationToken = default
 	)

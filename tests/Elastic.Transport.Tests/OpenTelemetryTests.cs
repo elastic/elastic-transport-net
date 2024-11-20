@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -92,7 +91,7 @@ public class OpenTelemetryTests
 	{
 		const string spanName = "Overridden span name";
 
-		await TestCoreAsync(Assertions, new OpenTelemetryData { SpanName = spanName });
+		await TestCoreAsync(Assertions, static a => a.DisplayName = spanName);
 
 		static void Assertions(Activity activity)
 		{
@@ -106,15 +105,7 @@ public class OpenTelemetryTests
 		const string attributeName = "test.attribute";
 		const string attributeValue = "test-value";
 
-		var otel = new OpenTelemetryData
-		{
-			SpanAttributes = new Dictionary<string, object>
-			{
-				[attributeName] = attributeValue
-			}
-		};
-
-		await TestCoreAsync(Assertions, otel);
+		await TestCoreAsync(Assertions, static a => a.AddTag(attributeName, attributeValue));
 
 		static void Assertions(Activity activity)
 		{
@@ -122,9 +113,9 @@ public class OpenTelemetryTests
 		}
 	}
 
-	private Task TestCoreAsync(Action<Activity> assertion) => TestCoreAsync(assertion, default);
+	private static Task TestCoreAsync(Action<Activity> assertion) => TestCoreAsync(assertion, default);
 
-	private async Task TestCoreAsync(Action<Activity> assertions, OpenTelemetryData openTelemetryData, ITransport transport = null)
+	private static async Task TestCoreAsync(Action<Activity> assertions, Action<Activity> configureActivity, ITransport transport = null)
 	{
 		var mre = new ManualResetEvent(false);
 
@@ -149,7 +140,7 @@ public class OpenTelemetryTests
 
 		transport ??= new DistributedTransport(InMemoryConnectionFactory.Create());
 
-		_ = await transport.RequestAsync<VoidResponse>(new EndpointPath(HttpMethod.GET, "/"), null, openTelemetryData, null, default);
+		_ = await transport.RequestAsync<VoidResponse>(new EndpointPath(HttpMethod.GET, "/"), null, configureActivity, null, default);
 
 		mre.WaitOne(TimeSpan.FromSeconds(1)).Should().BeTrue();
 	}
