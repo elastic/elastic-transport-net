@@ -279,7 +279,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	bool ITransportConfiguration.SniffsOnConnectionFault => _sniffsOnConnectionFault;
 	bool ITransportConfiguration.SniffsOnStartup => _sniffsOnStartup;
 	UrlFormatter ITransportConfiguration.UrlFormatter => _urlFormatter;
-	UserAgent ITransportConfiguration.UserAgent => _userAgent;
+	UserAgent IRequestConfiguration.UserAgent => _userAgent;
 	Func<HttpMethod, int, bool> ITransportConfiguration.StatusCodeToResponseSuccess => _statusCodeToResponseSuccess;
 	TimeSpan ITransportConfiguration.DnsRefreshTimeout => _dnsRefreshTimeout;
 	bool ITransportConfiguration.PrettyJson => _prettyJson;
@@ -513,7 +513,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	public T SkipDeserializationForStatusCodes(params int[] statusCodes) =>
 		Assign(new ReadOnlyCollection<int>(statusCodes), static (a, v) => a._skipDeserializationForStatusCodes = v);
 
-	/// <inheritdoc cref="ITransportConfiguration.UserAgent"/>
+	/// <inheritdoc cref="IRequestConfiguration.UserAgent"/>
 	public T UserAgent(UserAgent userAgent) => Assign(userAgent, static (a, v) => a._userAgent = v);
 
 	/// <inheritdoc cref="IRequestConfiguration.TransferEncodingChunked"/>

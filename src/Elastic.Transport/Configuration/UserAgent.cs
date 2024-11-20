@@ -25,13 +25,13 @@ public sealed class UserAgent
 {
 	private readonly string _toString;
 
-	private UserAgent(string reposName, Type typeVersionLookup, string[] metadata = null)
+	private UserAgent(string reposName, Type typeVersionLookup, string[]? metadata = null)
 	{
 		var version = typeVersionLookup.Assembly
 			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
 			.InformationalVersion;
 
-		var meta = string.Join("; ", metadata ?? Array.Empty<string>());
+		var meta = string.Join("; ", metadata ?? []);
 		var assemblyName = typeVersionLookup.Assembly.GetName().Name;
 
 		_toString = $"{reposName}/{version} ({RuntimeInformation.OSDescription}; {RuntimeInformation.FrameworkDescription}; {assemblyName}{meta.Trim()})";
