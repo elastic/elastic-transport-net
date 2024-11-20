@@ -20,15 +20,13 @@ using System.Net;
 namespace Elastic.Transport;
 
 /// <inheritdoc cref="ITransport{TConfiguration}" />
-public sealed class DistributedTransport : DistributedTransport<ITransportConfiguration>
+/// <summary>
+/// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
+/// different nodes
+/// </summary>
+/// <param name="configuration">The configuration to use for this transport</param>
+public sealed class DistributedTransport(ITransportConfiguration configuration) : DistributedTransport<ITransportConfiguration>(configuration)
 {
-	/// <summary>
-	/// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
-	/// different nodes
-	/// </summary>
-	/// <param name="configuration">The configuration to use for this transport</param>
-	public DistributedTransport(ITransportConfiguration configuration)
-		: base(configuration) { }
 }
 
 /// <inheritdoc cref="ITransport{TConfiguration}" />
@@ -65,28 +63,28 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	public TResponse Request<TResponse>(
 		in EndpointPath path,
 		PostData? data,
-		in OpenTelemetryData openTelemetryData,
+		Action<Activity>? configureActivity,
 		IRequestConfiguration? localConfiguration
 	) where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(isAsync: false, path, data, openTelemetryData, localConfiguration)
+		RequestCoreAsync<TResponse>(isAsync: false, path, data, configureActivity, localConfiguration)
 			.EnsureCompleted();
 
 	/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>
 	public Task<TResponse> RequestAsync<TResponse>(
 		in EndpointPath path,
 		PostData? data,
-		in OpenTelemetryData openTelemetryData,
+		Action<Activity>? configureActivity,
 		IRequestConfiguration? localConfiguration,
 		CancellationToken cancellationToken = default
 	) where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(isAsync: true, path, data, openTelemetryData, localConfiguration, cancellationToken)
+		RequestCoreAsync<TResponse>(isAsync: true, path, data, configureActivity, localConfiguration, cancellationToken)
 			.AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(
 		bool isAsync,
 		EndpointPath path,
 		PostData? data,
-		OpenTelemetryData openTelemetryData,
+		Action<Activity>? configureActivity,
 		IRequestConfiguration? localConfiguration,
 		CancellationToken cancellationToken = default
 	) where TResponse : TransportResponse, new()
@@ -94,7 +92,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		Activity activity = null;
 
 		if (OpenTelemetry.ElasticTransportActivitySource.HasListeners())
-			activity = OpenTelemetry.ElasticTransportActivitySource.StartActivity(openTelemetryData.SpanName ?? path.Method.GetStringValue(),
+			activity = OpenTelemetry.ElasticTransportActivitySource.StartActivity(path.Method.GetStringValue(),
 				ActivityKind.Client);
 
 		try
@@ -127,7 +125,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			if (activity is { IsAllDataRequested: true })
 			{
 				if (activity.IsAllDataRequested)
-					OpenTelemetry.SetCommonAttributes(activity, openTelemetryData, Configuration);
+					OpenTelemetry.SetCommonAttributes(activity, Configuration);
 
 				if (Configuration.Authentication is BasicAuthentication basicAuthentication)
 					activity.SetTag(SemanticConventions.DbUser, basicAuthentication.Username);
@@ -136,13 +134,11 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				activity.SetTag(OpenTelemetryAttributes.ElasticTransportProductVersion, Configuration.ProductRegistration.ProductAssemblyVersion);
 				activity.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, ReflectionVersionInfo.TransportVersion);
 				activity.SetTag(SemanticConventions.UserAgentOriginal, Configuration.UserAgent.ToString());
-
-				if (openTelemetryData.SpanAttributes is not null)
-					foreach (var attribute in openTelemetryData.SpanAttributes)
-						activity.SetTag(attribute.Key, attribute.Value);
-
 				activity.SetTag(SemanticConventions.HttpRequestMethod, endpoint.Method.GetStringValue());
 			}
+
+			if (configureActivity is not null && activity is not null)
+				configureActivity.Invoke(activity);
 
 			List<PipelineException>? seenExceptions = null;
 			var attemptedNodes = 0;
