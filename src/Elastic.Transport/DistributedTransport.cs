@@ -137,9 +137,6 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				activity.SetTag(SemanticConventions.HttpRequestMethod, endpoint.Method.GetStringValue());
 			}
 
-			if (configureActivity is not null && activity is not null)
-				configureActivity.Invoke(activity);
-
 			List<PipelineException>? seenExceptions = null;
 			var attemptedNodes = 0;
 
@@ -263,6 +260,9 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 			activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
 			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportAttemptedNodes, attemptedNodes);
+
+			if (configureActivity is not null && activity is not null)
+				configureActivity.Invoke(activity);
 
 			return FinalizeResponse(endpoint, boundConfiguration, data, pipeline, startedOn, auditor, seenExceptions, response);
 		}
