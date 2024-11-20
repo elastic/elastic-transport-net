@@ -10,10 +10,10 @@ namespace Elastic.Transport;
 
 internal class StreamResponseBuilder : TypedResponseBuilder<StreamResponse>
 {
-	protected override StreamResponse Build(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength) =>
+	protected override StreamResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
 		new(responseStream, contentType);
 
-	protected override Task<StreamResponse> BuildAsync(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType,
+	protected override Task<StreamResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType,
 		long contentLength, CancellationToken cancellationToken = default) =>
 			Task.FromResult(new StreamResponse(responseStream, contentType));
 }

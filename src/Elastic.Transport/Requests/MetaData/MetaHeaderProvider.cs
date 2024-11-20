@@ -26,7 +26,7 @@ public abstract class MetaHeaderProducer
 	public abstract string HeaderName { get; }
 
 	/// <summary>
-	/// Produces the header value based on current outgoing <paramref name="requestData"/>.
+	/// Produces the header value based on current outgoing <paramref name="boundConfiguration"/>.
 	/// </summary>
-	public abstract string? ProduceHeaderValue(RequestData requestData, bool isAsync);
+	public abstract string? ProduceHeaderValue(BoundConfiguration boundConfiguration, bool isAsync);
 }

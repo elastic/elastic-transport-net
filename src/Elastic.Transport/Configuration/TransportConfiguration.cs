@@ -159,7 +159,7 @@ public record TransportConfiguration : ITransportConfiguration
 		NodePool = config.NodePool;
 		NodePredicate = config.NodePredicate;
 		OnRequestCompleted = config.OnRequestCompleted;
-		OnRequestDataCreated = config.OnRequestDataCreated;
+		OnConfigurationBound = config.OnConfigurationBound;
 		OpaqueId = config.OpaqueId;
 		ParseAllHeaders = config.ParseAllHeaders;
 		PingTimeout = config.PingTimeout;
@@ -300,7 +300,7 @@ public record TransportConfiguration : ITransportConfiguration
 	/// <inheritdoc />
 	public Action<ApiCallDetails>? OnRequestCompleted { get; init; }
 	/// <inheritdoc />
-	public Action<RequestData>? OnRequestDataCreated { get; init; }
+	public Action<BoundConfiguration>? OnConfigurationBound { get; init; }
 	//TODO URI
 	/// <inheritdoc />
 	public string? ProxyAddress { get; init; }

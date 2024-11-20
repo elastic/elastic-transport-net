@@ -26,16 +26,16 @@ public class StreamResponseBuilderTests
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
 		var config = new TransportConfiguration() { MemoryStreamFactory = memoryStreamFactory };
 		var apiCallDetails = new ApiCallDetails();
-		var requestData = new RequestData(config);
+		var boundConfiguration = new BoundConfiguration(config);
 		var stream = new MemoryStream(Data);
 
-		var result = await sut.BuildAsync<StreamResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		var result = await sut.BuildAsync<StreamResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 		await ValidateAsync(memoryStreamFactory, result);
 
 		memoryStreamFactory.Reset();
 		stream.Position = 0;
 
-		result = sut.Build<StreamResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		result = sut.Build<StreamResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 		await ValidateAsync(memoryStreamFactory, result);
 	}
 
@@ -47,16 +47,16 @@ public class StreamResponseBuilderTests
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
 		var config = new TransportConfiguration() { MemoryStreamFactory = memoryStreamFactory, DisableDirectStreaming = true };
 		var apiCallDetails = new ApiCallDetails() { ResponseBodyInBytes = Data };
-		var requestData = new RequestData(config);
+		var boundConfiguration = new BoundConfiguration(config);
 		var stream = new MemoryStream(Data);
 
-		var result = await sut.BuildAsync<StreamResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		var result = await sut.BuildAsync<StreamResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 		await ValidateAsync(memoryStreamFactory, result);
 
 		memoryStreamFactory.Reset();
 		stream.Position = 0;
 
-		result = sut.Build<StreamResponse>(apiCallDetails, requestData, stream, RequestData.DefaultContentType, Data.Length);
+		result = sut.Build<StreamResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
 		await ValidateAsync(memoryStreamFactory, result);
 	}
 

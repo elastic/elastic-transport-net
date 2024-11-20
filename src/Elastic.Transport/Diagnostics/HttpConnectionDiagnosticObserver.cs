@@ -8,11 +8,11 @@ using System.Collections.Generic;
 namespace Elastic.Transport.Diagnostics;
 
 /// <summary> Provides a typed listener to the events that <see cref="HttpRequestInvoker"/> emits </summary>
-internal sealed class HttpConnectionDiagnosticObserver : TypedDiagnosticObserver<RequestData, int?>
+internal sealed class HttpConnectionDiagnosticObserver : TypedDiagnosticObserver<BoundConfiguration, int?>
 {
 	/// <inheritdoc cref="HttpConnectionDiagnosticObserver"/>>
 	public HttpConnectionDiagnosticObserver(
-		Action<KeyValuePair<string, RequestData>> onNextStart,
+		Action<KeyValuePair<string, BoundConfiguration>> onNextStart,
 		Action<KeyValuePair<string, int?>> onNextEnd,
 		Action<Exception> onError = null,
 		Action onCompleted = null

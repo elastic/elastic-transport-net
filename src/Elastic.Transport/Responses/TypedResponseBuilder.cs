@@ -16,17 +16,17 @@ public abstract class TypedResponseBuilder<TResponse> : IResponseBuilder
 {
 	bool IResponseBuilder.CanBuild<T>() => typeof(TResponse) == typeof(T);
 
-	/// <inheritdoc cref="IResponseBuilder.Build{TResponse}(ApiCallDetails, RequestData, Stream, string, long)"/>
-	protected abstract TResponse? Build(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength);
+	/// <inheritdoc cref="IResponseBuilder.Build{TResponse}(ApiCallDetails, BoundConfiguration, Stream, string, long)"/>
+	protected abstract TResponse? Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength);
 
-	T IResponseBuilder.Build<T>(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength) =>
-		Build(apiCallDetails, requestData, responseStream, contentType, contentLength) as T;
+	T IResponseBuilder.Build<T>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
+		Build(apiCallDetails, boundConfiguration, responseStream, contentType, contentLength) as T;
 
-	/// <inheritdoc cref="IResponseBuilder.BuildAsync{TResponse}(ApiCallDetails, RequestData, Stream, string, long, CancellationToken)"/>
-	protected abstract Task<TResponse?> BuildAsync(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream,
+	/// <inheritdoc cref="IResponseBuilder.BuildAsync{TResponse}(ApiCallDetails, BoundConfiguration, Stream, string, long, CancellationToken)"/>
+	protected abstract Task<TResponse?> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream,
 		string contentType, long contentLength, CancellationToken cancellationToken = default);
 
-	Task<T> IResponseBuilder.BuildAsync<T>(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType,
+	Task<T> IResponseBuilder.BuildAsync<T>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType,
 		long contentLength, CancellationToken cancellationToken) =>
-			BuildAsync(apiCallDetails, requestData, responseStream, contentType, contentLength, cancellationToken) as Task<T>;
+			BuildAsync(apiCallDetails, boundConfiguration, responseStream, contentType, contentLength, cancellationToken) as Task<T>;
 }

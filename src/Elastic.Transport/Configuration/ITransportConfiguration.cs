@@ -104,10 +104,10 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	Action<ApiCallDetails>? OnRequestCompleted { get; }
 
 	/// <summary>
-	/// An action to run when the <see cref="RequestData" /> for a request has been
-	/// created.
+	/// An action to run when the <see cref="BoundConfiguration" /> for a request has been
+	/// bound.
 	/// </summary>
-	Action<RequestData>? OnRequestDataCreated { get; }
+	Action<BoundConfiguration>? OnConfigurationBound { get; }
 
 	/// <summary>
 	/// When set will force all connections through this proxy

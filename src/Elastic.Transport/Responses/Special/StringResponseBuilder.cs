@@ -16,7 +16,7 @@ namespace Elastic.Transport;
 
 internal class StringResponseBuilder : TypedResponseBuilder<StringResponse>
 {
-	protected override StringResponse Build(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength)
+	protected override StringResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength)
 	{
 		string responseString;
 
@@ -42,7 +42,7 @@ internal class StringResponseBuilder : TypedResponseBuilder<StringResponse>
 		return new StringResponse(responseString);
 	}
 
-	protected override async Task<StringResponse> BuildAsync(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength,
+	protected override async Task<StringResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength,
 		CancellationToken cancellationToken = default)
 	{
 		string responseString;

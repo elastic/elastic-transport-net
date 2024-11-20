@@ -60,11 +60,11 @@ public sealed class DefaultMetaHeaderProducer : MetaHeaderProducer
 	public override string HeaderName => MetaHeaderName;
 
 	/// <inheritdoc/>
-	public override string? ProduceHeaderValue(RequestData requestData, bool isAsync)
+	public override string? ProduceHeaderValue(BoundConfiguration boundConfiguration, bool isAsync)
 	{
 		try
 		{
-			if (requestData.ConnectionSettings.DisableMetaHeader)
+			if (boundConfiguration.ConnectionSettings.DisableMetaHeader)
 				return null;
 
 			var headerValue = isAsync
@@ -72,7 +72,7 @@ public sealed class DefaultMetaHeaderProducer : MetaHeaderProducer
 				: _syncMetaDataHeader.ToString();
 
 			// TODO - Cache values against key to avoid allocating a string each time
-			if (requestData.RequestMetaData.TryGetValue(RequestMetaData.HelperKey, out var helperSuffix))
+			if (boundConfiguration.RequestMetaData.Items.TryGetValue(RequestMetaData.HelperKey, out var helperSuffix))
 				headerValue = $"{headerValue},h={helperSuffix}";
 
 			return headerValue;

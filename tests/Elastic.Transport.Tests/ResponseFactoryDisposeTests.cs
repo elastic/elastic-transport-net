@@ -108,7 +108,7 @@ public class ResponseFactoryDisposeTests
 
 		var endpoint = new Endpoint(new EndpointPath(httpMethod, "/"), new Node(new Uri("http://localhost:9200")));
 
-		var requestData = new RequestData(config, null);
+		var boundConfiguration = new BoundConfiguration(config, null);
 
 		var stream = new TrackDisposeStream(responseStreamCanSeek);
 
@@ -118,7 +118,7 @@ public class ResponseFactoryDisposeTests
 			stream.Position = 0;
 		}
 
-		var response = config.RequestInvoker.ResponseFactory.Create<T>(endpoint, requestData, null, null, statusCode, null, stream, contentType, isChunked ? -1 : responseJson.Length, null, null);
+		var response = config.RequestInvoker.ResponseFactory.Create<T>(endpoint, boundConfiguration, null, null, statusCode, null, stream, contentType, isChunked ? -1 : responseJson.Length, null, null);
 
 		Validate(disableDirectStreaming, expectMemoryStreamDisposal, memoryStreamCreateExpected, memoryStreamFactory, stream, response);
 
@@ -130,7 +130,7 @@ public class ResponseFactoryDisposeTests
 			stream.Position = 0;
 		}
 
-		response = await config.RequestInvoker.ResponseFactory.CreateAsync<T>(endpoint, requestData, null, null, statusCode, null, stream, contentType, isChunked ? -1 : responseJson.Length, null, null);
+		response = await config.RequestInvoker.ResponseFactory.CreateAsync<T>(endpoint, boundConfiguration, null, null, statusCode, null, stream, contentType, isChunked ? -1 : responseJson.Length, null, null);
 
 		Validate(disableDirectStreaming, expectMemoryStreamDisposal, memoryStreamCreateExpected, memoryStreamFactory, stream, response);
 

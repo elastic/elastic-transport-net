@@ -34,7 +34,7 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 	/// <inheritdoc/>
 	public override TResponse Create<TResponse>(
 		Endpoint endpoint,
-		RequestData requestData,
+		BoundConfiguration boundConfiguration,
 		PostData? postData,
 		Exception? ex,
 		int? statusCode,
@@ -44,13 +44,13 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		long contentLength,
 		IReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats,
 		IReadOnlyDictionary<TcpState, int>? tcpStats) =>
-			CreateCoreAsync<TResponse>(false, endpoint, requestData, postData, ex, statusCode, headers, responseStream,
+			CreateCoreAsync<TResponse>(false, endpoint, boundConfiguration, postData, ex, statusCode, headers, responseStream,
 				contentType, contentLength, threadPoolStats, tcpStats).EnsureCompleted();
 
 	/// <inheritdoc/>
 	public override Task<TResponse> CreateAsync<TResponse>(
 		Endpoint endpoint,
-		RequestData requestData,
+		BoundConfiguration boundConfiguration,
 		PostData? postData,
 		Exception? ex,
 		int? statusCode,
@@ -61,13 +61,13 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		IReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats,
 		IReadOnlyDictionary<TcpState, int>? tcpStats,
 		CancellationToken cancellationToken = default) =>
-			CreateCoreAsync<TResponse>(true, endpoint, requestData, postData, ex, statusCode, headers, responseStream,
+			CreateCoreAsync<TResponse>(true, endpoint, boundConfiguration, postData, ex, statusCode, headers, responseStream,
 				contentType, contentLength, threadPoolStats, tcpStats, cancellationToken).AsTask();
 
 	private async ValueTask<TResponse> CreateCoreAsync<TResponse>(
 		bool isAsync,
 		Endpoint endpoint,
-		RequestData requestData,
+		BoundConfiguration boundConfiguration,
 		PostData? postData,
 		Exception? ex,
 		int? statusCode,
@@ -81,20 +81,20 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 	{
 		responseStream.ThrowIfNull(nameof(responseStream));
 
-		var details = InitializeApiCallDetails(endpoint, requestData, postData, ex, statusCode, headers, contentType, threadPoolStats, tcpStats, contentLength);
+		var details = InitializeApiCallDetails(endpoint, boundConfiguration, postData, ex, statusCode, headers, contentType, threadPoolStats, tcpStats, contentLength);
 
 		TResponse? response = null;
 
 		if (MayHaveBody(statusCode, endpoint.Method, contentLength)
-			&& TryResolveBuilder<TResponse>(requestData.ResponseBuilders, requestData.ProductResponseBuilders, out var builder))
+			&& TryResolveBuilder<TResponse>(boundConfiguration.ResponseBuilders, boundConfiguration.ProductResponseBuilders, out var builder))
 		{
 			var ownsStream = false;
 
 			// We always pre-buffer when there may be a body, even if the content type does not match.
 			// That way, we ensure the caller can access the bytes themselves for "invalid" responses.
-			if (requestData.DisableDirectStreaming)
+			if (boundConfiguration.DisableDirectStreaming)
 			{
-				var inMemoryStream = requestData.MemoryStreamFactory.Create();
+				var inMemoryStream = boundConfiguration.MemoryStreamFactory.Create();
 
 				if (isAsync)
 					await responseStream.CopyToAsync(inMemoryStream, BufferedResponseHelpers.BufferSize, cancellationToken).ConfigureAwait(false);
@@ -106,12 +106,12 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 			}
 
 			// We only attempt to build a response when the Content-Type matches the accepted type.
-			if (ValidateResponseContentType(requestData.Accept, contentType))
+			if (ValidateResponseContentType(boundConfiguration.Accept, contentType))
 			{
 				if (isAsync)
-					response = await builder.BuildAsync<TResponse>(details, requestData, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false);
+					response = await builder.BuildAsync<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false);
 				else
-					response = builder.Build<TResponse>(details, requestData, responseStream, contentType, contentLength);
+					response = builder.Build<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength);
 			}
 
 			if (ownsStream && (response is null || !response.LeaveOpen))
@@ -127,21 +127,23 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		IReadOnlyCollection<IResponseBuilder> productResponseBuilders, out IResponseBuilder builder
 	) where TResponse : TransportResponse, new()
 	{
-		if (_resolvedBuilders.TryGetValue(typeof(TResponse), out builder))
+		var type = typeof(TResponse);
+
+		if (_resolvedBuilders.TryGetValue(type, out builder))
 			return true;
 
-		if (TryFindResponseBuilder(responseBuilders, _resolvedBuilders, ref builder))
+		if (TryFindResponseBuilder(type,responseBuilders, _resolvedBuilders, ref builder))
 			return true;
 
-		return TryFindResponseBuilder(productResponseBuilders, _resolvedBuilders, ref builder);
+		return TryFindResponseBuilder(type, productResponseBuilders, _resolvedBuilders, ref builder);
 
-		static bool TryFindResponseBuilder(IEnumerable<IResponseBuilder> responseBuilders, ConcurrentDictionary<Type, IResponseBuilder> resolvedBuilders, ref IResponseBuilder builder)
+		static bool TryFindResponseBuilder(Type type, IEnumerable<IResponseBuilder> responseBuilders, ConcurrentDictionary<Type, IResponseBuilder> resolvedBuilders, ref IResponseBuilder builder)
 		{
 			foreach (var potentialBuilder in responseBuilders)
 			{
 				if (potentialBuilder.CanBuild<TResponse>())
 				{
-					resolvedBuilders.TryAdd(typeof(TResponse), potentialBuilder);
+					resolvedBuilders.TryAdd(type, potentialBuilder);
 					builder = potentialBuilder;
 					return true;
 				}

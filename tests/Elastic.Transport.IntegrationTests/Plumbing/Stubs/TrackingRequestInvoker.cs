@@ -29,18 +29,18 @@ public class TrackingRequestInvoker : IRequestInvoker
 			return _handler;
 		});
 
-	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData postData)
+	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData postData)
 		where TResponse : TransportResponse, new()
 	{
 		CallCount++;
-		return _requestInvoker.Request<TResponse>(endpoint, requestData, postData);
+		return _requestInvoker.Request<TResponse>(endpoint, boundConfiguration, postData);
 	}
 
-	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData postData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new()
 	{
 		CallCount++;
-		return _requestInvoker.RequestAsync<TResponse>(endpoint, requestData, postData, cancellationToken);
+		return _requestInvoker.RequestAsync<TResponse>(endpoint, boundConfiguration, postData, cancellationToken);
 	}
 
 	public void Dispose()

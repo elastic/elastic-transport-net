@@ -16,14 +16,14 @@ using System.Threading;
 namespace Elastic.Transport;
 
 /// <summary>
-/// Heavily modified version of DefaultHttpClientFactory, re-purposed for RequestData
+/// Heavily modified version of DefaultHttpClientFactory, re-purposed for BoundConfiguration
 /// <para>https://github.com/dotnet/runtime/blob/master/src/libraries/Microsoft.Extensions.Http/src/DefaultHttpClientFactory.cs</para>
 /// </summary>
-internal sealed class RequestDataHttpClientFactory : IDisposable
+internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 {
-	private readonly Func<RequestData, HttpMessageHandler> _createHttpClientHandler;
-	private static readonly TimerCallback CleanupCallback = (s) => ((RequestDataHttpClientFactory)s).CleanupTimer_Tick();
-	private readonly Func<int, RequestData, Lazy<ActiveHandlerTrackingEntry>> _entryFactory;
+	private readonly Func<BoundConfiguration, HttpMessageHandler> _createHttpClientHandler;
+	private static readonly TimerCallback CleanupCallback = (s) => ((BoundConfigurationHttpClientFactory)s).CleanupTimer_Tick();
+	private readonly Func<int, BoundConfiguration, Lazy<ActiveHandlerTrackingEntry>> _entryFactory;
 
 	// Default time of 10s for cleanup seems reasonable.
 	// Quick math:
@@ -69,14 +69,14 @@ internal sealed class RequestDataHttpClientFactory : IDisposable
 	private readonly ConcurrentQueue<ExpiredHandlerTrackingEntry> _expiredHandlers;
 	private readonly TimerCallback _expiryCallback;
 
-	public RequestDataHttpClientFactory(Func<RequestData, HttpMessageHandler> createHttpClientHandler)
+	public BoundConfigurationHttpClientFactory(Func<BoundConfiguration, HttpMessageHandler> createHttpClientHandler)
 	{
 		_createHttpClientHandler = createHttpClientHandler;
 		// case-sensitive because named options is.
 		_activeHandlers = new ConcurrentDictionary<int, Lazy<ActiveHandlerTrackingEntry>>();
-		_entryFactory = (key, requestData) =>
+		_entryFactory = (key, boundConfiguration) =>
 		{
-			return new Lazy<ActiveHandlerTrackingEntry>(() => CreateHandlerEntry(key, requestData),
+			return new Lazy<ActiveHandlerTrackingEntry>(() => CreateHandlerEntry(key, boundConfiguration),
 				LazyThreadSafetyMode.ExecutionAndPublication);
 		};
 
@@ -87,27 +87,27 @@ internal sealed class RequestDataHttpClientFactory : IDisposable
 		_cleanupActiveLock = new object();
 	}
 
-	public HttpClient CreateClient(RequestData requestData)
+	public HttpClient CreateClient(BoundConfiguration boundConfiguration)
 	{
-		if (requestData == null) throw new ArgumentNullException(nameof(requestData));
+		if (boundConfiguration == null) throw new ArgumentNullException(nameof(boundConfiguration));
 
-		var key = HttpRequestInvoker.GetClientKey(requestData);
-		var handler = CreateHandler(key, requestData);
+		var key = HttpRequestInvoker.GetClientKey(boundConfiguration);
+		var handler = CreateHandler(key, boundConfiguration);
 		var client = new HttpClient(handler, disposeHandler: false)
 		{
-			Timeout = requestData.RequestTimeout
+			Timeout = boundConfiguration.RequestTimeout
 		};
 		return client;
 	}
 
-	private HttpMessageHandler CreateHandler(int key, RequestData requestData)
+	private HttpMessageHandler CreateHandler(int key, BoundConfiguration boundConfiguration)
 	{
-		if (requestData == null) throw new ArgumentNullException(nameof(requestData));
+		if (boundConfiguration == null) throw new ArgumentNullException(nameof(boundConfiguration));
 
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
-		var entry = _activeHandlers.GetOrAdd(key, (k, r) => _entryFactory(k, r), requestData).Value;
+		var entry = _activeHandlers.GetOrAdd(key, (k, r) => _entryFactory(k, r), boundConfiguration).Value;
 #else
-		var entry = _activeHandlers.GetOrAdd(key, (k) => _entryFactory(k, requestData)).Value;
+		var entry = _activeHandlers.GetOrAdd(key, (k) => _entryFactory(k, boundConfiguration)).Value;
 #endif
 
 		StartHandlerEntryTimer(entry);
@@ -115,10 +115,10 @@ internal sealed class RequestDataHttpClientFactory : IDisposable
 		return entry.Handler;
 	}
 
-	private ActiveHandlerTrackingEntry CreateHandlerEntry(int key, RequestData requestData)
+	private ActiveHandlerTrackingEntry CreateHandlerEntry(int key, BoundConfiguration boundConfiguration)
 	{
 		// Wrap the handler so we can ensure the inner handler outlives the outer handler.
-		var handler = new LifetimeTrackingHttpMessageHandler(_createHttpClientHandler(requestData));
+		var handler = new LifetimeTrackingHttpMessageHandler(_createHttpClientHandler(boundConfiguration));
 
 		// Note that we can't start the timer here. That would introduce a very very subtle race condition
 		// with very short expiry times. We need to wait until we've actually handed out the handler once
@@ -127,7 +127,7 @@ internal sealed class RequestDataHttpClientFactory : IDisposable
 		// Otherwise it would be possible that we start the timer here, immediately expire it (very short
 		// timer) and then dispose it without ever creating a client. That would be bad. It's unlikely
 		// this would happen, but we want to be sure.
-		return new ActiveHandlerTrackingEntry(key, handler, requestData.DnsRefreshTimeout);
+		return new ActiveHandlerTrackingEntry(key, handler, boundConfiguration.DnsRefreshTimeout);
 	}
 
 	private void ExpiryTimer_Tick(object state)
@@ -239,7 +239,7 @@ internal sealed class RequestDataHttpClientFactory : IDisposable
 		_cleanupTimer?.Dispose();
 
 		//CleanupTimer might not cleanup everything because it will only dispose if the WeakReference allows it.
-		// here we forcefully dispose a Client -> ConnectionSettings -> Connection -> RequestDataHttpClientFactory
+		// here we forcefully dispose a Client -> ConnectionSettings -> Connection -> BoundConfigurationHttpClientFactory
 		var attempts = 0;
 		do
 		{

@@ -90,7 +90,6 @@ public interface IRequestConfiguration
 
 	/// <summary>
 	/// Associate an Id with this user-initiated task, such that it can be located in the cluster task list.
-	/// Valid only for Elasticsearch 6.2.0+
 	/// </summary>
 	string? OpaqueId { get; }
 

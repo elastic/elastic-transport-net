@@ -24,7 +24,7 @@ public abstract class ResponseFactory
 	/// </summary>
 	public abstract TResponse Create<TResponse>(
 		Endpoint endpoint,
-		RequestData requestData,
+		BoundConfiguration boundConfiguration,
 		PostData? postData,
 		Exception? ex,
 		int? statusCode,
@@ -41,7 +41,7 @@ public abstract class ResponseFactory
 	/// </summary>
 	public abstract Task<TResponse> CreateAsync<TResponse>(
 		Endpoint endpoint,
-		RequestData requestData,
+		BoundConfiguration boundConfiguration,
 		PostData? postData,
 		Exception? ex,
 		int? statusCode,
@@ -56,7 +56,7 @@ public abstract class ResponseFactory
 
 	internal static ApiCallDetails InitializeApiCallDetails(
 		Endpoint endpoint,
-		RequestData requestData,
+		BoundConfiguration boundConfiguration,
 		PostData? postData,
 		Exception exception,
 		int? statusCode,
@@ -68,19 +68,19 @@ public abstract class ResponseFactory
 		long contentLength)
 	{
 		var hasSuccessfulStatusCode = false;
-		var allowedStatusCodes = requestData.AllowedStatusCodes;
+		var allowedStatusCodes = boundConfiguration.AllowedStatusCodes;
 		if (statusCode.HasValue)
 		{
 			if (allowedStatusCodes.Contains(-1) || allowedStatusCodes.Contains(statusCode.Value))
 				hasSuccessfulStatusCode = true;
 			else
-				hasSuccessfulStatusCode = requestData.ConnectionSettings
+				hasSuccessfulStatusCode = boundConfiguration.ConnectionSettings
 					.StatusCodeToResponseSuccess(endpoint.Method, statusCode.Value);
 		}
 
 		// We don't validate the content-type (MIME type) for HEAD requests or responses that have no content (204 status code).
 		// Elastic Cloud responses to HEAD requests strip the content-type header so we want to avoid validation in that case.
-		var hasExpectedContentType = !MayHaveBody(statusCode, endpoint.Method, contentLength) || ValidateResponseContentType(requestData.Accept, contentType);
+		var hasExpectedContentType = !MayHaveBody(statusCode, endpoint.Method, contentLength) || ValidateResponseContentType(boundConfiguration.Accept, contentType);
 
 		var details = new ApiCallDetails
 		{
@@ -94,7 +94,7 @@ public abstract class ResponseFactory
 			TcpStats = tcpStats,
 			ThreadPoolStats = threadPoolStats,
 			ResponseContentType = contentType,
-			TransportConfiguration = requestData.ConnectionSettings
+			TransportConfiguration = boundConfiguration.ConnectionSettings
 		};
 
 		if (headers is not null)
@@ -130,6 +130,6 @@ public abstract class ResponseFactory
 			// - ES8 EQL responses don't include vendored type
 
 			|| trimmedAccept.Contains("application/vnd.elasticsearch+json")
-			&& normalizedResponseContentType.StartsWith(RequestData.DefaultContentType, StringComparison.OrdinalIgnoreCase);
+			&& normalizedResponseContentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.OrdinalIgnoreCase);
 	}
 }

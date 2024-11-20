@@ -20,7 +20,6 @@ public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFac
 	private TConfiguration Configuration { get; }
 	public ITransport<TConfiguration> Transport { get; }
 
-	public override RequestPipeline Create(RequestData requestData) =>
-			new RequestPipeline(requestData);
+	public override RequestPipeline Create(BoundConfiguration boundConfiguration) => new(boundConfiguration);
 }
 #nullable restore

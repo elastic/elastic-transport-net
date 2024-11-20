@@ -11,13 +11,10 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport;
 
 /// <summary>
-/// Where and how <see cref="IRequestInvoker.Request{TResponse}" /> should connect to.
-/// <para>
 /// Represents the cumulative configuration from <see cref="ITransportConfiguration" />
 /// and <see cref="IRequestConfiguration" />.
-/// </para>
 /// </summary>
-public sealed record RequestData
+public sealed record BoundConfiguration : IRequestConfiguration
 {
 	private const string OpaqueIdHeader = "X-Opaque-Id";
 
@@ -27,8 +24,8 @@ public sealed record RequestData
 	/// The security header used to run requests as a different user.
 	public const string RunAsSecurityHeader = "es-security-runas-user";
 
-	/// <inheritdoc cref="RequestData"/>
-	public RequestData(ITransportConfiguration global, IRequestConfiguration? local = null)
+	/// <inheritdoc cref="BoundConfiguration"/>
+	public BoundConfiguration(ITransportConfiguration global, IRequestConfiguration? local = null)
 	{
 		ConnectionSettings = global;
 		MemoryStreamFactory = global.MemoryStreamFactory;
@@ -55,7 +52,7 @@ public sealed record RequestData
 		Accept = local?.Accept ?? global.Accept ?? DefaultContentType;
 		ThrowExceptions = local?.ThrowExceptions ?? global.ThrowExceptions ?? false;
 		RequestTimeout = local?.RequestTimeout ?? global.RequestTimeout ?? RequestConfiguration.DefaultRequestTimeout;
-		RequestMetaData = local?.RequestMetaData?.Items ?? EmptyReadOnly<string, string>.Dictionary;
+		RequestMetaData = local?.RequestMetaData;
 		AuthenticationHeader = local?.Authentication ?? global.Authentication;
 		AllowedStatusCodes = local?.AllowedStatusCodes ?? EmptyReadOnly<int>.Collection;
 		ClientCertificates = local?.ClientCertificates ?? global.ClientCertificates;
@@ -81,6 +78,7 @@ public sealed record RequestData
 				Headers[key] = local.Headers[key];
 		}
 
+		OpaqueId = local?.OpaqueId;
 		if (!string.IsNullOrEmpty(local?.OpaqueId))
 		{
 			Headers ??= [];
@@ -115,6 +113,7 @@ public sealed record RequestData
 		}
 
 		ProductResponseBuilders = global.ProductRegistration.ResponseBuilders;
+		DisableAuditTrail = local?.DisableAuditTrail ?? global.DisableAuditTrail ?? false;
 	}
 
 	/// <inheritdoc cref="ITransportConfiguration.MemoryStreamFactory"/>
@@ -140,7 +139,7 @@ public sealed record RequestData
 	/// <inheritdoc cref="ITransportConfiguration.DnsRefreshTimeout"/>
 	public TimeSpan DnsRefreshTimeout { get; }
 	/// <inheritdoc cref="IRequestConfiguration.RequestMetaData"/>
-	public IReadOnlyDictionary<string, string> RequestMetaData { get; }
+	public RequestMetaData? RequestMetaData { get; }
 	/// <inheritdoc cref="IRequestConfiguration.Accept"/>
 	public string Accept { get; }
 	/// <inheritdoc cref="IRequestConfiguration.AllowedStatusCodes"/>
@@ -191,4 +190,45 @@ public sealed record RequestData
 	public IReadOnlyCollection<IResponseBuilder> ProductResponseBuilders { get; }
 	/// <inheritdoc cref="IRequestConfiguration.ResponseBuilders"/>
 	public IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; }
+	/// <inheritdoc cref="IRequestConfiguration.DisableAuditTrail"/>
+	public bool DisableAuditTrail { get; }
+	/// <inheritdoc cref="IRequestConfiguration.OpaqueId"/>
+	public string? OpaqueId { get; }
+
+	string? IRequestConfiguration.Accept => Accept;
+	IReadOnlyCollection<int>? IRequestConfiguration.AllowedStatusCodes => AllowedStatusCodes;
+	AuthorizationHeader? IRequestConfiguration.Authentication => AuthenticationHeader;
+	X509CertificateCollection? IRequestConfiguration.ClientCertificates => ClientCertificates;
+	string? IRequestConfiguration.ContentType => ContentType;
+	bool? IRequestConfiguration.DisableDirectStreaming => DisableDirectStreaming;
+	bool? IRequestConfiguration.DisableAuditTrail => DisableAuditTrail;
+	bool? IRequestConfiguration.DisablePings => DisablePings;
+	bool? IRequestConfiguration.DisableSniff => DisableSniff;
+	bool? IRequestConfiguration.HttpPipeliningEnabled => HttpPipeliningEnabled;
+	bool? IRequestConfiguration.EnableHttpCompression => HttpCompression;
+	Uri? IRequestConfiguration.ForceNode => ForceNode;
+	int? IRequestConfiguration.MaxRetries => MaxRetries;
+	TimeSpan? IRequestConfiguration.MaxRetryTimeout => RequestTimeout;
+	string? IRequestConfiguration.OpaqueId => OpaqueId;
+	bool? IRequestConfiguration.ParseAllHeaders => ParseAllHeaders;
+	TimeSpan? IRequestConfiguration.PingTimeout => PingTimeout;
+	TimeSpan? IRequestConfiguration.RequestTimeout => RequestTimeout;
+	IReadOnlyCollection<IResponseBuilder> IRequestConfiguration.ResponseBuilders => ResponseBuilders;
+	HeadersList? IRequestConfiguration.ResponseHeadersToParse => ResponseHeadersToParse;
+	string? IRequestConfiguration.RunAs => RunAs;
+	bool? IRequestConfiguration.ThrowExceptions => ThrowExceptions;
+	bool? IRequestConfiguration.TransferEncodingChunked => TransferEncodingChunked;
+	NameValueCollection? IRequestConfiguration.Headers => Headers;
+	bool? IRequestConfiguration.EnableTcpStats => EnableTcpStats;
+	bool? IRequestConfiguration.EnableThreadPoolStats => EnableThreadPoolStats;
+	RequestMetaData? IRequestConfiguration.RequestMetaData => RequestMetaData;
+
+	/// <summary>
+	/// Create a cachable instance of <see cref="BoundConfiguration"/> for use in high-performance scenarios.
+	/// </summary>
+	/// <param name="transport">An existing <see cref="ITransport{TConfiguration}"/> from which to bind transport configuration.</param>
+	/// <param name="requestConfiguration">A request specific <see cref="IRequestConfiguration"/>.</param>
+	/// <returns></returns>
+	public static BoundConfiguration Create(ITransport<ITransportConfiguration> transport, IRequestConfiguration requestConfiguration) =>
+		new(transport.Configuration, requestConfiguration);
 }

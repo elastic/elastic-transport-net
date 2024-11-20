@@ -25,12 +25,12 @@ public interface IResponseBuilder
 	/// </summary>
 	/// <typeparam name="TResponse">The specific type of the <see cref="TransportResponse"/> to be built.</typeparam>
 	/// <param name="apiCallDetails">The initialized <see cref="ApiCallDetails"/> for the response.</param>
-	/// <param name="requestData">The <see cref="RequestData"/> for the HTTP request.</param>
+	/// <param name="boundConfiguration">The <see cref="BoundConfiguration"/> for the HTTP request.</param>
 	/// <param name="responseStream">The readable <see cref="Stream"/> containing the response body.</param>
 	/// <param name="contentType">The value of the Content-Type header for the response.</param>
 	/// <param name="contentLength">The length of the content, if available in the response headers.</param>
 	/// <returns>A potentiall null response of type <typeparamref name="TResponse"/>.</returns>
-	TResponse? Build<TResponse>(ApiCallDetails apiCallDetails, RequestData requestData,
+	TResponse? Build<TResponse>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration,
 		Stream responseStream, string contentType, long contentLength) where TResponse : TransportResponse, new();
 
 	/// <summary>
@@ -38,12 +38,12 @@ public interface IResponseBuilder
 	/// </summary>
 	/// <typeparam name="TResponse">The specific type of the <see cref="TransportResponse"/> to be built.</typeparam>
 	/// <param name="apiCallDetails">The initialized <see cref="ApiCallDetails"/> for the response.</param>
-	/// <param name="requestData">The <see cref="RequestData"/> for the HTTP request.</param>
+	/// <param name="boundConfiguration">The <see cref="BoundConfiguration"/> for the HTTP request.</param>
 	/// <param name="responseStream">The readable <see cref="Stream"/> containing the response body.</param>
 	/// <param name="contentType">The value of the Content-Type header for the response.</param>
 	/// <param name="contentLength">The length of the content, if available in the response headers.</param>
 	/// <param name="cancellationToken">An optional <see cref="CancellationToken"/> that can trigger cancellation.</param>
 	/// <returns>A potentiall null response of type <typeparamref name="TResponse"/>.</returns>
-	Task<TResponse?> BuildAsync<TResponse>(ApiCallDetails apiCallDetails, RequestData requestData,
+	Task<TResponse?> BuildAsync<TResponse>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration,
 		Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new();
 }

@@ -10,10 +10,10 @@ namespace Elastic.Transport;
 
 internal class VoidResponseBuilder : TypedResponseBuilder<VoidResponse>
 {
-	protected override VoidResponse Build(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength) =>
+	protected override VoidResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
 		VoidResponse.Default;
 
-	protected override Task<VoidResponse> BuildAsync(ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength,
+	protected override Task<VoidResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength,
 		CancellationToken cancellationToken = default) =>
 			Task.FromResult(VoidResponse.Default);
 }

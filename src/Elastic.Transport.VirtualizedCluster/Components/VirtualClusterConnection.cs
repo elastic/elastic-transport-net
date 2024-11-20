@@ -119,12 +119,12 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 	private bool IsPingRequest(Endpoint endpoint) => _productRegistration.IsPingRequest(endpoint);
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
-	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new() =>
-		Task.FromResult(Request<TResponse>(endpoint, requestData, postData));
+		Task.FromResult(Request<TResponse>(endpoint, boundConfiguration, postData));
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
-	public TResponse Request<TResponse>(Endpoint endpoint, RequestData requestData, PostData? postData)
+	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
 		where TResponse : TransportResponse, new()
 	{
 		if (!_calls.ContainsKey(endpoint.Uri.Port))
@@ -138,11 +138,11 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 				_ = Interlocked.Increment(ref state.Sniffed);
 				return HandleRules<TResponse, ISniffRule>(
 					endpoint,
-					requestData,
+					boundConfiguration,
 					postData,
 					nameof(VirtualCluster.Sniff),
 					_cluster.SniffingRules,
-					requestData.RequestTimeout,
+					boundConfiguration.RequestTimeout,
 					(r) => UpdateCluster(r.NewClusterState),
 					(r) => _productRegistration.CreateSniffResponseBytes(_cluster.Nodes, _cluster.ElasticsearchVersion, _cluster.PublishAddressOverride, _cluster.SniffShouldReturnFqnd)
 				);
@@ -152,11 +152,11 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 				_ = Interlocked.Increment(ref state.Pinged);
 				return HandleRules<TResponse, IRule>(
 					endpoint,
-					requestData,
+					boundConfiguration,
 					postData,
 					nameof(VirtualCluster.Ping),
 					_cluster.PingingRules,
-					requestData.PingTimeout,
+					boundConfiguration.PingTimeout,
 					(r) => { },
 					(r) => null //HEAD request
 				);
@@ -164,24 +164,24 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			_ = Interlocked.Increment(ref state.Called);
 			return HandleRules<TResponse, IClientCallRule>(
 				endpoint,
-				requestData,
+				boundConfiguration,
 				postData,
 				nameof(VirtualCluster.ClientCalls),
 				_cluster.ClientCallRules,
-				requestData.RequestTimeout,
+				boundConfiguration.RequestTimeout,
 				(r) => { },
 				CallResponse
 			);
 		}
 		catch (TheException e)
 		{
-			return ResponseFactory.Create<TResponse>(endpoint, requestData, postData, e, null, null, Stream.Null, null, -1, null, null);
+			return ResponseFactory.Create<TResponse>(endpoint, boundConfiguration, postData, e, null, null, Stream.Null, null, -1, null, null);
 		}
 	}
 
 	private TResponse HandleRules<TResponse, TRule>(
 		Endpoint endpoint,
-		RequestData requestData,
+		BoundConfiguration boundConfiguration,
 		PostData? postData,
 		string origin,
 		IList<TRule> rules,
@@ -203,28 +203,28 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			if (rule.OnPort == null || rule.OnPort.Value != endpoint.Uri.Port) continue;
 
 			if (always)
-				return Always<TResponse, TRule>(endpoint, requestData, postData, timeout, beforeReturn, successResponse, rule);
+				return Always<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
 
 			if (rule.ExecuteCount > times) continue;
 
-			return Sometimes<TResponse, TRule>(endpoint, requestData, postData, timeout, beforeReturn, successResponse, rule);
+			return Sometimes<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
 		}
 		foreach (var rule in rules.Where(s => !s.OnPort.HasValue))
 		{
 			var always = rule.Times.Match(t => true, t => false);
 			var times = rule.Times.Match(t => -1, t => t);
 			if (always)
-				return Always<TResponse, TRule>(endpoint, requestData, postData, timeout, beforeReturn, successResponse, rule);
+				return Always<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
 
 			if (rule.ExecuteCount > times) continue;
 
-			return Sometimes<TResponse, TRule>(endpoint, requestData, postData, timeout, beforeReturn, successResponse, rule);
+			return Sometimes<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
 		}
 		var count = _calls.Select(kv => kv.Value.Called).Sum();
 		throw new Exception($@"No global or port specific {origin} rule ({endpoint.Uri.Port}) matches any longer after {count} calls in to the cluster");
 	}
 
-	private TResponse Always<TResponse, TRule>(Endpoint endpoint, RequestData requestData, PostData? postData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse, TRule rule
+	private TResponse Always<TResponse, TRule>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse, TRule rule
 	)
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
@@ -233,7 +233,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		{
 			var time = timeout < rule.Takes.Value ? timeout : rule.Takes.Value;
 			_dateTimeProvider.ChangeTime(d => d.Add(time));
-			if (rule.Takes.Value > requestData.RequestTimeout)
+			if (rule.Takes.Value > boundConfiguration.RequestTimeout)
 			{
 				throw new TheException(
 					$"Request timed out after {time} : call configured to take {rule.Takes.Value} while requestTimeout was: {timeout}");
@@ -241,12 +241,12 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 
 		return rule.Succeeds
-			? Success<TResponse, TRule>(endpoint, requestData, postData, beforeReturn, successResponse, rule)
-			: Fail<TResponse, TRule>(endpoint, requestData, postData, rule);
+			? Success<TResponse, TRule>(endpoint, boundConfiguration, postData, beforeReturn, successResponse, rule)
+			: Fail<TResponse, TRule>(endpoint, boundConfiguration, postData, rule);
 	}
 
 	private TResponse Sometimes<TResponse, TRule>(
-		Endpoint endpoint, RequestData requestData, PostData? postData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse, TRule rule
+		Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse, TRule rule
 	)
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
@@ -255,7 +255,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		{
 			var time = timeout < rule.Takes.Value ? timeout : rule.Takes.Value;
 			_dateTimeProvider.ChangeTime(d => d.Add(time));
-			if (rule.Takes.Value > requestData.RequestTimeout)
+			if (rule.Takes.Value > boundConfiguration.RequestTimeout)
 			{
 				throw new TheException(
 					$"Request timed out after {time} : call configured to take {rule.Takes.Value} while requestTimeout was: {timeout}");
@@ -263,12 +263,12 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		}
 
 		if (rule.Succeeds)
-			return Success<TResponse, TRule>(endpoint, requestData, postData, beforeReturn, successResponse, rule);
+			return Success<TResponse, TRule>(endpoint, boundConfiguration, postData, beforeReturn, successResponse, rule);
 
-		return Fail<TResponse, TRule>(endpoint, requestData, postData, rule);
+		return Fail<TResponse, TRule>(endpoint, boundConfiguration, postData, rule);
 	}
 
-	private TResponse Fail<TResponse, TRule>(Endpoint endpoint, RequestData requestData, PostData? postData, TRule rule, RuleOption<Exception, int>? returnOverride = null)
+	private TResponse Fail<TResponse, TRule>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, TRule rule, RuleOption<Exception, int>? returnOverride = null)
 		where TResponse : TransportResponse, new()
 		where TRule : IRule
 	{
@@ -282,13 +282,13 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 
 		return ret.Match(
 			e => throw e,
-			statusCode => _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, requestData, postData, CallResponse(rule),
+			statusCode => _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, boundConfiguration, postData, CallResponse(rule),
 				//make sure we never return a valid status code in Fail responses because of a bad rule.
 				statusCode >= 200 && statusCode < 300 ? 502 : statusCode, rule.ReturnContentType)
 		);
 	}
 
-	private TResponse Success<TResponse, TRule>(Endpoint endpoint, RequestData requestData, PostData? postData, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse,
+	private TResponse Success<TResponse, TRule>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse,
 		TRule rule
 	)
 		where TResponse : TransportResponse, new()
@@ -299,7 +299,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		rule.RecordExecuted();
 
 		beforeReturn?.Invoke(rule);
-		return _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, requestData, postData, successResponse(rule), contentType: rule.ReturnContentType);
+		return _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, boundConfiguration, postData, successResponse(rule), contentType: rule.ReturnContentType);
 	}
 
 	private static byte[] CallResponse<TRule>(TRule rule)

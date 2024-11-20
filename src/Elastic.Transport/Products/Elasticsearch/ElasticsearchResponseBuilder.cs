@@ -17,25 +17,25 @@ internal sealed class ElasticsearchResponseBuilder : IResponseBuilder
 {
 	bool IResponseBuilder.CanBuild<TResponse>() => true;
 
-	public TResponse Build<TResponse>(ApiCallDetails apiCallDetails, RequestData requestData,
+	public TResponse Build<TResponse>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration,
 		Stream responseStream, string contentType, long contentLength)
 		where TResponse : TransportResponse, new() =>
-			SetBodyCoreAsync<TResponse>(false, apiCallDetails, requestData, responseStream).EnsureCompleted();
+			SetBodyCoreAsync<TResponse>(false, apiCallDetails, boundConfiguration, responseStream).EnsureCompleted();
 
 	public Task<TResponse> BuildAsync<TResponse>(
-		ApiCallDetails apiCallDetails, RequestData requestData, Stream responseStream, string contentType, long contentLength,
+		ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength,
 		CancellationToken cancellationToken) where TResponse : TransportResponse, new() =>
-			SetBodyCoreAsync<TResponse>(true, apiCallDetails, requestData, responseStream, cancellationToken).AsTask();
+			SetBodyCoreAsync<TResponse>(true, apiCallDetails, boundConfiguration, responseStream, cancellationToken).AsTask();
 
 	private static async ValueTask<TResponse> SetBodyCoreAsync<TResponse>(bool isAsync,
-		ApiCallDetails details, RequestData requestData, Stream responseStream,
+		ApiCallDetails details, BoundConfiguration boundConfiguration, Stream responseStream,
 		CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
 		TResponse response = null;
 
 		if (details.HttpStatusCode.HasValue &&
-			requestData.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
+			boundConfiguration.SkipDeserializationForStatusCodes.Contains(details.HttpStatusCode.Value))
 		{
 			return response;
 		}
@@ -48,13 +48,13 @@ internal sealed class ElasticsearchResponseBuilder : IResponseBuilder
 
 				if (!responseStream.CanSeek)
 				{
-					var inMemoryStream = requestData.MemoryStreamFactory.Create();
+					var inMemoryStream = boundConfiguration.MemoryStreamFactory.Create();
 					await responseStream.CopyToAsync(inMemoryStream, BufferedResponseHelpers.BufferSize, cancellationToken).ConfigureAwait(false);
 					details.ResponseBodyInBytes = BufferedResponseHelpers.SwapStreams(ref responseStream, ref inMemoryStream);
 					ownsStream = true;
 				}
 
-				if (TryGetError(requestData, responseStream, out var error) && error.HasError())
+				if (TryGetError(boundConfiguration, responseStream, out var error) && error.HasError())
 				{
 					response = new TResponse();
 
@@ -73,9 +73,9 @@ internal sealed class ElasticsearchResponseBuilder : IResponseBuilder
 			var beforeTicks = Stopwatch.GetTimestamp();
 
 			if (isAsync)
-				response = await requestData.ConnectionSettings.RequestResponseSerializer.DeserializeAsync<TResponse>(responseStream, cancellationToken).ConfigureAwait(false);
+				response = await boundConfiguration.ConnectionSettings.RequestResponseSerializer.DeserializeAsync<TResponse>(responseStream, cancellationToken).ConfigureAwait(false);
 			else
-				response = requestData.ConnectionSettings.RequestResponseSerializer.Deserialize<TResponse>(responseStream);
+				response = boundConfiguration.ConnectionSettings.RequestResponseSerializer.Deserialize<TResponse>(responseStream);
 
 			var deserializeResponseMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
 
@@ -90,7 +90,7 @@ internal sealed class ElasticsearchResponseBuilder : IResponseBuilder
 		}
 	}
 
-	private static bool TryGetError(RequestData requestData, Stream responseStream, out ElasticsearchServerError error)
+	private static bool TryGetError(BoundConfiguration boundConfiguration, Stream responseStream, out ElasticsearchServerError error)
 	{
 		Debug.Assert(responseStream.CanSeek);
 
@@ -98,7 +98,7 @@ internal sealed class ElasticsearchResponseBuilder : IResponseBuilder
 
 		try
 		{
-			error = requestData.ConnectionSettings.RequestResponseSerializer.Deserialize<ElasticsearchServerError>(responseStream);
+			error = boundConfiguration.ConnectionSettings.RequestResponseSerializer.Deserialize<ElasticsearchServerError>(responseStream);
 			return error is not null;
 		}
 		catch (JsonException)
