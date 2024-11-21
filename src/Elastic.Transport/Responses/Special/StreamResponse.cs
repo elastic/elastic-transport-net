@@ -53,7 +53,7 @@ public class StreamResponse : TransportResponse<Stream>, IDisposable
 				if (LinkedDisposables is not null)
 				{
 					foreach (var disposable in LinkedDisposables)
-						disposable.Dispose();
+						disposable?.Dispose();
 				}
 			}
 
