@@ -4,13 +4,14 @@
 
 using System;
 using System.IO;
+using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
 
 /// <summary>
 /// A base class for implementing responses that access the raw response stream.
 /// </summary>
-public abstract class StreamResponseBase(Stream stream) : TransportResponse, IDisposable
+public abstract class StreamResponseBase : TransportResponse, IDisposable
 {
 	/// <inheritdoc/>
 	protected internal override bool LeaveOpen => true;
@@ -21,12 +22,19 @@ public abstract class StreamResponseBase(Stream stream) : TransportResponse, IDi
 	/// <remarks>
 	/// <b>MUST</b> be disposed to release the underlying HTTP connection for reuse.
 	/// </remarks>
-	protected Stream Stream { get; } = stream;
+	protected Stream Stream { get; }
 
 	/// <summary>
 	/// Indicates that the response has been disposed and it is not longer safe to access the stream.
 	/// </summary>
 	protected bool Disposed { get; private set; }
+
+	/// <inheritdoc cref="StreamResponseBase"/>
+	public StreamResponseBase(Stream responseStream)
+	{
+		responseStream.ThrowIfNull(nameof(responseStream));
+		Stream = responseStream;
+	}
 
 	/// <summary>
 	/// Disposes the underlying stream.
