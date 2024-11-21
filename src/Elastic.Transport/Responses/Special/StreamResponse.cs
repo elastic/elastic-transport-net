@@ -36,7 +36,10 @@ public class StreamResponse : TransportResponse<Stream>, IDisposable
 		ContentType = contentType ?? string.Empty;
 	}
 
-	internal override bool LeaveOpen => true;
+	/// <summary>
+	/// 
+	/// </summary>
+	protected internal override bool LeaveOpen => true;
 
 	/// <summary>
 	/// Disposes the underlying stream.
