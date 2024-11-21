@@ -46,7 +46,7 @@ public abstract class TransportResponse
 	/// StreamResponse and kept internal. If we later make this public, we might need to refine this.
 	/// </remarks>
 	[JsonIgnore]
-	internal IEnumerable<IDisposable>? LinkedDisposables { get; set; }
+	protected internal IEnumerable<IDisposable>? LinkedDisposables { get; internal set; }
 
 	/// <summary>
 	/// Allows the response to identify that the response stream should NOT be automatically disposed.
@@ -55,6 +55,6 @@ public abstract class TransportResponse
 	/// Currently only used by StreamResponse and therefore internal.
 	/// </remarks>
 	[JsonIgnore]
-	internal virtual bool LeaveOpen { get; } = false;
+	protected internal virtual bool LeaveOpen { get; } = false;
 }
 
