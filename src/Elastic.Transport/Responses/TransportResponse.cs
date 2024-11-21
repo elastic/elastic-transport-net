@@ -10,12 +10,12 @@ namespace Elastic.Transport;
 
 /// <summary>
 /// A response from an Elastic product including details about the request/response life cycle. Base class for the built in low level response
-/// types, <see cref="StringResponse"/>, <see cref="BytesResponse"/>, <see cref="DynamicResponse"/>, <see cref="StreamResponse"/> and <see cref="VoidResponse"/>
+/// types, <see cref="StringResponse"/>, <see cref="BytesResponse"/>, <see cref="DynamicResponse"/>, and <see cref="VoidResponse"/>
 /// </summary>
 public abstract class TransportResponse<T> : TransportResponse
 {
 	/// <summary>
-	/// The deserialized body returned by the product.
+	/// The (potentially deserialized) response returned by the product.
 	/// </summary>
 	public T Body { get; protected internal set; }
 }
