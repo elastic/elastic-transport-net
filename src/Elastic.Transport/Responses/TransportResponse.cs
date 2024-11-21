@@ -10,12 +10,12 @@ namespace Elastic.Transport;
 
 /// <summary>
 /// A response from an Elastic product including details about the request/response life cycle. Base class for the built in low level response
-/// types, <see cref="StringResponse"/>, <see cref="BytesResponse"/>, <see cref="DynamicResponse"/>, <see cref="StreamResponse"/> and <see cref="VoidResponse"/>
+/// types, <see cref="StringResponse"/>, <see cref="BytesResponse"/>, <see cref="DynamicResponse"/>, and <see cref="VoidResponse"/>
 /// </summary>
 public abstract class TransportResponse<T> : TransportResponse
 {
 	/// <summary>
-	/// The deserialized body returned by the product.
+	/// The (potentially deserialized) response returned by the product.
 	/// </summary>
 	public T Body { get; protected internal set; }
 }
@@ -46,7 +46,7 @@ public abstract class TransportResponse
 	/// StreamResponse and kept internal. If we later make this public, we might need to refine this.
 	/// </remarks>
 	[JsonIgnore]
-	internal IEnumerable<IDisposable>? LinkedDisposables { get; set; }
+	protected internal IEnumerable<IDisposable>? LinkedDisposables { get; internal set; }
 
 	/// <summary>
 	/// Allows the response to identify that the response stream should NOT be automatically disposed.
@@ -55,6 +55,6 @@ public abstract class TransportResponse
 	/// Currently only used by StreamResponse and therefore internal.
 	/// </remarks>
 	[JsonIgnore]
-	internal virtual bool LeaveOpen { get; } = false;
+	protected internal virtual bool LeaveOpen { get; } = false;
 }
 

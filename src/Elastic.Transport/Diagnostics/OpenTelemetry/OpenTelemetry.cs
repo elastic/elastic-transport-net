@@ -53,6 +53,14 @@ public static class OpenTelemetry
 		}
 
 		var productSchemaVersion = string.Empty;
+		foreach (var attribute in activity.TagObjects)
+		{
+			if (attribute.Key.Equals(OpenTelemetryAttributes.DbElasticsearchSchemaUrl, StringComparison.Ordinal))
+			{
+				if (attribute.Value is string schemaVersion)
+					productSchemaVersion = schemaVersion;
+			}
+		}
 		
 		// We add the client schema version only when it differs from the product schema version
 		if (!productSchemaVersion.Equals(OpenTelemetrySchemaVersion, StringComparison.Ordinal))

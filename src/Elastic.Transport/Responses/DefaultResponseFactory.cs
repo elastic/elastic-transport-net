@@ -79,13 +79,11 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		IReadOnlyDictionary<TcpState, int>? tcpStats,
 		CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
 	{
-		responseStream.ThrowIfNull(nameof(responseStream));
-
 		var details = InitializeApiCallDetails(endpoint, boundConfiguration, postData, ex, statusCode, headers, contentType, threadPoolStats, tcpStats, contentLength);
 
 		TResponse? response = null;
 
-		if (MayHaveBody(statusCode, endpoint.Method, contentLength)
+		if (responseStream is not null && MayHaveBody(statusCode, endpoint.Method, contentLength)
 			&& TryResolveBuilder<TResponse>(boundConfiguration.ResponseBuilders, boundConfiguration.ProductResponseBuilders, out var builder))
 		{
 			var ownsStream = false;
