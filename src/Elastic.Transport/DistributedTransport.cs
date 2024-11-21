@@ -124,9 +124,6 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 			if (activity is { IsAllDataRequested: true })
 			{
-				if (activity.IsAllDataRequested)
-					OpenTelemetry.SetCommonAttributes(activity, Configuration);
-
 				if (Configuration.Authentication is BasicAuthentication basicAuthentication)
 					activity.SetTag(SemanticConventions.DbUser, basicAuthentication.Username);
 
@@ -261,8 +258,12 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
 			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportAttemptedNodes, attemptedNodes);
 
+			// We don't check IsAllDataRequested here as that's left to the consumer.
 			if (configureActivity is not null && activity is not null)
 				configureActivity.Invoke(activity);
+
+			if (activity is { IsAllDataRequested: true })
+				OpenTelemetry.SetCommonAttributes(activity, Configuration);
 
 			return FinalizeResponse(endpoint, boundConfiguration, data, pipeline, startedOn, auditor, seenExceptions, response);
 		}
