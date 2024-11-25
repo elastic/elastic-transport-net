@@ -169,7 +169,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			}
 			else
 			{
-				foreach (var node in pipeline.NextNode(startedOn, auditor))
+				foreach (var node in pipeline.NextNode(startedOn, attemptedNodes, auditor))
 				{
 					attemptedNodes++;
 					endpoint = endpoint with { Node = node };
@@ -265,7 +265,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			if (activity is { IsAllDataRequested: true })
 				OpenTelemetry.SetCommonAttributes(activity, Configuration);
 
-			return FinalizeResponse(endpoint, boundConfiguration, data, pipeline, startedOn, auditor, seenExceptions, response);
+			return FinalizeResponse(endpoint, boundConfiguration, data, pipeline, startedOn, attemptedNodes, auditor, seenExceptions, response);
 		}
 		finally
 		{
@@ -303,6 +303,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		PostData? postData,
 		RequestPipeline pipeline,
 		DateTimeOffset startedOn,
+		int attemptedNodes,
 		Auditor auditor,
 		List<PipelineException>? seenExceptions,
 		TResponse? response
@@ -312,7 +313,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			pipeline.ThrowNoNodesAttempted(endpoint, auditor, seenExceptions);
 
 		var callDetails = GetMostRecentCallDetails(response, seenExceptions);
-		var clientException = pipeline.CreateClientException(response, callDetails, endpoint, auditor, startedOn, seenExceptions);
+		var clientException = pipeline.CreateClientException(response, callDetails, endpoint, auditor, startedOn, attemptedNodes, seenExceptions);
 
 		if (response?.ApiCallDetails == null)
 			pipeline.BadResponse(ref response, callDetails, endpoint, boundConfiguration, postData, clientException, auditor);

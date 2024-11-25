@@ -64,7 +64,7 @@ public class RequestPipeline
 		}
 	}
 
-	private bool DepletedRetries(DateTimeOffset startedOn) => Retried >= MaxRetries + 1 || IsTakingTooLong(startedOn);
+	private bool DepletedRetries(DateTimeOffset startedOn, int attemptedNodes) => attemptedNodes >= MaxRetries + 1 || IsTakingTooLong(startedOn);
 
 	private bool FirstPoolUsageNeedsSniffing =>
 		!RequestDisabledSniff
@@ -86,8 +86,6 @@ public class RequestPipeline
 	private int MaxRetries => _boundConfiguration.MaxRetries;
 
 	private bool Refresh { get; set; }
-
-	private int Retried { get; set; }
 
 	private IEnumerable<Node> SniffNodes(Auditor? auditor) => _nodePool
 		.CreateView(auditor)
@@ -204,6 +202,7 @@ public class RequestPipeline
 		Endpoint endpoint,
 		Auditor? auditor,
 		DateTimeOffset startedOn,
+		int attemptedNodes,
 		List<PipelineException>? seenExceptions
 	)
 		where TResponse : TransportResponse, new()
@@ -231,7 +230,7 @@ public class RequestPipeline
 			auditor?.Emit(MaxTimeoutReached);
 			exceptionMessage = "Maximum timeout reached while retrying request";
 		}
-		else if (Retried >= MaxRetries && MaxRetries > 0)
+		else if (attemptedNodes >= MaxRetries && MaxRetries > 0)
 		{
 			pipelineFailure = PipelineFailure.MaxRetriesReached;
 			auditor?.Emit(MaxRetriesReached);
@@ -239,7 +238,7 @@ public class RequestPipeline
 
 			var now = _dateTimeProvider.Now();
 			var activeNodes = _nodePool.Nodes.Count(n => n.IsAlive || n.DeadUntil <= now);
-			if (Retried >= activeNodes)
+			if (attemptedNodes >= activeNodes)
 			{
 				auditor?.Emit(FailedOverAllNodes);
 				exceptionMessage += ", failed over to all the known alive nodes before failing";
@@ -336,7 +335,6 @@ public class RequestPipeline
 	{
 		var deadUntil = _dateTimeProvider.DeadTime(node.FailedAttempts, _settings.DeadTimeout, _settings.MaxDeadTimeout);
 		node.MarkDead(deadUntil);
-		Retried++;
 	}
 
 	/// Fast path for <see cref="NextNode"/> if only a single node could ever be yielded this save an IEnumerator allocation
@@ -355,12 +353,11 @@ public class RequestPipeline
 	}
 
 	/// returns a consistent enumerable view into the available nodes
-	public IEnumerable<Node> NextNode(DateTimeOffset startedOn, Auditor? auditor)
+	public IEnumerable<Node> NextNode(DateTimeOffset startedOn, int attemptedNodes, Auditor? auditor)
 	{
 		if (_boundConfiguration.ForceNode != null)
 		{
 			yield return new Node(_boundConfiguration.ForceNode);
-
 			yield break;
 		}
 
@@ -370,11 +367,11 @@ public class RequestPipeline
 		var refreshed = false;
 		for (var i = 0; i < 100; i++)
 		{
-			if (DepletedRetries(startedOn)) yield break;
+			if (DepletedRetries(startedOn, attemptedNodes)) yield break;
 
 			foreach (var node in _nodePool.CreateView(auditor))
 			{
-				if (DepletedRetries(startedOn)) break;
+				if (DepletedRetries(startedOn, attemptedNodes)) break;
 
 				if (!_nodePredicate(node)) continue;
 

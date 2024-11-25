@@ -51,13 +51,6 @@ public class HttpRequestInvoker : IRequestInvoker
 	public HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler) :
 		this(wrappingHandler, new DefaultResponseFactory()) { }
 
-	/// <summary>
-	/// Allows consumers to inject their own HttpMessageHandler, and optionally call our default implementation.
-	/// </summary>
-	public HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler, ITransportConfiguration transportConfiguration) :
-		this(wrappingHandler, new DefaultResponseFactory())
-	{ }
-
 	internal HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler, ResponseFactory responseFactory)
 	{
 		ResponseFactory = responseFactory;
@@ -203,16 +196,7 @@ public class HttpRequestInvoker : IRequestInvoker
 				receivedResponse?.Dispose();
 			}
 
-			if (!OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners || (!(Activity.Current?.IsAllDataRequested ?? false)))
-				return response;
-
-			var attributes = boundConfiguration.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
-
-			if (attributes is null) return response;
-
-			foreach (var attribute in attributes)
-				Activity.Current?.SetTag(attribute.Key, attribute.Value);
-
+			RequestInvokerHelpers.SetOtelAttributes(boundConfiguration, response);
 			return response;
 		}
 		catch
