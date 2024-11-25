@@ -194,14 +194,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				receivedResponse?.Dispose();
 			}
 
-			if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
-			{
-				var attributes = boundConfiguration.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
-				foreach (var attribute in attributes)
-				{
-					Activity.Current?.SetTag(attribute.Key, attribute.Value);
-				}
-			}
+			RequestInvokerHelpers.SetOtelAttributes(boundConfiguration, response);
 
 			return response;
 		}
@@ -421,7 +414,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	protected virtual void SetAuthenticationIfNeeded(Endpoint endpoint, BoundConfiguration boundConfiguration, HttpWebRequest request)
 	{
 		//If user manually specifies an Authorization Header give it preference
-		if (boundConfiguration.Headers.HasKeys() && boundConfiguration.Headers.AllKeys.Contains("Authorization"))
+		if (boundConfiguration.Headers is not null && boundConfiguration.Headers.HasKeys() && boundConfiguration.Headers.AllKeys.Contains("Authorization"))
 		{
 			var header = boundConfiguration.Headers["Authorization"];
 			request.Headers["Authorization"] = header;
