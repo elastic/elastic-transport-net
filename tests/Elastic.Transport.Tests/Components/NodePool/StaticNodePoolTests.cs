@@ -14,7 +14,8 @@ namespace Elastic.Transport.Tests.Components.NodePool
 		[Fact]
 		public void MultipleRequests_WhenOnlyASingleEndpointIsConfigured_AndTheEndpointIsUnavailable_DoNotThrowAnException()
 		{
-			var pool = new StaticNodePool([new Uri("http://localhost:9200")]);
+			Node[] nodes = [new Uri("http://localhost:9200")];
+			var pool = new StaticNodePool(nodes);
 			var transport = new DistributedTransport(new TransportConfiguration(pool));
 
 			var response = transport.Request<StringResponse>(HttpMethod.GET, "/", null, null);
