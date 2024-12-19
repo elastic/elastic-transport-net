@@ -49,6 +49,7 @@ public abstract partial class PostData
 					$"{nameof(PostDataMultiJson<T>)} only does not support {nameof(PostType)}.{Type.GetStringValue()}");
 
 			MemoryStream? buffer = null;
+			var stream = writableStream;
 
 			switch (Type)
 			{
@@ -60,12 +61,12 @@ public abstract partial class PostData
 					if (!enumerator.MoveNext())
 						return;
 
-					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref writableStream);
+					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
 					do
 					{
 						var bytes = enumerator.Current.Utf8Bytes();
-						writableStream.Write(bytes, 0, bytes.Length);
-						writableStream.Write(NewLineByteArray, 0, 1);
+						stream.Write(bytes, 0, bytes.Length);
+						stream.Write(NewLineByteArray, 0, 1);
 					} while (enumerator.MoveNext());
 
 					break;
@@ -78,12 +79,12 @@ public abstract partial class PostData
 					if (!enumerator.MoveNext())
 						return;
 
-					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref writableStream);
+					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
 					do
 					{
 						var o = enumerator.Current;
-						settings.RequestResponseSerializer.Serialize(o, writableStream, SerializationFormatting.None);
-						writableStream.Write(NewLineByteArray, 0, 1);
+						settings.RequestResponseSerializer.Serialize(o, stream, SerializationFormatting.None);
+						stream.Write(NewLineByteArray, 0, 1);
 					} while (enumerator.MoveNext());
 
 					break;
@@ -102,6 +103,8 @@ public abstract partial class PostData
 					$"{nameof(PostDataMultiJson<T>)} only does not support {nameof(PostType)}.{Type.GetStringValue()}");
 
 			MemoryStream? buffer = null;
+			var stream = writableStream;
+
 			switch (Type)
 			{
 				case PostType.EnumerableOfString:
@@ -113,12 +116,12 @@ public abstract partial class PostData
 					if (!enumerator.MoveNext())
 						return;
 
-					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref writableStream);
+					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
 					do
 					{
 						var bytes = enumerator.Current.Utf8Bytes();
-						await writableStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
-						await writableStream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
+						await stream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+						await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
 					} while (enumerator.MoveNext());
 
 					break;
@@ -132,14 +135,14 @@ public abstract partial class PostData
 					if (!enumerator.MoveNext())
 						return;
 
-					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref writableStream);
+					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
 					do
 					{
 						var o = enumerator.Current;
-						await settings.RequestResponseSerializer.SerializeAsync(o, writableStream,
+						await settings.RequestResponseSerializer.SerializeAsync(o, stream,
 								SerializationFormatting.None, cancellationToken)
 							.ConfigureAwait(false);
-						await writableStream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
+						await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
 					} while (enumerator.MoveNext());
 
 					break;
