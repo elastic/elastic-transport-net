@@ -47,6 +47,12 @@ public static class TransportSerializerExtensions
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
+		if (serializer is SystemTextJsonSerializer stjSerializer)
+		{
+			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations.
+			return JsonSerializer.SerializeToUtf8Bytes(data, stjSerializer.GetJsonSerializerOptions(formatting));
+		}
+
 		memoryStreamFactory ??= TransportConfiguration.DefaultMemoryStreamFactory;
 		using var ms = memoryStreamFactory.Create();
 		serializer.Serialize(data, ms, formatting);
@@ -86,6 +92,12 @@ public static class TransportSerializerExtensions
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
+		if (serializer is SystemTextJsonSerializer stjSerializer)
+		{
+			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations.
+			return JsonSerializer.SerializeToUtf8Bytes(data, type, stjSerializer.GetJsonSerializerOptions(formatting));
+		}
+
 		memoryStreamFactory ??= TransportConfiguration.DefaultMemoryStreamFactory;
 		using var ms = memoryStreamFactory.Create();
 		serializer.Serialize(data, ms, formatting);
@@ -305,6 +317,65 @@ public static class TransportSerializerExtensions
 	}
 
 	/// <summary>
+	/// Extension method that deserializes from a UTF8 <see cref="string"/>.
+	/// </summary>
+	/// <typeparam name="T">The type of the data to be deserialized.</typeparam>
+	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
+	/// <param name="input">The source <see cref="string"/> that contains the JSON.</param>
+	/// <param name="memoryStreamFactory">
+	/// A factory yielding <see cref="MemoryStream"/> instances, defaults to <see cref="RecyclableMemoryStreamFactory"/>
+	/// that yields memory streams backed by pooled byte arrays.
+	/// </param>
+	/// <returns>The deserialized data.</returns>
+	public static T? Deserialize<T>(
+		this Serializer serializer,
+		string input,
+		MemoryStreamFactory? memoryStreamFactory = null)
+	{
+		if (serializer is SystemTextJsonSerializer stjSerializer)
+		{
+			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
+			// deserialize straight from the span.
+			return JsonSerializer.Deserialize<T>(input, stjSerializer.GetJsonSerializerOptions());
+		}
+
+		memoryStreamFactory ??= TransportConfiguration.DefaultMemoryStreamFactory;
+		using var ms = memoryStreamFactory.Create(Encoding.UTF8.GetBytes(input));
+
+		return serializer.Deserialize<T>(ms);
+	}
+
+	/// <summary>
+	/// Extension method that deserializes from a <see cref="string"/>.
+	/// </summary>
+	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
+	/// <param name="input">The source <see cref="string"/> that contains the JSON.</param>
+	/// <param name="type">The type of the data to be deserialized.</param>
+	/// <param name="memoryStreamFactory">
+	/// A factory yielding <see cref="MemoryStream"/> instances, defaults to <see cref="RecyclableMemoryStreamFactory"/>
+	/// that yields memory streams backed by pooled byte arrays.
+	/// </param>
+	/// <returns>The deserialized data.</returns>
+	public static object? Deserialize(
+		this Serializer serializer,
+		string input,
+		Type type,
+		MemoryStreamFactory? memoryStreamFactory = null)
+	{
+		if (serializer is SystemTextJsonSerializer stjSerializer)
+		{
+			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
+			// deserialize straight from the span.
+			return JsonSerializer.Deserialize(input, type, stjSerializer.GetJsonSerializerOptions());
+		}
+
+		memoryStreamFactory ??= TransportConfiguration.DefaultMemoryStreamFactory;
+		using var ms = memoryStreamFactory.Create(Encoding.UTF8.GetBytes(input));
+
+		return serializer.Deserialize(type, ms);
+	}
+
+	/// <summary>
 	/// Extension method that deserializes from a UTF8 <see cref="ReadOnlySpan{T}"/>.
 	/// </summary>
 	/// <typeparam name="T">The type of the data to be deserialized.</typeparam>
@@ -337,7 +408,7 @@ public static class TransportSerializerExtensions
 	/// Extension method that deserializes from a UTF8 <see cref="ReadOnlySpan{T}"/>.
 	/// </summary>
 	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
-	/// <param name="span">The source <see cref="ReadOnlySpan{T}"/> that contains the UTF8 encoded JSON.</param>
+	/// <param name="span">The source <see cref="ReadOnlySpan{T}"/> that contains the UTF8 encoded JSON string.</param>
 	/// <param name="type">The type of the data to be deserialized.</param>
 	/// <param name="memoryStreamFactory">
 	/// A factory yielding <see cref="MemoryStream"/> instances, defaults to <see cref="RecyclableMemoryStreamFactory"/>
@@ -396,7 +467,7 @@ public static class TransportSerializerExtensions
 	/// Extension method that deserializes from a UTF8 <see cref="ReadOnlySpan{T}"/>.
 	/// </summary>
 	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
-	/// <param name="span">The source <see cref="ReadOnlySpan{T}"/> that contains the UTF8 encoded JSON.</param>
+	/// <param name="span">The source <see cref="ReadOnlySpan{T}"/> that contains the UTF8 encoded JSON string.</param>
 	/// <param name="type">The type of the data to be deserialized.</param>
 	/// <param name="memoryStreamFactory">
 	/// A factory yielding <see cref="MemoryStream"/> instances, defaults to <see cref="RecyclableMemoryStreamFactory"/>
