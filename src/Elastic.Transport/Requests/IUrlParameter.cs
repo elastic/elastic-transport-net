@@ -7,6 +7,6 @@ namespace Elastic.Transport;
 /// <summary> Implementers define an object that can be serialized as a query string parameter </summary>
 public interface IUrlParameter
 {
-	/// <summary> Get the a string representation using <paramref name="settings"/> </summary>
-	string GetString(ITransportConfiguration settings);
+	/// <summary> Get the string representation using <paramref name="settings"/> </summary>
+	public string GetString(ITransportConfiguration settings);
 }

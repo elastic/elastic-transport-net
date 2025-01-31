@@ -47,7 +47,7 @@ public static class TransportSerializerExtensions
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(typeof(T)))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations.
 			return JsonSerializer.SerializeToUtf8Bytes(data, stjSerializer.GetJsonSerializerOptions(formatting));
@@ -92,7 +92,7 @@ public static class TransportSerializerExtensions
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(type))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations.
 			return JsonSerializer.SerializeToUtf8Bytes(data, type, stjSerializer.GetJsonSerializerOptions(formatting));
@@ -135,7 +135,7 @@ public static class TransportSerializerExtensions
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(typeof(T)))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// serialize straight into string.
@@ -183,7 +183,7 @@ public static class TransportSerializerExtensions
 		SerializationFormatting formatting = SerializationFormatting.None
 	)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(type))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// serialize straight into string.
@@ -234,7 +234,7 @@ public static class TransportSerializerExtensions
 		MemoryStreamFactory? memoryStreamFactory,
 		SerializationFormatting formatting = SerializationFormatting.None)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(typeof(T)))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// serialize straight into the writer.
@@ -294,7 +294,7 @@ public static class TransportSerializerExtensions
 		MemoryStreamFactory? memoryStreamFactory,
 		SerializationFormatting formatting = SerializationFormatting.None)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(type))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// serialize straight into the writer.
@@ -332,7 +332,7 @@ public static class TransportSerializerExtensions
 		string input,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(typeof(T)))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the span.
@@ -362,7 +362,7 @@ public static class TransportSerializerExtensions
 		Type type,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(type))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the span.
@@ -391,7 +391,7 @@ public static class TransportSerializerExtensions
 		ReadOnlySpan<byte> span,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(typeof(T)))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the span.
@@ -421,7 +421,7 @@ public static class TransportSerializerExtensions
 		Type type,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(type))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the span.
@@ -450,7 +450,7 @@ public static class TransportSerializerExtensions
 		ReadOnlySpan<char> span,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(typeof(T)))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the span.
@@ -480,7 +480,7 @@ public static class TransportSerializerExtensions
 		Type type,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(type))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the span.
@@ -509,7 +509,7 @@ public static class TransportSerializerExtensions
 		ref Utf8JsonReader reader,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(typeof(T)))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the reader.
@@ -546,7 +546,7 @@ public static class TransportSerializerExtensions
 		Type type,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(type))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the reader.
@@ -582,7 +582,7 @@ public static class TransportSerializerExtensions
 		JsonNode node,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(typeof(T)))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the node.
@@ -617,7 +617,7 @@ public static class TransportSerializerExtensions
 		Type type,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(type))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the node.
@@ -651,7 +651,7 @@ public static class TransportSerializerExtensions
 		JsonElement node,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(typeof(T)))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the node.
@@ -686,7 +686,7 @@ public static class TransportSerializerExtensions
 		Type type,
 		MemoryStreamFactory? memoryStreamFactory = null)
 	{
-		if (serializer is SystemTextJsonSerializer stjSerializer)
+		if (serializer is SystemTextJsonSerializer stjSerializer && stjSerializer.SupportsFastPath(type))
 		{
 			// When the serializer derives from `SystemTextJsonSerializer` we can avoid unnecessary allocations and
 			// deserialize straight from the node.
