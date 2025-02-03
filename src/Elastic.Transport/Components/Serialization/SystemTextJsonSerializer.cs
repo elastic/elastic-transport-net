@@ -101,8 +101,10 @@ public abstract class SystemTextJsonSerializer : Serializer
 	/// </para>
 	/// <para>
 	///	In some cases, when the concrete <see cref="SystemTextJsonSerializer"/> based serializer implementation overrides one or more of
-	/// the named methods, the default fast-path behavior might be undesired. The <see cref="SupportsFastPath"/> method can be used to
-	/// completely disable fast-path (de-)serialization or selectively use it for specific types only.
+	/// the previously named methods, the default fast-path behavior is probably undesired as it would prevent the user defined code in
+	/// the overwritten methods from being executed.
+	/// The <see cref="SupportsFastPath"/> method can be used to either completely disable fast-path (de-)serialization or to selectively
+	/// allow it for specific types only.
 	/// </para>
 	/// </remarks>
 	protected internal virtual bool SupportsFastPath(Type type) => true;
