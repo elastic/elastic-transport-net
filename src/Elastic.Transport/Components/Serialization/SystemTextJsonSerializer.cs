@@ -85,6 +85,31 @@ public abstract class SystemTextJsonSerializer : Serializer
 	#endregion Serializer
 
 	/// <summary>
+	/// Override to (dis-)allow fast-path (de-)serialization for specific types.
+	/// </summary>
+	/// <param name="type">The <see cref="Type"/> that is being (de-)serialized.</param>
+	/// <returns>
+	/// <see langword="true"/> if the given <paramref name="type"/> supports fast-path (de-)serialization or
+	/// <see langword="false"/>, if not.
+	/// </returns>
+	/// <remarks>
+	/// <para>
+	///	Most extension methods in <see cref="Extensions.TransportSerializerExtensions"/> will prefer fast-path (de-)serialization, when
+	/// used with <see cref="SystemTextJsonSerializer"/> based serializer implementations.
+	/// Fast-path (de-)serialization bypasses the <see cref="Deserialize"/>, <see cref="Deserialize{T}"/>, <see cref="Serialize{T}"/>
+	/// methods and directly uses the <see cref="JsonSerializer"/> API instead.
+	/// </para>
+	/// <para>
+	///	In some cases, when the concrete <see cref="SystemTextJsonSerializer"/> based serializer implementation overrides one or more of
+	/// the previously named methods, the default fast-path behavior is probably undesired as it would prevent the user defined code in
+	/// the overwritten methods from being executed.
+	/// The <see cref="SupportsFastPath"/> method can be used to either completely disable fast-path (de-)serialization or to selectively
+	/// allow it for specific types only.
+	/// </para>
+	/// </remarks>
+	protected internal virtual bool SupportsFastPath(Type type) => true;
+
+	/// <summary>
 	/// Returns the <see cref="JsonSerializerOptions"/> for this serializer, based on the given <paramref name="formatting"/>.
 	/// </summary>
 	/// <param name="formatting">The serialization formatting.</param>
