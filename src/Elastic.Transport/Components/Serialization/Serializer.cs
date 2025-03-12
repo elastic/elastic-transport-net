@@ -21,18 +21,25 @@ public abstract class Serializer
 	// TODO: Overloads taking a Memory<T>/Span<T>??
 
 	/// <summary> Deserialize <paramref name="stream"/> to an instance of <paramref name="type"/> </summary>
-	public abstract object Deserialize(Type type, Stream stream);
+	public abstract object? Deserialize(Type type, Stream stream);
 
 	/// <summary> Deserialize <paramref name="stream"/> to an instance of <typeparamref name="T" /></summary>
 	public abstract T Deserialize<T>(Stream stream);
 
 	/// <inheritdoc cref="Deserialize"/>
-	public abstract ValueTask<object> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default);
+	public abstract ValueTask<object?> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default);
 
 	/// <inheritdoc cref="Deserialize"/>
 	public abstract ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default);
 
-	// TODO: Overloads for (object?, Type) inputs
+	/// <inheritdoc cref="Serialize{T}"/>
+	public abstract void Serialize(
+		object? data,
+		Type type,
+		Stream stream,
+		SerializationFormatting formatting = SerializationFormatting.None,
+		CancellationToken cancellationToken = default
+	);
 
 	/// <summary>
 	/// Serialize an instance of <typeparamref name="T"/> to <paramref name="stream"/> using <paramref name="formatting"/>.
@@ -43,7 +50,20 @@ public abstract class Serializer
 	/// Formatting hint. Note that not all implementations of <see cref="Serializer"/> are able to
 	/// satisfy this hint, including the default serializer that is shipped with 8.0.
 	/// </param>
-	public abstract void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None);
+	public abstract void Serialize<T>(
+		T data,
+		Stream stream,
+		SerializationFormatting formatting = SerializationFormatting.None
+	);
+
+	/// <inheritdoc cref="Serialize{T}"/>
+	public abstract Task SerializeAsync(
+		object? data,
+		Type type,
+		Stream stream,
+		SerializationFormatting formatting = SerializationFormatting.None,
+		CancellationToken cancellationToken = default
+	);
 
 	/// <inheritdoc cref="Serialize{T}"/>
 	public abstract Task SerializeAsync<T>(
