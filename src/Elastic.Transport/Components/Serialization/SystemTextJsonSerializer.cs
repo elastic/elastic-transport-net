@@ -72,15 +72,25 @@ public abstract class SystemTextJsonSerializer : Serializer
 	}
 
 	/// <inheritdoc />
-	public override void Serialize<T>(T data, Stream writableStream,
+	public override void Serialize<T>(T data, Stream stream,
 		SerializationFormatting formatting = SerializationFormatting.None) =>
-		JsonSerializer.Serialize(writableStream, data, GetJsonSerializerOptions(formatting));
+		JsonSerializer.Serialize(stream, data, GetJsonSerializerOptions(formatting));
+
+	/// <inheritdoc />
+	public override void Serialize(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None,
+		CancellationToken cancellationToken = default) =>
+		JsonSerializer.Serialize(stream, data, type, GetJsonSerializerOptions(formatting));
 
 	/// <inheritdoc />
 	public override Task SerializeAsync<T>(T data, Stream stream,
 		SerializationFormatting formatting = SerializationFormatting.None,
 		CancellationToken cancellationToken = default) =>
 		JsonSerializer.SerializeAsync(stream, data, GetJsonSerializerOptions(formatting), cancellationToken);
+
+	/// <inheritdoc />
+	public override Task SerializeAsync(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None,
+		CancellationToken cancellationToken = default) =>
+		JsonSerializer.SerializeAsync(stream, data, type, GetJsonSerializerOptions(formatting), cancellationToken);
 
 	#endregion Serializer
 
