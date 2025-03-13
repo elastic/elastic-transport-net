@@ -57,8 +57,8 @@ public sealed record BoundConfiguration : IRequestConfiguration
 		AllowedStatusCodes = local?.AllowedStatusCodes ?? EmptyReadOnly<int>.Collection;
 		ClientCertificates = local?.ClientCertificates ?? global.ClientCertificates;
 		TransferEncodingChunked = local?.TransferEncodingChunked ?? global.TransferEncodingChunked ?? false;
-		EnableTcpStats = local?.EnableTcpStats ?? global.EnableTcpStats ?? true;
-		EnableThreadPoolStats = local?.EnableThreadPoolStats ?? global.EnableThreadPoolStats ?? true;
+		EnableTcpStats = local?.EnableTcpStats ?? global.EnableTcpStats ?? false;
+		EnableThreadPoolStats = local?.EnableThreadPoolStats ?? global.EnableThreadPoolStats ?? false;
 		ParseAllHeaders = local?.ParseAllHeaders ?? global.ParseAllHeaders ?? false;
 		ResponseHeadersToParse = local is not null
 			? new HeadersList(local.ResponseHeadersToParse, global.ResponseHeadersToParse)
