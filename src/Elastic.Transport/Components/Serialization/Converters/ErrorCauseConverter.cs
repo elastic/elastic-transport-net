@@ -12,10 +12,13 @@ using Elastic.Transport.Products.Elasticsearch;
 
 namespace Elastic.Transport;
 
-internal class ErrorCauseConverter : ErrorCauseConverter<ErrorCause> { }
+/// A JSON converter for <see cref="ErrorCause"/>
+public class ErrorCauseConverter : ErrorCauseConverter<ErrorCause> { }
 
-internal class ErrorConverter : ErrorCauseConverter<Error>
+/// A JSON converter for <see cref="Error"/>
+public class ErrorConverter : ErrorCauseConverter<Error>
 {
+	/// <inheritdoc cref="ErrorCauseConverter{T}.ReadMore"/>
 	protected override bool ReadMore(ref Utf8JsonReader reader, JsonSerializerOptions options, string propertyName, Error errorCause)
 	{
 		void ReadAssign<T>(ref Utf8JsonReader r, Action<Error, T> set) =>
@@ -36,16 +39,16 @@ internal class ErrorConverter : ErrorCauseConverter<Error>
 	}
 }
 
-internal class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCause> where TErrorCause : ErrorCause, new()
+/// A JSON converter for <see cref="ErrorCause"/> implementations
+public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCause> where TErrorCause : ErrorCause, new()
 {
+	/// <inheritdoc cref="JsonConverter{T}.Read"/>
 	public override TErrorCause Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		if (reader.TokenType != JsonTokenType.StartObject)
-		{
 			return reader.TokenType == JsonTokenType.String
 				? new TErrorCause { Reason = reader.GetString() }
 				: null;
-		}
 
 		var errorCause = new TErrorCause();
 		var additionalProperties = new Dictionary<string, object>();
@@ -176,8 +179,10 @@ internal class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCause> whe
 		}
 	}
 
+	/// Read additional properties for the particular <see cref="ErrorCause"/> implementation
 	protected virtual bool ReadMore(ref Utf8JsonReader reader, JsonSerializerOptions options, string propertyName, TErrorCause errorCause) => false;
 
+	/// <inheritdoc cref="JsonConverter{T}.Read"/>
 	public override void Write(Utf8JsonWriter writer, TErrorCause value, JsonSerializerOptions options)
 	{
 		writer.WriteStartObject();

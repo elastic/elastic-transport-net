@@ -33,8 +33,10 @@ public sealed class Error : ErrorCause
 		: $"Type: {Type} Reason: \"{Reason}\" CausedBy: \"{CausedBy}\"";
 }
 
-internal sealed class ErrorConverter : JsonConverter<Error>
+/// A JSON converter for <see cref="Error"/>.
+public sealed class ErrorConverter : JsonConverter<Error>
 {
+	/// <inheritdoc cref="JsonConverter{T}.Read"/>
 	public override Error Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		if (reader.TokenType == JsonTokenType.String)
@@ -129,5 +131,7 @@ internal sealed class ErrorConverter : JsonConverter<Error>
 		throw new JsonException("Could not deserialise the error response.");
 	}
 
-	public override void Write(Utf8JsonWriter writer, Error value, JsonSerializerOptions options) => throw new NotImplementedException();
+	/// <inheritdoc cref="JsonConverter{T}.Read"/>
+	public override void Write(Utf8JsonWriter writer, Error value, JsonSerializerOptions options) =>
+		throw new NotImplementedException();
 }

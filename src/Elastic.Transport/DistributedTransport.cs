@@ -29,7 +29,10 @@ public sealed class DistributedTransport(ITransportConfiguration configuration) 
 {
 }
 
-/// <inheritdoc cref="ITransport{TConfiguration}" />
+/// <summary>
+/// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
+/// different nodes
+/// </summary>
 public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	where TConfiguration : class, ITransportConfiguration
 {
