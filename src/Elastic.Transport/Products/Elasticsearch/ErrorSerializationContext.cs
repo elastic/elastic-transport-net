@@ -11,4 +11,6 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// Adds support for serializing Elasticsearch errors using <see cref="IJsonTypeInfoResolver"/>
 [JsonSerializable(typeof(Error))]
 [JsonSerializable(typeof(ErrorCause))]
+[JsonSerializable(typeof(ElasticsearchServerError))]
+[JsonSerializable(typeof(ElasticsearchResponse))]
 public partial class ErrorSerializerContext : JsonSerializerContext;
