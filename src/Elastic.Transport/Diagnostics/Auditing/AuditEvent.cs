@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
+
 namespace Elastic.Transport.Diagnostics.Auditing;
 
 /// <summary>
@@ -87,3 +89,30 @@ public enum AuditEvent
 	/// </summary>
 	FailedOverAllNodes,
 }
+
+internal static class AuditEventExtensions
+{
+	public static string ToStringFast(this AuditEvent auditEvent) => auditEvent switch
+	{
+		AuditEvent.SniffOnStartup => nameof(AuditEvent.SniffOnStartup),
+		AuditEvent.SniffOnFail => nameof(AuditEvent.SniffOnFail),
+		AuditEvent.SniffOnStaleCluster => nameof(AuditEvent.SniffOnStaleCluster),
+		AuditEvent.SniffSuccess => nameof(AuditEvent.SniffSuccess),
+		AuditEvent.SniffFailure => nameof(AuditEvent.SniffFailure),
+		AuditEvent.PingSuccess => nameof(AuditEvent.PingSuccess),
+		AuditEvent.PingFailure => nameof(AuditEvent.PingFailure),
+		AuditEvent.Resurrection => nameof(AuditEvent.Resurrection),
+		AuditEvent.AllNodesDead => nameof(AuditEvent.AllNodesDead),
+		AuditEvent.BadResponse => nameof(AuditEvent.BadResponse),
+		AuditEvent.HealthyResponse => nameof(AuditEvent.HealthyResponse),
+		AuditEvent.MaxTimeoutReached => nameof(AuditEvent.MaxTimeoutReached),
+		AuditEvent.MaxRetriesReached => nameof(AuditEvent.MaxRetriesReached),
+		AuditEvent.BadRequest => nameof(AuditEvent.BadRequest),
+		AuditEvent.NoNodesAttempted => nameof(AuditEvent.NoNodesAttempted),
+		AuditEvent.CancellationRequested => nameof(AuditEvent.CancellationRequested),
+		AuditEvent.FailedOverAllNodes => nameof(AuditEvent.FailedOverAllNodes),
+		_ => throw new ArgumentOutOfRangeException(nameof(auditEvent), auditEvent, null)
+	};
+
+}
+

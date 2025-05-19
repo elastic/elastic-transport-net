@@ -40,86 +40,83 @@ public sealed class ErrorConverter : JsonConverter<Error>
 	public override Error Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		if (reader.TokenType == JsonTokenType.String)
-		{
 			return new Error { Reason = reader.GetString() };
-		}
-		else if (reader.TokenType == JsonTokenType.StartObject)
+		if (reader.TokenType == JsonTokenType.StartObject)
 		{
 			var error = new Error();
 			Dictionary<string, object> additional = null;
 
 			while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
 			{
-				if (reader.TokenType == JsonTokenType.PropertyName)
+				if (reader.TokenType != JsonTokenType.PropertyName) continue;
+
+				if (reader.ValueTextEquals("root_cause"))
 				{
-					if (reader.ValueTextEquals("root_cause"))
-					{
-						var value = JsonSerializer.Deserialize<IReadOnlyCollection<ErrorCause>>(ref reader, options);
-						error.RootCause = value;
-						continue;
-					}
-
-					if (reader.ValueTextEquals("caused_by"))
-					{
-						var value = JsonSerializer.Deserialize<ErrorCause>(ref reader, options);
-						error.CausedBy = value;
-						continue;
-					}
-
-					//if (reader.ValueTextEquals("suppressed"))
-					//{
-					//	var value = JsonSerializer.Deserialize<IReadOnlyCollection<ErrorCause>>(ref reader, options);
-					//	error.TODO = value;
-					//	continue;
-					//}
-
-					if (reader.ValueTextEquals("headers"))
-					{
-						var value = JsonSerializer.Deserialize<IReadOnlyDictionary<string, string>>(ref reader, options);
-						error.Headers = value;
-						continue;
-					}
-
-					if (reader.ValueTextEquals("stack_trace"))
-					{
-						var value = JsonSerializer.Deserialize<string>(ref reader, options);
-						error.StackTrace = value;
-						continue;
-					}
-
-					if (reader.ValueTextEquals("type"))
-					{
-						var value = JsonSerializer.Deserialize<string>(ref reader, options);
-						error.Type = value;
-						continue;
-					}
-
-					if (reader.ValueTextEquals("index"))
-					{
-						var value = JsonSerializer.Deserialize<string>(ref reader, options);
-						error.Index = value;
-						continue;
-					}
-
-					if (reader.ValueTextEquals("index_uuid"))
-					{
-						var value = JsonSerializer.Deserialize<string>(ref reader, options);
-						error.IndexUUID = value;
-						continue;
-					}
-
-					if (reader.ValueTextEquals("reason"))
-					{
-						var value = JsonSerializer.Deserialize<string>(ref reader, options);
-						error.Reason = value;
-						continue;
-					}
-
-					additional ??= new Dictionary<string, object>();
-					var key = reader.GetString();
-					var additionaValue = JsonSerializer.Deserialize<object>(ref reader, options);
-					additional.Add(key, additionaValue);
+					var value = JsonSerializer.Deserialize<IReadOnlyCollection<ErrorCause>>(ref reader, ErrorSerializerContext.Default.IReadOnlyCollectionErrorCause);
+					error.RootCause = value;
+					continue;
 				}
+
+				if (reader.ValueTextEquals("caused_by"))
+				{
+					var value = JsonSerializer.Deserialize<ErrorCause>(ref reader, ErrorSerializerContext.Default.ErrorCause);
+					error.CausedBy = value;
+					continue;
+				}
+
+				//if (reader.ValueTextEquals("suppressed"))
+				//{
+				//	var value = JsonSerializer.Deserialize<IReadOnlyCollection<ErrorCause>>(ref reader, options);
+				//	error.TODO = value;
+				//	continue;
+				//}
+
+				if (reader.ValueTextEquals("headers"))
+				{
+					var value = JsonSerializer.Deserialize<IReadOnlyDictionary<string, string>>(ref reader, ErrorSerializerContext.Default.IReadOnlyDictionaryStringString); // TODO: Test! This might not work without adding `IReadOnlyDictionary<string, string>` to `ErrorSerializationContext`
+					error.Headers = value;
+					continue;
+				}
+
+				if (reader.ValueTextEquals("stack_trace"))
+				{
+					var value = JsonSerializer.Deserialize<string>(ref reader, ErrorSerializerContext.Default.String);
+					error.StackTrace = value;
+					continue;
+				}
+
+				if (reader.ValueTextEquals("type"))
+				{
+					var value = JsonSerializer.Deserialize<string>(ref reader, ErrorSerializerContext.Default.String);
+					error.Type = value;
+					continue;
+				}
+
+				if (reader.ValueTextEquals("index"))
+				{
+					var value = JsonSerializer.Deserialize<string>(ref reader, ErrorSerializerContext.Default.String);
+					error.Index = value;
+					continue;
+				}
+
+				if (reader.ValueTextEquals("index_uuid"))
+				{
+					var value = JsonSerializer.Deserialize<string>(ref reader, ErrorSerializerContext.Default.String);
+					error.IndexUUID = value;
+					continue;
+				}
+
+				if (reader.ValueTextEquals("reason"))
+				{
+					var value = JsonSerializer.Deserialize<string>(ref reader, ErrorSerializerContext.Default.String);
+					error.Reason = value;
+					continue;
+				}
+
+				additional ??= new Dictionary<string, object>();
+				var key = reader.GetString();
+				var additionaValue = JsonSerializer.Deserialize<object>(ref reader, ErrorSerializerContext.Default.Object);
+				additional.Add(key, additionaValue);
 			}
 
 			if (additional is not null)

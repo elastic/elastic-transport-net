@@ -59,11 +59,13 @@ public sealed class ReflectionVersionInfo : VersionInfo
 
 			var version = type.Assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
+#pragma warning disable IL3000
 			if (string.IsNullOrEmpty(version) && !string.IsNullOrEmpty(type.Assembly?.Location))
 			{
 				var location = type.Assembly?.Location;
 				version = FileVersionInfo.GetVersionInfo(location)?.ProductVersion;
 			}
+#pragma warning restore IL3000
 
 			if (!string.IsNullOrEmpty(version))
 			{

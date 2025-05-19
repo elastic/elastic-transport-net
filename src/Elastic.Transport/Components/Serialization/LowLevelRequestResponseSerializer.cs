@@ -5,6 +5,8 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using Elastic.Transport.Products.Elasticsearch;
 
 namespace Elastic.Transport;
 
@@ -32,6 +34,12 @@ internal sealed class LowLevelRequestResponseSerializer : SystemTextJsonSerializ
 			new ErrorCauseConverter(),
 			new ErrorConverter(),
 			new DynamicDictionaryConverter()
-		], converters, options => { options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull; })) { }
+		], converters, options =>
+		{
+			options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+#pragma warning disable IL2026, IL3050
+			options.TypeInfoResolver = JsonTypeInfoResolver.Combine(new DefaultJsonTypeInfoResolver(), ErrorSerializerContext.Default);
+#pragma warning restore IL2026, IL3050
+		})) { }
 
 }

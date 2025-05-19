@@ -66,9 +66,9 @@ public class TransportException : Exception
 		get
 		{
 			var sb = new StringBuilder();
-			var failureReason = FailureReason.GetStringValue();
+			var failureReason = FailureReason is { } r ? r.ToStringFast() : string.Empty;
 			if (FailureReason == PipelineFailure.Unexpected && AuditTrail.HasAny(out var auditTrail))
-				failureReason = "Unrecoverable/Unexpected " + auditTrail.Last().Event.GetStringValue();
+				failureReason = "Unrecoverable/Unexpected " + auditTrail.Last().Event.ToStringFast();
 
 			sb.Append("# FailureReason: ")
 				.Append(failureReason)

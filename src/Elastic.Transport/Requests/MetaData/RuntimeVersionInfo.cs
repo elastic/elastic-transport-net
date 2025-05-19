@@ -27,7 +27,7 @@
 #endregion BenchmarkDotNet License https://github.com/dotnet/BenchmarkDotNet/blob/master/LICENSE.md
 
 using System;
-
+using System.Diagnostics.CodeAnalysis;
 using Elastic.Transport.Extensions;
 
 #if !NETFRAMEWORK
@@ -99,14 +99,22 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 		}
 
 		// next, try using file version info
-		var systemPrivateCoreLib = FileVersionInfo.GetVersionInfo(typeof(object).Assembly.Location);
-		if (TryGetVersionFromProductInfo(systemPrivateCoreLib.ProductVersion, systemPrivateCoreLib.ProductName, out var runtimeVersion))
-		{
-			return runtimeVersion;
-		}
 
+#pragma warning disable IL3000
+		var assemblyLocation = typeof(object).Assembly.Location;
+#pragma warning disable IL3000
+
+		if (!string.IsNullOrEmpty(assemblyLocation))
+		{
+			var systemPrivateCoreLib = FileVersionInfo.GetVersionInfo(assemblyLocation);
+			if (TryGetVersionFromProductInfo(systemPrivateCoreLib.ProductVersion, systemPrivateCoreLib.ProductName, out var runtimeVersion1))
+			{
+				return runtimeVersion1;
+			}
+		}
+		
 		var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
-		if (TryGetVersionFromAssemblyPath(assembly, out runtimeVersion))
+		if (TryGetVersionFromAssemblyPath(assembly, out var runtimeVersion))
 		{
 			return runtimeVersion;
 		}
@@ -130,9 +138,20 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 		return null;
 	}
 
-	private static bool TryGetVersionFromAssemblyPath(Assembly assembly, out string runtimeVersion)
+	private static bool TryGetVersionFromAssemblyPath(Assembly assembly, [NotNullWhen(true)] out string? runtimeVersion)
 	{
-		var assemblyPath = assembly.Location.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+#pragma warning disable IL3000
+		var assemblyLocation = assembly.Location;
+#pragma warning restore IL3000
+
+		if (string.IsNullOrEmpty(assemblyLocation))
+		{
+			runtimeVersion = null;
+			return false;
+		}
+
+		var assemblyPath = assemblyLocation.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+
 		var netCoreAppIndex = Array.IndexOf(assemblyPath, "Microsoft.NETCore.App");
 		if (netCoreAppIndex > 0 && netCoreAppIndex < assemblyPath.Length - 2)
 		{

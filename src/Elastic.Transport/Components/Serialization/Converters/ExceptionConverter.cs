@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Elastic.Transport.Products.Elasticsearch;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Elastic.Transport;
@@ -71,7 +72,7 @@ internal class ExceptionConverter : JsonConverter<Exception>
 			foreach (var kv in flattenedException)
 			{
 				writer.WritePropertyName(kv.Key);
-				JsonSerializer.Serialize(writer, kv.Value, options);
+				JsonSerializer.Serialize(writer, kv.Value, ErrorSerializerContext.Default.Object); // TODO: Test! This might not work without adding `KeyValuePair<string, object>` to `ErrorSerializationContext`
 			}
 			writer.WriteEndObject();
 		}

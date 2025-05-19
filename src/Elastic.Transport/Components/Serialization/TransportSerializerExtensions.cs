@@ -11,6 +11,8 @@ using System.Text.Json.Nodes;
 
 namespace Elastic.Transport.Extensions;
 
+#pragma warning disable IL2026, IL3050 // SystemTextJsonSerializer implementations must make sure to use an AOT compatible JsonSerializerOptions.TypeInfoResolver
+
 /// <summary>
 /// A set of handy extension methods for <see cref="Serializer"/>
 /// </summary>
@@ -726,3 +728,5 @@ public static class TransportSerializerExtensions
 		return false;
 	}
 }
+
+#pragma warning restore IL2026, IL3050

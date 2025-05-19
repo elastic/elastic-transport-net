@@ -133,6 +133,7 @@ resharper_redundant_case_label_highlighting=do_not_show
 resharper_redundant_argument_default_value_highlighting=do_not_show
 # Do not penalize code that explicitly lists generic arguments
 resharper_redundant_type_arguments_of_method_highlighting=do_not_show
+resharper_switch_expression_handles_some_known_enum_values_with_exception_in_default_highlighting=error
 
 [Jenkinsfile]
 indent_style = space

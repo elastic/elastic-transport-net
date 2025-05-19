@@ -19,15 +19,12 @@ using System.Net;
 
 namespace Elastic.Transport;
 
-/// <inheritdoc cref="ITransport{TConfiguration}" />
 /// <summary>
 /// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
 /// different nodes
 /// </summary>
 /// <param name="configuration">The configuration to use for this transport</param>
-public sealed class DistributedTransport(ITransportConfiguration configuration) : DistributedTransport<ITransportConfiguration>(configuration)
-{
-}
+public sealed class DistributedTransport(ITransportConfiguration configuration) : DistributedTransport<ITransportConfiguration>(configuration);
 
 /// <summary>
 /// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on

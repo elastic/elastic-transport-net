@@ -7,7 +7,7 @@ namespace Elastic.Transport;
 /// <summary>
 /// Credentials for Api Key Authentication
 /// </summary>
-public sealed class ApiKey : AuthorizationHeader
+public class ApiKey : AuthorizationHeader
 {
 	private readonly string _apiKey;
 

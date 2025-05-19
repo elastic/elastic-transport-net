@@ -22,7 +22,9 @@ public class ErrorConverter : ErrorCauseConverter<Error>
 	protected override bool ReadMore(ref Utf8JsonReader reader, JsonSerializerOptions options, string propertyName, Error errorCause)
 	{
 		void ReadAssign<T>(ref Utf8JsonReader r, Action<Error, T> set) =>
+#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
 			set(errorCause, JsonSerializer.Deserialize<T>(ref r, options));
+#pragma warning restore IL2026, IL3050
 		switch (propertyName)
 		{
 			case "headers":
@@ -55,9 +57,14 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 		errorCause.AdditionalProperties = additionalProperties;
 
 		void ReadAssign<T>(ref Utf8JsonReader r, Action<ErrorCause, T> set) =>
+#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
 			set(errorCause, JsonSerializer.Deserialize<T>(ref r, options));
+#pragma warning restore IL2026, IL3050
+
 		void ReadAny(ref Utf8JsonReader r, string property, Action<ErrorCause, string, object> set) =>
-			set(errorCause, property, JsonSerializer.Deserialize<object>(ref r, options));
+#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
+			set(errorCause, property, JsonSerializer.Deserialize<JsonElement>(ref r, options));
+#pragma warning restore IL2026, IL3050
 
 		while (reader.Read())
 		{
@@ -140,45 +147,6 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 		return errorCause;
 	}
 
-	private static int? ReadIntFromString(ref Utf8JsonReader reader, JsonSerializerOptions options)
-	{
-		reader.Read();
-		switch (reader.TokenType)
-		{
-			case JsonTokenType.Null: return null;
-			case JsonTokenType.Number:
-				return JsonSerializer.Deserialize<int?>(ref reader, options);
-			case JsonTokenType.String:
-				var s = JsonSerializer.Deserialize<string>(ref reader, options);
-				if (int.TryParse(s, out var i)) return i;
-				return null;
-			default:
-				reader.TrySkip();
-				return null;
-		}
-	}
-
-	private static IReadOnlyCollection<string> ReadSingleOrCollection(ref Utf8JsonReader reader, JsonSerializerOptions options)
-	{
-		reader.Read();
-		switch (reader.TokenType)
-		{
-			case JsonTokenType.Null: return EmptyReadOnly<string>.Collection;
-			case JsonTokenType.StartArray:
-				var list = new List<string>();
-				while (reader.Read())
-				{
-					if (reader.TokenType == JsonTokenType.EndArray)
-						break;
-					list.Add(JsonSerializer.Deserialize<string>(ref reader, options));
-				}
-				return new ReadOnlyCollection<string>(list);
-			default:
-				var v = JsonSerializer.Deserialize<string>(ref reader, options);
-				return new ReadOnlyCollection<string>(new List<string>(1) { v});
-		}
-	}
-
 	/// Read additional properties for the particular <see cref="ErrorCause"/> implementation
 	protected virtual bool ReadMore(ref Utf8JsonReader reader, JsonSerializerOptions options, string propertyName, TErrorCause errorCause) => false;
 
@@ -189,10 +157,22 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 
 		static void Serialize<T>(Utf8JsonWriter writer, JsonSerializerOptions options, string name, T value)
 		{
-			if (value == null) return;
+			if (value is null) return;
 
 			writer.WritePropertyName(name);
+#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
 			JsonSerializer.Serialize(writer, value, options);
+#pragma warning restore IL2026, IL3050
+		}
+
+		static void SerializeDynamic(Utf8JsonWriter writer, JsonSerializerOptions options, string name, object? value, Type inputType)
+		{
+			if (value is null) return;
+
+			writer.WritePropertyName(name);
+#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
+			JsonSerializer.Serialize(writer, value, inputType, options);
+#pragma warning restore IL2026, IL3050
 		}
 
 		//Serialize(writer, options, "bytes_limit", value.BytesLimit);
@@ -217,7 +197,7 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 		Serialize(writer, options, "type", value.Type);
 
 		foreach (var kv in value.AdditionalProperties)
-			Serialize(writer, options, kv.Key, kv.Value);
+			SerializeDynamic(writer, options, kv.Key, kv.Value, kv.Value.GetType());
 		writer.WriteEndObject();
 	}
 }

@@ -46,7 +46,7 @@ public abstract partial class PostData
 		{
 			if (Type != PostType.EnumerableOfObject && Type != PostType.EnumerableOfString)
 				throw new Exception(
-					$"{nameof(PostDataMultiJson<T>)} only does not support {nameof(PostType)}.{Type.GetStringValue()}");
+					$"{nameof(PostDataMultiJson<T>)} only does not support {nameof(PostType)}.{Type.ToStringFast()}");
 
 			MemoryStream? buffer = null;
 			var stream = writableStream;
@@ -100,7 +100,7 @@ public abstract partial class PostData
 		{
 			if (Type != PostType.EnumerableOfObject && Type != PostType.EnumerableOfString)
 				throw new Exception(
-					$"{nameof(PostDataMultiJson<T>)} only does not support {nameof(PostType)}.{Type.GetStringValue()}");
+					$"{nameof(PostDataMultiJson<T>)} only does not support {nameof(PostType)}.{Type.ToStringFast()}");
 
 			MemoryStream? buffer = null;
 			var stream = writableStream;
