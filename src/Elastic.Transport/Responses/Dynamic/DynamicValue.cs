@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Globalization;
 using System.Linq;
@@ -52,6 +53,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// Try to get key <paramref name="name"/> from the object this instance references
 	/// </summary>
 	/// <param name="name"></param>
+	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
 	public DynamicValue this[string name]
 	{
 		get
@@ -366,6 +368,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	}
 
 	/// <see cref="DynamicObject.TryGetMember"/>
+	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
 	public override bool TryGetMember(GetMemberBinder binder, out object result)
 	{
 		var name = binder.Name;
@@ -374,6 +377,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	}
 
 
+	[RequiresUnreferencedCode("RequiresUnreferencedCode")]
 	private bool Dispatch(out object result, string name)
 	{
 		if (!HasValue)
@@ -439,6 +443,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 		return true;
 	}
 
+	[RequiresUnreferencedCode("RequiresUnreferencedCode")]
 	private static object GetDynamicMember(object obj, string memberName)
 	{
 		var binder = Binder.GetMember(CSharpBinderFlags.None, memberName, null,
@@ -537,7 +542,9 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 		};
 	}
 
-	internal bool TryParse(object defaultValue, Type targetReturnType, object value, out object newObject)
+	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
+	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
+	private bool TryParse(object defaultValue, Type targetReturnType, object value, out object newObject)
 	{
 		newObject = defaultValue;
 		if (value == null) return false;
@@ -602,7 +609,9 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 					return true;
 				}
 
+#pragma warning disable IL2067
 				var converter = TypeDescriptor.GetConverter(targetReturnType);
+#pragma warning restore IL2067
 				if (converter.IsValid(stringValue))
 				{
 					newObject = converter.ConvertFromInvariantString(stringValue);
@@ -704,6 +713,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// are derived from the DynamicObject class, <paramref name="arg" /> is equal to second.
 	/// </param>
 	/// <param name="result">The result of the binary operation.</param>
+	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
 	public override bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result)
 	{
 		result = null;

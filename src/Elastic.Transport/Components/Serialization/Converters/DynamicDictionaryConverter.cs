@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using Elastic.Transport.Products.Elasticsearch;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Elastic.Transport;
@@ -17,7 +19,7 @@ internal class DynamicDictionaryConverter : JsonConverter<DynamicDictionary>
 	{
 		if (reader.TokenType == JsonTokenType.StartArray)
 		{
-			var array = JsonSerializer.Deserialize<object[]>(ref reader, options); // TODO: Test! This might not work without adding `object[]` to `ErrorSerializationContext`
+			var array = JsonSerializer.Deserialize<object[]>(ref reader, ErrorSerializerContext.Default.ObjectArray); // TODO: Test! This might not work without adding `object[]` to `ErrorSerializationContext`
 			var arrayDict = new Dictionary<string, object>();
 			for (var i = 0; i < array.Length; i++)
 				arrayDict[i.ToString(CultureInfo.InvariantCulture)] = new DynamicValue(array[i]);
@@ -25,7 +27,7 @@ internal class DynamicDictionaryConverter : JsonConverter<DynamicDictionary>
 		}
 		if (reader.TokenType != JsonTokenType.StartObject) throw new JsonException();
 
-		var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(ref reader, options); // TODO: Test! This might not work without adding `Dictionary<string, object>` to `ErrorSerializationContext`
+		var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(ref reader, ErrorSerializerContext.Default.DictionaryStringObject); // TODO: Test! This might not work without adding `Dictionary<string, object>` to `ErrorSerializationContext`
 		return DynamicDictionary.Create(dict);
 	}
 
@@ -39,7 +41,10 @@ internal class DynamicDictionaryConverter : JsonConverter<DynamicDictionary>
 
 			writer.WritePropertyName(kvp.Key);
 
-			JsonSerializer.Serialize(writer, kvp.Value.Value, kvp.Value.GetType(), options); // TODO: Test! We have to make sure all possible "Value" types are registered in the `ErrorSerializationContext`
+			// TODO: Test! We have to make sure all possible "Value" types are registered in the `ErrorSerializationContext`
+#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
+			JsonSerializer.Serialize(writer, kvp.Value.Value, kvp.Value.GetType(), options);
+#pragma warning restore IL2026, IL3050
 		}
 
 		writer.WriteEndObject();

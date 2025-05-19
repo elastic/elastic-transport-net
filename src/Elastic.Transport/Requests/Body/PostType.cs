@@ -2,9 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-#if !NETSTANDARD2_0 && !NETFRAMEWORK
 using System;
-#endif
 
 namespace Elastic.Transport;
 
@@ -55,4 +53,21 @@ public enum PostType
 	/// </summary>
 	StreamHandler,
 
+}
+
+internal static class PostTypeExtensions
+{
+	public static string ToStringFast(this PostType postType) => postType switch
+	{
+		PostType.ByteArray => nameof(PostType.ByteArray),
+		PostType.LiteralString => nameof(PostType.LiteralString),
+		PostType.Serializable => nameof(PostType.Serializable),
+		PostType.EnumerableOfString => nameof(PostType.EnumerableOfString),
+		PostType.EnumerableOfObject => nameof(PostType.EnumerableOfObject),
+		PostType.StreamHandler => nameof(PostType.StreamHandler),
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
+		PostType.ReadOnlyMemory => nameof(PostType.ReadOnlyMemory),
+#endif
+		_ => throw new ArgumentOutOfRangeException(nameof(postType), postType, null)
+	};
 }

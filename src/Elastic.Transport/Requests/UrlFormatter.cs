@@ -49,7 +49,7 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 			null => string.Empty,
 			string s => s,
 			string[] ss => string.Join(",", ss),
-			Enum e => e.GetStringValue(),
+			Enum e => e.ToString(),
 			bool b => b ? "true" : "false",
 			DateTimeOffset offset => offset.ToString("o"),
 			TimeSpan timeSpan => timeSpan.ToTimeUnit(),

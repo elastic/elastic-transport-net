@@ -51,7 +51,7 @@ public sealed class Audit
 		if (took >= TimeSpan.Zero) tookString = $" Took: {took}";
 
 		return Node == null
-			? $"Event: {Event.GetStringValue()}{tookString}"
-			: $"Event: {Event.GetStringValue()} Node: {Node?.Uri} NodeAlive: {Node?.IsAlive}Took: {tookString}";
+			? $"Event: {Event.ToStringFast()}{tookString}"
+			: $"Event: {Event.ToStringFast()} Node: {Node?.Uri} NodeAlive: {Node?.IsAlive}Took: {tookString}";
 	}
 }

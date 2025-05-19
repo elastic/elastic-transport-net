@@ -96,7 +96,7 @@ internal static class ResponseStatics
 
 		var auditExceptions = auditTrail.Select((audit, i) => new { audit, i }).Where(a => a.audit.Exception != null);
 		foreach (var a in auditExceptions)
-			sb.AppendLine($"# Audit exception in step {a.i + 1} {a.audit.Event.GetStringValue()}:{Environment.NewLine}{a.audit.Exception}");
+			sb.AppendLine($"# Audit exception in step {a.i + 1} {a.audit.Event.ToStringFast()}:{Environment.NewLine}{a.audit.Exception}");
 	}
 
 	/// <summary>
@@ -110,7 +110,7 @@ internal static class ResponseStatics
 		foreach (var a in auditTrail.Select((a, i) => new { a, i }))
 		{
 			var audit = a.a;
-			sb.Append($" - [{a.i + 1}] {audit.Event.GetStringValue()}:");
+			sb.Append($" - [{a.i + 1}] {audit.Event.ToStringFast()}:");
 
 			AuditNodeUrl(sb, audit);
 

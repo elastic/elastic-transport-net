@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using Elastic.Transport.Products;
 
 namespace Elastic.Transport;
@@ -55,4 +56,22 @@ public enum PipelineFailure
 	/// nodes were considered for the API call
 	/// </summary>
 	NoNodesAttempted
+}
+
+internal static class PipelineFailureExtensions
+{
+	public static string ToStringFast(this PipelineFailure failure) => failure switch
+	{
+		PipelineFailure.BadAuthentication => nameof(PipelineFailure.BadAuthentication),
+		PipelineFailure.BadResponse => nameof(PipelineFailure.BadResponse),
+		PipelineFailure.PingFailure => nameof(PipelineFailure.PingFailure),
+		PipelineFailure.SniffFailure => nameof(PipelineFailure.SniffFailure),
+		PipelineFailure.CouldNotStartSniffOnStartup => nameof(PipelineFailure.CouldNotStartSniffOnStartup),
+		PipelineFailure.MaxTimeoutReached => nameof(PipelineFailure.MaxTimeoutReached),
+		PipelineFailure.MaxRetriesReached => nameof(PipelineFailure.MaxRetriesReached),
+		PipelineFailure.Unexpected => nameof(PipelineFailure.Unexpected),
+		PipelineFailure.BadRequest => nameof(PipelineFailure.BadRequest),
+		PipelineFailure.NoNodesAttempted => nameof(PipelineFailure.NoNodesAttempted),
+		_ => throw new ArgumentOutOfRangeException(nameof(failure), failure, null)
+	};
 }
