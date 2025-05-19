@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace Elastic.Transport.Extensions;
@@ -41,7 +42,7 @@ public static class EnumExtensions
 		return resolver(e);
 	}
 
-	private static Func<Enum, string> GetEnumStringResolver(Type type)
+	private static Func<Enum, string> GetEnumStringResolver([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type type)
 	{
 		var values = Enum.GetValues(type);
 		var dictionary = new Dictionary<Enum, string>(values.Length);

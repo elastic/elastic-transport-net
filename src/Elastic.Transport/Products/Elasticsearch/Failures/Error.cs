@@ -54,7 +54,7 @@ public sealed class ErrorConverter : JsonConverter<Error>
 				{
 					if (reader.ValueTextEquals("root_cause"))
 					{
-						var value = JsonSerializer.Deserialize<IReadOnlyCollection<ErrorCause>>(ref reader, options);
+						var value = JsonSerializer.Deserialize<IReadOnlyCollection<ErrorCause>>(ref reader, options); // TODO: Test! This might not work without adding `IReadOnlyCollection<ErrorCause>` to `ErrorSerializationContext`
 						error.RootCause = value;
 						continue;
 					}
@@ -75,7 +75,7 @@ public sealed class ErrorConverter : JsonConverter<Error>
 
 					if (reader.ValueTextEquals("headers"))
 					{
-						var value = JsonSerializer.Deserialize<IReadOnlyDictionary<string, string>>(ref reader, options);
+						var value = JsonSerializer.Deserialize<IReadOnlyDictionary<string, string>>(ref reader, options); // TODO: Test! This might not work without adding `IReadOnlyDictionary<string, string>` to `ErrorSerializationContext`
 						error.Headers = value;
 						continue;
 					}

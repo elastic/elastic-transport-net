@@ -71,7 +71,7 @@ internal class ExceptionConverter : JsonConverter<Exception>
 			foreach (var kv in flattenedException)
 			{
 				writer.WritePropertyName(kv.Key);
-				JsonSerializer.Serialize(writer, kv.Value, options);
+				JsonSerializer.Serialize(writer, kv.Value, options); // TODO: Test! This might not work without adding `KeyValuePair<string, object>` to `ErrorSerializationContext`
 			}
 			writer.WriteEndObject();
 		}

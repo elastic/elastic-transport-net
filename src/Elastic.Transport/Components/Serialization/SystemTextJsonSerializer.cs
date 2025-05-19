@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport;
 
+#pragma warning disable IL2026, IL3050 // Implementing classes must make sure to use an AOT compatible JsonSerializerOptions.TypeInfoResolver
+
 /// <summary>
 /// An abstract implementation of a transport <see cref="Serializer"/> which serializes using the Microsoft
 /// <c>System.Text.Json</c> library.
@@ -133,3 +135,5 @@ public abstract class SystemTextJsonSerializer : Serializer
 		return (stream is null) || stream == Stream.Null || (stream.CanSeek && stream.Length == 0);
 	}
 }
+
+#pragma warning restore IL2026, IL3050

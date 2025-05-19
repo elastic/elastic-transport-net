@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Elastic.Transport.Diagnostics;
 
@@ -11,15 +12,20 @@ namespace Elastic.Transport.Diagnostics;
 /// Internal subclass of <see cref="Activity"/> that implements <see cref="IDisposable"/> to
 /// make it easier to use.
 /// </summary>
-internal class Diagnostic<TState> : Diagnostic<TState, TState>
+internal class Diagnostic<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TState> : Diagnostic<TState, TState>
 {
+	[RequiresUnreferencedCode(WriteOfTRequiresUnreferencedCode)]
 	public Diagnostic(string operationName, DiagnosticSource source, TState state)
 		: base(operationName, source, state) =>
 		EndState = state;
 }
 
-internal class Diagnostic<TState, TStateEnd> : Activity, IDisposable
+internal class Diagnostic<
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TState,
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]TStateEnd> : Activity, IDisposable
 {
+	internal const string WriteOfTRequiresUnreferencedCode = "Only the properties of the T type will be preserved. Properties of referenced types and properties of derived types may be trimmed.";
+
 	public static Diagnostic<TState, TStateEnd> Default { get; } = new Diagnostic<TState, TStateEnd>();
 
 	private readonly DiagnosticSource _source;
@@ -29,6 +35,7 @@ internal class Diagnostic<TState, TStateEnd> : Activity, IDisposable
 
 	private Diagnostic() : base("__NOOP__") => _default = true;
 
+	[RequiresUnreferencedCode(WriteOfTRequiresUnreferencedCode)]
 	public Diagnostic(string operationName, DiagnosticSource source, TState state) : base(operationName)
 	{
 		_source = source;
@@ -52,8 +59,10 @@ internal class Diagnostic<TState, TStateEnd> : Activity, IDisposable
 
 		if (disposing)
 		{
+#pragma warning disable IL2026
 			//_source can be null if Default instance
 			_source?.StopActivity(SetEndTime(DateTime.UtcNow), EndState);
+#pragma warning restore IL2026
 		}
 
 		_disposed = true;

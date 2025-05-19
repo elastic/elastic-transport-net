@@ -37,7 +37,9 @@ internal sealed class LowLevelRequestResponseSerializer : SystemTextJsonSerializ
 		], converters, options =>
 		{
 			options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+#pragma warning disable IL2026, IL3050
 			options.TypeInfoResolver = JsonTypeInfoResolver.Combine(new DefaultJsonTypeInfoResolver(), ErrorSerializerContext.Default);
+#pragma warning restore IL2026, IL3050
 		})) { }
 
 }
