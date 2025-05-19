@@ -16,6 +16,8 @@ namespace Elastic.Transport;
 /// </summary>
 public sealed class CloudNodePool : SingleNodePool
 {
+	private readonly record struct ParsedCloudId(string ClusterName, Uri Uri);
+
 	/// <summary>
 	/// An <see cref="NodePool"/> implementation that can be seeded with a cloud id
 	/// and will signal the right defaults for the client to use for Elastic Cloud to <see cref="ITransportConfiguration"/>.
@@ -39,8 +41,17 @@ public sealed class CloudNodePool : SingleNodePool
 	public CloudNodePool(string cloudId, AuthorizationHeader credentials) : this(ParseCloudId(cloudId)) =>
 		AuthenticationHeader  = credentials;
 
+	/// <summary>
+	/// An <see cref="NodePool"/> implementation that can be seeded with a cloud enpoint
+	/// and will signal the right defaults for the client to use for Elastic Cloud to <see cref="ITransportConfiguration"/>.
+	/// </summary>
+	/// <param name="cloudEndpoint">Elastic Cloud endpoint</param>
+	/// <param name="credentials">The credentials to use with cloud</param>
+	public CloudNodePool(Uri cloudEndpoint, AuthorizationHeader credentials) : this(CreateCloudId(cloudEndpoint)) =>
+		AuthenticationHeader  = credentials;
+
 	private CloudNodePool(ParsedCloudId parsedCloudId) : base(parsedCloudId.Uri) =>
-		ClusterName = parsedCloudId.Name;
+		ClusterName = parsedCloudId.ClusterName;
 
 	//TODO implement debugger display for NodePool implementations and display it there and its ToString()
 	// ReSharper disable once UnusedAutoPropertyAccessor.Local
@@ -49,16 +60,13 @@ public sealed class CloudNodePool : SingleNodePool
 	/// <inheritdoc cref="AuthorizationHeader"/>
 	public AuthorizationHeader AuthenticationHeader { get; }
 
-	private readonly struct ParsedCloudId
+	private static ParsedCloudId CreateCloudId(Uri uri)
 	{
-		public ParsedCloudId(string clusterName, Uri uri)
-		{
-			Name = clusterName;
-			Uri = uri;
-		}
+		var moniker = $"{uri.Host}${Guid.NewGuid():N}";
+		var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(moniker));
+		var cloudId = $"name:{base64}";
+		return new ParsedCloudId(cloudId, uri);
 
-		public string Name { get; }
-		public Uri Uri { get; }
 	}
 
 	private static ParsedCloudId ParseCloudId(string cloudId)

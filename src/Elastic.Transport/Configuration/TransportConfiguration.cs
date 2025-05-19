@@ -54,22 +54,30 @@ public record TransportConfiguration : ITransportConfiguration
 	/// </summary>
 	/// <param name="uri">The root of the Elastic stack product node we want to connect to. Defaults to http://localhost:9200</param>
 	/// <param name="productRegistration"><inheritdoc cref="ProductRegistration" path="/summary"/></param>
-	public TransportConfiguration(Uri uri = null, ProductRegistration productRegistration = null)
+	public TransportConfiguration(Uri? uri = null, ProductRegistration? productRegistration = null)
 		: this(new SingleNodePool(uri ?? new Uri("http://localhost:9200")), productRegistration: productRegistration) { }
 
 	/// <summary>
 	/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
 	/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
 	/// </summary>
-	public TransportConfiguration(string cloudId, BasicAuthentication credentials, ProductRegistration productRegistration = null)
+	public TransportConfiguration(string cloudId, BasicAuthentication credentials, ProductRegistration? productRegistration = null)
 		: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
 
 	/// <summary>
 	/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
 	/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
 	/// </summary>
-	public TransportConfiguration(string cloudId, Base64ApiKey credentials, ProductRegistration productRegistration = null)
+	public TransportConfiguration(string cloudId, ApiKey credentials, ProductRegistration? productRegistration = null)
 		: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
+
+	/// <summary> Sets up the client to communicate to Elastic Cloud.</summary>
+	public TransportConfiguration(Uri cloudEndpoint, BasicAuthentication credentials, ProductRegistration? productRegistration = null)
+		: this(new CloudNodePool(cloudEndpoint, credentials), productRegistration: productRegistration) { }
+
+	/// <summary> Sets up the client to communicate to Elastic Cloud. </summary>
+	public TransportConfiguration(Uri cloudEndpoint, ApiKey credentials, ProductRegistration? productRegistration = null)
+		: this(new CloudNodePool(cloudEndpoint, credentials), productRegistration: productRegistration) { }
 
 	/// <summary> <inheritdoc cref="TransportConfigurationDescriptor" path="/summary"/></summary>
 	/// <param name="nodePool"><inheritdoc cref="NodePool" path="/summary"/></param>
