@@ -21,4 +21,4 @@ namespace Elastic.Transport.Products.Elasticsearch;
 [JsonSerializable(typeof(IReadOnlyDictionary<string, string>))]
 [JsonSerializable(typeof(string))]
 [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Default, UseStringEnumConverter = true)]
-public partial class ErrorSerializerContext : JsonSerializerContext;
+public partial class ElasticsearchTransportSerializerContext : JsonSerializerContext;

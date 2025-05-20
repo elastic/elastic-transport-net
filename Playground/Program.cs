@@ -23,6 +23,10 @@ Console.WriteLine(response.DebugInformation);
 var dynamicResponse = transport.Request<DynamicResponse>(HttpMethod.GET, "/");
 Console.WriteLine(dynamicResponse.Body.Get<string>("version.build_flavor"));
 
+var body = PostData.String("{\"name\": \"test\"}");
+var indexResponse = transport.Request<EsResponse>(HttpMethod.POST, "/does-not-exist/_doc", body);
+Console.WriteLine(indexResponse.DebugInformation);
+
 Console.WriteLine(registration.DefaultContentType ?? "NOT SPECIFIED");
 
 public class EsResponse : ElasticsearchResponse;
