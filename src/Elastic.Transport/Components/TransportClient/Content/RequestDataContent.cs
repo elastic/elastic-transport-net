@@ -123,7 +123,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 	{
 		var source = CancellationTokenSource.CreateLinkedTokenSource(_token, cancellationToken);
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
-		var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
+		var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask, source);
 		await _onStreamAvailableAsync(_boundConfiguration, _postData, wrappedStream, this, context, source.Token).ConfigureAwait(false);
 		await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
@@ -153,18 +153,21 @@ internal sealed class BoundConfigurationContent : HttpContent
 	internal class CompleteTaskOnCloseStream : DelegatingStream
 	{
 		private readonly TaskCompletionSource<bool> _serializeToStreamTask;
+		private readonly CancellationTokenSource? _source;
 
-		public CompleteTaskOnCloseStream(Stream innerStream, TaskCompletionSource<bool> serializeToStreamTask)
+		public CompleteTaskOnCloseStream(Stream innerStream, TaskCompletionSource<bool> serializeToStreamTask, CancellationTokenSource? source = null)
 			: base(innerStream)
 		{
 			Contract.Assert(serializeToStreamTask != null);
 			_serializeToStreamTask = serializeToStreamTask;
+			_source = source;
 		}
 
 		protected override void Dispose(bool disposing)
 		{
 			_serializeToStreamTask.TrySetResult(true);
 			base.Dispose();
+			_source?.Dispose();
 		}
 
 		public override void Close() => _serializeToStreamTask.TrySetResult(true);
