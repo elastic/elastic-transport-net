@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -34,6 +35,8 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	where TConfiguration : class, ITransportConfiguration
 {
 	private readonly ProductRegistration _productRegistration;
+
+	private ConditionalWeakTable<RequestConfiguration, BoundConfiguration>? _boundConfigurations;
 
 	/// <summary>
 	/// Transport coordinates the client requests over the node pool nodes and is in charge of falling over on
@@ -97,15 +100,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 		try
 		{
-			// Unless per request configuration is provided, we can reuse a BoundConfiguration
-			// that is specific to this transport. If the IRequestConfiguration is an instance
-			// of BoundConfiguration we use that cached instance directly without rebinding.
-			var boundConfiguration = localConfiguration switch
-			{
-				BoundConfiguration bc => bc,
-				{ } rc => new BoundConfiguration(Configuration, rc),
-				_ => TransportBoundConfiguration
-			};
+			var boundConfiguration = BindConfiguration(localConfiguration);
 
 			Configuration.OnConfigurationBound?.Invoke(boundConfiguration);
 
@@ -270,6 +265,56 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		finally
 		{
 			activity?.Dispose();
+		}
+	}
+
+	private BoundConfiguration BindConfiguration(IRequestConfiguration? localConfiguration)
+	{
+		// Unless per request configuration is provided, we can reuse a BoundConfiguration
+		// that is specific to this transport. If the IRequestConfiguration is an instance
+		// of BoundConfiguration we use that cached instance directly without rebinding.
+		return localConfiguration switch
+		{
+			BoundConfiguration bc => bc,
+			RequestConfiguration rc => GetOrCreateBoundConfiguration(rc),
+			not null => new BoundConfiguration(Configuration, localConfiguration),
+			_ => TransportBoundConfiguration
+		};
+
+		BoundConfiguration GetOrCreateBoundConfiguration(RequestConfiguration rc)
+		{
+			// Cache `BoundConfiguration` for requests with local request configuration.
+
+			// Since `IRequestConfiguration` might be implemented as mutable class, we use the
+			// cache only with the immutable `RequestConfiguration` record.
+
+			// ReSharper disable InconsistentlySynchronizedField
+
+			var cache = (Interlocked.CompareExchange(
+				ref _boundConfigurations,
+				new ConditionalWeakTable<RequestConfiguration, BoundConfiguration>(),
+				null
+			) ?? _boundConfigurations)!;
+
+			if (cache.TryGetValue(rc, out var boundConfiguration))
+			{
+				return boundConfiguration;
+			}
+
+			boundConfiguration = new BoundConfiguration(Configuration, rc);
+
+#if NET8_0_OR_GREATER
+			cache.TryAdd(rc, boundConfiguration);
+#else
+			lock (cache)
+			{
+				cache.Add(rc, boundConfiguration);
+			}
+#endif
+
+			// ReSharper restore InconsistentlySynchronizedField
+
+			return boundConfiguration;
 		}
 	}
 
