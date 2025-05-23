@@ -60,7 +60,7 @@ public interface IRequestConfiguration
 	bool? DisableSniff { get; }
 
 	/// <summary>
-	/// Whether or not this request should be pipelined. http://en.wikipedia.org/wiki/HTTP_pipelining defaults to true
+	/// Whether this request should be pipelined. <see href="http://en.wikipedia.org/wiki/HTTP_pipelining"/> defaults to <see langword="true"/>.
 	/// </summary>
 	bool? HttpPipeliningEnabled { get; }
 
