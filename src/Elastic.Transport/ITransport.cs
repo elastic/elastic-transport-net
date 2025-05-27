@@ -54,6 +54,9 @@ public interface ITransport
 		CancellationToken cancellationToken = default
 	)
 		where TResponse : TransportResponse, new();
+
+	/// <summary> The <see cref="ITransportConfiguration" /> in use by this transport instance </summary>
+	public ITransportConfiguration Configuration { get; }
 }
 
 /// <summary>
@@ -63,10 +66,8 @@ public interface ITransport
 public interface ITransport<out TConfiguration> : ITransport
 	where TConfiguration : class, ITransportConfiguration
 {
-	/// <summary>
-	/// The <see cref="ITransportConfiguration" /> in use by this transport instance
-	/// </summary>
-	public TConfiguration Configuration { get; }
+	/// <summary> The <see cref="ITransportConfiguration" /> in use by this transport instance </summary>
+	public new TConfiguration Configuration { get; }
 }
 
 /// <summary>

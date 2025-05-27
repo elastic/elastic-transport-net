@@ -62,6 +62,8 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	/// <inheritdoc cref="ITransport{TConfiguration}.Configuration"/>
 	public TConfiguration Configuration { get; }
 
+	ITransportConfiguration ITransport.Configuration => Configuration;
+
 	/// <inheritdoc cref="ITransport.Request{TResponse}"/>
 	public TResponse Request<TResponse>(
 		in EndpointPath path,
