@@ -25,6 +25,7 @@ namespace Elastic.Transport;
 /// <summary>
 /// A dictionary that supports dynamic access.
 /// </summary>
+[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
 public sealed class DynamicDictionary
 	: DynamicObject,
 		IEquatable<DynamicDictionary>,
