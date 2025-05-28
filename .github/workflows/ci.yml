@@ -28,7 +28,7 @@ jobs:
           folder: osx-arm64
           binary: transport-aot-example
         - runner: windows-latest
-          folder: windows-x64
+          folder: win-x64
           binary: transport-aot-example.exe
     steps:
     - uses: actions/checkout@v4
@@ -39,10 +39,6 @@ jobs:
 
     - name: Publish AOT
       run: dotnet publish examples/transport-aot-example
-
-    - name: ls publish directory
-      shell: bash
-      run: ls -al ./examples/transport-aot-example/bin/Release/net8.0/${{ matrix.os.folder }}/
 
     - name: Invoke AOT
       run: ./examples/transport-aot-example/bin/Release/net8.0/${{ matrix.os.folder }}/${{ matrix.os.binary }}
