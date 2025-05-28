@@ -248,11 +248,13 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				}
 			}
 
+			if (response is not null)
+			{
 #if NET6_0_OR_GREATER
-			activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
+				activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
 #endif
-
-			activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
+				activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
+			}
 			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportAttemptedNodes, attemptedNodes);
 
 			// We don't check IsAllDataRequested here as that's left to the consumer.
