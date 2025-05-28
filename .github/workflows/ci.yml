@@ -15,6 +15,31 @@ on:
       - "*.*.*"
 
 jobs:
+  aot-validate:
+    runs-on: ${{ matrix.os.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - runner: ubuntu-latest
+        - runner: macos-latest
+        - runner: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: ./global.json
+
+    - name: Publish AOT
+      run: dotnet publish examples/transport-aot-example
+
+    - name: ls publish directory
+      run: ls -al ./examples/transport-aot-example/bin/Release/net8.0
+
+    - name: Invoke AOT
+      run: ./examples/transport-aot-example/bin/Release/net8.0/osx-arm64/transport-aot-example
+
   build:
     runs-on: ubuntu-latest
     steps:

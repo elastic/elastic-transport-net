@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 
 namespace Elastic.Transport;
@@ -37,5 +38,5 @@ public sealed class DynamicResponse : TransportResponse<DynamicDictionary>
 	/// <param name="path">path into the stored object, keys are separated with a dot and the last key is returned as T</param>
 	/// <typeparam name="T"></typeparam>
 	/// <returns>T or default</returns>
-	public T Get<T>(string path) => Dictionary.Get<T>(path);
+	public T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string path) => Dictionary.Get<T>(path);
 }

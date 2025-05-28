@@ -5,6 +5,8 @@
 using System;
 using Elastic.Transport.Products;
 using Elastic.Transport.Products.Elasticsearch;
+using FluentAssertions;
+using Xunit;
 
 // ReSharper disable UnusedVariable
 // ReSharper disable NotAccessedField.Local
@@ -13,6 +15,14 @@ namespace Elastic.Transport.Tests;
 
 public class UsageTests
 {
+	[Fact]
+	public void TransportVersionIsSet()
+	{
+		var version = ReflectionVersionInfo.TransportVersion;
+		version.Should().NotBeNull();
+	}
+
+	[Fact]
 	public void Usage()
 	{
 		var pool = new StaticNodePool([new Node(new Uri("http://localhost:9200"))]);
@@ -26,6 +36,7 @@ public class UsageTests
 		var response = transport.Request<StringResponse>(HttpMethod.GET, "/");
 	}
 
+	[Fact]
 	public void MinimalUsage()
 	{
 		var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
@@ -36,6 +47,7 @@ public class UsageTests
 		var headResponse = transport.Head("/");
 	}
 
+	[Fact]
 	public void MinimalElasticsearch()
 	{
 		var uri = new Uri("http://localhost:9200");
@@ -47,6 +59,7 @@ public class UsageTests
 		var headResponse = transport.Head("/");
 	}
 
+	[Fact]
 	public void MinimalUsageWithRequestParameters()
 	{
 		var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
@@ -74,6 +87,7 @@ public class UsageTests
 		public MyClientConfiguration NewSettings(string value) => Assign(value, (c, v) => _setting = v);
 	}
 
+	[Fact]
 	public void ExtendingConfiguration()
 	{
 		var clientConfiguration = new MyClientConfiguration()

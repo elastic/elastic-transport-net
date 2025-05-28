@@ -57,15 +57,7 @@ public sealed class ReflectionVersionInfo : VersionInfo
 			// Try to read the full version in 'major.minor.patch[.build][-prerelease][+build]' format. This format is semver2 compliant
 			// except for the optional [.build] version number.
 
-			var version = type.Assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-
-#pragma warning disable IL3000
-			if (string.IsNullOrEmpty(version) && !string.IsNullOrEmpty(type.Assembly?.Location))
-			{
-				var location = type.Assembly?.Location;
-				version = FileVersionInfo.GetVersionInfo(location)?.ProductVersion;
-			}
-#pragma warning restore IL3000
+			var version = type.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
 			if (!string.IsNullOrEmpty(version))
 			{
@@ -76,10 +68,10 @@ public sealed class ReflectionVersionInfo : VersionInfo
 				var prefix = GetVersionPrefixPart(version);
 
 				// Version prefix is not in a valid 'major.minor[.build[.revision]]' form
-				if (!System.Version.TryParse(prefix, out var prefixVersion))
+				if (!Version.TryParse(prefix, out var prefixVersion))
 					return Empty;
 
-				// Version prefix '[.revision]' part is not present, but initial semver parsing failed anyways.
+				// Version prefix '[.revision]' part is not present, but initial semver parsing failed anyway.
 				// Nothing we can do here...
 				if (prefixVersion.Revision < 0)
 					return Empty;
@@ -111,10 +103,10 @@ public sealed class ReflectionVersionInfo : VersionInfo
 		{
 			// Try to read the assembly version in 'major.minor[.build[.revision]]' format.
 
-			var version = type.Assembly?.GetCustomAttribute<AssemblyVersionAttribute>()?.Version;
+			var version = type.Assembly.GetCustomAttribute<AssemblyVersionAttribute>()?.Version;
 
 			if (string.IsNullOrEmpty(version))
-				version = type.Assembly?.GetName()?.Version?.ToString();
+				version = type.Assembly.GetName().Version?.ToString();
 
 			if (!string.IsNullOrEmpty(version))
 			{

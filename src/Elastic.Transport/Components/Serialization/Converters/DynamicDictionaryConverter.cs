@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -31,6 +32,8 @@ internal class DynamicDictionaryConverter : JsonConverter<DynamicDictionary>
 		return DynamicDictionary.Create(dict);
 	}
 
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override void Write(Utf8JsonWriter writer, DynamicDictionary dictionary, JsonSerializerOptions options)
 	{
 		writer.WriteStartObject();
@@ -42,9 +45,7 @@ internal class DynamicDictionaryConverter : JsonConverter<DynamicDictionary>
 			writer.WritePropertyName(kvp.Key);
 
 			// TODO: Test! We have to make sure all possible "Value" types are registered in the `ErrorSerializationContext`
-#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
 			JsonSerializer.Serialize(writer, kvp.Value.Value, kvp.Value.GetType(), options);
-#pragma warning restore IL2026, IL3050
 		}
 
 		writer.WriteEndObject();

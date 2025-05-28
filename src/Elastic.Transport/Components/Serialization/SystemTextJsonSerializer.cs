@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
@@ -38,6 +39,8 @@ public abstract class SystemTextJsonSerializer : Serializer
 	#region Serializer
 
 	/// <inheritdoc />
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override T Deserialize<T>(Stream stream)
 	{
 		if (TryReturnDefault(stream, out T deserialize))
@@ -56,6 +59,8 @@ public abstract class SystemTextJsonSerializer : Serializer
 	}
 
 	/// <inheritdoc />
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
 	{
 		if (TryReturnDefault(stream, out T deserialize))

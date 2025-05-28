@@ -13,8 +13,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using Microsoft.CSharp.RuntimeBinder;
+//using Microsoft.CSharp.RuntimeBinder;
 using Elastic.Transport.Extensions;
+using Microsoft.CSharp.RuntimeBinder;
 using Binder = Microsoft.CSharp.RuntimeBinder.Binder;
 
 // ReSharper disable ArrangeConstructorOrDestructorBody
@@ -54,6 +55,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// </summary>
 	/// <param name="name"></param>
 	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
 	public DynamicValue this[string name]
 	{
 		get
@@ -64,7 +66,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	}
 
 	/// <inheritdoc cref="DynamicDictionary.Get{T}"/>
-	public T Get<T>(string path)
+	public T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string path)
 	{
 		var dynamicDictionary = Value switch
 		{
@@ -369,6 +371,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 	/// <see cref="DynamicObject.TryGetMember"/>
 	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
 	public override bool TryGetMember(GetMemberBinder binder, out object result)
 	{
 		var name = binder.Name;
@@ -378,6 +381,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 
 	[RequiresUnreferencedCode("RequiresUnreferencedCode")]
+	[RequiresDynamicCode("RequiresDynamicCode")]
 	private bool Dispatch(out object result, string name)
 	{
 		if (!HasValue)
@@ -389,12 +393,6 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 		if (Value is IDictionary<string, object> d)
 		{
 			result = d.TryGetValue(name, out var r) ? SelfOrNew(r) : NullValue;
-			return true;
-		}
-		if (Value is IDynamicMetaObjectProvider)
-		{
-			var dm = GetDynamicMember(Value, name);
-			result = SelfOrNew(dm);
 			return true;
 		}
 		if (Value is IDictionary ds)
@@ -443,15 +441,6 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 		return true;
 	}
 
-	[RequiresUnreferencedCode("RequiresUnreferencedCode")]
-	private static object GetDynamicMember(object obj, string memberName)
-	{
-		var binder = Binder.GetMember(CSharpBinderFlags.None, memberName, null,
-			new[] { CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null) });
-		var callsite = CallSite<Func<CallSite, object, object>>.Create(binder);
-		return callsite.Target(callsite, obj);
-	}
-
 	/// <summary>
 	/// Returns a default value if Value is null
 	/// </summary>
@@ -485,7 +474,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// <typeparam name="T">When no default value is supplied, required to supply the default type</typeparam>
 	/// <param name="defaultValue">Optional parameter for default value, if not given it returns default of type T</param>
 	/// <returns>If value is not null, value is returned, else default value is returned</returns>
-	public T TryParse<T>(T defaultValue = default)
+	public T TryParse<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]T>(T defaultValue = default)
 	{
 		if (!HasValue) return defaultValue;
 
@@ -544,7 +533,10 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
 	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
-	private bool TryParse(object defaultValue, Type targetReturnType, object value, out object newObject)
+	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2027:DynamicallyAccessMembers", Justification = "Manually verified, only uses system types")]
+	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2062:DynamicallyAccessMembers", Justification = "Manually verified, only uses system types")]
+	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2072:DynamicallyAccessMembers", Justification = "Manually verified, only uses system types")]
+	private bool TryParse(object defaultValue, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type targetReturnType, object value, out object newObject)
 	{
 		newObject = defaultValue;
 		if (value == null) return false;
@@ -609,9 +601,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 					return true;
 				}
 
-#pragma warning disable IL2067
 				var converter = TypeDescriptor.GetConverter(targetReturnType);
-#pragma warning restore IL2067
 				if (converter.IsValid(stringValue))
 				{
 					newObject = converter.ConvertFromInvariantString(stringValue);

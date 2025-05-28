@@ -85,47 +85,21 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 
 #if !NETFRAMEWORK
 
-	private static string GetNetCoreVersion()
+	private static string? GetNetCoreVersion()
 	{
 		// for .NET 5+ we can use Environment.Version
 		if (Environment.Version.Major >= 5)
 		{
 			const string dotNet = ".NET ";
 			var index = RuntimeInformation.FrameworkDescription.IndexOf(dotNet, StringComparison.OrdinalIgnoreCase);
-			if (index >= 0)
-			{
-				return RuntimeInformation.FrameworkDescription.Substring(dotNet.Length);
-			}
+			if (index >= 0) return RuntimeInformation.FrameworkDescription.Substring(dotNet.Length);
 		}
-
 		// next, try using file version info
-
-#pragma warning disable IL3000
-		var assemblyLocation = typeof(object).Assembly.Location;
-#pragma warning disable IL3000
-
-		if (!string.IsNullOrEmpty(assemblyLocation))
-		{
-			var systemPrivateCoreLib = FileVersionInfo.GetVersionInfo(assemblyLocation);
-			if (TryGetVersionFromProductInfo(systemPrivateCoreLib.ProductVersion, systemPrivateCoreLib.ProductName, out var runtimeVersion1))
-			{
-				return runtimeVersion1;
-			}
-		}
-		
-		var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
-		if (TryGetVersionFromAssemblyPath(assembly, out var runtimeVersion))
-		{
-			return runtimeVersion;
-		}
-
 		//At this point, we can't identify whether this is a prerelease, but a version is better than nothing!
 
 		var frameworkName = Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
-		if (TryGetVersionFromFrameworkName(frameworkName, out runtimeVersion))
-		{
+		if (frameworkName is not null && TryGetVersionFromFrameworkName(frameworkName, out var runtimeVersion))
 			return runtimeVersion;
-		}
 
 		if (IsRunningInContainer)
 		{
@@ -136,68 +110,6 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 		}
 
 		return null;
-	}
-
-	private static bool TryGetVersionFromAssemblyPath(Assembly assembly, [NotNullWhen(true)] out string? runtimeVersion)
-	{
-#pragma warning disable IL3000
-		var assemblyLocation = assembly.Location;
-#pragma warning restore IL3000
-
-		if (string.IsNullOrEmpty(assemblyLocation))
-		{
-			runtimeVersion = null;
-			return false;
-		}
-
-		var assemblyPath = assemblyLocation.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
-
-		var netCoreAppIndex = Array.IndexOf(assemblyPath, "Microsoft.NETCore.App");
-		if (netCoreAppIndex > 0 && netCoreAppIndex < assemblyPath.Length - 2)
-		{
-			runtimeVersion = assemblyPath[netCoreAppIndex + 1];
-			return true;
-		}
-
-		runtimeVersion = null;
-		return false;
-	}
-
-	// sample input:
-	// 2.0: 4.6.26614.01 @BuiltBy: dlab14-DDVSOWINAGE018 @Commit: a536e7eec55c538c94639cefe295aa672996bf9b, Microsoft .NET Framework
-	// 2.1: 4.6.27817.01 @BuiltBy: dlab14-DDVSOWINAGE101 @Branch: release/2.1 @SrcCode: https://github.com/dotnet/coreclr/tree/6f78fbb3f964b4f407a2efb713a186384a167e5c, Microsoft .NET Framework
-	// 2.2: 4.6.27817.03 @BuiltBy: dlab14-DDVSOWINAGE101 @Branch: release/2.2 @SrcCode: https://github.com/dotnet/coreclr/tree/ce1d090d33b400a25620c0145046471495067cc7, Microsoft .NET Framework
-	// 3.0: 3.0.0-preview8.19379.2+ac25be694a5385a6a1496db40de932df0689b742, Microsoft .NET Core
-	// 5.0: 5.0.0-alpha1.19413.7+0ecefa44c9d66adb8a997d5778dc6c246ad393a7, Microsoft .NET Core
-	private static bool TryGetVersionFromProductInfo(string productVersion, string productName, out string version)
-	{
-		if (string.IsNullOrEmpty(productVersion) || string.IsNullOrEmpty(productName))
-		{
-			version = null;
-			return false;
-		}
-
-		// yes, .NET Core 2.X has a product name == .NET Framework...
-		if (productName.IndexOf(".NET Framework", StringComparison.OrdinalIgnoreCase) >= 0)
-		{
-			const string releaseVersionPrefix = "release/";
-			var releaseVersionIndex = productVersion.IndexOf(releaseVersionPrefix);
-			if (releaseVersionIndex > 0)
-			{
-				version = productVersion.Substring(releaseVersionIndex + releaseVersionPrefix.Length);
-				return true;
-			}
-		}
-
-		// matches .NET Core and also .NET 5+
-		if (productName.IndexOf(".NET", StringComparison.OrdinalIgnoreCase) >= 0)
-		{
-			version = productVersion;
-			return true;
-		}
-
-		version = null;
-		return false;
 	}
 
 	// sample input:
