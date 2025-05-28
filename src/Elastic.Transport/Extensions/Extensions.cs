@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -14,15 +15,23 @@ namespace Elastic.Transport.Extensions;
 
 internal static class EnumExtensions
 {
-	public static string GetEnumName(this Enum e)
+	/*
+	 * Fields on enums are preserved but the compiler is too aggressive.
+	 * Fixed in https://github.com/dotnet/runtime/pull/100814 (presumably .NET 9 or 10)
+	 */
+	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2075:DynamicallyAccessMembers", Justification = "Fields on enum are preserved by trimmer")]
+	public static string GetEnumName<T>(this T e)
+		where T : Enum
 	{
-		var attributes = e.GetType().GetField(e.ToString())?.GetCustomAttributes(typeof(EnumMemberAttribute), false);
+		var type = e.GetType();
+		var attributes = type.GetField(e.ToString())?.GetCustomAttributes(typeof(EnumMemberAttribute), false);
 		if (attributes is null || attributes.Length == 0)
 			return e.ToString();
 
 		var enumMember = attributes[0] as EnumMemberAttribute;
 		return enumMember?.Value ?? e.ToString();
 	}
+
 }
 
 internal static class Extensions
