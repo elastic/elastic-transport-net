@@ -7,9 +7,23 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace Elastic.Transport.Extensions;
+
+internal static class EnumExtensions
+{
+	public static string GetEnumName(this Enum e)
+	{
+		var attributes = e.GetType().GetField(e.ToString())?.GetCustomAttributes(typeof(EnumMemberAttribute), false);
+		if (attributes is null || attributes.Length == 0)
+			return e.ToString();
+
+		var enumMember = attributes[0] as EnumMemberAttribute;
+		return enumMember?.Value ?? e.ToString();
+	}
+}
 
 internal static class Extensions
 {

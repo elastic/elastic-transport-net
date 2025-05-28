@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
 using Elastic.Transport.Products;
 using Elastic.Transport.Products.Elasticsearch;
 using FluentAssertions;
@@ -15,6 +17,31 @@ namespace Elastic.Transport.Tests;
 
 public class UsageTests
 {
+	private enum MyEnum
+	{
+		[EnumMember(Value = "different")]
+		Value
+	}
+
+	[Fact]
+	public void EnumsUseEnumMemberAttribute()
+	{
+		var pool = new StaticNodePool([new Node(new Uri("http://localhost:9200"))]);
+		var requestInvoker = new InMemoryRequestInvoker();
+		var serializer = LowLevelRequestResponseSerializer.Instance;
+		var product = ElasticsearchProductRegistration.Default;
+
+		var settings = new TransportConfiguration(pool, requestInvoker, serializer, product);
+		var transport = new DistributedTransport<TransportConfiguration>(settings);
+
+		var requestParameters = new DefaultRequestParameters { QueryString =
+			new Dictionary<string, object>{ { "enum", MyEnum.Value } } };
+		var path = requestParameters.CreatePathWithQueryStrings("/", settings);
+		var response = transport.Request<StringResponse>(new EndpointPath(HttpMethod.GET, path), null, null, null);
+
+		response.ApiCallDetails.Uri.Should().Be(new Uri("http://localhost:9200?enum=different"));
+	}
+
 	[Fact]
 	public void TransportVersionIsSet()
 	{
