@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -28,6 +29,11 @@ internal sealed class LowLevelRequestResponseSerializer : SystemTextJsonSerializ
 	/// <inheritdoc cref="LowLevelRequestResponseSerializer"/>>
 	/// </summary>
 	/// <param name="converters">Add more default converters onto <see cref="JsonSerializerOptions"/> being used</param>
+	//[RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+	//[RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public LowLevelRequestResponseSerializer(IReadOnlyCollection<JsonConverter>? converters)
 		: base(new TransportSerializerOptionsProvider([
 			new ExceptionConverter(),
@@ -37,9 +43,6 @@ internal sealed class LowLevelRequestResponseSerializer : SystemTextJsonSerializ
 		], converters, options =>
 		{
 			options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-#pragma warning disable IL2026, IL3050
 			options.TypeInfoResolver = JsonTypeInfoResolver.Combine(new DefaultJsonTypeInfoResolver(), ElasticsearchTransportSerializerContext.Default);
-#pragma warning restore IL2026, IL3050
 		})) { }
-
 }

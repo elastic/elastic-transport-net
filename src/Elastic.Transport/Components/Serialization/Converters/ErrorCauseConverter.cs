@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Transport.Extensions;
@@ -19,12 +20,12 @@ public class ErrorCauseConverter : ErrorCauseConverter<ErrorCause> { }
 public class ErrorConverter : ErrorCauseConverter<Error>
 {
 	/// <inheritdoc cref="ErrorCauseConverter{T}.ReadMore"/>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	protected override bool ReadMore(ref Utf8JsonReader reader, JsonSerializerOptions options, string propertyName, Error errorCause)
 	{
 		void ReadAssign<T>(ref Utf8JsonReader r, Action<Error, T> set) =>
-#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
 			set(errorCause, JsonSerializer.Deserialize<T>(ref r, options));
-#pragma warning restore IL2026, IL3050
 		switch (propertyName)
 		{
 			case "headers":
@@ -45,6 +46,8 @@ public class ErrorConverter : ErrorCauseConverter<Error>
 public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCause> where TErrorCause : ErrorCause, new()
 {
 	/// <inheritdoc cref="JsonConverter{T}.Read"/>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override TErrorCause Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		if (reader.TokenType != JsonTokenType.StartObject)
@@ -57,14 +60,10 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 		errorCause.AdditionalProperties = additionalProperties;
 
 		void ReadAssign<T>(ref Utf8JsonReader r, Action<ErrorCause, T> set) =>
-#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
 			set(errorCause, JsonSerializer.Deserialize<T>(ref r, options));
-#pragma warning restore IL2026, IL3050
 
 		void ReadAny(ref Utf8JsonReader r, string property, Action<ErrorCause, string, object> set) =>
-#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
 			set(errorCause, property, JsonSerializer.Deserialize<JsonElement>(ref r, options));
-#pragma warning restore IL2026, IL3050
 
 		while (reader.Read())
 		{
@@ -151,6 +150,8 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 	protected virtual bool ReadMore(ref Utf8JsonReader reader, JsonSerializerOptions options, string propertyName, TErrorCause errorCause) => false;
 
 	/// <inheritdoc cref="JsonConverter{T}.Read"/>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override void Write(Utf8JsonWriter writer, TErrorCause value, JsonSerializerOptions options)
 	{
 		writer.WriteStartObject();
@@ -160,9 +161,7 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 			if (value is null) return;
 
 			writer.WritePropertyName(name);
-#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
 			JsonSerializer.Serialize(writer, value, options);
-#pragma warning restore IL2026, IL3050
 		}
 
 		static void SerializeDynamic(Utf8JsonWriter writer, JsonSerializerOptions options, string name, object? value, Type inputType)
@@ -170,9 +169,7 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 			if (value is null) return;
 
 			writer.WritePropertyName(name);
-#pragma warning disable IL2026, IL3050 // ErrorSerializerContext is registered.
 			JsonSerializer.Serialize(writer, value, inputType, options);
-#pragma warning restore IL2026, IL3050
 		}
 
 		//Serialize(writer, options, "bytes_limit", value.BytesLimit);

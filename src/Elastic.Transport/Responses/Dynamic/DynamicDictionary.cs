@@ -9,6 +9,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
 using System.Text.Json;
@@ -69,7 +70,7 @@ public sealed class DynamicDictionary
 	/// <param name="path">path into the stored object, keys are separated with a dot and the last key is returned as T</param>
 	/// <typeparam name="T"></typeparam>
 	/// <returns>T or default</returns>
-	public T Get<T>(string path)
+	public T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string path)
 	{
 		if (path == null) return default;
 
