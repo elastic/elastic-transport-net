@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -14,9 +15,10 @@ namespace Elastic.Transport.Extensions;
 
 internal static class EnumExtensions
 {
-	public static string GetEnumName(this Enum e)
+	public static string GetEnumName<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]T>(this T e)
+		where T : Enum
 	{
-		var attributes = e.GetType().GetField(e.ToString())?.GetCustomAttributes(typeof(EnumMemberAttribute), false);
+		var attributes = typeof(T).GetField(e.ToString())?.GetCustomAttributes(typeof(EnumMemberAttribute), false);
 		if (attributes is null || attributes.Length == 0)
 			return e.ToString();
 
