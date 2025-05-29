@@ -15,7 +15,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     
-    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.15.8" />
+    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.10" />
     <PackageReference Include="Xunit.Extensions.Ordering" Version="1.4.5" />
     <PackageReference Include="coverlet.collector" Version="6.0.1">
