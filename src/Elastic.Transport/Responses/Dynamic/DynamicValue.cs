@@ -11,7 +11,6 @@ using System.Dynamic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 //using Microsoft.CSharp.RuntimeBinder;
 using Elastic.Transport.Extensions;
@@ -30,7 +29,7 @@ namespace Elastic.Transport;
 ///
 /// <para>This is `dynamic` through <see cref="DynamicObject"/> and supports direct casting various valuetypes</para>
 /// <para>Since `dynamic` can be scary in .NET this response also exposes a safe traversal mechanism under
-/// <see cref="Get{T}"/> which support an xpath'esque syntax to fish for values in the returned json.
+/// <see cref="Get{T}"/> which support a xpath'esque syntax to fish for values in the returned json.
 /// </para>
 /// </summary>
 public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, IConvertible, IReadOnlyCollection<DynamicValue>
@@ -41,6 +40,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// Initializes a new instance of the <see cref="DynamicValue" /> class.
 	/// </summary>
 	/// <param name="value">The value to store in the instance</param>
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
 	public DynamicValue(object value) => _value = value is DynamicValue av ? av.Value : value;
 
 	/// <summary>
