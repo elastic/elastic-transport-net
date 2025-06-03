@@ -25,13 +25,13 @@ public class ApiCompatibilityHeaderTests : AssemblyServerTestsBase
 			responseMessage.RequestMessage.Content.Headers.ContentType.MediaType.Should().Be("application/vnd.elasticsearch+json");
 			var parameter = responseMessage.RequestMessage.Content.Headers.ContentType.Parameters.Single();
 			parameter.Name.Should().Be("compatible-with");
-			parameter.Value.Should().Be("8");
+			parameter.Value.Should().Be("9");
 
 			var acceptValues = responseMessage.RequestMessage.Headers.GetValues("Accept");
-			acceptValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
+			acceptValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=9");
 
 			var contentTypeValues = responseMessage.RequestMessage.Content.Headers.GetValues("Content-Type");
-			contentTypeValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
+			contentTypeValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=9");
 		});
 
 		var nodePool = new SingleNodePool(Server.Uri);
