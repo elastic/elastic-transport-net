@@ -18,7 +18,7 @@ public class ApiCompatibilityHeaderTests : AssemblyServerTestsBase
 	public ApiCompatibilityHeaderTests(TransportTestServer instance) : base(instance) { }
 
 	[Fact]
-	public async Task AddsExpectedVendorInformationForRestApiCompaitbility()
+	public async Task AddsExpectedVendorInformationForRestApiCompatibility()
 	{
 		var requestInvoker = new TrackingRequestInvoker(responseMessage =>
 		{
