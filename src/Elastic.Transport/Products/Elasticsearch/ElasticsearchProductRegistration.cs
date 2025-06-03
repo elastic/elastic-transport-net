@@ -50,7 +50,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 			_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, identifier);
 
 		// Only set this if we have a version.
-		// If we don't have a version we won't apply the vendor-based REST API compatibility Accept header.
+		// If we don't have a version, we won't apply the vendor-based REST API compatibility Accept header.
 		if (clientVersionInfo.Major > 0)
 			_clientMajorVersion = clientVersionInfo.Major;
 
