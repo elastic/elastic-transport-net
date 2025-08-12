@@ -11,8 +11,6 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport;
 
-#pragma warning disable IL2026, IL3050 // Implementing classes must make sure to use an AOT compatible JsonSerializerOptions.TypeInfoResolver
-
 /// <summary>
 /// An abstract implementation of a transport <see cref="Serializer"/> which serializes using the Microsoft
 /// <c>System.Text.Json</c> library.
@@ -50,6 +48,8 @@ public abstract class SystemTextJsonSerializer : Serializer
 	}
 
 	/// <inheritdoc />
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override object? Deserialize(Type type, Stream stream)
 	{
 		if (TryReturnDefault(stream, out object deserialize))
@@ -70,6 +70,8 @@ public abstract class SystemTextJsonSerializer : Serializer
 	}
 
 	/// <inheritdoc />
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override ValueTask<object?> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
 	{
 		if (TryReturnDefault(stream, out object deserialize))
@@ -79,22 +81,30 @@ public abstract class SystemTextJsonSerializer : Serializer
 	}
 
 	/// <inheritdoc />
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override void Serialize<T>(T data, Stream stream,
 		SerializationFormatting formatting = SerializationFormatting.None) =>
 		JsonSerializer.Serialize(stream, data, GetJsonSerializerOptions(formatting));
 
 	/// <inheritdoc />
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override void Serialize(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None,
 		CancellationToken cancellationToken = default) =>
 		JsonSerializer.Serialize(stream, data, type, GetJsonSerializerOptions(formatting));
 
 	/// <inheritdoc />
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override Task SerializeAsync<T>(T data, Stream stream,
 		SerializationFormatting formatting = SerializationFormatting.None,
 		CancellationToken cancellationToken = default) =>
 		JsonSerializer.SerializeAsync(stream, data, GetJsonSerializerOptions(formatting), cancellationToken);
 
 	/// <inheritdoc />
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override Task SerializeAsync(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None,
 		CancellationToken cancellationToken = default) =>
 		JsonSerializer.SerializeAsync(stream, data, type, GetJsonSerializerOptions(formatting), cancellationToken);
@@ -140,5 +150,3 @@ public abstract class SystemTextJsonSerializer : Serializer
 		return (stream is null) || stream == Stream.Null || (stream.CanSeek && stream.Length == 0);
 	}
 }
-
-#pragma warning restore IL2026, IL3050
