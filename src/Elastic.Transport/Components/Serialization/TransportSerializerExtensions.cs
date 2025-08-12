@@ -11,8 +11,6 @@ using System.Text.Json.Nodes;
 
 namespace Elastic.Transport.Extensions;
 
-#pragma warning disable IL2026, IL3050 // SystemTextJsonSerializer implementations must make sure to use an AOT compatible JsonSerializerOptions.TypeInfoResolver
-
 /// <summary>
 /// A set of handy extension methods for <see cref="Serializer"/>
 /// </summary>
@@ -42,6 +40,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <param name="formatting"><inheritdoc cref="SerializationFormatting" path="/summary"/></param>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static byte[] SerializeToBytes<T>(
 		this Serializer serializer,
 		T? data,
@@ -86,6 +86,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <param name="formatting"><inheritdoc cref="SerializationFormatting" path="/summary"/></param>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static byte[] SerializeToBytes(
 		this Serializer serializer,
 		object? data,
@@ -130,6 +132,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <param name="formatting"><inheritdoc cref="SerializationFormatting" path="/summary"/></param>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static string SerializeToString<T>(
 		this Serializer serializer,
 		T? data,
@@ -177,6 +181,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <param name="formatting"><inheritdoc cref="SerializationFormatting" path="/summary"/></param>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static string SerializeToString(
 		this Serializer serializer,
 		object? data,
@@ -229,6 +235,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <param name="formatting"><inheritdoc cref="SerializationFormatting" path="/summary"/></param>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static void Serialize<T>(
 		this Serializer serializer,
 		T? data,
@@ -288,6 +296,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <param name="formatting"><inheritdoc cref="SerializationFormatting" path="/summary"/></param>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static void Serialize(
 		this Serializer serializer,
 		object? data,
@@ -329,6 +339,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static T? Deserialize<T>(
 		this Serializer serializer,
 		string input,
@@ -358,6 +370,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static object? Deserialize(
 		this Serializer serializer,
 		string input,
@@ -388,6 +402,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static T? Deserialize<T>(
 		this Serializer serializer,
 		ReadOnlySpan<byte> span,
@@ -417,6 +433,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static object? Deserialize(
 		this Serializer serializer,
 		ReadOnlySpan<byte> span,
@@ -447,6 +465,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static T? Deserialize<T>(
 		this Serializer serializer,
 		ReadOnlySpan<char> span,
@@ -476,6 +496,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static object? Deserialize(
 		this Serializer serializer,
 		ReadOnlySpan<char> span,
@@ -506,6 +528,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static T? Deserialize<T>(
 		this Serializer serializer,
 		ref Utf8JsonReader reader,
@@ -542,6 +566,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static object? Deserialize(
 		this Serializer serializer,
 		ref Utf8JsonReader reader,
@@ -579,6 +605,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static T? Deserialize<T>(
 		this Serializer serializer,
 		JsonNode node,
@@ -613,6 +641,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static object? Deserialize(
 		this Serializer serializer,
 		JsonNode node,
@@ -648,6 +678,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static T? Deserialize<T>(
 		this Serializer serializer,
 		JsonElement node,
@@ -682,6 +714,8 @@ public static class TransportSerializerExtensions
 	/// that yields memory streams backed by pooled byte arrays.
 	/// </param>
 	/// <returns>The deserialized data.</returns>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static object? Deserialize(
 		this Serializer serializer,
 		JsonElement node,
@@ -713,6 +747,8 @@ public static class TransportSerializerExtensions
 	/// <param name="serializer"><inheritdoc cref="Serializer" path="/summary"/></param>
 	/// <param name="options">Receives the <see cref="JsonSerializerOptions"/>.</param>
 	/// <param name="formatting"><inheritdoc cref="SerializationFormatting" path="/summary"/></param>
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public static bool TryGetJsonSerializerOptions(
 		this Serializer serializer,
 		[NotNullWhen(true)] out JsonSerializerOptions? options,
@@ -728,5 +764,3 @@ public static class TransportSerializerExtensions
 		return false;
 	}
 }
-
-#pragma warning restore IL2026, IL3050
