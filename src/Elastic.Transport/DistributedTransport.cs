@@ -305,13 +305,20 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				return boundConfiguration;
 			}
 
+#if NET8_0_OR_GREATER
 			boundConfiguration = new BoundConfiguration(Configuration, rc);
 
-#if NET8_0_OR_GREATER
 			cache.TryAdd(rc, boundConfiguration);
 #else
 			lock (cache)
 			{
+				if (cache.TryGetValue(rc, out boundConfiguration))
+				{
+					return boundConfiguration;
+				}
+
+				boundConfiguration = new BoundConfiguration(Configuration, rc);
+
 				cache.Add(rc, boundConfiguration);
 			}
 #endif
