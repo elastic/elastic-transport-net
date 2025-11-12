@@ -19,14 +19,13 @@ namespace Elastic.Transport.IntegrationTests.Plumbing.Examples
 	/// Tests that the test framework loads a controller and the exposed transport can talk to its endpoints.
 	/// Tests runs against a server that started up once and its server instance shared among many test classes
 	/// </summary>
-	public class ControllerIntegrationTests : AssemblyServerTestsBase
+	public class ControllerIntegrationTests(BufferedServerFixture instance)
+		: AssemblyServerTestsBase<BufferedServerFixture>(instance)
 	{
-		public ControllerIntegrationTests(TransportTestServer instance) : base(instance) { }
-
 		[Fact]
 		public async Task CanCallIntoController()
 		{
-			var response = await RequestHandler.GetAsync<StringResponse>("/dummy/20");
+			var response = await RequestHandler.GetAsync<StringResponse>("/dummy/20", cancellationToken: TestContext.Current.CancellationToken);
 			response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue("{0}", response.ApiCallDetails.DebugInformation);
 		}
 	}

@@ -10,37 +10,23 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Nullean.Xunit.Partitions.Sdk;
 using Xunit;
 
 namespace Elastic.Transport.IntegrationTests.Plumbing
 {
-	public interface HttpTransportTestServer
+	public interface IHttpTransportTestServer
 	{
 		Uri Uri { get;  }
 
 		ITransport DefaultRequestHandler { get;  }
 	}
 
-	public class TransportTestServer : TransportTestServer<DefaultStartup>
-	{
-		private static readonly bool RunningMitmProxy = Process.GetProcessesByName("mitmproxy").Any();
-		private static readonly bool RunningFiddler = Process.GetProcessesByName("fiddler").Any();
-		private static string Localhost => "127.0.0.1";
-		public static string LocalOrProxyHost => RunningFiddler || RunningMitmProxy ? "ipv4.fiddler" : Localhost;
-		public static TransportConfiguration RerouteToProxyIfNeeded(TransportConfiguration config)
-		{
-			if (!RunningMitmProxy) return config;
+	public class TestServerFixture : TransportTestServer<DefaultStartup>;
 
-			return config with { ProxyAddress = "http://127.0.0.1:8080" };
-		}
-	}
-
-	public class TransportTestServer<TStartup> : HttpTransportTestServer, IDisposable, IAsyncDisposable, IPartitionLifetime
+	public abstract class TransportTestServer<TStartup> : IHttpTransportTestServer, IDisposable, IAsyncLifetime
 		where TStartup : class
 	{
 		private readonly IHost _host;
@@ -48,7 +34,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 
 		public TransportTestServer()
 		{
-			var url = $"http://{TransportTestServer.LocalOrProxyHost}:0";
+			var url = $"http://127.0.0.1:0";
 
 			var configuration =
 				new ConfigurationBuilder()
@@ -78,25 +64,21 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			private set;
 		}
 
-		public async Task<TransportTestServer<TStartup>> StartAsync(CancellationToken token = default)
+		public async ValueTask StartAsync(CancellationToken token = default)
 		{
 			await _host.StartAsync(token);
 			var port = _server.GetServerPort();
-			var url = $"http://{TransportTestServer.LocalOrProxyHost}:{port}";
+			var url = $"http://127.0.0.1:{port}";
 			Uri = new Uri(url);
 			DefaultRequestHandler = CreateTransport(c => new DistributedTransport(c));
-			return this;
 		}
 
 		public ITransport CreateTransport(Func<TransportConfiguration, ITransport> create) =>
-			create(TransportTestServer.RerouteToProxyIfNeeded(new TransportConfiguration(Uri)));
+			create(new TransportConfiguration(Uri));
 
 		public void Dispose() => _host?.Dispose();
 
-		public Task InitializeAsync() => StartAsync();
-
-		Task IAsyncLifetime.DisposeAsync() => DisposeAsync().AsTask();
-
+		public ValueTask InitializeAsync() => StartAsync();
 
 		public ValueTask DisposeAsync()
 		{

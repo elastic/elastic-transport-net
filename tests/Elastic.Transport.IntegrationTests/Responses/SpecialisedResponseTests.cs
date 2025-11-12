@@ -16,7 +16,7 @@ using Xunit;
 
 namespace Elastic.Transport.IntegrationTests.Responses;
 
-public class SpecialisedResponseTests(TransportTestServer instance) : AssemblyServerTestsBase(instance)
+public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServerTestsBase(instance)
 {
 	private const string Path = "/specialresponse";
 	private const string EmptyJson = "{}";
@@ -132,7 +132,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 
 		var payload = new Payload { ResponseString = EmptyJson, StatusCode = 200 };
 
-		var response = await transport.PostAsync<VoidResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<VoidResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -164,7 +164,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var json = "{\"propertyOne\":\"value1\",\"propertyTwo\":100}";
 		var payload = new Payload { ResponseString = json, StatusCode = 200 };
 
-		var response = await transport.PostAsync<DynamicResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<DynamicResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -201,7 +201,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var payload = new Payload { ResponseString = stringValue, StatusCode = 200, ContentType = "text/plain", IsChunked = true };
 
 		var requestConfig = new RequestConfiguration { Accept = "text/plain" };
-		var response = await transport.RequestAsync<DynamicResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig);
+		var response = await transport.RequestAsync<DynamicResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig, TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response, stringValue);
 
@@ -237,7 +237,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var json = "{\"propertyOne\":\"value1\",\"propertyTwo\":100}";
 		var payload = new Payload { ResponseString = json, StatusCode = 200 };
 
-		var response = await transport.PostAsync<DynamicResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<DynamicResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -274,7 +274,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var payload = new Payload { ResponseString = stringValue, StatusCode = 200, ContentType = "text/plain" };
 
 		var requestConfig = new RequestConfiguration { Accept = "text/plain" };
-		var response = await transport.RequestAsync<DynamicResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig);
+		var response = await transport.RequestAsync<DynamicResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig, TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response, stringValue);
 
@@ -311,7 +311,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var payload = new Payload { ResponseString = stringValue, StatusCode = 200, ContentType = "text/plain" };
 
 		var requestConfig = new RequestConfiguration { Accept = "text/plain" };
-		var response = await transport.RequestAsync<DynamicResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig);
+		var response = await transport.RequestAsync<DynamicResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig, TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -345,7 +345,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 
 		var payload = new Payload { ResponseString = EmptyJson, StatusCode = 200 };
 
-		var response = await transport.PostAsync<BytesResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<BytesResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -358,7 +358,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		{
 			response.Body.AsSpan().SequenceEqual(EmptyJsonBytes);
 			// Even when not using DisableDirectStreaming, we have a byte[] so the builder sets ResponseBodyInBytes too
-			response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull(); 
+			response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
 			memoryStreamFactory.Created.Count.Should().Be(2); // One required for setting request content and one to buffer the stream
 			foreach (var memoryStream in memoryStreamFactory.Created)
 				memoryStream.IsDisposed.Should().BeTrue();
@@ -380,7 +380,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 
 		var payload = new Payload { ResponseString = EmptyJson, StatusCode = 200 };
 
-		var response = await transport.PostAsync<BytesResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<BytesResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -413,7 +413,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 
 		var payload = new Payload { ResponseString = EmptyJson, StatusCode = 200 };
 
-		var response = await transport.PostAsync<StreamResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<StreamResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		await ValidateAsync(memoryStreamFactory, response);
 
@@ -448,7 +448,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var transport = new DistributedTransport(config);
 
 		var payload = new Payload { ResponseString = EmptyJson, StatusCode = 200 };
-		var response = await transport.PostAsync<StreamResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<StreamResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		await ValidateAsync(memoryStreamFactory, response);
 
@@ -489,7 +489,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var transport = new DistributedTransport(config);
 
 		var payload = new Payload { ResponseString = EmptyJson, StatusCode = 200 };
-		var response = await transport.PostAsync<StringResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<StringResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -527,7 +527,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var transport = new DistributedTransport(config);
 
 		var payload = new Payload { ResponseString = LargeJson, StatusCode = 200 };
-		var response = await transport.PostAsync<StringResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<StringResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -566,7 +566,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var transport = new DistributedTransport(config);
 
 		var payload = new Payload { ResponseString = " " };
-		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -603,7 +603,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var transport = new DistributedTransport(config);
 
 		var payload = new Payload { ResponseString = " " };
-		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -640,7 +640,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var transport = new DistributedTransport(config);
 
 		var payload = new Payload { ResponseString = "", StatusCode = 204 };
-		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -678,7 +678,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var transport = new DistributedTransport(config);
 
 		var payload = new Payload { ResponseString = "", StatusCode = 204 };
-		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -721,7 +721,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var transport = new DistributedTransport(config);
 
 		var payload = new Payload { ResponseString = expectedString, ContentType = "text/plain" };
-		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -762,7 +762,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var transport = new DistributedTransport(config);
 
 		var payload = new Payload { ResponseString = expectedString, ContentType = "text/plain" };
-		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -830,7 +830,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		var transport = new DistributedTransport(config);
 
 		var payload = new Payload { ResponseString = expectedString, ContentType = "text/plain", IsChunked = true };
-		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload));
+		var response = await transport.PostAsync<TestResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
 
 		Validate(memoryStreamFactory, response);
 
@@ -871,7 +871,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 
 		var requestConfig = new RequestConfiguration { Accept = "text/plain" };
 		var payload = new Payload { ResponseString = expectedString, ContentType = "text/plain" };
-		var response = await transport.RequestAsync<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig);
+		var response = await transport.RequestAsync<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig, TestContext.Current.CancellationToken);
 
 		memoryStreamFactory.Created.Count.Should().Be(3);
 		foreach (var memoryStream in memoryStreamFactory.Created)
@@ -915,7 +915,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 
 		var requestConfig = new RequestConfiguration { Accept = "text/plain" };
 		var payload = new Payload { ResponseString = expectedString, ContentType = "text/plain" };
-		var response = await transport.RequestAsync<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig);
+		var response = await transport.RequestAsync<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig, TestContext.Current.CancellationToken);
 
 		memoryStreamFactory.Created.Count.Should().Be(1);
 		response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
@@ -924,7 +924,7 @@ public class SpecialisedResponseTests(TransportTestServer instance) : AssemblySe
 		memoryStreamFactory.Reset();
 
 		response = transport.Request<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig);
-				
+
 		memoryStreamFactory.Created.Count.Should().Be(1);
 		response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
 		response.Value.Should().Be(expectedString);

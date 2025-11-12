@@ -17,21 +17,21 @@ namespace Elastic.Transport.IntegrationTests.Plumbing.Examples
 	/// Since it extends <see cref="ClassServerTestsBase{TServer}"/> it server is only shared between the tests inside this class.
 	/// The server is also started and stopped after all the tests in this class run.
 	/// </summary>
-	public class EndpointIntegrationTests : ClassServerTestsBase<TransportTestServer<DummyStartup>>
+	public class EndpointIntegrationTests(BufferedServerFixture instance)
+		: ClassServerTestsBase<BufferedServerFixture>(instance)
 	{
-		public EndpointIntegrationTests(TransportTestServer<DummyStartup> instance) : base(instance) { }
-
 		[Fact]
 		public async Task CanCallIntoEndpoint()
 		{
-			var response = await RequestHandler.GetAsync<StringResponse>(DummyStartup.Endpoint);
+			var response = await RequestHandler.GetAsync<StringResponse>(BufferedStartup.Endpoint, cancellationToken: TestContext.Current.CancellationToken);
 			response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue("{0}", response.ApiCallDetails.DebugInformation);
 		}
 	}
 
-	public class DummyStartup : DefaultStartup
+	public class BufferedServerFixture : TransportTestServer<BufferedStartup>;
+	public class BufferedStartup : DefaultStartup
 	{
-		public DummyStartup(IConfiguration configuration) : base(configuration) { }
+		public BufferedStartup(IConfiguration configuration) : base(configuration) { }
 
 		public static string Endpoint { get; } = "buffered";
 

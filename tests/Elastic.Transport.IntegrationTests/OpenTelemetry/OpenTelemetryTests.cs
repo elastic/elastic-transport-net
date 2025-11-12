@@ -26,7 +26,7 @@ public class OpenTelemetryTests : AssemblyServerTestsBase
 	internal const string Cluster = "e9106fc68e3044f0b1475b04bf4ffd5f";
 	internal const string Instance = "instance-0000000001";
 
-	public OpenTelemetryTests(TransportTestServer instance) : base(instance) { }
+	public OpenTelemetryTests(TestServerFixture instance) : base(instance) { }
 
 	[Fact]
 	public async Task ElasticsearchTagsShouldBeSet_WhenUsingTheElasticsearchRegistration()
@@ -57,7 +57,7 @@ public class OpenTelemetryTests : AssemblyServerTestsBase
 		};
 		ActivitySource.AddActivityListener(listener);
 
-		_ = await transport.GetAsync<VoidResponse>("/opentelemetry");
+		_ = await transport.GetAsync<VoidResponse>("/opentelemetry", cancellationToken: TestContext.Current.CancellationToken);
 
 		mre.WaitOne(TimeSpan.FromSeconds(1)).Should().BeTrue();
 
