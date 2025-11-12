@@ -62,7 +62,7 @@ let private pristineCheck (arguments:ParseResults<Arguments>) =
     | _ -> failwithf "The checkout folder has pending changes, aborting"
 
 let private test (arguments:ParseResults<Arguments>) =
-    let loggerArg = "--logger:GithubActionsLogger" 
+    let loggerArg = "--logger:GithubActions" 
     let tfmArgs =
         if getOS = OS.Windows then [] else ["-f"; "net10.0"]
     exec "dotnet" (["test"; "-c"; "Release"; loggerArg] @ tfmArgs) |> ignore
