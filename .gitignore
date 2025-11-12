@@ -81,3 +81,4 @@ BenchmarkDotNet.Artifacts
 *.received.*
 
 /.ionide/symbolCache.db
+.artifacts

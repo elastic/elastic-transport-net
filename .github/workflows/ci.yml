@@ -41,7 +41,8 @@ jobs:
       run: dotnet publish examples/transport-aot-example
 
     - name: Invoke AOT
-      run: ./examples/transport-aot-example/bin/Release/net10.0/${{ matrix.os.folder }}/publish/${{ matrix.os.binary }}
+      #run: ./examples/transport-aot-example/bin/Release/net10.0/${{ matrix.os.folder }}/publish/${{ matrix.os.binary }}
+      run: .artifacts/publish/transport-aot-example/release/${{ matrix.os.binary }}
 
   build:
     runs-on: ubuntu-latest
