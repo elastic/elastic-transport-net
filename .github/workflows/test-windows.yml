@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -55,7 +55,7 @@ jobs:
             ${{ runner.os }}-nuget
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: ./global.json
 
@@ -64,13 +64,3 @@ jobs:
 
       - run: ./build.bat test -s true
         name: Test
-
-      - name: Test Results
-        if: success() || failure()
-        uses: mikepenz/action-junit-report@v4
-        with:
-          report_paths: 'build/output/junit-*.xml'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          fail_on_failure: true
-          require_tests: true
-          check_name: Test Results

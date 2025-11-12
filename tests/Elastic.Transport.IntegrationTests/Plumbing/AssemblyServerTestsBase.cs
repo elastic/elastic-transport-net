@@ -16,7 +16,5 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 	}
 
 	public class AssemblyServerTestsBase(TransportTestServer instance)
-		: AssemblyServerTestsBase<TransportTestServer>(instance)
-	{
-	}
+		: AssemblyServerTestsBase<TransportTestServer>(instance);
 }

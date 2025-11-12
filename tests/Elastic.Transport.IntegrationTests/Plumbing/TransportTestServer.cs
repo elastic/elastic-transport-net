@@ -108,6 +108,6 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 		public string FailureTestOutput() => string.Empty;
 
 		/// <inheritdoc />
-		public int? MaxConcurrency => null;
+		public int? MaxConcurrency => 1;
 	}
 }
