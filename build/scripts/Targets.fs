@@ -64,7 +64,7 @@ let private pristineCheck (arguments:ParseResults<Arguments>) =
 let private test (arguments:ParseResults<Arguments>) =
     let loggerArg = "--logger:GithubActionsLogger" 
     let tfmArgs =
-        if getOS = OS.Windows then [] else ["-f"; "net8.0"]
+        if getOS = OS.Windows then [] else ["-f"; "net10.0"]
     exec "dotnet" (["test"; "-c"; "Release"; loggerArg] @ tfmArgs) |> ignore
 
 let private generatePackages (arguments:ParseResults<Arguments>) =
