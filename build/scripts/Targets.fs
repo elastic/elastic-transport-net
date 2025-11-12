@@ -37,8 +37,8 @@ let private restoreTools = lazy(exec "dotnet" ["tool"; "restore"])
 let private currentVersion =
     lazy(
         restoreTools.Value |> ignore
-        let r = Proc.Start("dotnet", "minver", "--default-pre-release-phase", "canary", "-m", "0.1")
-        let o = r.ConsoleOut |> Seq.find (fun l -> not(l.Line.StartsWith("MinVer:")))
+        let r = Proc.Start("dotnet", "minver", "-p", "canary.0", "-m", "0.1")
+        let o = r.ConsoleOut |> Seq.find (fun l -> not(l.Line.StartsWith "MinVer:"))
         o.Line
     )
 let private currentVersionInformational =
@@ -94,11 +94,16 @@ let private generateApiChanges (arguments:ParseResults<Arguments>) =
         let outputFile =
             let f = sprintf "breaking-changes-%s.md" p
             Path.Combine(output, f)
+        let directory =
+            match p with
+            | "Elastic.VirtualizedCluster" -> $".artifacts/bin/%s{p}/bin/release"
+            | _ -> $".artifacts/bin/%s{p}/bin/release_%s{Paths.MainTFM}"
+
         let args =
             [
                 "assembly-differ"
                 (sprintf "previous-nuget|%s|%s|%s" p currentVersion Paths.MainTFM);
-                (sprintf "directory|src/%s/bin/Release/%s" p Paths.MainTFM);
+                (sprintf "directory|%s" directory);
                 "-a"; "true"; "--target"; p; "-f"; "github-comment"; "--output"; outputFile
             ]
         
