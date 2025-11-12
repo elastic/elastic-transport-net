@@ -96,8 +96,8 @@ let private generateApiChanges (arguments:ParseResults<Arguments>) =
             Path.Combine(output, f)
         let directory =
             match p with
-            | "Elastic.Transport.VirtualizedCluster" -> $".artifacts/bin/%s{p}/bin/release"
-            | _ -> $".artifacts/bin/%s{p}/bin/release_%s{Paths.MainTFM}"
+            | "Elastic.Transport.VirtualizedCluster" -> $".artifacts/bin/%s{p}/release"
+            | _ -> $".artifacts/bin/%s{p}/release_%s{Paths.MainTFM}"
 
         let args =
             [
