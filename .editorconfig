@@ -135,6 +135,12 @@ resharper_redundant_argument_default_value_highlighting=do_not_show
 resharper_redundant_type_arguments_of_method_highlighting=do_not_show
 resharper_switch_expression_handles_some_known_enum_values_with_exception_in_default_highlighting=error
 
+resharper_arrange_type_member_modifiers_highlighting=none;
+
+[src/api/Elastic.Transport/Components/Serialization/**.cs]
+dotnet_diagnostic.IL3050.severity = none
+dotnet_diagnostic.IL2026.severity = none
+
 [Jenkinsfile]
 indent_style = space
 indent_size = 2
