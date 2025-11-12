@@ -1,0 +1,34 @@
+<Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Elastic.Transport.Benchmarks/Elastic.Transport.Benchmarks.csproj" />
+    <Project Path="benchmarks/Elastic.Transport.Profiling/Elastic.Transport.Profiling.csproj" />
+  </Folder>
+  <Folder Name="/build/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".gitignore" />
+    <File Path="build.bat" />
+    <File Path="build.sh" />
+    <File Path="Directory.Build.props" />
+    <File Path="global.json" />
+    <File Path="license.txt" />
+    <File Path="README.md" />
+    <Project Path="build/scripts/scripts.fsproj" />
+  </Folder>
+  <Folder Name="/examples/">
+    <Project Path="examples/transport-aot-example/transport-aot-example.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <File Path="src/Directory.Build.props" />
+    <Project Path="Playground/Playground.csproj" />
+    <Project Path="src/Elastic.Transport.VirtualizedCluster/Elastic.Transport.VirtualizedCluster.csproj" />
+    <Project Path="src/Elastic.Transport/Elastic.Transport.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Elastic.Elasticsearch.IntegrationTests/Elastic.Elasticsearch.IntegrationTests.csproj" />
+    <Project Path="tests/Elastic.Transport.IntegrationTests/Elastic.Transport.IntegrationTests.csproj" />
+    <Project Path="tests/Elastic.Transport.Tests.Shared/Elastic.Transport.Tests.Shared.csproj" />
+    <Project Path="tests/Elastic.Transport.Tests/Elastic.Transport.Tests.csproj" />
+  </Folder>
+</Solution>

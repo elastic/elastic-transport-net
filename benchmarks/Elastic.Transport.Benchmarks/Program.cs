@@ -2,11 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
+using Perfolizer.Metrology;
 
 namespace Elastic.Transport.Benchmarks
 {
