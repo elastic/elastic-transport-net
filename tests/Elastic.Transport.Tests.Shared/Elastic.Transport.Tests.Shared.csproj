@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net481</TargetFrameworks>
+    <TargetFrameworks>net10.0;net481</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <NoWarn>CS8002</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -10,6 +10,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Transport\Elastic.Transport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

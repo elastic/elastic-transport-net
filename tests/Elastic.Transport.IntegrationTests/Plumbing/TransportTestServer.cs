@@ -9,11 +9,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Nullean.Xunit.Partitions.Sdk;
 using Xunit;
-
-[assembly: TestFramework("Xunit.Extensions.Ordering.TestFramework", "Xunit.Extensions.Ordering")]
 
 namespace Elastic.Transport.IntegrationTests.Plumbing
 {
@@ -38,12 +40,11 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 		}
 	}
 
-	public class TransportTestServer<TStartup> : HttpTransportTestServer, IDisposable, IAsyncDisposable, IAsyncLifetime
+	public class TransportTestServer<TStartup> : HttpTransportTestServer, IDisposable, IAsyncDisposable, IPartitionLifetime
 		where TStartup : class
 	{
-		private readonly IWebHost _host;
-		private Uri _uri;
-		private ITransport _defaultRequestHandler;
+		private readonly IHost _host;
+		private readonly IServer _server;
 
 		public TransportTestServer()
 		{
@@ -55,29 +56,32 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 					.Build();
 
 			_host =
-				new WebHostBuilder()
-					.UseKestrel()
-					.UseConfiguration(configuration)
-					.UseStartup<TStartup>()
-					.Build();
+				new HostBuilder()
+					.ConfigureWebHost(builder =>
+						builder.UseKestrel()
+							.UseConfiguration(configuration)
+							.UseStartup<TStartup>()
+					)
+				.Build();
+			_server = _host.Services.GetRequiredService<IServer>();
 		}
 
 		public Uri Uri
 		{
-			get => _uri ?? throw new Exception($"{nameof(Uri)} is not available until {nameof(StartAsync)} is called");
-			private set => _uri = value;
+			get => field ?? throw new Exception($"{nameof(Uri)} is not available until {nameof(StartAsync)} is called");
+			private set;
 		}
 
 		public ITransport DefaultRequestHandler
 		{
-			get => _defaultRequestHandler ?? throw new Exception($"{nameof(DefaultRequestHandler)} is not available until {nameof(StartAsync)} is called");
-			private set => _defaultRequestHandler = value;
+			get => field ?? throw new Exception($"{nameof(DefaultRequestHandler)} is not available until {nameof(StartAsync)} is called");
+			private set;
 		}
 
 		public async Task<TransportTestServer<TStartup>> StartAsync(CancellationToken token = default)
 		{
 			await _host.StartAsync(token);
-			var port = _host.GetServerPort();
+			var port = _server.GetServerPort();
 			var url = $"http://{TransportTestServer.LocalOrProxyHost}:{port}";
 			Uri = new Uri(url);
 			DefaultRequestHandler = CreateTransport(c => new DistributedTransport(c));
@@ -99,5 +103,11 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			Dispose();
 			return ValueTask.CompletedTask;
 		}
+
+		/// <inheritdoc />
+		public string FailureTestOutput() => string.Empty;
+
+		/// <inheritdoc />
+		public int? MaxConcurrency => null;
 	}
 }

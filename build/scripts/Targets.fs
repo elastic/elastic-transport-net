@@ -25,18 +25,13 @@ let getOS =
     | _       -> Windows
     
 let execWithTimeout binary args timeout =
-    let opts =
-        ExecArguments(binary, args |> List.map (sprintf "\"%s\"") |> List.toArray)
+    let opts = ExecArguments(binary, args |> List.toArray, Timeout=timeout)
     let options = args |> String.concat " "
     printfn ":: Running command: %s %s" binary options
-    let r = Proc.Exec(opts, timeout)
-
-    match r.HasValue with
-    | true -> r.Value
-    | false -> failwithf "invocation of `%s` timed out" binary
+    Proc.Exec(opts)
 
 let exec binary args =
-    execWithTimeout binary args (TimeSpan.FromMinutes 10)
+    execWithTimeout binary args (Nullable(TimeSpan.FromMinutes 10.))
     
 let private restoreTools = lazy(exec "dotnet" ["tool"; "restore"])
 let private currentVersion =
@@ -67,9 +62,7 @@ let private pristineCheck (arguments:ParseResults<Arguments>) =
     | _ -> failwithf "The checkout folder has pending changes, aborting"
 
 let private test (arguments:ParseResults<Arguments>) =
-    let junitOutput = Path.Combine(Paths.Output.FullName, "junit-{assembly}-{framework}-test-results.xml")
-    let loggerPathArgs = sprintf "LogFilePath=%s" junitOutput
-    let loggerArg = sprintf "--logger:\"junit;%s\"" loggerPathArgs
+    let loggerArg = "--logger:GithubActionsLogger" 
     let tfmArgs =
         if getOS = OS.Windows then [] else ["-f"; "net8.0"]
     exec "dotnet" (["test"; "-c"; "Release"; loggerArg] @ tfmArgs) |> ignore

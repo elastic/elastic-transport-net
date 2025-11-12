@@ -4,8 +4,8 @@
 
     <SolutionRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), build.bat))</SolutionRoot>
     
-    <MinVerDefaultPreReleasePhase>canary</MinVerDefaultPreReleasePhase>
-    <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
+    <MinVerDefaultPreReleaseIdentifiers>canary.0</MinVerDefaultPreReleaseIdentifiers>
+    <MinVerMinimumMajorMinor>0.2</MinVerMinimumMajorMinor>
 
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -17,7 +17,7 @@
   <PropertyGroup Condition="">
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MinVer" Version="2.5.0" PrivateAssets="all" />
+    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
     <PackageReference Condition="'$(TargetFramework)' != 'net462'" Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
