@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -506,7 +507,11 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 
 	/// <inheritdoc cref="IRequestConfiguration.ClientCertificates"/>
 	public T ClientCertificate(string certificatePath) =>
+#if NET10_0_OR_GREATER
+		Assign(new X509Certificate2Collection { X509CertificateLoader.LoadCertificateFromFile(certificatePath) }, static (a, v) => a._clientCertificates = v);
+#else
 		Assign(new X509Certificate2Collection { new X509Certificate(certificatePath) }, static (a, v) => a._clientCertificates = v);
+#endif
 
 	/// <inheritdoc cref="ITransportConfiguration.SkipDeserializationForStatusCodes"/>
 	public T SkipDeserializationForStatusCodes(params int[] statusCodes) =>

@@ -21,7 +21,9 @@ namespace Elastic.Transport.IntegrationTests.Http
 		public Task<JsonElement> Post([FromBody]JsonElement body) => Task.FromResult(body);
 	}
 
-	public class TransferEncodingChunkedTests(TransportTestServer instance) : AssemblyServerTestsBase(instance)
+	public class NonParallelCollection { }
+	[CollectionDefinition(nameof(NonParallelCollection), DisableParallelization = true)]
+	public class TransferEncodingChunkedTests(TestServerFixture instance) : AssemblyServerTestsBase(instance)
 	{
 		private const string BodyString = "{\"query\":{\"match_all\":{}}}";
 		private static readonly PostData Body = PostData.String(BodyString);
@@ -44,8 +46,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 
 			config = disableAutomaticProxyDetection.HasValue
 				? config with { DisableAutomaticProxyDetection = disableAutomaticProxyDetection.Value }
-				//make sure we the requests in debugging proxy
-				: TransportTestServer.RerouteToProxyIfNeeded(config);
+				: config;
 
 			return new DistributedTransport(config);
 		}

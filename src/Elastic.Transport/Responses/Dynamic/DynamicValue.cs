@@ -704,6 +704,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// </param>
 	/// <param name="result">The result of the binary operation.</param>
 	[UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result)
 	{
 		result = null;

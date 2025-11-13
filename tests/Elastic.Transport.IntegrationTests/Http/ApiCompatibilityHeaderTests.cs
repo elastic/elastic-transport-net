@@ -13,10 +13,8 @@ using Xunit;
 
 namespace Elastic.Transport.IntegrationTests.Http;
 
-public class ApiCompatibilityHeaderTests : AssemblyServerTestsBase
+public class ApiCompatibilityHeaderTests(TestServerFixture instance) : AssemblyServerTestsBase(instance)
 {
-	public ApiCompatibilityHeaderTests(TransportTestServer instance) : base(instance) { }
-
 	[Fact]
 	public async Task AddsExpectedVendorInformationForRestApiCompaitbility()
 	{
@@ -38,7 +36,7 @@ public class ApiCompatibilityHeaderTests : AssemblyServerTestsBase
 		var config = new TransportConfiguration(nodePool, requestInvoker, productRegistration: new ElasticsearchProductRegistration(typeof(Clients.Elasticsearch.ElasticsearchClient)));
 		var transport = new DistributedTransport(config);
 
-		var response = await transport.PostAsync<StringResponse>("/metaheader", PostData.String("{}"));
+		var response = await transport.PostAsync<StringResponse>("/metaheader", PostData.String("{}"), cancellationToken: TestContext.Current.CancellationToken);
 	}
 }
 

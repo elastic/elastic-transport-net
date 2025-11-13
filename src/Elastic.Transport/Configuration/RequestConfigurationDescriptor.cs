@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.IO;
+using System.Net;
 using System.Security.Cryptography.X509Certificates;
 
 using Elastic.Transport.Extensions;
@@ -70,7 +72,7 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 	private bool? _enableHttpCompression;
 	private Uri? _forceNode;
 	private int? _maxRetries;
-	private TimeSpan? _maxRetryTimeout; 
+	private TimeSpan? _maxRetryTimeout;
 	private string? _opaqueId;
 	private bool? _parseAllHeaders;
 	private TimeSpan? _pingTimeout;
@@ -232,7 +234,11 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 
 	/// <inheritdoc cref="IRequestConfiguration.ClientCertificates"/>
 	public RequestConfigurationDescriptor ClientCertificate(string certificatePath) =>
+#if NET10_0_OR_GREATER
+		ClientCertificates(new X509Certificate2Collection { X509CertificateLoader.LoadCertificateFromFile(certificatePath) });
+#else
 		ClientCertificates(new X509Certificate2Collection { new X509Certificate(certificatePath) });
+#endif
 
 	/// <inheritdoc cref="IRequestConfiguration.TransferEncodingChunked" />
 	public RequestConfigurationDescriptor TransferEncodingChunked(bool transferEncodingChunked = true)

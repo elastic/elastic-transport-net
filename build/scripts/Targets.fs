@@ -25,25 +25,20 @@ let getOS =
     | _       -> Windows
     
 let execWithTimeout binary args timeout =
-    let opts =
-        ExecArguments(binary, args |> List.map (sprintf "\"%s\"") |> List.toArray)
+    let opts = ExecArguments(binary, args |> List.toArray, Timeout=timeout)
     let options = args |> String.concat " "
     printfn ":: Running command: %s %s" binary options
-    let r = Proc.Exec(opts, timeout)
-
-    match r.HasValue with
-    | true -> r.Value
-    | false -> failwithf "invocation of `%s` timed out" binary
+    Proc.Exec(opts)
 
 let exec binary args =
-    execWithTimeout binary args (TimeSpan.FromMinutes 10)
+    execWithTimeout binary args (Nullable(TimeSpan.FromMinutes 10.))
     
 let private restoreTools = lazy(exec "dotnet" ["tool"; "restore"])
 let private currentVersion =
     lazy(
         restoreTools.Value |> ignore
-        let r = Proc.Start("dotnet", "minver", "--default-pre-release-phase", "canary", "-m", "0.1")
-        let o = r.ConsoleOut |> Seq.find (fun l -> not(l.Line.StartsWith("MinVer:")))
+        let r = Proc.Start("dotnet", "minver", "-p", "canary.0", "-m", "0.1")
+        let o = r.ConsoleOut |> Seq.find (fun l -> not(l.Line.StartsWith "MinVer:"))
         o.Line
     )
 let private currentVersionInformational =
@@ -67,11 +62,9 @@ let private pristineCheck (arguments:ParseResults<Arguments>) =
     | _ -> failwithf "The checkout folder has pending changes, aborting"
 
 let private test (arguments:ParseResults<Arguments>) =
-    let junitOutput = Path.Combine(Paths.Output.FullName, "junit-{assembly}-{framework}-test-results.xml")
-    let loggerPathArgs = sprintf "LogFilePath=%s" junitOutput
-    let loggerArg = sprintf "--logger:\"junit;%s\"" loggerPathArgs
+    let loggerArg = "--logger:GithubActions" 
     let tfmArgs =
-        if getOS = OS.Windows then [] else ["-f"; "net8.0"]
+        if getOS = OS.Windows then [] else ["-f"; "net10.0"]
     exec "dotnet" (["test"; "-c"; "Release"; loggerArg] @ tfmArgs) |> ignore
 
 let private generatePackages (arguments:ParseResults<Arguments>) =
@@ -101,11 +94,16 @@ let private generateApiChanges (arguments:ParseResults<Arguments>) =
         let outputFile =
             let f = sprintf "breaking-changes-%s.md" p
             Path.Combine(output, f)
+        let directory =
+            match p with
+            | "Elastic.Transport.VirtualizedCluster" -> $".artifacts/bin/%s{p}/release"
+            | _ -> $".artifacts/bin/%s{p}/release_%s{Paths.MainTFM}"
+
         let args =
             [
                 "assembly-differ"
                 (sprintf "previous-nuget|%s|%s|%s" p currentVersion Paths.MainTFM);
-                (sprintf "directory|src/%s/bin/Release/%s" p Paths.MainTFM);
+                (sprintf "directory|%s" directory);
                 "-a"; "true"; "--target"; p; "-f"; "github-comment"; "--output"; outputFile
             ]
         

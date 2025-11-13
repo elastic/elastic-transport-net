@@ -6,15 +6,17 @@ using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Transport.IntegrationTests.Plumbing
 {
 	internal static class WebHostExtensions
 	{
-		internal static int GetServerPort(this IWebHost server)
+		internal static int GetServerPort(this IServer server)
 		{
-			var address = server.ServerFeatures.Get<IServerAddressesFeature>().Addresses.First();
+			var address = server.Features.Get<IServerAddressesFeature>().Addresses.First();
 			var match = Regex.Match(address, @"^.+:(\d+)$");
 
 			if (!match.Success) throw new Exception($"Unable to parse port from address: {address}");
