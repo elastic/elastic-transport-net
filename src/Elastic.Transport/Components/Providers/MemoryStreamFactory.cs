@@ -11,7 +11,10 @@ namespace Elastic.Transport;
 /// </summary>
 public abstract class MemoryStreamFactory
 {
-	internal MemoryStreamFactory() { }
+	/// <summary>
+	/// Constructs a new instance of <see cref="MemoryStreamFactory"/>.
+	/// </summary>
+	protected MemoryStreamFactory() { }
 
 	/// <summary>
 	/// Creates a memory stream
