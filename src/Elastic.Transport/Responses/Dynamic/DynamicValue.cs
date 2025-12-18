@@ -33,25 +33,31 @@ namespace Elastic.Transport;
 /// <see cref="Get{T}"/> which support a xpath'esque syntax to fish for values in the returned json.
 /// </para>
 /// </summary>
+/// <remarks>
+/// Initializes a new instance of the <see cref="DynamicValue" /> class.
+/// </remarks>
+/// <param name="value">The value to store in the instance</param>
 #pragma warning disable CA1710
-public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, IConvertible, IReadOnlyCollection<DynamicValue>
+[method: UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
+/// <summary>
+/// Represents a value returned by <see cref="DynamicDictionary"/>.
+///
+/// <para>This is `dynamic` through <see cref="DynamicObject"/> and supports direct casting various valuetypes</para>
+/// <para>Since `dynamic` can be scary in .NET this response also exposes a safe traversal mechanism under
+/// <see cref="Get{T}"/> which support a xpath'esque syntax to fish for values in the returned json.
+/// </para>
+/// </summary>
+#pragma warning disable CA1710
+public sealed class DynamicValue(object? value) : DynamicObject, IEquatable<DynamicValue>, IConvertible, IReadOnlyCollection<DynamicValue>
 #pragma warning restore CA1710
 {
-	private readonly object? _value;
-
-	/// <summary>
-	/// Initializes a new instance of the <see cref="DynamicValue" /> class.
-	/// </summary>
-	/// <param name="value">The value to store in the instance</param>
-	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
-	public DynamicValue(object? value) => _value = value is DynamicValue av ? av.Value : value;
 
 	/// <summary>
 	/// Gets a value indicating whether this instance has value.
 	/// </summary>
 	/// <value><c>true</c> if this instance has value; otherwise, <c>false</c>.</value>
 	/// <remarks><see langword="null" /> is considered as not being a value.</remarks>
-	public bool HasValue => _value != null;
+	public bool HasValue => Value != null;
 
 	/// <summary>
 	/// Try to get key <paramref name="name"/> from the object this instance references
@@ -63,7 +69,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	{
 		get
 		{
-			Dispatch(out var r, name);
+			_ = Dispatch(out var r, name);
 			return (DynamicValue)r!; // r is guaranteed to be DynamicValue by Dispatch implementation
 		}
 	}
@@ -97,7 +103,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// <summary>
 	/// Gets the inner value
 	/// </summary>
-	public object? Value => _value;
+	public object? Value { get; } = value is DynamicValue av ? av.Value : value;
 
 	/// <summary>
 	/// Returns the <see cref="System.TypeCode" /> for this instance.
@@ -108,10 +114,10 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// <filterpriority>2</filterpriority>
 	public TypeCode GetTypeCode()
 	{
-		if (_value == null)
+		if (Value == null)
 			return TypeCode.Empty;
 
-		return Type.GetTypeCode(_value.GetType());
+		return Type.GetTypeCode(Value.GetType());
 	}
 
 	/// <summary>
@@ -125,7 +131,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public bool ToBoolean(IFormatProvider? provider) => Convert.ToBoolean(_value, provider);
+	public bool ToBoolean(IFormatProvider? provider) => Convert.ToBoolean(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent 8-bit unsigned integer using the specified culture-specific formatting information.
@@ -138,7 +144,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public byte ToByte(IFormatProvider? provider) => Convert.ToByte(_value, provider);
+	public byte ToByte(IFormatProvider? provider) => Convert.ToByte(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent Unicode character using the specified culture-specific formatting information.
@@ -151,7 +157,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public char ToChar(IFormatProvider? provider) => Convert.ToChar(_value, provider);
+	public char ToChar(IFormatProvider? provider) => Convert.ToChar(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent <see cref="System.DateTime" /> using the specified culture-specific formatting
@@ -165,7 +171,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public DateTime ToDateTime(IFormatProvider? provider) => Convert.ToDateTime(_value, provider);
+	public DateTime ToDateTime(IFormatProvider? provider) => Convert.ToDateTime(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent <see cref="System.Decimal" /> number using the specified culture-specific formatting
@@ -179,7 +185,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public decimal ToDecimal(IFormatProvider? provider) => Convert.ToDecimal(_value, provider);
+	public decimal ToDecimal(IFormatProvider? provider) => Convert.ToDecimal(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent double-precision floating-point number using the specified culture-specific formatting
@@ -193,7 +199,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public double ToDouble(IFormatProvider? provider) => Convert.ToDouble(_value, provider);
+	public double ToDouble(IFormatProvider? provider) => Convert.ToDouble(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent 16-bit signed integer using the specified culture-specific formatting information.
@@ -206,7 +212,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public short ToInt16(IFormatProvider? provider) => Convert.ToInt16(_value, provider);
+	public short ToInt16(IFormatProvider? provider) => Convert.ToInt16(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent 32-bit signed integer using the specified culture-specific formatting information.
@@ -219,7 +225,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public int ToInt32(IFormatProvider? provider) => Convert.ToInt32(_value, provider);
+	public int ToInt32(IFormatProvider? provider) => Convert.ToInt32(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent 64-bit signed integer using the specified culture-specific formatting information.
@@ -232,7 +238,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public long ToInt64(IFormatProvider? provider) => Convert.ToInt64(_value, provider);
+	public long ToInt64(IFormatProvider? provider) => Convert.ToInt64(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent 8-bit signed integer using the specified culture-specific formatting information.
@@ -246,7 +252,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// </param>
 	/// <filterpriority>2</filterpriority>
 	[CLSCompliant(false)]
-	public sbyte ToSByte(IFormatProvider? provider) => Convert.ToSByte(_value, provider);
+	public sbyte ToSByte(IFormatProvider? provider) => Convert.ToSByte(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent single-precision floating-point number using the specified culture-specific formatting
@@ -260,7 +266,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public float ToSingle(IFormatProvider? provider) => Convert.ToSingle(_value, provider);
+	public float ToSingle(IFormatProvider? provider) => Convert.ToSingle(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent <see cref="System.String" /> using the specified culture-specific formatting
@@ -274,7 +280,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public string ToString(IFormatProvider? provider) => Convert.ToString(_value, provider)!;
+	public string ToString(IFormatProvider? provider) => Convert.ToString(Value, provider)!;
 
 	/// <summary>
 	/// Converts the value of this instance to an <see cref="System.Object" /> of the specified <see cref="System.Type" /> that has an
@@ -290,7 +296,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
-	public object ToType(Type conversionType, IFormatProvider? provider) => Convert.ChangeType(_value!, conversionType, provider);
+	public object ToType(Type conversionType, IFormatProvider? provider) => Convert.ChangeType(Value!, conversionType, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent 16-bit unsigned integer using the specified culture-specific formatting information.
@@ -304,7 +310,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// </param>
 	/// <filterpriority>2</filterpriority>
 	[CLSCompliant(false)]
-	public ushort ToUInt16(IFormatProvider? provider) => Convert.ToUInt16(_value, provider);
+	public ushort ToUInt16(IFormatProvider? provider) => Convert.ToUInt16(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent 32-bit unsigned integer using the specified culture-specific formatting information.
@@ -318,7 +324,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// </param>
 	/// <filterpriority>2</filterpriority>
 	[CLSCompliant(false)]
-	public uint ToUInt32(IFormatProvider? provider) => Convert.ToUInt32(_value, provider);
+	public uint ToUInt32(IFormatProvider? provider) => Convert.ToUInt32(Value, provider);
 
 	/// <summary>
 	/// Converts the value of this instance to an equivalent 64-bit unsigned integer using the specified culture-specific formatting information.
@@ -332,7 +338,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// </param>
 	/// <filterpriority>2</filterpriority>
 	[CLSCompliant(false)]
-	public ulong ToUInt64(IFormatProvider? provider) => Convert.ToUInt64(_value, provider);
+	public ulong ToUInt64(IFormatProvider? provider) => Convert.ToUInt64(Value, provider);
 
 	/// <summary>
 	/// Returns the value as a dictionary if the current value represents an object.
@@ -340,9 +346,9 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// </summary>
 	public IDictionary<string, DynamicValue>? ToDictionary()
 	{
-		if (_value is IDictionary<string, object?> dict)
+		if (Value is IDictionary<string, object?> dict)
 			return DynamicDictionary.Create(dict);
-		else if (_value is JsonElement e && e.ValueKind == JsonValueKind.Object)
+		else if (Value is JsonElement e && e.ValueKind == JsonValueKind.Object)
 		{
 			var d = e.EnumerateObject()
 				.Aggregate(new Dictionary<string, object?>(), (dictionary, je) =>
@@ -371,7 +377,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 			return false;
 		}
 
-		return ReferenceEquals(this, compareValue) || Equals(compareValue._value, _value);
+		return ReferenceEquals(this, compareValue) || Equals(compareValue.Value, Value);
 	}
 
 	/// <see cref="DynamicObject.TryGetMember"/>
@@ -458,12 +464,12 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 		{
 			try
 			{
-				return (T)_value!;
+				return (T)Value!;
 			}
 			catch
 			{
-				var typeName = _value!.GetType().Name;
-				var message = string.Format(CultureInfo.InvariantCulture, "Cannot convert value of type '{0}' to type '{1}'",
+				var typeName = Value!.GetType().Name;
+				var message = string.Format(InvariantCulture, "Cannot convert value of type '{0}' to type '{1}'",
 					typeName, typeof(T).Name);
 
 				throw new InvalidCastException(message);
@@ -486,7 +492,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 		try
 		{
-			return TryParse(defaultValue, typeof(T), _value!, out var o) ? (T)o! : defaultValue;
+			return TryParse(defaultValue, typeof(T), Value!, out var o) ? (T)o! : defaultValue;
 		}
 		catch
 		{
@@ -498,7 +504,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	public static object? ConsumeJsonElement(Type targetReturnType, JsonElement e)
 	{
 		// ReSharper disable once HeapView.BoxingAllocation
-		object ParseNumber(JsonElement el)
+		static object ParseNumber(JsonElement el)
 		{
 			if (el.TryGetInt64(out var l))
 				return l;
@@ -624,7 +630,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 			}
 			else if (valueType.IsValueType)
 			{
-				newObject = Convert.ChangeType(_value, targetReturnType, InvariantCulture);
+				newObject = Convert.ChangeType(Value, targetReturnType, InvariantCulture);
 				return true;
 			}
 			else if (targetReturnType == typeof(DynamicDictionary) && valueType == typeof(Dictionary<string, object>))
@@ -650,12 +656,12 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 	public static bool operator ==(DynamicValue dynamicValue, object compareValue)
 	{
-		if (dynamicValue._value == null && compareValue == null)
+		if (dynamicValue.Value == null && compareValue == null)
 		{
 			return true;
 		}
 
-		return dynamicValue._value != null && dynamicValue._value.Equals(compareValue);
+		return dynamicValue.Value != null && dynamicValue.Value.Equals(compareValue);
 	}
 
 	public static bool operator !=(DynamicValue dynamicValue, object compareValue) => !(dynamicValue == compareValue);
@@ -676,8 +682,8 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 		}
 
 		if (ReferenceEquals(this, obj)
-			|| ReferenceEquals(_value, obj)
-			|| Equals(_value, obj)
+			|| ReferenceEquals(Value, obj)
+			|| Equals(Value, obj)
 		)
 		{
 			return true;
@@ -690,7 +696,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// Serves as a hash function for a particular type.
 	/// </summary>
 	/// <returns>A hash code for the current instance.</returns>
-	public override int GetHashCode() => _value != null ? _value.GetHashCode() : 0;
+	public override int GetHashCode() => Value != null ? Value.GetHashCode() : 0;
 
 	/// <summary>
 	/// Provides implementation for binary operations. Classes derived from the <see cref="System.Dynamic.DynamicObject" /> class can override
@@ -754,7 +760,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	{
 		result = null;
 
-		if (_value == null)
+		if (Value == null)
 		{
 			return true;
 		}
@@ -774,13 +780,13 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 		if (binderType == typeof(string))
 		{
-			result = Convert.ToString(_value, InvariantCulture);
+			result = Convert.ToString(Value, InvariantCulture);
 			return true;
 		}
 
 		if (binderType == typeof(Guid) || binderType == typeof(Guid?))
 		{
-			if (Guid.TryParse(Convert.ToString(_value, InvariantCulture), out var guid))
+			if (Guid.TryParse(Convert.ToString(Value, InvariantCulture), out var guid))
 			{
 				result = guid;
 				return true;
@@ -788,7 +794,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 		}
 		else if (binderType == typeof(TimeSpan) || binderType == typeof(TimeSpan?))
 		{
-			if (TimeSpan.TryParse(Convert.ToString(_value, InvariantCulture), out var timespan))
+			if (TimeSpan.TryParse(Convert.ToString(Value, InvariantCulture), out var timespan))
 			{
 				result = timespan;
 				return true;
@@ -803,32 +809,32 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 			if (typeCode == TypeCode.Object)
 			{
-				if (binderType.IsAssignableFrom(_value.GetType()))
+				if (binderType.IsAssignableFrom(Value.GetType()))
 				{
-					result = _value;
+					result = Value;
 					return true;
 				}
 				else
 					return false;
 			}
 
-			result = Convert.ChangeType(_value, typeCode, InvariantCulture);
+			result = Convert.ChangeType(Value, typeCode, InvariantCulture);
 			return true;
 		}
 		return base.TryConvert(binder, out result);
 	}
 
-	public override string? ToString() => _value == null ? base.ToString() : Convert.ToString(_value, InvariantCulture);
+	public override string? ToString() => Value == null ? base.ToString() : Convert.ToString(Value, InvariantCulture);
 
 	public static implicit operator bool(DynamicValue dynamicValue)
 	{
 		if (!dynamicValue.HasValue)
 			return false;
-		if (dynamicValue._value is JsonElement e)
+		if (dynamicValue.Value is JsonElement e)
 			return e.GetBoolean();
 
-		if (dynamicValue._value!.GetType().IsValueType)
-			return Convert.ToBoolean(dynamicValue._value, InvariantCulture);
+		if (dynamicValue.Value!.GetType().IsValueType)
+			return Convert.ToBoolean(dynamicValue.Value, InvariantCulture);
 
 		if (bool.TryParse(dynamicValue.ToString(InvariantCulture), out var result))
 			return result;
@@ -840,86 +846,86 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	{
 		if (!dynamicValue.HasValue)
 			return null;
-		if (dynamicValue._value is JsonElement e)
+		if (dynamicValue.Value is JsonElement e)
 			return e.GetString();
 
-		return Convert.ToString(dynamicValue._value, InvariantCulture);
+		return Convert.ToString(dynamicValue.Value, InvariantCulture);
 	}
 
 	public static implicit operator int(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetInt32(out var v))
+		if (dynamicValue.Value is JsonElement e && e.TryGetInt32(out var v))
 			return v;
-		if (dynamicValue._value!.GetType().IsValueType)
-			return Convert.ToInt32(dynamicValue._value, InvariantCulture);
+		if (dynamicValue.Value!.GetType().IsValueType)
+			return Convert.ToInt32(dynamicValue.Value, InvariantCulture);
 
 		return int.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}
 
 	public static implicit operator Guid(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetGuid(out var v))
+		if (dynamicValue.Value is JsonElement e && e.TryGetGuid(out var v))
 			return v;
-		return dynamicValue._value is Guid guid ? guid : Guid.Parse(dynamicValue.ToString(InvariantCulture));
+		return dynamicValue.Value is Guid guid ? guid : Guid.Parse(dynamicValue.ToString(InvariantCulture));
 	}
 
 	public static implicit operator DateTime(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetDateTime(out var v))
+		if (dynamicValue.Value is JsonElement e && e.TryGetDateTime(out var v))
 			return v;
-		return dynamicValue._value is DateTime dateTime
+		return dynamicValue.Value is DateTime dateTime
 			? dateTime
 			: DateTime.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}
 
 	public static implicit operator DateTimeOffset(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetDateTimeOffset(out var v))
+		if (dynamicValue.Value is JsonElement e && e.TryGetDateTimeOffset(out var v))
 			return v;
-		return dynamicValue._value is DateTimeOffset offset ? offset : DateTimeOffset.Parse(dynamicValue.ToString(InvariantCulture)!, InvariantCulture);
+		return dynamicValue.Value is DateTimeOffset offset ? offset : DateTimeOffset.Parse(dynamicValue.ToString(InvariantCulture)!, InvariantCulture);
 	}
 
 	public static implicit operator TimeSpan(DynamicValue dynamicValue) =>
-		dynamicValue._value is TimeSpan timeSpan
+		dynamicValue.Value is TimeSpan timeSpan
 			? timeSpan
 			: TimeSpan.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 
 	public static implicit operator long(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetInt64(out var v))
+		if (dynamicValue.Value is JsonElement e && e.TryGetInt64(out var v))
 			return v;
-		if (dynamicValue._value!.GetType().IsValueType)
-			return Convert.ToInt64(dynamicValue._value, InvariantCulture);
+		if (dynamicValue.Value!.GetType().IsValueType)
+			return Convert.ToInt64(dynamicValue.Value, InvariantCulture);
 
 		return long.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}
 
 	public static implicit operator float(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetSingle(out var v))
+		if (dynamicValue.Value is JsonElement e && e.TryGetSingle(out var v))
 			return v;
-		if (dynamicValue._value!.GetType().IsValueType)
-			return Convert.ToSingle(dynamicValue._value, InvariantCulture);
+		if (dynamicValue.Value!.GetType().IsValueType)
+			return Convert.ToSingle(dynamicValue.Value, InvariantCulture);
 
 		return float.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}
 
 	public static implicit operator decimal(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetDecimal(out var v))
+		if (dynamicValue.Value is JsonElement e && e.TryGetDecimal(out var v))
 			return v;
-		if (dynamicValue._value!.GetType().IsValueType)
-			return Convert.ToDecimal(dynamicValue._value, InvariantCulture);
+		if (dynamicValue.Value!.GetType().IsValueType)
+			return Convert.ToDecimal(dynamicValue.Value, InvariantCulture);
 
 		return decimal.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}
 
 	public static implicit operator double(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetDouble(out var v))
+		if (dynamicValue.Value is JsonElement e && e.TryGetDouble(out var v))
 			return v;
-		if (dynamicValue._value!.GetType().IsValueType)
-			return Convert.ToDouble(dynamicValue._value, InvariantCulture);
+		if (dynamicValue.Value!.GetType().IsValueType)
+			return Convert.ToDouble(dynamicValue.Value, InvariantCulture);
 
 		return double.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}

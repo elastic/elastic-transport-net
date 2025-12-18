@@ -83,7 +83,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_nodePool = nodePool;
 		_requestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		_productRegistration = productRegistration ?? DefaultProductRegistration.Default;
-		_requestResponseSerializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
+		UseThisRequestResponseSerializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
 		_pipelineProvider = DefaultRequestPipelineFactory.Default;
 		_dateTimeProvider = nodePool.DateTimeProvider;
 		_bootstrapLock = new(1, 1);
@@ -167,7 +167,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_queryStringParameters = config.QueryStringParameters;
 		_requestInvoker = config.RequestInvoker;
 		_requestMetaData = config.RequestMetaData;
-		_requestResponseSerializer = config.RequestResponseSerializer;
+		UseThisRequestResponseSerializer = config.RequestResponseSerializer;
 		_requestTimeout = config.RequestTimeout;
 		_responseHeadersToParse = config.ResponseHeadersToParse;
 		_runAs = config.RunAs;
@@ -230,7 +230,6 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	private string? _proxyPassword;
 	private string? _proxyUsername;
 	private NameValueCollection? _queryStringParameters;
-	private Serializer _requestResponseSerializer;
 	private Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool>? _serverCertificateValidationCallback;
 	private string? _certificateFingerprint;
 	private IReadOnlyCollection<int>? _skipDeserializationForStatusCodes;
@@ -272,7 +271,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	string? ITransportConfiguration.ProxyPassword => _proxyPassword;
 	string? ITransportConfiguration.ProxyUsername => _proxyUsername;
 	NameValueCollection? ITransportConfiguration.QueryStringParameters => _queryStringParameters;
-	Serializer ITransportConfiguration.RequestResponseSerializer => _requestResponseSerializer;
+	Serializer ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
 	Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool>? ITransportConfiguration.ServerCertificateValidationCallback => _serverCertificateValidationCallback;
 	string? ITransportConfiguration.CertificateFingerprint => _certificateFingerprint;
 	IReadOnlyCollection<int>? ITransportConfiguration.SkipDeserializationForStatusCodes => _skipDeserializationForStatusCodes;
@@ -321,11 +320,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	/// </summary>
 	// ReSharper disable once MemberCanBePrivate.Global
 	// ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
-	protected Serializer UseThisRequestResponseSerializer
-	{
-		get => _requestResponseSerializer;
-		set => _requestResponseSerializer = value;
-	}
+	protected Serializer UseThisRequestResponseSerializer { get; set; }
 
 	private static void DefaultCompletedRequestHandler(ApiCallDetails response) { }
 
@@ -551,7 +546,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	/// <summary> Allows subclasses to add/remove default global query string parameters </summary>
 	protected T UpdateGlobalQueryString(string key, string value, bool enabled)
 	{
-		_queryStringParameters ??= new();
+		_queryStringParameters ??= [];
 		if (!enabled && _queryStringParameters[key] != null)
 			_queryStringParameters.Remove(key);
 		else if (enabled && _queryStringParameters[key] == null)

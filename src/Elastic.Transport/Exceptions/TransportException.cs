@@ -70,26 +70,26 @@ public class TransportException : Exception
 			if (FailureReason == PipelineFailure.Unexpected && AuditTrail.HasAny(out var auditTrail) && auditTrail!.Length > 0)
 				failureReason = "Unrecoverable/Unexpected " + auditTrail[^1].Event.ToStringFast();
 
-			sb.Append("# FailureReason: ")
+			_ = sb.Append("# FailureReason: ")
 				.Append(failureReason)
 				.Append(" while attempting ");
 
 			if (Endpoint is not null)
 			{
-				sb.Append(Endpoint.Method.GetStringValue()).Append(" on ");
-				sb.AppendLine(Endpoint.Uri.ToString());
+				_ = sb.Append(Endpoint.Method.GetStringValue()).Append(" on ");
+				_ = sb.AppendLine(Endpoint.Uri.ToString());
 			}
 			else if (ApiCallDetails is not null)
 			{
-				sb.Append(ApiCallDetails.HttpMethod.GetStringValue())
+				_ = sb.Append(ApiCallDetails.HttpMethod.GetStringValue())
 					.Append(" on ")
 					.AppendLine(ApiCallDetails.Uri?.ToString());
 			}
 			else
-				sb.AppendLine("a request");
+				_ = sb.AppendLine("a request");
 
 			if (ApiCallDetails is not null)
-				DebugInformationBuilder(ApiCallDetails, sb);
+				_ = DebugInformationBuilder(ApiCallDetails, sb);
 			else if (AuditTrail is not null)
 			{
 				DebugAuditTrail(AuditTrail, sb);
@@ -98,12 +98,12 @@ public class TransportException : Exception
 
 			if (InnerException != null)
 			{
-				sb.Append("# Inner Exception: ")
+				_ = sb.Append("# Inner Exception: ")
 					.AppendLine(InnerException.Message)
 					.AppendLine(InnerException.ToString());
 			}
 
-			sb.AppendLine("# Exception:")
+			_ = sb.AppendLine("# Exception:")
 				.AppendLine(ToString());
 			return sb.ToString();
 		}

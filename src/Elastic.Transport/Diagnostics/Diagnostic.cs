@@ -29,7 +29,6 @@ internal class Diagnostic<
 	public static Diagnostic<TState, TStateEnd> Default { get; } = new Diagnostic<TState, TStateEnd>();
 
 	private readonly DiagnosticSource? _source;
-	private TStateEnd? _endState;
 	private readonly bool _default;
 	private bool _disposed;
 
@@ -39,18 +38,18 @@ internal class Diagnostic<
 	public Diagnostic(string operationName, DiagnosticSource source, TState state) : base(operationName)
 	{
 		_source = source;
-		_source.StartActivity(SetStartTime(DateTime.UtcNow), state);
+		_ = _source.StartActivity(SetStartTime(DateTime.UtcNow), state);
 	}
 
 	public TStateEnd? EndState
 	{
-		get => _endState;
+		get;
 		internal set
 		{
 			//do not store state on default instance
 			if (_default)
 				return;
-			_endState = value;
+			field = value;
 		}
 	}
 

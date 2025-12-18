@@ -93,10 +93,7 @@ public class OpenTelemetryTests
 
 		await TestCoreAsync(Assertions, static a => a.DisplayName = spanName);
 
-		static void Assertions(Activity activity)
-		{
-			activity.DisplayName.Should().Be(spanName);
-		}
+		static void Assertions(Activity activity) => _ = activity.DisplayName.Should().Be(spanName);
 	}
 
 	[Fact]
@@ -107,10 +104,7 @@ public class OpenTelemetryTests
 
 		await TestCoreAsync(Assertions, static a => a.AddTag(attributeName, attributeValue));
 
-		static void Assertions(Activity activity)
-		{
-			activity.TagObjects.Should().Contain(t => t.Key == attributeName && (string)t.Value == attributeValue);
-		}
+		static void Assertions(Activity activity) => _ = activity.TagObjects.Should().Contain(t => t.Key == attributeName && (string)t.Value == attributeValue);
 	}
 
 	private static Task TestCoreAsync(Action<Activity> assertion) => TestCoreAsync(assertion, default);
@@ -131,10 +125,10 @@ public class OpenTelemetryTests
 					Assert.Fail("Expected one activity, but received multiple stop events.");
 
 				assertions(activity);
-				mre.Set();
+				_ = mre.Set();
 			},
 			ShouldListenTo = activitySource => activitySource.Name == OpenTelemetry.ElasticTransportActivitySourceName,
-			Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData
+			Sample = (ref _) => ActivitySamplingResult.AllData
 		};
 		ActivitySource.AddActivityListener(listener);
 
@@ -142,7 +136,7 @@ public class OpenTelemetryTests
 
 		_ = await transport.RequestAsync<VoidResponse>(new EndpointPath(HttpMethod.GET, "/"), null, configureActivity, null, default);
 
-		mre.WaitOne(TimeSpan.FromSeconds(1)).Should().BeTrue();
+		_ = mre.WaitOne(TimeSpan.FromSeconds(1)).Should().BeTrue();
 	}
 }
 

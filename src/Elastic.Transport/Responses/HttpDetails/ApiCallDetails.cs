@@ -18,8 +18,6 @@ namespace Elastic.Transport;
 /// </summary>
 public sealed class ApiCallDetails
 {
-	private string? _debugInformation;
-
 	internal ApiCallDetails() { }
 
 	/// <summary>
@@ -44,15 +42,17 @@ public sealed class ApiCallDetails
 	{
 		get
 		{
-			if (_debugInformation != null)
-				return _debugInformation;
+			if (field != null)
+				return field;
 
 			var sb = new StringBuilder();
-			sb.AppendLine(ToString());
-			_debugInformation = ResponseStatics.DebugInformationBuilder(this, sb);
+			_ = sb.AppendLine(ToString());
+			field = ResponseStatics.DebugInformationBuilder(this, sb);
 
-			return _debugInformation;
+			return field;
 		}
+
+		private set;
 	}
 
 	/// <summary>
@@ -145,10 +145,10 @@ public sealed class ApiCallDetails
 	public override string ToString()
 	{
 		var sb = new StringBuilder();
-		sb.Append($"{(HasSuccessfulStatusCodeAndExpectedContentType ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on ");
-		sb.AppendLine($"{HttpMethod.GetStringValue()}: {(Uri is not null ? Uri.PathAndQuery : "UNKNOWN URI")}");
+		_ = sb.Append($"{(HasSuccessfulStatusCodeAndExpectedContentType ? "S" : "Uns")}uccessful ({HttpStatusCode}) low level call on ");
+		_ = sb.AppendLine($"{HttpMethod.GetStringValue()}: {(Uri is not null ? Uri.PathAndQuery : "UNKNOWN URI")}");
 		if (OriginalException is not null)
-			sb.AppendLine($" Exception: {OriginalException.Message}");
+			_ = sb.AppendLine($" Exception: {OriginalException.Message}");
 		return sb.ToString();
 	}
 }

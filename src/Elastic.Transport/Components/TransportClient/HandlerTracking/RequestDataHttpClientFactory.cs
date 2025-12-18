@@ -38,7 +38,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 	// There's no need for the factory itself to be disposable. If you stop using it, eventually everything will
 	// get reclaimed.
 	private Timer? _cleanupTimer;
-	private readonly object _cleanupTimerLock;
+	private readonly Lock _cleanupTimerLock;
 	private readonly object _cleanupActiveLock;
 
 	// Collection of 'active' handlers.
@@ -83,7 +83,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		_expiredHandlers = new ConcurrentQueue<ExpiredHandlerTrackingEntry>();
 		_expiryCallback = ExpiryTimer_Tick;
 
-		_cleanupTimerLock = new object();
+		_cleanupTimerLock = new Lock();
 		_cleanupActiveLock = new object();
 	}
 
@@ -140,10 +140,10 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		// our entry in the collection, then this is a bug.
 		var removed = _activeHandlers.TryRemove(active.Key, out var found);
 		if (removed)
-			Interlocked.Increment(ref _removedHandlers);
+			_ = Interlocked.Increment(ref _removedHandlers);
 		Debug.Assert(removed, "Entry not found. We should always be able to remove the entry");
 		// ReSharper disable once RedundantNameQualifier
-		Debug.Assert(found is not null && object.ReferenceEquals(active, found.Value), "Different entry found. The entry should not have been replaced");
+		Debug.Assert(found is not null && ReferenceEquals(active, found.Value), "Different entry found. The entry should not have been replaced");
 
 		// At this point the handler is no longer 'active' and will not be handed out to any new clients.
 		// However we haven't dropped our strong reference to the handler, so we can't yet determine if
@@ -205,7 +205,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 			for (var i = 0; i < initialCount; i++)
 			{
 				// Since we're the only one removing from _expired, TryDequeue must always succeed.
-				_expiredHandlers.TryDequeue(out var entry);
+				_ = _expiredHandlers.TryDequeue(out var entry);
 				Debug.Assert(entry != null, "Entry was null, we should always get an entry back from TryDequeue");
 
 				if (entry.CanDispose)
@@ -251,7 +251,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 			for (var i = 0; i < initialCount; i++)
 			{
 				// Since we're the only one removing from _expired, TryDequeue must always succeed.
-				_expiredHandlers.TryDequeue(out var entry);
+				_ = _expiredHandlers.TryDequeue(out var entry);
 				try
 				{
 					entry!.InnerHandler?.Dispose();

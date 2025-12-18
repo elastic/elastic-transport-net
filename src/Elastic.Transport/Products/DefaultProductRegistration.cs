@@ -71,7 +71,7 @@ public sealed class DefaultProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.HttpStatusCodeClassifier"/>
 	public override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
-		statusCode >= 200 && statusCode < 300;
+		statusCode is >= 200 and < 300;
 
 	/// <inheritdoc cref="ProductRegistration.TryGetServerErrorReason{TResponse}"/>>
 	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason)

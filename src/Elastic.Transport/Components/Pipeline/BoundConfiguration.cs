@@ -103,10 +103,15 @@ public sealed record BoundConfiguration : IRequestConfiguration
 
 			ResponseBuilders = builders;
 		}
+
+<<<<<<< TODO: Unmerged change from project 'Elastic.Transport(netstandard2.1)', Before:
 		else if (local is not null && local.ResponseBuilders.Count > 0)
 			ResponseBuilders = local.ResponseBuilders;
+=======
 		else
-			ResponseBuilders = global.ResponseBuilders;
+			ResponseBuilders = local is not null && local.ResponseBuilders.Count > 0 ? local.ResponseBuilders;
+>>>>>>> After
+		else ResponseBuilders = local is not null && local.ResponseBuilders.Count > 0 ? local.ResponseBuilders : global.ResponseBuilders;
 
 		ProductResponseBuilders = global.ProductRegistration.ResponseBuilders;
 		DisableAuditTrail = local?.DisableAuditTrail ?? global.DisableAuditTrail ?? false;

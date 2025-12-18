@@ -39,7 +39,7 @@ public sealed class MetaDataHeader
 			.Append(_httpClientIdentifier).Append('=').Append(RuntimeVersion);
 
 		if (!string.IsNullOrEmpty(TransportVersion))
-			builder.Append(_separator).Append("t=").Append(TransportVersion);
+			_ = builder.Append(_separator).Append("t=").Append(TransportVersion);
 
 		_headerValue = builder.ToString();
 	}

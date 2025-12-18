@@ -22,11 +22,9 @@ public static class ElasticsearchSniffResponseFactory
 			cluster_name = ClusterName,
 			nodes = SniffResponseNodes(nodes, elasticsearchVersion, publishAddressOverride, randomFqdn)
 		};
-		using (var ms = TransportConfiguration.DefaultMemoryStreamFactory.Create())
-		{
-			LowLevelRequestResponseSerializer.Instance.Serialize(response, ms);
-			return ms.ToArray();
-		}
+		using var ms = TransportConfiguration.DefaultMemoryStreamFactory.Create();
+		LowLevelRequestResponseSerializer.Instance.Serialize(response, ms);
+		return ms.ToArray();
 	}
 
 	private static IDictionary<string, object> SniffResponseNodes(

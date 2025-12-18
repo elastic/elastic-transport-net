@@ -50,7 +50,7 @@ public sealed partial class DynamicDictionary
 	/// Returns an empty dynamic dictionary.
 	/// </summary>
 	/// <value>A <see cref="DynamicDictionary" /> instance.</value>
-	public static DynamicDictionary Empty => new();
+	public static DynamicDictionary Empty => [];
 
 	/// <summary>
 	/// Gets a value indicating whether the <see cref="DynamicDictionary" /> is read-only.
@@ -99,10 +99,15 @@ public sealed partial class DynamicDictionary
 					d = v != null ? new DynamicValue(v) : DynamicValue.NullValue;
 				}
 			}
+
+<<<<<<< TODO: Unmerged change from project 'Elastic.Transport(netstandard2.1)', Before:
 			else if (int.TryParse(key, out var i))
 				d = d[i];
+=======
 			else
-				d = d[key];
+				d = int.TryParse(key, out var i) ? d[i];
+>>>>>>> After
+			else d = int.TryParse(key, out var i) ? d[i] : d[key];
 		}
 
 		return d.TryParse<T>()!;
@@ -338,12 +343,7 @@ public sealed partial class DynamicDictionary
 	/// </param>
 	public override bool TryGetMember(GetMemberBinder binder, out object result)
 	{
-		if (!_backingDictionary.TryGetValue(binder.Name, out var v))
-		{
-			result = new DynamicValue(null);
-		}
-		else
-			result = v;
+		result = !_backingDictionary.TryGetValue(binder.Name, out var v) ? new DynamicValue(null) : v;
 
 		return true;
 	}

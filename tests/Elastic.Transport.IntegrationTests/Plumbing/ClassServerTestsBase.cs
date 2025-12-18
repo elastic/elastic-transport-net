@@ -4,13 +4,12 @@
 
 using Xunit;
 
-namespace Elastic.Transport.IntegrationTests.Plumbing
-{
-	public class ClassServerTestsBase<TServer>(TServer instance)
-		where TServer : class, IHttpTransportTestServer
-	{
-		protected TServer Server { get; } = instance;
+namespace Elastic.Transport.IntegrationTests.Plumbing;
 
-		protected ITransport RequestHandler => Server.DefaultRequestHandler;
-	}
+public class ClassServerTestsBase<TServer>(TServer instance)
+	where TServer : class, IHttpTransportTestServer
+{
+	protected TServer Server { get; } = instance;
+
+	protected ITransport RequestHandler => Server.DefaultRequestHandler;
 }
