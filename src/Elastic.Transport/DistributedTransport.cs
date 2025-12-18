@@ -242,7 +242,8 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 						break;
 					}
 
-					if (response == null || !response.ApiCallDetails.SuccessOrKnownError) continue;
+					if (response == null || !response.ApiCallDetails.SuccessOrKnownError)
+						continue;
 
 					pipeline.MarkAlive(node);
 					break;
@@ -409,7 +410,8 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		}
 
 		Configuration.OnRequestCompleted?.Invoke(response.ApiCallDetails);
-		if (clientException != null && boundConfiguration.ThrowExceptions) throw clientException;
+		if (clientException != null && boundConfiguration.ThrowExceptions)
+			throw clientException;
 	}
 
 	private void Ping(RequestPipeline pipeline, Node node, Auditor? auditor)

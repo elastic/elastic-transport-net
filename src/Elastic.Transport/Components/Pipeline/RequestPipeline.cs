@@ -50,7 +50,8 @@ public class RequestPipeline
 		// This avoids allocating 192B per request for those which do not need to ping or sniff.
 		get
 		{
-			if (_pingAndSniffRequestConfiguration is not null) return _pingAndSniffRequestConfiguration;
+			if (_pingAndSniffRequestConfiguration is not null)
+				return _pingAndSniffRequestConfiguration;
 
 			_pingAndSniffRequestConfiguration = new RequestConfiguration
 			{
@@ -105,7 +106,8 @@ public class RequestPipeline
 	{
 		get
 		{
-			if (!SniffsOnStaleCluster) return false;
+			if (!SniffsOnStaleCluster)
+				return false;
 
 			// ReSharper disable once PossibleInvalidOperationException
 			// already checked by SniffsOnStaleCluster
@@ -208,7 +210,8 @@ public class RequestPipeline
 	)
 		where TResponse : TransportResponse, new()
 	{
-		if (callDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false) return null;
+		if (callDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false)
+			return null;
 
 		var pipelineFailure = callDetails?.HttpStatusCode != null ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
 		var innerException = callDetails?.OriginalException;
@@ -267,7 +270,8 @@ public class RequestPipeline
 	/// Routine for the first call into the product, potentially sniffing to discover the network topology
 	public void FirstPoolUsage(SemaphoreSlim semaphore, Auditor? auditor)
 	{
-		if (!FirstPoolUsageNeedsSniffing) return;
+		if (!FirstPoolUsageNeedsSniffing)
+			return;
 
 		if (!semaphore.Wait(RequestTimeout))
 		{
@@ -300,7 +304,8 @@ public class RequestPipeline
 	/// <inheritdoc cref="FirstPoolUsage"/>
 	public async Task FirstPoolUsageAsync(SemaphoreSlim semaphore, Auditor? auditor, CancellationToken cancellationToken)
 	{
-		if (!FirstPoolUsageNeedsSniffing) return;
+		if (!FirstPoolUsageNeedsSniffing)
+			return;
 
 		// TODO cancellationToken could throw here and will bubble out as OperationCancelledException
 		// everywhere else it would bubble out wrapped in a `UnexpectedTransportException`
@@ -350,7 +355,8 @@ public class RequestPipeline
 		{
 			node = _nodePool.Nodes.FirstOrDefault();
 
-			if (node is not null && _nodePredicate(node)) return true;
+			if (node is not null && _nodePredicate(node))
+				return true;
 		}
 
 		node = null;
@@ -372,17 +378,21 @@ public class RequestPipeline
 		var refreshed = false;
 		for (var i = 0; i < 100; i++)
 		{
-			if (DepletedRetries(startedOn, attemptedNodes)) yield break;
+			if (DepletedRetries(startedOn, attemptedNodes))
+				yield break;
 
 			foreach (var node in _nodePool.CreateView(auditor))
 			{
-				if (DepletedRetries(startedOn, attemptedNodes)) break;
+				if (DepletedRetries(startedOn, attemptedNodes))
+					break;
 
-				if (!_nodePredicate(node)) continue;
+				if (!_nodePredicate(node))
+					continue;
 
 				yield return node;
 
-				if (!Refresh) continue;
+				if (!Refresh)
+					continue;
 
 				Refresh = false;
 				refreshed = true;
@@ -390,7 +400,8 @@ public class RequestPipeline
 			}
 			//unless a refresh was requested we will not iterate over more then a single view.
 			//keep in mind refreshes are also still bound to overall maxretry count/timeout.
-			if (!refreshed) break;
+			if (!refreshed)
+				break;
 		}
 	}
 
@@ -403,8 +414,10 @@ public class RequestPipeline
 
 	private async ValueTask PingCoreAsync(bool isAsync, Node node, Auditor? auditor, CancellationToken cancellationToken = default)
 	{
-		if (!_productRegistration.SupportsPing) return;
-		if (PingDisabled(node)) return;
+		if (!_productRegistration.SupportsPing)
+			return;
+		if (PingDisabled(node))
+			return;
 
 		var pingEndpoint = _productRegistration.CreatePingEndpoint(node, PingAndSniffRequestConfiguration);
 
@@ -450,7 +463,8 @@ public class RequestPipeline
 
 	private async ValueTask SniffCoreAsync(bool isAsync, Auditor? auditor, CancellationToken cancellationToken = default)
 	{
-		if (!_productRegistration.SupportsSniff) return;
+		if (!_productRegistration.SupportsSniff)
+			return;
 
 		var exceptions = new List<Exception>();
 
@@ -506,7 +520,8 @@ public class RequestPipeline
 	/// sniff the topology when a connection failure happens
 	public void SniffOnConnectionFailure(Auditor? auditor)
 	{
-		if (!SniffsOnConnectionFailure) return;
+		if (!SniffsOnConnectionFailure)
+			return;
 
 		using (auditor?.Add(SniffOnFail, _dateTimeProvider))
 			Sniff(auditor);
@@ -515,7 +530,8 @@ public class RequestPipeline
 	/// sniff the topology when a connection failure happens
 	public async Task SniffOnConnectionFailureAsync(Auditor? auditor, CancellationToken cancellationToken)
 	{
-		if (!SniffsOnConnectionFailure) return;
+		if (!SniffsOnConnectionFailure)
+			return;
 
 		using (auditor?.Add(SniffOnFail, _dateTimeProvider))
 			await SniffAsync(auditor, cancellationToken).ConfigureAwait(false);
@@ -524,7 +540,8 @@ public class RequestPipeline
 	/// sniff the topology after a set period to ensure it's up to date
 	public void SniffOnStaleCluster(Auditor? auditor)
 	{
-		if (!StaleClusterState) return;
+		if (!StaleClusterState)
+			return;
 
 		using (auditor?.Add(AuditEvent.SniffOnStaleCluster, _dateTimeProvider))
 		{
@@ -536,7 +553,8 @@ public class RequestPipeline
 	/// sniff the topology after a set period to ensure its up to date
 	public async Task SniffOnStaleClusterAsync(Auditor? auditor, CancellationToken cancellationToken)
 	{
-		if (!StaleClusterState) return;
+		if (!StaleClusterState)
+			return;
 
 		using (auditor?.Add(AuditEvent.SniffOnStaleCluster, _dateTimeProvider))
 		{

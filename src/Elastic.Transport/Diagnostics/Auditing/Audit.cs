@@ -48,7 +48,8 @@ public sealed class Audit
 	{
 		var took = Ended - Started;
 		var tookString = string.Empty;
-		if (took >= TimeSpan.Zero) tookString = $" Took: {took}";
+		if (took >= TimeSpan.Zero)
+			tookString = $" Took: {took}";
 
 		return Node is null
 			? $"Event: {Event.ToStringFast()}{tookString}"

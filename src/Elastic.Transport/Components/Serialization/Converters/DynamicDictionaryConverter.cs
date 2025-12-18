@@ -25,7 +25,8 @@ internal class DynamicDictionaryConverter : JsonConverter<DynamicDictionary>
 				arrayDict[i.ToString(CultureInfo.InvariantCulture)] = new DynamicValue(array[i]);
 			return DynamicDictionary.Create(arrayDict);
 		}
-		if (reader.TokenType != JsonTokenType.StartObject) throw new JsonException();
+		if (reader.TokenType != JsonTokenType.StartObject)
+			throw new JsonException();
 
 		var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(ref reader, ElasticsearchTransportSerializerContext.Default.DictionaryStringObject); // TODO: Test! This might not work without adding `Dictionary<string, object>` to `ErrorSerializationContext`
 		return DynamicDictionary.Create(dict!);
@@ -39,7 +40,8 @@ internal class DynamicDictionaryConverter : JsonConverter<DynamicDictionary>
 
 		foreach (var kvp in dictionary)
 		{
-			if (kvp.Value is null) continue;
+			if (kvp.Value is null)
+				continue;
 
 			writer.WritePropertyName(kvp.Key);
 

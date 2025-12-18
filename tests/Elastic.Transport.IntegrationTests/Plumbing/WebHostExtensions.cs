@@ -19,7 +19,8 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			var address = server.Features.Get<IServerAddressesFeature>().Addresses.First();
 			var match = AddressRegex().Match(address);
 
-			if (!match.Success) throw new Exception($"Unable to parse port from address: {address}");
+			if (!match.Success)
+				throw new Exception($"Unable to parse port from address: {address}");
 
 			var port = int.TryParse(match.Groups[1].Value, out var p);
 			return port ? p : throw new Exception($"Unable to parse port to integer from address: {address}");

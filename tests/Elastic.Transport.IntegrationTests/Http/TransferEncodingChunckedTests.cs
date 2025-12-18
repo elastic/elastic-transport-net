@@ -18,7 +18,7 @@ namespace Elastic.Transport.IntegrationTests.Http
 	public class ChunkedController : ControllerBase
 	{
 		[HttpPost]
-		public Task<JsonElement> Post([FromBody]JsonElement body) => Task.FromResult(body);
+		public Task<JsonElement> Post([FromBody] JsonElement body) => Task.FromResult(body);
 	}
 
 	public class NonParallel { }
@@ -40,8 +40,8 @@ namespace Elastic.Transport.IntegrationTests.Http
 			var nodePool = new SingleNodePool(Server.Uri);
 			var config = new TransportConfiguration(nodePool, requestInvoker)
 			{
-					TransferEncodingChunked = transferEncodingChunked,
-					EnableHttpCompression = httpCompression
+				TransferEncodingChunked = transferEncodingChunked,
+				EnableHttpCompression = httpCompression
 			};
 
 			config = disableAutomaticProxyDetection.HasValue
@@ -55,7 +55,8 @@ namespace Elastic.Transport.IntegrationTests.Http
 		/// Setting HttpClientHandler.Proxy = null don't disable HttpClient automatic proxy detection.
 		/// It is disabled by setting Proxy to non-null value or by setting UseProxy = false.
 		/// </summary>
-		[Fact] public async Task HttpClientUseProxyShouldBeFalseWhenDisabledAutoProxyDetection()
+		[Fact]
+		public async Task HttpClientUseProxyShouldBeFalseWhenDisabledAutoProxyDetection()
 		{
 			var requestInvoker = new TrackingRequestInvoker();
 			var transport = Setup(requestInvoker, disableAutomaticProxyDetection: true);
@@ -69,7 +70,8 @@ namespace Elastic.Transport.IntegrationTests.Http
 			r.Body.Should().Be(BodyString);
 		}
 
-		[Fact] public async Task HttpClientUseProxyShouldBeTrueWhenEnabledAutoProxyDetection()
+		[Fact]
+		public async Task HttpClientUseProxyShouldBeTrueWhenEnabledAutoProxyDetection()
 		{
 			var requestInvoker = new TrackingRequestInvoker();
 			var transport = Setup(requestInvoker);
@@ -80,7 +82,8 @@ namespace Elastic.Transport.IntegrationTests.Http
 			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeTrue();
 		}
 
-		[Fact] public async Task HttpClientUseTransferEncodingChunkedWhenTransferEncodingChunkedTrue()
+		[Fact]
+		public async Task HttpClientUseTransferEncodingChunkedWhenTransferEncodingChunkedTrue()
 		{
 			var requestInvoker = new TrackingRequestInvoker(responseMessage =>
 			{
@@ -92,7 +95,8 @@ namespace Elastic.Transport.IntegrationTests.Http
 			await transport.PostAsync<StringResponse>(Path, Body, CancellationToken.None);
 		}
 
-		[Fact] public async Task HttpClientSetsContentLengthWhenTransferEncodingChunkedFalse()
+		[Fact]
+		public async Task HttpClientSetsContentLengthWhenTransferEncodingChunkedFalse()
 		{
 			var trackingRequestInvoker = new TrackingRequestInvoker(responseMessage =>
 			{
@@ -104,7 +108,8 @@ namespace Elastic.Transport.IntegrationTests.Http
 			await transport.PostAsync<StringResponse>(Path, Body, CancellationToken.None);
 		}
 
-		[Fact] public async Task HttpClientSetsContentLengthWhenTransferEncodingChunkedHttpCompression()
+		[Fact]
+		public async Task HttpClientSetsContentLengthWhenTransferEncodingChunkedHttpCompression()
 		{
 			var trackingRequestInvoker = new TrackingRequestInvoker(responseMessage =>
 			{

@@ -30,9 +30,10 @@ public class RequestConfigurationDescriptor : IRequestConfiguration
 #endif
 
 		_accept = config.Accept;
-		_allowedStatusCodes= config.AllowedStatusCodes;
+		_allowedStatusCodes = config.AllowedStatusCodes;
 		_authentication = config.Authentication;
-		_clientCertificates = (config.ClientCertificates is null) ? null : new X509CertificateCollection(config.ClientCertificates);;
+		_clientCertificates = (config.ClientCertificates is null) ? null : new X509CertificateCollection(config.ClientCertificates);
+		;
 		_contentType = config.ContentType;
 		_disableDirectStreaming = config.DisableDirectStreaming;
 		_disableAuditTrail = config.DisableAuditTrail;

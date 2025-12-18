@@ -108,7 +108,8 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// <filterpriority>2</filterpriority>
 	public TypeCode GetTypeCode()
 	{
-		if (_value == null) return TypeCode.Empty;
+		if (_value == null)
+			return TypeCode.Empty;
 
 		return Type.GetTypeCode(_value.GetType());
 	}
@@ -339,7 +340,8 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// </summary>
 	public IDictionary<string, DynamicValue>? ToDictionary()
 	{
-		if (_value is IDictionary<string, object?> dict) return DynamicDictionary.Create(dict);
+		if (_value is IDictionary<string, object?> dict)
+			return DynamicDictionary.Create(dict);
 		else if (_value is JsonElement e && e.ValueKind == JsonValueKind.Object)
 		{
 			var d = e.EnumerateObject()
@@ -477,9 +479,10 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// <typeparam name="T">When no default value is supplied, required to supply the default type</typeparam>
 	/// <param name="defaultValue">Optional parameter for default value, if not given it returns default of type T</param>
 	/// <returns>If value is not null, value is returned, else default value is returned</returns>
-	public T? TryParse<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]T>(T? defaultValue = default)
+	public T? TryParse<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(T? defaultValue = default)
 	{
-		if (!HasValue) return defaultValue;
+		if (!HasValue)
+			return defaultValue;
 
 		try
 		{
@@ -542,7 +545,8 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	private bool TryParse(object? defaultValue, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type targetReturnType, object value, out object? newObject)
 	{
 		newObject = defaultValue;
-		if (value == null) return false;
+		if (value == null)
+			return false;
 
 		if (targetReturnType.IsGenericType && targetReturnType.GetGenericTypeDefinition() == typeof(Nullable<>))
 			targetReturnType = targetReturnType.GenericTypeArguments[0];
@@ -818,41 +822,51 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 	public static implicit operator bool(DynamicValue dynamicValue)
 	{
-		if (!dynamicValue.HasValue) return false;
-		if (dynamicValue._value is JsonElement e) return e.GetBoolean();
+		if (!dynamicValue.HasValue)
+			return false;
+		if (dynamicValue._value is JsonElement e)
+			return e.GetBoolean();
 
-		if (dynamicValue._value!.GetType().IsValueType) return Convert.ToBoolean(dynamicValue._value, InvariantCulture);
+		if (dynamicValue._value!.GetType().IsValueType)
+			return Convert.ToBoolean(dynamicValue._value, InvariantCulture);
 
-		if (bool.TryParse(dynamicValue.ToString(InvariantCulture), out var result)) return result;
+		if (bool.TryParse(dynamicValue.ToString(InvariantCulture), out var result))
+			return result;
 
 		return true;
 	}
 
 	public static implicit operator string?(DynamicValue dynamicValue)
 	{
-		if (!dynamicValue.HasValue) return null;
-		if (dynamicValue._value is JsonElement e) return e.GetString();
+		if (!dynamicValue.HasValue)
+			return null;
+		if (dynamicValue._value is JsonElement e)
+			return e.GetString();
 
 		return Convert.ToString(dynamicValue._value, InvariantCulture);
 	}
 
 	public static implicit operator int(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetInt32(out var v)) return v;
-		if (dynamicValue._value!.GetType().IsValueType) return Convert.ToInt32(dynamicValue._value, InvariantCulture);
+		if (dynamicValue._value is JsonElement e && e.TryGetInt32(out var v))
+			return v;
+		if (dynamicValue._value!.GetType().IsValueType)
+			return Convert.ToInt32(dynamicValue._value, InvariantCulture);
 
 		return int.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}
 
 	public static implicit operator Guid(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetGuid(out var v)) return v;
+		if (dynamicValue._value is JsonElement e && e.TryGetGuid(out var v))
+			return v;
 		return dynamicValue._value is Guid guid ? guid : Guid.Parse(dynamicValue.ToString(InvariantCulture));
 	}
 
 	public static implicit operator DateTime(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetDateTime(out var v)) return v;
+		if (dynamicValue._value is JsonElement e && e.TryGetDateTime(out var v))
+			return v;
 		return dynamicValue._value is DateTime dateTime
 			? dateTime
 			: DateTime.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
@@ -860,7 +874,8 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 	public static implicit operator DateTimeOffset(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetDateTimeOffset(out var v)) return v;
+		if (dynamicValue._value is JsonElement e && e.TryGetDateTimeOffset(out var v))
+			return v;
 		return dynamicValue._value is DateTimeOffset offset ? offset : DateTimeOffset.Parse(dynamicValue.ToString(InvariantCulture)!, InvariantCulture);
 	}
 
@@ -871,32 +886,40 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 	public static implicit operator long(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetInt64(out var v)) return v;
-		if (dynamicValue._value!.GetType().IsValueType) return Convert.ToInt64(dynamicValue._value, InvariantCulture);
+		if (dynamicValue._value is JsonElement e && e.TryGetInt64(out var v))
+			return v;
+		if (dynamicValue._value!.GetType().IsValueType)
+			return Convert.ToInt64(dynamicValue._value, InvariantCulture);
 
 		return long.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}
 
 	public static implicit operator float(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetSingle(out var v)) return v;
-		if (dynamicValue._value!.GetType().IsValueType) return Convert.ToSingle(dynamicValue._value, InvariantCulture);
+		if (dynamicValue._value is JsonElement e && e.TryGetSingle(out var v))
+			return v;
+		if (dynamicValue._value!.GetType().IsValueType)
+			return Convert.ToSingle(dynamicValue._value, InvariantCulture);
 
 		return float.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}
 
 	public static implicit operator decimal(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetDecimal(out var v)) return v;
-		if (dynamicValue._value!.GetType().IsValueType) return Convert.ToDecimal(dynamicValue._value, InvariantCulture);
+		if (dynamicValue._value is JsonElement e && e.TryGetDecimal(out var v))
+			return v;
+		if (dynamicValue._value!.GetType().IsValueType)
+			return Convert.ToDecimal(dynamicValue._value, InvariantCulture);
 
 		return decimal.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}
 
 	public static implicit operator double(DynamicValue dynamicValue)
 	{
-		if (dynamicValue._value is JsonElement e && e.TryGetDouble(out var v)) return v;
-		if (dynamicValue._value!.GetType().IsValueType) return Convert.ToDouble(dynamicValue._value, InvariantCulture);
+		if (dynamicValue._value is JsonElement e && e.TryGetDouble(out var v))
+			return v;
+		if (dynamicValue._value!.GetType().IsValueType)
+			return Convert.ToDouble(dynamicValue._value, InvariantCulture);
 
 		return double.Parse(dynamicValue.ToString(InvariantCulture), InvariantCulture);
 	}
@@ -904,7 +927,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	public IEnumerable<DynamicValue> ToEnumerable()
 	{
 		using var e = GetEnumerator();
-		while(e.MoveNext())
+		while (e.MoveNext())
 			yield return e.Current;
 	}
 
@@ -912,11 +935,16 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 
 	public IEnumerator<DynamicValue> GetEnumerator()
 	{
-		if (Value is ICollection c) return c.OfType<object>().Select(v => SelfOrNew(v)).GetEnumerator();
-		else if (Value is IList l) return l.OfType<object>().Select(v => SelfOrNew(v)).GetEnumerator();
-		else if (Value is IDictionary<string, object> d) return d.Select(kv=> SelfOrNew(kv.Value)).GetEnumerator();
-		else if (Value is IDictionary<string, DynamicValue> dv) return dv.Values.GetEnumerator();
-		else if (Value is JsonElement e && e.ValueKind == JsonValueKind.Array) return e.EnumerateArray().Select(a=> SelfOrNew(a)).GetEnumerator();
+		if (Value is ICollection c)
+			return c.OfType<object>().Select(v => SelfOrNew(v)).GetEnumerator();
+		else if (Value is IList l)
+			return l.OfType<object>().Select(v => SelfOrNew(v)).GetEnumerator();
+		else if (Value is IDictionary<string, object> d)
+			return d.Select(kv => SelfOrNew(kv.Value)).GetEnumerator();
+		else if (Value is IDictionary<string, DynamicValue> dv)
+			return dv.Values.GetEnumerator();
+		else if (Value is JsonElement e && e.ValueKind == JsonValueKind.Array)
+			return e.EnumerateArray().Select(a => SelfOrNew(a)).GetEnumerator();
 		else if (Value is JsonElement el && el.ValueKind == JsonValueKind.Object)
 			return ToDictionary()!.Values.Select(v => SelfOrNew(v)).GetEnumerator();
 
@@ -929,12 +957,18 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	{
 		get
 		{
-			if (Value is ICollection c) return c.Count;
-			else if (Value is IList l) return l.Count;
-			else if (Value is IDictionary<string, object> d) return d.Count;
-			else if (Value is IDictionary<string, DynamicValue> dv) return dv.Count;
-			else if (Value is JsonElement e && e.ValueKind == JsonValueKind.Array) return e.GetArrayLength();
-			else if (Value is JsonElement el && el.ValueKind == JsonValueKind.Object) return el.EnumerateObject().Count();
+			if (Value is ICollection c)
+				return c.Count;
+			else if (Value is IList l)
+				return l.Count;
+			else if (Value is IDictionary<string, object> d)
+				return d.Count;
+			else if (Value is IDictionary<string, DynamicValue> dv)
+				return dv.Count;
+			else if (Value is JsonElement e && e.ValueKind == JsonValueKind.Array)
+				return e.GetArrayLength();
+			else if (Value is JsonElement el && el.ValueKind == JsonValueKind.Object)
+				return el.EnumerateObject().Count();
 
 			return Value == null ? 0 : 1;
 		}
@@ -944,7 +978,8 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	{
 		get
 		{
-			if (!HasValue) return NullValue;
+			if (!HasValue)
+				return NullValue;
 
 			var v = Value;
 
@@ -958,7 +993,8 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 				if (d.TryGetValue(i.ToString(InvariantCulture), out v))
 					return SelfOrNew(v);
 
-				if (i >= d.Count) return new DynamicValue(null!);
+				if (i >= d.Count)
+					return new DynamicValue(null!);
 				var at = d[d.Keys.ElementAt(i)];
 				return SelfOrNew(at);
 			}
@@ -967,13 +1003,14 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 				if (dv.TryGetValue(i.ToString(InvariantCulture), out var dvv))
 					return dvv;
 
-				if (i >= dv.Count) return new DynamicValue(null!);
+				if (i >= dv.Count)
+					return new DynamicValue(null!);
 				var at = dv[dv.Keys.ElementAt(i)];
 				return at;
 			}
 			if (v is JsonElement e && e.ValueKind == JsonValueKind.Array)
 			{
-				if (e.GetArrayLength() -1 >= i)
+				if (e.GetArrayLength() - 1 >= i)
 					return SelfOrNew(e[i]);
 			}
 			if (v is JsonElement el && el.ValueKind == JsonValueKind.Object)

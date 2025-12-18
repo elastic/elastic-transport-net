@@ -13,7 +13,7 @@ namespace Elastic.Transport;
 public enum HttpMethod
 {
 	[EnumMember(Value = "GET")]
-// These really do not need xmldocs, leave it to the reader if they feel inspired :)
+	// These really do not need xmldocs, leave it to the reader if they feel inspired :)
 #pragma warning disable 1591
 	GET,
 

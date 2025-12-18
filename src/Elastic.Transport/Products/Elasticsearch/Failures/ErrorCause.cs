@@ -43,8 +43,8 @@ public class ErrorCause
 	/// </summary>
 	public string? Reason { get; internal set; }
 
-// The following are all very specific to individual failures
-// Seeking to clean this up within Elasticsearch itself: https://github.com/elastic/elasticsearch/issues/27672
+	// The following are all very specific to individual failures
+	// Seeking to clean this up within Elasticsearch itself: https://github.com/elastic/elasticsearch/issues/27672
 #pragma warning disable 1591
 	//public long? BytesLimit { get; set; }
 

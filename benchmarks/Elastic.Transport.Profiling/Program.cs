@@ -22,10 +22,12 @@ namespace Elastic.Transport.Profiling
 			var transport = new DistributedTransport(config);
 
 			// WARMUP
-			for (var i = 0; i < 50; i++) _ = await transport.GetAsync<VoidResponse>("/");
+			for (var i = 0; i < 50; i++)
+				_ = await transport.GetAsync<VoidResponse>("/");
 
 			MemoryProfiler.GetSnapshot("before-100-requests");
-			for (var i = 0; i < 100; i++) _ = await transport.GetAsync<VoidResponse>("/");
+			for (var i = 0; i < 100; i++)
+				_ = await transport.GetAsync<VoidResponse>("/");
 			MemoryProfiler.GetSnapshot("after-100-requests");
 
 			await Task.Delay(1000);

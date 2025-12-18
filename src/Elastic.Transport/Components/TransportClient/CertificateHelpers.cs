@@ -20,7 +20,7 @@ internal static class CertificateHelpers
 	{
 		string sha256Fingerprint;
 
-#if !NETFRAMEWORK&& !NETSTANDARD2_0
+#if !NETFRAMEWORK && !NETSTANDARD2_0
 		sha256Fingerprint = certificate.GetCertHashString(HashAlgorithmName.SHA256);
 #else
 		using var alg = SHA256.Create();

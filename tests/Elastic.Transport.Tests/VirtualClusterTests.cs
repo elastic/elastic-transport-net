@@ -15,7 +15,8 @@ namespace Elastic.Transport.Tests
 {
 	public class VirtualClusterTests
 	{
-		[Fact] public async Task ThrowsExceptionWithNoRules()
+		[Fact]
+		public async Task ThrowsExceptionWithNoRules()
 		{
 			var audit = new Auditor(() => Virtual.Elasticsearch
 				.Bootstrap(1)
@@ -28,7 +29,8 @@ namespace Elastic.Transport.Tests
 			e.Message.Should().Contain("No ClientCalls defined for the current VirtualCluster, so we do not know how to respond");
 		}
 
-		[Fact] public async Task ThrowsExceptionAfterDepleedingRules()
+		[Fact]
+		public async Task ThrowsExceptionAfterDepleedingRules()
 		{
 			var audit = new Auditor(() => Virtual.Elasticsearch
 				.Bootstrap(1)
@@ -53,24 +55,26 @@ namespace Elastic.Transport.Tests
 			e.Message.Should().Contain("No global or port specific ClientCalls rule (9200) matches any longer after 2 calls in to the cluster");
 		}
 
-		[Fact] public async Task AGlobalRuleStaysValidForever()
+		[Fact]
+		public async Task AGlobalRuleStaysValidForever()
 		{
 			var audit = new Auditor(() => Virtual.Elasticsearch
 				.Bootstrap(1)
-				.ClientCalls(c=>c.SucceedAlways())
+				.ClientCalls(c => c.SucceedAlways())
 				.StaticNodePool()
 				.Settings(s => s.DisablePing())
 			);
 
 			_ = await audit.TraceCalls(
 				Enumerable.Range(0, 1000)
-					.Select(i => new ClientCall { { HealthyResponse, 9200}, })
+					.Select(i => new ClientCall { { HealthyResponse, 9200 }, })
 					.ToArray()
 			);
 
 		}
 
-		[Fact] public async Task RulesAreIgnoredAfterBeingExecuted()
+		[Fact]
+		public async Task RulesAreIgnoredAfterBeingExecuted()
 		{
 			var audit = new Auditor(() => Virtual.Elasticsearch
 				.Bootstrap(1)

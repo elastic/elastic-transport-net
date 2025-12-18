@@ -22,7 +22,7 @@ internal class Diagnostic<[DynamicallyAccessedMembers(DynamicallyAccessedMemberT
 
 internal class Diagnostic<
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TState,
-	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]TStateEnd> : Activity, IDisposable
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TStateEnd> : Activity, IDisposable
 {
 	internal const string WriteOfTRequiresUnreferencedCode = "Only the properties of the T type will be preserved. Properties of referenced types and properties of derived types may be trimmed.";
 
@@ -48,14 +48,16 @@ internal class Diagnostic<
 		internal set
 		{
 			//do not store state on default instance
-			if (_default) return;
-			_endState =  value;
+			if (_default)
+				return;
+			_endState = value;
 		}
 	}
 
 	protected override void Dispose(bool disposing)
 	{
-		if (_disposed) return;
+		if (_disposed)
+			return;
 
 		if (disposing)
 		{

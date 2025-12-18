@@ -40,7 +40,8 @@ internal static class ResponseStatics
 			sb.AppendLine("<Audit trail not captured. Set DisableAuditTrail(false) on TransportConfiguration to capture it.>");
 		}
 
-		if (r.OriginalException != null) sb.AppendLine($"# OriginalException: {r.OriginalException}");
+		if (r.OriginalException != null)
+			sb.AppendLine($"# OriginalException: {r.OriginalException}");
 
 		if (!r.TransportConfiguration.DisableAuditTrail ?? true)
 			DebugAuditTrailExceptions(auditTrail, sb);
@@ -92,7 +93,8 @@ internal static class ResponseStatics
 	/// </summary>
 	public static void DebugAuditTrailExceptions(IEnumerable<Audit> auditTrail, StringBuilder sb)
 	{
-		if (auditTrail == null) return;
+		if (auditTrail == null)
+			return;
 
 		var auditExceptions = auditTrail.Select((audit, i) => new { audit, i }).Where(a => a.audit.Exception != null);
 		foreach (var a in auditExceptions)
@@ -105,7 +107,8 @@ internal static class ResponseStatics
 	/// </summary>
 	public static void DebugAuditTrail(IEnumerable<Audit> auditTrail, StringBuilder sb)
 	{
-		if (auditTrail == null) return;
+		if (auditTrail == null)
+			return;
 
 		foreach (var a in auditTrail.Select((a, i) => new { a, i }))
 		{
@@ -114,17 +117,20 @@ internal static class ResponseStatics
 
 			AuditNodeUrl(sb, audit);
 
-			if (audit.Exception != null) sb.Append($" Exception: {audit.Exception.GetType().Name}");
+			if (audit.Exception != null)
+				sb.Append($" Exception: {audit.Exception.GetType().Name}");
 			if (audit.Ended == default)
 				sb.AppendLine();
-			else sb.AppendLine($" Took: {audit.Ended - audit.Started}");
+			else
+				sb.AppendLine($" Took: {audit.Ended - audit.Started}");
 		}
 	}
 
 	private static void AuditNodeUrl(StringBuilder sb, Audit audit)
 	{
 		var uri = audit.Node?.Uri;
-		if (uri == null) return;
+		if (uri == null)
+			return;
 
 		if (!string.IsNullOrEmpty(uri.UserInfo))
 		{

@@ -40,7 +40,8 @@ public readonly struct HeadersList : IEnumerable<string>
 				_headers.Add(header);
 		}
 
-		if (!_headers.Contains(additionalHeader, StringComparer.OrdinalIgnoreCase)) _headers.Add(additionalHeader);
+		if (!_headers.Contains(additionalHeader, StringComparer.OrdinalIgnoreCase))
+			_headers.Add(additionalHeader);
 	}
 
 	/// <summary> Represents a unique, case-insensitive, immutable collection of header names. </summary>
@@ -63,7 +64,8 @@ public readonly struct HeadersList : IEnumerable<string>
 
 	private void AddToHeaders(HeadersList? headers)
 	{
-		if (headers is null) return;
+		if (headers is null)
+			return;
 
 		foreach (var header in headers)
 		{

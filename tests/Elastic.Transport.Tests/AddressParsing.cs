@@ -10,7 +10,8 @@ namespace Elastic.Transport.Tests
 {
 	public class AddressParsing
 	{
-		[Fact] public void IsMatched()
+		[Fact]
+		public void IsMatched()
 		{
 			//based on examples from http://www.ietf.org/rfc/rfc2732.txt
 			var testcases = new[,]
@@ -41,7 +42,8 @@ namespace Elastic.Transport.Tests
 			}
 		}
 
-		[Fact] public void FqdnIsReadCorrectly()
+		[Fact]
+		public void FqdnIsReadCorrectly()
 		{
 			//based on examples from http://www.ietf.org/rfc/rfc2732.txt
 			var testcases = new[,]

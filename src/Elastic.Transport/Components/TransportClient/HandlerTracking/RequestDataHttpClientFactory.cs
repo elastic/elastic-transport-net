@@ -89,7 +89,8 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 
 	public HttpClient CreateClient(BoundConfiguration boundConfiguration)
 	{
-		if (boundConfiguration is null) throw new ArgumentNullException(nameof(boundConfiguration));
+		if (boundConfiguration is null)
+			throw new ArgumentNullException(nameof(boundConfiguration));
 
 		var key = HttpRequestInvoker.GetClientKey(boundConfiguration);
 		var handler = CreateHandler(key, boundConfiguration);
@@ -102,7 +103,8 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 
 	private HttpMessageHandler CreateHandler(int key, BoundConfiguration boundConfiguration)
 	{
-		if (boundConfiguration is null) throw new ArgumentNullException(nameof(boundConfiguration));
+		if (boundConfiguration is null)
+			throw new ArgumentNullException(nameof(boundConfiguration));
 
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
 		var entry = _activeHandlers.GetOrAdd(key, (k, r) => _entryFactory(k, r), boundConfiguration).Value;
@@ -229,7 +231,8 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		}
 
 		// We didn't totally empty the cleanup queue, try again later.
-		if (!_expiredHandlers.IsEmpty) StartCleanupTimer();
+		if (!_expiredHandlers.IsEmpty)
+			StartCleanupTimer();
 	}
 
 	public void Dispose()

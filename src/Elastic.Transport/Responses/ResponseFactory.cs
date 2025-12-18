@@ -113,7 +113,8 @@ public abstract class ResponseFactory
 
 	internal static bool ValidateResponseContentType(string accept, string? responseContentType)
 	{
-		if (string.IsNullOrEmpty(responseContentType)) return false;
+		if (string.IsNullOrEmpty(responseContentType))
+			return false;
 
 		if (accept == responseContentType)
 			return true;

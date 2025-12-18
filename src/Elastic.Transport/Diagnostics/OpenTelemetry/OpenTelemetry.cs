@@ -61,7 +61,7 @@ public static class OpenTelemetry
 					productSchemaVersion = schemaVersion;
 			}
 		}
-		
+
 		// We add the client schema version only when it differs from the product schema version
 		if (!productSchemaVersion.Equals(OpenTelemetrySchemaVersion, StringComparison.Ordinal))
 			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportSchemaVersion, OpenTelemetrySchemaVersion);

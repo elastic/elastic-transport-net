@@ -19,9 +19,9 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 {
 	public interface IHttpTransportTestServer
 	{
-		Uri Uri { get;  }
+		Uri Uri { get; }
 
-		ITransport DefaultRequestHandler { get;  }
+		ITransport DefaultRequestHandler { get; }
 	}
 
 	public class TestServerFixture : TransportTestServer<DefaultStartup>;

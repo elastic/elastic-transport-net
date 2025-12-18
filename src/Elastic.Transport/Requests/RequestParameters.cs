@@ -64,8 +64,10 @@ public abstract class RequestParameters
 	/// </summary>
 	public void SetQueryString(string name, object? value)
 	{
-		if (value == null) RemoveQueryString(name);
-		else QueryString[name] = value;
+		if (value == null)
+			RemoveQueryString(name);
+		else
+			QueryString[name] = value;
 	}
 
 	/// <summary> Shortcut to <see cref="GetQueryStringValue{TOut}"/> for generated code </summary>
@@ -79,7 +81,8 @@ public abstract class RequestParameters
 
 	private void RemoveQueryString(string name)
 	{
-		if (!QueryString.ContainsKey(name)) return;
+		if (!QueryString.ContainsKey(name))
+			return;
 
 		QueryString.Remove(name);
 	}
@@ -98,7 +101,8 @@ public abstract class RequestParameters
 		var g = globalConfig?.QueryStringParameters;
 		var l = QueryString;
 
-		if ((g == null || g.Count == 0) && (l == null || l.Count == 0)) return path;
+		if ((g == null || g.Count == 0) && (l == null || l.Count == 0))
+			return path;
 
 		//create a copy of the global query string collection if needed.
 		var nv = g == null ? new NameValueCollection() : new NameValueCollection(g);
@@ -109,7 +113,8 @@ public abstract class RequestParameters
 			nv.UpdateFromDictionary(l, formatter);
 
 		//if nv has no keys simply return path as provided
-		if (!nv.HasKeys()) return path;
+		if (!nv.HasKeys())
+			return path;
 
 		//create string for query string collection where key and value are escaped properly.
 		var queryString = nv.ToQueryString();
@@ -125,7 +130,7 @@ public abstract class RequestParameters
 
 		var lowerFormat = format.ToLowerInvariant();
 
-		switch(lowerFormat)
+		switch (lowerFormat)
 		{
 			case "smile":
 			case "yaml":

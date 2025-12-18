@@ -38,7 +38,8 @@ public abstract partial class PostData
 
 		public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
 		{
-			if (string.IsNullOrEmpty(_literalString)) return;
+			if (string.IsNullOrEmpty(_literalString))
+				return;
 
 			MemoryStream? buffer = null;
 
@@ -57,7 +58,8 @@ public abstract partial class PostData
 
 		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
 		{
-			if (string.IsNullOrEmpty(_literalString)) return;
+			if (string.IsNullOrEmpty(_literalString))
+				return;
 
 			MemoryStream? buffer = null;
 

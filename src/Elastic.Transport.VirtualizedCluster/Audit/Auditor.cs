@@ -53,20 +53,24 @@ public sealed class Auditor
 	{
 		//synchronous code path
 		_cluster ??= Cluster();
-		if (!StartedUp) AssertPoolBeforeStartup?.Invoke(_cluster.ConnectionPool);
+		if (!StartedUp)
+			AssertPoolBeforeStartup?.Invoke(_cluster.ConnectionPool);
 		AssertPoolBeforeCall?.Invoke(_cluster.ConnectionPool);
 		Response = _cluster.ClientCall(callTrace?.RequestOverrides);
 		AuditTrail = Response.ApiCallDetails.AuditTrail;
-		if (!StartedUp) AssertPoolAfterStartup?.Invoke(_cluster.ConnectionPool);
+		if (!StartedUp)
+			AssertPoolAfterStartup?.Invoke(_cluster.ConnectionPool);
 		AssertPoolAfterCall?.Invoke(_cluster.ConnectionPool);
 
 		//async code path
 		_clusterAsync ??= Cluster();
-		if (!StartedUp) AssertPoolBeforeStartup?.Invoke(_clusterAsync.ConnectionPool);
+		if (!StartedUp)
+			AssertPoolBeforeStartup?.Invoke(_clusterAsync.ConnectionPool);
 		AssertPoolBeforeCall?.Invoke(_clusterAsync.ConnectionPool);
 		ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false);
 		AsyncAuditTrail = ResponseAsync.ApiCallDetails.AuditTrail;
-		if (!StartedUp) AssertPoolAfterStartup?.Invoke(_clusterAsync.ConnectionPool);
+		if (!StartedUp)
+			AssertPoolAfterStartup?.Invoke(_clusterAsync.ConnectionPool);
 		AssertPoolAfterCall?.Invoke(_clusterAsync.ConnectionPool);
 		return new Auditor(_cluster, _clusterAsync);
 	}
@@ -127,7 +131,8 @@ public sealed class Auditor
 		var call = () => { Response = _cluster.ClientCall(callTrace?.RequestOverrides); };
 		call();
 
-		if (Response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType) throw new Exception("Expected call to not be valid");
+		if (Response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
+			throw new Exception("Expected call to not be valid");
 
 		if (Response.ApiCallDetails.OriginalException is not TransportException exception)
 			throw new Exception("OriginalException on response is not expected TransportException");
@@ -141,9 +146,11 @@ public sealed class Auditor
 		_clusterAsync.ClientThrows(false);
 		var callAsync = async () => { ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false); };
 		await callAsync().ConfigureAwait(false);
-		if (Response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType) throw new Exception("Expected call to not be valid");
+		if (Response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
+			throw new Exception("Expected call to not be valid");
 		exception = ResponseAsync.ApiCallDetails.OriginalException as TransportException;
-		if (exception == null) throw new Exception("OriginalException on response is not expected TransportException");
+		if (exception == null)
+			throw new Exception("OriginalException on response is not expected TransportException");
 		assert(exception);
 
 		AsyncAuditTrail = exception.AuditTrail;
@@ -224,7 +231,8 @@ public sealed class Auditor
 	public async Task<Auditor> TraceCalls(params ClientCall[] audits)
 	{
 		var auditor = this;
-		foreach (var a in audits.Select((a, i) => new { a, i })) auditor = await auditor.TraceCall(a.a, a.i).ConfigureAwait(false);
+		foreach (var a in audits.Select((a, i) => new { a, i }))
+			auditor = await auditor.TraceCall(a.a, a.i).ConfigureAwait(false);
 		return auditor;
 	}
 
@@ -277,7 +285,8 @@ public sealed class Auditor
 			exception = ex;
 			assert(ex);
 		}
-		if (exception is null) throw new Exception("No exception happened while one was expected");
+		if (exception is null)
+			throw new Exception("No exception happened while one was expected");
 
 		return exception;
 	}
@@ -293,7 +302,8 @@ public sealed class Auditor
 			exception = ex;
 			assert(ex);
 		}
-		if (exception is null) throw new Exception("No exception happened while one was expected");
+		if (exception is null)
+			throw new Exception("No exception happened while one was expected");
 
 		return exception;
 	}

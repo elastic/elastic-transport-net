@@ -9,7 +9,7 @@ namespace Elastic.Transport.Tests
 {
 	public class InstantiationsTests
 	{
-		public class A {}
+		public class A { }
 
 		[Fact]
 		public void SerializableMultiJson()
@@ -28,7 +28,7 @@ namespace Elastic.Transport.Tests
 		[Fact]
 		public void ObjectMultiJson()
 		{
-			var p = PostData.MultiJson(new object[] {new A()});
+			var p = PostData.MultiJson(new object[] { new A() });
 			p.Type.Should().Be(PostType.EnumerableOfObject);
 		}
 	}

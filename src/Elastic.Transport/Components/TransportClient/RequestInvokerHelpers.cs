@@ -16,7 +16,8 @@ internal static class RequestInvokerHelpers
 
 		var attributes = boundConfiguration.ConnectionSettings.ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails(response.ApiCallDetails);
 
-		if (attributes is null) return;
+		if (attributes is null)
+			return;
 
 		foreach (var attribute in attributes)
 			Activity.Current?.SetTag(attribute.Key, attribute.Value);

@@ -59,5 +59,6 @@ public class SecurityCluster : DefaultCluster
 	public SecurityCluster() : base(new XunitClusterConfiguration(Version, ClusterFeatures.Security | ClusterFeatures.SSL | ClusterFeatures.XPack)
 	{
 		StartingPortNumber = 9202
-	}) { }
+	})
+	{ }
 }

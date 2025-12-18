@@ -21,7 +21,8 @@ namespace Elastic.Transport.Tests.CodeStandards
 		/**
 		* Class names that end with `Base` suffix are abstract
 		*/
-		[Fact] public void ClassNameContainsBaseShouldBeAbstract()
+		[Fact]
+		public void ClassNameContainsBaseShouldBeAbstract()
 		{
 			var exceptions = Array.Empty<Type>();
 
@@ -58,7 +59,8 @@ namespace Elastic.Transport.Tests.CodeStandards
 			return typesNotInTransportNamespace;
 		}
 
-		[Fact] public void AllTransportTypesAreInTheRoot()
+		[Fact]
+		public void AllTransportTypesAreInTheRoot()
 		{
 			// We want all types in the Elastic.Transport namespaces, unless its relates to Diagnostics/Extensions or product specific integration
 			var root = "Elastic.Transport";
@@ -149,7 +151,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 			}
 			nextMustBeStartChar = true;
 			return true;
-			label_6:
+		label_6:
 			return false;
 		}
 	}
