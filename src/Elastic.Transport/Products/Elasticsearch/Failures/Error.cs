@@ -14,7 +14,9 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <summary> Represents the serialized Elasticsearch java exception that caused a request to fail </summary>
 [DataContract]
 [JsonConverter(typeof(ErrorConverter))]
+#pragma warning disable CA1716 // Identifiers should not match keywords
 public sealed class Error : ErrorCause
+#pragma warning restore CA1716 // Identifiers should not match keywords
 {
 	private static readonly IReadOnlyDictionary<string, string> DefaultHeaders =
 		new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0));

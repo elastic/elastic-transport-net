@@ -12,12 +12,12 @@ using Microsoft.Extensions.Hosting;
 
 namespace Elastic.Transport.IntegrationTests.Plumbing
 {
-	internal static class WebHostExtensions
+	internal static partial class WebHostExtensions
 	{
 		internal static int GetServerPort(this IServer server)
 		{
 			var address = server.Features.Get<IServerAddressesFeature>().Addresses.First();
-			var match = Regex.Match(address, @"^.+:(\d+)$");
+			var match = AddressRegex().Match(address);
 
 			if (!match.Success) throw new Exception($"Unable to parse port from address: {address}");
 
@@ -25,5 +25,7 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 			return port ? p : throw new Exception($"Unable to parse port to integer from address: {address}");
 		}
 
+		[GeneratedRegex(@"^.+:(\d+)$")]
+		private static partial Regex AddressRegex();
 	}
 }

@@ -85,13 +85,17 @@ public abstract class RequestParameters
 	}
 
 	/// <summary> </summary>
-	public virtual string CreatePathWithQueryStrings(string? path, ITransportConfiguration? global)
+	public virtual string CreatePathWithQueryStrings(string? path, ITransportConfiguration? globalConfig)
 	{
 		path ??= string.Empty;
+#if NET6_0_OR_GREATER
+		if (path.Contains('?'))
+#else
 		if (path.Contains("?"))
+#endif
 			throw new ArgumentException($"{nameof(path)} can not contain querystring parameters and needs to be already escaped");
 
-		var g = global?.QueryStringParameters;
+		var g = globalConfig?.QueryStringParameters;
 		var l = QueryString;
 
 		if ((g == null || g.Count == 0) && (l == null || l.Count == 0)) return path;
@@ -100,7 +104,7 @@ public abstract class RequestParameters
 		var nv = g == null ? new NameValueCollection() : new NameValueCollection(g);
 
 		//set all querystring pairs from local `l` on the querystring collection
-		var formatter = global?.UrlFormatter;
+		var formatter = globalConfig?.UrlFormatter;
 		if (formatter is not null)
 			nv.UpdateFromDictionary(l, formatter);
 

@@ -25,7 +25,7 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 	/// <inheritdoc cref="ICustomFormatter.Format"/>>
 	public string Format(string? format, object? arg, IFormatProvider? formatProvider)
 	{
-		if (arg == null) throw new ArgumentNullException();
+		if (arg is null) throw new ArgumentNullException(nameof(arg));
 
 		if (format == "r") return arg.ToString() ?? string.Empty;
 

@@ -78,4 +78,4 @@ public class LowLevelRequestResponseSerializerTests : SerializerTestBase
 	}
 }
 
-internal class CustomException(string message) : Exception(message);
+internal sealed class CustomException(string message) : Exception(message);

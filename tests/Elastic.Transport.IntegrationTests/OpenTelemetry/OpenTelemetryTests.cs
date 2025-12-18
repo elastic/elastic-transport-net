@@ -20,7 +20,7 @@ using Xunit;
 namespace Elastic.Transport.IntegrationTests.OpenTelemetry;
 
 // We cannot allow these tests to run in parallel with other tests as the listener may pick up other activities.
-[Collection(nameof(NonParallelCollection))]
+[Collection(nameof(NonParallel))]
 public class OpenTelemetryTests : AssemblyServerTestsBase
 {
 	internal const string Cluster = "e9106fc68e3044f0b1475b04bf4ffd5f";
@@ -29,7 +29,7 @@ public class OpenTelemetryTests : AssemblyServerTestsBase
 	public OpenTelemetryTests(TestServerFixture instance) : base(instance) { }
 
 	[Fact]
-	public async Task ElasticsearchTagsShouldBeSet_WhenUsingTheElasticsearchRegistration()
+	public async Task ElasticsearchTagsShouldBeSetWhenUsingTheElasticsearchRegistration()
 	{
 		var requestInvoker = new TrackingRequestInvoker();
 		var nodePool = new SingleNodePool(Server.Uri);
@@ -100,5 +100,5 @@ public class OpenTelemetryController : ControllerBase
 	}
 }
 
-[CollectionDefinition(nameof(NonParallelCollection), DisableParallelization = true)]
-public class NonParallelCollection { }
+[CollectionDefinition(nameof(NonParallel), DisableParallelization = true)]
+public class NonParallel { }

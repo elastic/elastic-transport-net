@@ -5,7 +5,7 @@
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Elastic.Transport.Tests.Shared;
+using Elastic.Transport.Tests.SharedComponents;
 using FluentAssertions;
 using Xunit;
 
@@ -44,7 +44,7 @@ public class StringResponseBuilderTests
 	}
 
 	[Fact]
-	public async Task ReturnsExpectedResponse_WhenLargeNonChunkedResponse()
+	public async Task ReturnsExpectedResponseWhenLargeNonChunkedResponse()
 	{
 		const string largeJson = "[{\"_id\":\"672b13c7666cae7721b7f5c8\",\"index\":0,\"guid\":\"f8a9356c-660b-4f4f-a1c2-84048e0599b9\",\"isActive\":false,\"balance\":\"$3,856.23\"," +
 			"\"picture\":\"http://placehold.it/32x32\",\"age\":29,\"eyeColor\":\"green\",\"name\":\"Noemi Reed\",\"gender\":\"female\",\"company\":\"LUNCHPOD\",\"email\":" +
@@ -88,7 +88,7 @@ public class StringResponseBuilderTests
 	}
 
 	[Fact]
-	public async Task ReturnsExpectedResponse_WhenLargeChunkedResponse()
+	public async Task ReturnsExpectedResponseWhenLargeChunkedResponse()
 	{
 		const string largeJson = "[{\"_id\":\"672b13c7666cae7721b7f5c8\",\"index\":0,\"guid\":\"f8a9356c-660b-4f4f-a1c2-84048e0599b9\",\"isActive\":false,\"balance\":\"$3,856.23\"," +
 			"\"picture\":\"http://placehold.it/32x32\",\"age\":29,\"eyeColor\":\"green\",\"name\":\"Noemi Reed\",\"gender\":\"female\",\"company\":\"LUNCHPOD\",\"email\":" +
@@ -132,7 +132,7 @@ public class StringResponseBuilderTests
 	}
 
 	[Fact]
-	public async Task ReturnsExpectedResponse_WhenDisableDirectStreaming()
+	public async Task ReturnsExpectedResponseWhenDisableDirectStreaming()
 	{
 		IResponseBuilder sut = new StringResponseBuilder();
 

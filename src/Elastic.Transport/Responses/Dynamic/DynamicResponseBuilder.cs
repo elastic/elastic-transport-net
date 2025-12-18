@@ -2,11 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-#if NET8_0_OR_GREATER
 using System;
+#if NET8_0_OR_GREATER
 using System.Buffers;
 #endif
-
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -28,7 +27,7 @@ internal class DynamicResponseBuilder : TypedResponseBuilder<DynamicResponse>
 		DynamicResponse response;
 
 		//if not json store the result under "body"
-		if (contentType == null || !contentType.StartsWith(BoundConfiguration.DefaultContentType))
+		if (contentType == null || !contentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.Ordinal))
 		{
 			DynamicDictionary dictionary;
 			string stringValue;

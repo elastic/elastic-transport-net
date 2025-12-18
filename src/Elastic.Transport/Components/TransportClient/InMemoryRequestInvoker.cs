@@ -50,7 +50,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	/// <inheritdoc />
 	public ResponseFactory ResponseFactory { get; }
 
-	void IDisposable.Dispose() { }
+	void IDisposable.Dispose() => GC.SuppressFinalize(this);
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
 	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
@@ -88,9 +88,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 				data.Write(zipStream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
 			}
 			else
-			{
 				data.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
-			}
 		}
 
 		var sc = statusCode ?? _statusCode;

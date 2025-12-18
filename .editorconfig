@@ -263,6 +263,18 @@ dotnet_diagnostic.IDE0072.severity = none
 
 dotnet_diagnostic.CA1873.severity = suggestion
 
+# ArgumentNullException.ThrowIfNull not available on all target frameworks
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1510
+dotnet_diagnostic.CA1510.severity = none
+
+# StringBuilder.AppendLine(IFormatProvider, ...) not available on all target frameworks
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1305
+dotnet_diagnostic.CA1305.severity = none
+
+# string.Contains(char) not available on all target frameworks, use IndexOf instead
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2249
+dotnet_diagnostic.CA2249.severity = none
+
 [src/api/Elastic.Transport/Components/Serialization/**.cs]
 dotnet_diagnostic.IL3050.severity = none
 dotnet_diagnostic.IL2026.severity = none

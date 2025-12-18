@@ -14,7 +14,11 @@ namespace Elastic.Transport.Diagnostics;
 /// </summary>
 internal static class TcpStats
 {
+#if NET5_0_OR_GREATER
+	private static readonly int StateLength = Enum.GetNames<TcpState>().Length;
+#else
 	private static readonly int StateLength = Enum.GetNames(typeof(TcpState)).Length;
+#endif
 	private static readonly ReadOnlyDictionary<TcpState, int> Empty = new(new Dictionary<TcpState, int>());
 
 	/// <summary>
@@ -74,7 +78,7 @@ internal static class TcpStats
 			case NetworkInterfaceComponent.IPv6:
 				return properties.GetTcpIPv6Statistics();
 			default:
-				throw new ArgumentException("version");
+				throw new ArgumentException($"Invalid network interface component: {version}", nameof(version));
 		}
 	}
 }

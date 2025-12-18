@@ -18,12 +18,14 @@ namespace Elastic.Transport;
 /// </summary>
 public class StaticNodePool : NodePool
 {
+	private int _globalCursor = -1;
+
 	/// <summary>
 	/// Everytime <see cref="CreateView"/> is called it picks the initial starting point from this cursor.
 	/// After which it uses a local cursor to commence the enumeration. This makes <see cref="CreateView"/> deterministic
 	/// even when if multiple threads enumerate over multiple lazy collections returned by <see cref="CreateView"/>.
 	/// </summary>
-	protected int GlobalCursor = -1;
+	protected ref int GlobalCursor => ref _globalCursor;
 
 	private readonly Func<Node, float>? _nodeScorer;
 
@@ -129,7 +131,7 @@ public class StaticNodePool : NodePool
 	/// e.g Thread A might get 1,2,3,4,5 and thread B will get 2,3,4,5,1.
 	/// if there are no live nodes yields a different dead node to try once
 	/// </summary>
-	public override IEnumerable<Node> CreateView(Auditor? auditor)
+	public override IEnumerable<Node> CreateView(Auditor? auditor = null)
 	{
 		var nodes = AliveNodes;
 
@@ -198,6 +200,6 @@ public class StaticNodePool : NodePool
 	protected IOrderedEnumerable<Node> SortNodes(IEnumerable<Node> nodes) =>
 		_nodeScorer != null
 			? nodes.OrderByDescending(_nodeScorer)
-			: nodes.OrderBy(n => Randomize ? Random.Next() : 1);
+			: nodes.OrderBy(_ => Randomize ? Random.Next() : 1);
 
 }

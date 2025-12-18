@@ -147,4 +147,6 @@ public class OpenTelemetryTests
 }
 
 [CollectionDefinition(nameof(NonParallelCollection), DisableParallelization = true)]
+#pragma warning disable CA1711
 public class NonParallelCollection { }
+#pragma warning restore CA1711

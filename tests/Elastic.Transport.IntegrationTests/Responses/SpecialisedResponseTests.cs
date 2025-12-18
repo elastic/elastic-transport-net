@@ -9,7 +9,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.IntegrationTests.Plumbing;
-using Elastic.Transport.Tests.Shared;
+using Elastic.Transport.Tests.SharedComponents;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
@@ -119,7 +119,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 		""";
 
 	[Fact]
-	public async Task VoidResponse_ShouldReturnExpectedResponse()
+	public async Task VoidResponseShouldReturnExpectedResponse()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -150,7 +150,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task DynamicResponse_WhenContentIsJson_AndNotDisableDirectStreaming_ShouldReturnExpectedResponse()
+	public async Task DynamicResponseWhenContentIsJsonAndNotDisableDirectStreamingShouldReturnExpectedResponse()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -186,7 +186,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task DynamicResponse_WhenContentIsNotJson_AndContentIsChunked_AndNotDisableDirectStreaming_ShouldReturnExpectedResponse()
+	public async Task DynamicResponseWhenContentIsNotJsonAndContentIsChunkedAndNotDisableDirectStreamingShouldReturnExpectedResponse()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -222,7 +222,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task DynamicResponse_WhenContentIsJson_AndDisableDirectStreaming_ShouldReturnExpectedResponse()
+	public async Task DynamicResponseWhenContentIsJsonAndDisableDirectStreamingShouldReturnExpectedResponse()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -259,7 +259,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task DynamicResponse_WhenContentIsNotJson_AndNotDisableDirectStreaming_ShouldReturnExpectedResponse()
+	public async Task DynamicResponseWhenContentIsNotJsonAndNotDisableDirectStreamingShouldReturnExpectedResponse()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -295,7 +295,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task DynamicResponse_WhenContentIsNotJson_AndDisableDirectStreaming_ShouldReturnExpectedResponse()
+	public async Task DynamicResponseWhenContentIsNotJsonAndDisableDirectStreamingShouldReturnExpectedResponse()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -332,7 +332,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task BytesResponse_WithoutDisableDirectStreaming_ShouldReturnExpectedResponse()
+	public async Task BytesResponseWithoutDisableDirectStreamingShouldReturnExpectedResponse()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -366,7 +366,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task BytesResponse_WithDisableDirectStreaming_ShouldReturnExpectedResponse()
+	public async Task BytesResponseWithDisableDirectStreamingShouldReturnExpectedResponse()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -400,7 +400,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task StreamResponse_WithoutDisableDirectStreaming_BodyShouldBeSet_NotDisposed_AndReadable()
+	public async Task StreamResponseWithoutDisableDirectStreamingBodyShouldBeSetNotDisposedAndReadable()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -435,7 +435,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task StreamResponse_WithDisableDirectStreaming_BodyShouldBeSet_NotDisposed_AndReadable()
+	public async Task StreamResponseWithDisableDirectStreamingBodyShouldBeSetNotDisposedAndReadable()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -476,7 +476,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task StringResponse_WithoutDisableDirectStreaming_MemoryStreamShouldBeDisposed()
+	public async Task StringResponseWithoutDisableDirectStreamingMemoryStreamShouldBeDisposed()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -514,7 +514,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task StringResponse_WithContentLongerThan1024_WithoutDisableDirectStreaming_BuildsExpectedResponse_AndMemoryStreamIsDisposed()
+	public async Task StringResponseWithContentLongerThan1024WithoutDisableDirectStreamingBuildsExpectedResponseAndMemoryStreamIsDisposed()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -552,7 +552,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task WhenInvalidJson_WithDisableDirectStreaming_MemoryStreamShouldBeDisposed()
+	public async Task WhenInvalidJsonWithDisableDirectStreamingMemoryStreamShouldBeDisposed()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -590,7 +590,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task WhenInvalidJson_WithoutDisableDirectStreaming_MemoryStreamShouldBeDisposed()
+	public async Task WhenInvalidJsonWithoutDisableDirectStreamingMemoryStreamShouldBeDisposed()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -627,7 +627,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task WhenNoContent_MemoryStreamShouldBeDisposed()
+	public async Task WhenNoContentMemoryStreamShouldBeDisposed()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -664,7 +664,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task WhenNoContent_WithDisableDirectStreaming_MemoryStreamShouldBeDisposed()
+	public async Task WhenNoContentWithDisableDirectStreamingMemoryStreamShouldBeDisposed()
 	{
 		var nodePool = new SingleNodePool(Server.Uri);
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
@@ -704,7 +704,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task PlainText_WithoutCustomResponseBuilder_WithDisableDirectStreaming_MemoryStreamShouldBeDisposed()
+	public async Task PlainTextWithoutCustomResponseBuilderWithDisableDirectStreamingMemoryStreamShouldBeDisposed()
 	{
 		const string expectedString = "test-value";
 
@@ -746,7 +746,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task PlainText_WithoutCustomResponseBuilder_WithoutDisableDirectStreaming_MemoryStreamShouldBeDisposed()
+	public async Task PlainTextWithoutCustomResponseBuilderWithoutDisableDirectStreamingMemoryStreamShouldBeDisposed()
 	{
 		const string expectedString = "test-value";
 
@@ -784,7 +784,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task PlainText_WithoutCustomResponseBuilder_WithoutDisableDirectStreaming__AcceptingPlainText_MemoryStreamShouldBeDisposed()
+	public async Task PlainTextWithoutCustomResponseBuilderWithoutDisableDirectStreamingAcceptingPlainTextMemoryStreamShouldBeDisposed()
 	{
 		const string expectedString = "test-value";
 
@@ -814,7 +814,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task PlainText_WithoutCustomResponseBuilder_WithoutDisableDirectStreaming_WhenChunkedResponse_MemoryStreamShouldBeDisposed()
+	public async Task PlainTextWithoutCustomResponseBuilderWithoutDisableDirectStreamingWhenChunkedResponseMemoryStreamShouldBeDisposed()
 	{
 		const string expectedString = "test-value";
 
@@ -852,7 +852,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task PlainText_WithCustomResponseBuilder_WithDisableDirectStreaming_MemoryStreamShouldBeDisposed()
+	public async Task PlainTextWithCustomResponseBuilderWithDisableDirectStreamingMemoryStreamShouldBeDisposed()
 	{
 		const string expectedString = "test-value";
 
@@ -896,7 +896,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 	}
 
 	[Fact]
-	public async Task PlainText_WithCustomResponseBuilder_WithoutDisableDirectStreaming()
+	public async Task PlainTextWithCustomResponseBuilderWithoutDisableDirectStreaming()
 	{
 		const string expectedString = "test-value";
 
@@ -930,12 +930,12 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 		response.Value.Should().Be(expectedString);
 	}
 
-	private class TestResponse : TransportResponse
+	private sealed class TestResponse : TransportResponse
 	{
 		public string Value { get; internal set; } = string.Empty;
 	};
 
-	private class TestResponseBuilder : TypedResponseBuilder<TestResponse>
+	private sealed class TestResponseBuilder : TypedResponseBuilder<TestResponse>
 	{
 		protected override TestResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength)
 		{
@@ -959,7 +959,7 @@ public class Payload
 	public string ResponseString { get; set; } = "{}";
 	public string ContentType { get; set; } = "application/json";
 	public int StatusCode { get; set; } = 200;
-	public bool IsChunked { get; set; } = false;
+	public bool IsChunked { get; set; }
 }
 
 [ApiController, Route("[controller]")]

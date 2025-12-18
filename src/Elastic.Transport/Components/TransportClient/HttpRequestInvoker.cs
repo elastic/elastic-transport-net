@@ -57,7 +57,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		HttpClientFactory = new BoundConfigurationHttpClientFactory(r =>
 		{
 			var defaultHandler = CreateHttpClientHandler(r);
-			return wrappingHandler(defaultHandler, r) ?? defaultHandler;
+			return wrappingHandler(defaultHandler, r);
 		});
 	}
 
@@ -113,7 +113,7 @@ public class HttpRequestInvoker : IRequestInvoker
 					SetContent(requestMessage, boundConfiguration, postData);
 			}
 
-			using (requestMessage?.Content ?? (IDisposable)Stream.Null)
+			using (requestMessage.Content ?? (IDisposable)Stream.Null)
 			{
 				if (boundConfiguration.EnableTcpStats)
 					tcpStats = TcpStats.GetStates();
@@ -127,11 +127,13 @@ public class HttpRequestInvoker : IRequestInvoker
 					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs);
 
 				if (isAsync)
-					responseMessage = await client.SendAsync(requestMessage!, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+				{
+					responseMessage = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
 						.ConfigureAwait(false);
+				}
 				else
 #if NET6_0_OR_GREATER
-					responseMessage = client.Send(requestMessage!, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 #else
 					responseMessage = client.SendAsync(requestMessage!, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
 #endif
@@ -140,7 +142,7 @@ public class HttpRequestInvoker : IRequestInvoker
 				statusCode = (int)responseMessage.StatusCode;
 			}
 
-			contentType = responseMessage!.Content.Headers.ContentType?.ToString();
+			contentType = responseMessage.Content.Headers.ContentType?.ToString();
 			responseHeaders = ParseHeaders(boundConfiguration, responseMessage);
 
 			if (responseMessage.Content != null)
@@ -176,20 +178,22 @@ public class HttpRequestInvoker : IRequestInvoker
 		try
 		{
 			if (isAsync)
+			{
 				response = await ResponseFactory.CreateAsync<TResponse>
-					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-						.ConfigureAwait(false);
+						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+					.ConfigureAwait(false);
+			}
 			else
+			{
 				response = ResponseFactory.Create<TResponse>
-						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
+					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
+			}
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
 			// resources can be linked such that their disposal is deferred.
 			if (response.LeaveOpen)
-			{
 				response.LinkedDisposables = new[] { receivedResponse!, responseStream! };
-			}
 			else
 			{
 				responseStream?.Dispose();
@@ -213,25 +217,33 @@ public class HttpRequestInvoker : IRequestInvoker
 		Dictionary<string, IEnumerable<string>>? responseHeaders = null;
 		var defaultHeadersForProduct = boundConfiguration.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
 		foreach (var headerToParse in defaultHeadersForProduct)
+		{
 			if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 			{
 				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(headerToParse, values);
 			}
+		}
 
 		if (boundConfiguration.ParseAllHeaders)
+		{
 			foreach (var header in responseMessage.Headers)
 			{
 				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(header.Key, header.Value);
 			}
+		}
 		else if (boundConfiguration.ResponseHeadersToParse is { Count:  > 0 })
+		{
 			foreach (var headerToParse in boundConfiguration.ResponseHeadersToParse)
+			{
 				if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 				{
 					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 					responseHeaders.Add(headerToParse, values);
 				}
+			}
+		}
 
 		return responseHeaders;
 	}
@@ -253,6 +265,7 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		// same limit as desktop clr
 		if (boundConfiguration.ConnectionSettings.ConnectionLimit > 0)
+		{
 			try
 			{
 				handler.MaxConnectionsPerServer = boundConfiguration.ConnectionSettings.ConnectionLimit;
@@ -265,6 +278,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			{
 				throw new Exception(MissingConnectionLimitMethodError, e);
 			}
+		}
 
 		if (!boundConfiguration.ProxyAddress.IsNullOrEmpty())
 		{
@@ -282,9 +296,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		// Configure certificate validation
 		var callback = boundConfiguration.ConnectionSettings?.ServerCertificateValidationCallback;
 		if (callback != null && handler.ServerCertificateCustomValidationCallback == null)
-		{
 			handler.ServerCertificateCustomValidationCallback = callback!;
-		}
 		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings?.CertificateFingerprint))
 		{
 			handler.ServerCertificateCustomValidationCallback = (request, certificate, chain, policyErrors) =>
@@ -322,7 +334,7 @@ public class HttpRequestInvoker : IRequestInvoker
 	{
 		var finalFingerprint = fingerprint;
 
-		if (fingerprint.Contains(':'))
+		if (fingerprint.IndexOf(':') >= 0)
 			finalFingerprint = fingerprint.Replace(":", string.Empty);
 
 		return finalFingerprint;
@@ -353,7 +365,7 @@ public class HttpRequestInvoker : IRequestInvoker
 	internal void SetAuthenticationIfNeeded(Endpoint endpoint, BoundConfiguration boundConfiguration, HttpRequestMessage requestMessage)
 	{
 		//If user manually specifies an Authorization Header give it preference
-		if (boundConfiguration.Headers != null && boundConfiguration.Headers.HasKeys() && boundConfiguration.Headers.AllKeys.Contains("Authorization"))
+		if (boundConfiguration.Headers != null && boundConfiguration.Headers.HasKeys() && Enumerable.Contains(boundConfiguration.Headers.AllKeys, "Authorization", StringComparer.OrdinalIgnoreCase))
 		{
 			var header = AuthenticationHeaderValue.Parse(boundConfiguration.Headers["Authorization"]!);
 			requestMessage.Headers.Authorization = header;
@@ -394,8 +406,10 @@ public class HttpRequestInvoker : IRequestInvoker
 		var requestMessage = new HttpRequestMessage(method, endpoint.Uri);
 
 		if (boundConfiguration.Headers != null)
+		{
 			foreach (string key in boundConfiguration.Headers)
 				requestMessage.Headers.TryAddWithoutValidation(key, boundConfiguration.Headers.GetValues(key)!);
+		}
 
 		requestMessage.Headers.Connection.Clear();
 		requestMessage.Headers.ConnectionClose = false;
@@ -532,6 +546,7 @@ public class HttpRequestInvoker : IRequestInvoker
 	{
 		HttpClientFactory.Dispose();
 		DisposeManagedResources();
+		GC.SuppressFinalize(this);
 	}
 }
 #endif

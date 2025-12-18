@@ -13,59 +13,59 @@ public class TestableResponseFactoryTests
 	/// <summary>
 	/// Class used for testing purposes only
 	/// </summary>
-	private class TestableResponse : ElasticsearchResponse { }
+	private sealed class TestableResponse : ElasticsearchResponse { }
 
 	[Fact]
-	public void CreateSuccessfulResponse_ShouldBeValid()
+	public void CreateSuccessfulResponseShouldBeValid()
 	{
 		var response = TestableResponseFactory.CreateSuccessfulResponse<TestableResponse>(new(), 200);
 		response.IsValidResponse.Should().BeTrue();
 	}
 
 	[Fact]
-	public void CreateSuccessfulResponse_ApiCallDetailsShouldContainStatusCode()
+	public void CreateSuccessfulResponseApiCallDetailsShouldContainStatusCode()
 	{
 		var response = TestableResponseFactory.CreateSuccessfulResponse<TestableResponse>(new(), 200);
 		response.ApiCallDetails.HttpStatusCode.Should().Be(200);
 	}
 
 	[Fact]
-	public void CreateSuccessfulResponse_ApiCallDetailsShouldBeSuccessful()
+	public void CreateSuccessfulResponseApiCallDetailsShouldBeSuccessful()
 	{
 		var response = TestableResponseFactory.CreateSuccessfulResponse<TestableResponse>(new(), 200);
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
 
 	[Fact]
-	public void CreateResponse_GivenBadResponse_ShouldNotBeValid()
+	public void CreateResponseGivenBadResponseShouldNotBeValid()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
 		response.IsValidResponse.Should().BeFalse();
 	}
 
 	[Fact]
-	public void CreateResponse_ApiCallDetailsShouldContainStatusCode()
+	public void CreateResponseApiCallDetailsShouldContainStatusCode()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
 		response.ApiCallDetails.HttpStatusCode.Should().Be(400);
 	}
 
 	[Fact]
-	public void CreateResponse_ApiCallDetailsShouldNotBeSuccessful()
+	public void CreateResponseApiCallDetailsShouldNotBeSuccessful()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
 		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeFalse();
 	}
 
 	[Fact]
-	public void CreateResponse_ResponseShouldIncludeDebugInfo()
+	public void CreateResponseResponseShouldIncludeDebugInfo()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
 		response.DebugInformation.Should().NotBeNull();
 	}
 
 	[Fact]
-	public void CreateResponse_OriginalExceptionShouldBeNull()
+	public void CreateResponseOriginalExceptionShouldBeNull()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
 		response.TryGetOriginalException(out var exception);
@@ -73,14 +73,14 @@ public class TestableResponseFactoryTests
 	}
 
 	[Fact]
-	public void CreateResponse_ElasticsearchServerErrorShouldBeNull()
+	public void CreateResponseElasticsearchServerErrorShouldBeNull()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
 		response.ElasticsearchServerError.Should().BeNull();
 	}
 
 	[Fact]
-	public void CreateResponse_ElasticsearchWarningsShouldBeEmpty()
+	public void CreateResponseElasticsearchWarningsShouldBeEmpty()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
 		response.ElasticsearchWarnings.Should().BeEmpty();

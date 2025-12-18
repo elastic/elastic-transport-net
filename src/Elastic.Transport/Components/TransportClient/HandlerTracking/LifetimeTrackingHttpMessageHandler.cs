@@ -25,6 +25,7 @@ internal sealed class LifetimeTrackingHttpMessageHandler : DelegatingHandler
 	protected override void Dispose(bool disposing)
 	{
 		// The lifetime of this is tracked separately by ActiveHandlerTrackingEntry
+		base.Dispose(disposing);
 	}
 }
 #endif

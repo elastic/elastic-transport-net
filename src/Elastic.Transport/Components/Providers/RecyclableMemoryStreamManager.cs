@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 
@@ -145,7 +146,7 @@ internal sealed partial class RecyclableMemoryStreamManager
 		UseExponentialLargeBuffer = useExponentialLargeBuffer;
 
 		if (!IsLargeBufferSize(maximumBufferSize))
-			throw new ArgumentException(string.Format("maximumBufferSize is not {0} of largeBufferMultiple",
+			throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "maximumBufferSize is not {0} of largeBufferMultiple",
 					UseExponentialLargeBuffer ? "an exponential" : "a multiple"),
 				nameof(maximumBufferSize));
 
@@ -398,7 +399,11 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// </exception>
 	internal void ReturnLargeBuffer(byte[] buffer, string? tag)
 	{
+#if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(buffer);
+#else
+		if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+#endif
 
 		if (!IsLargeBufferSize(buffer.Length))
 			throw new ArgumentException(
@@ -449,7 +454,11 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// <exception cref="ArgumentException">blocks contains buffers that are the wrong size (or null) for this memory manager</exception>
 	internal void ReturnBlocks(ICollection<byte[]> blocks, string? tag)
 	{
+#if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(blocks);
+#else
+		if (blocks == null) throw new ArgumentNullException(nameof(blocks));
+#endif
 
 		var bytesToReturn = blocks.Count * BlockSize;
 		Interlocked.Add(ref _smallPoolInUseSize, -bytesToReturn);

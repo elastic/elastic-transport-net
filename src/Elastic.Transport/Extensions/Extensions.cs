@@ -37,7 +37,7 @@ internal static class EnumExtensions
 internal static class Extensions
 {
 	[Obsolete("Please use the overload placing the enumerated array as out")]
-	internal static bool HasAny<T>(this ICollection<T> list) => list != null && list.Any();
+	internal static bool HasAny<T>(this ICollection<T> list) => list != null && list.Count > 0;
 
 	internal static bool HasAny<T>(this IEnumerable<T>? list, out T[]? enumerated)
 	{

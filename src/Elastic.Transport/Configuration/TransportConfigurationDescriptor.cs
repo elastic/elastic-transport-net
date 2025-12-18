@@ -558,5 +558,9 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		return (T)this;
 	}
 
-	void IDisposable.Dispose() => DisposeManagedResources();
+	void IDisposable.Dispose()
+	{
+		DisposeManagedResources();
+		GC.SuppressFinalize(this);
+	}
 }

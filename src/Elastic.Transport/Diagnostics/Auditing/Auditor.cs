@@ -9,7 +9,9 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport.Diagnostics.Auditing;
 
 /// Collects <see cref="Audit"/> events
+#pragma warning disable CA1710 // Identifiers should have correct suffix
 public class Auditor : IReadOnlyCollection<Audit>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
 {
 	private readonly DateTimeProvider _dateTimeProvider;
 	private List<Audit>? _audits;

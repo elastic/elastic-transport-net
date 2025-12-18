@@ -70,13 +70,16 @@ public sealed class CloudNodePool : SingleNodePool
 
 	}
 
+	private static readonly char[] ColonSeparator = [':'];
+	private static readonly char[] DollarSeparator = ['$'];
+
 	private static ParsedCloudId ParseCloudId(string cloudId)
 	{
 		const string exceptionSuffix = "should be a string in the form of cluster_name:base_64_data";
 		if (string.IsNullOrWhiteSpace(cloudId))
 			throw new ArgumentException($"Parameter {nameof(cloudId)} was null or empty but {exceptionSuffix}", nameof(cloudId));
 
-		var tokens = cloudId.Split(new[] { ':' }, 2);
+		var tokens = cloudId.Split(ColonSeparator, 2);
 		if (tokens.Length != 2)
 			throw new ArgumentException($"Parameter {nameof(cloudId)} not in expected format, {exceptionSuffix}", nameof(cloudId));
 
@@ -86,7 +89,7 @@ public sealed class CloudNodePool : SingleNodePool
 			throw new ArgumentException($"Parameter {nameof(cloudId)} base_64_data is empty, {exceptionSuffix}", nameof(cloudId));
 
 		var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
-		var parts = decoded.Split(new[] { '$' });
+		var parts = decoded.Split(DollarSeparator);
 		if (parts.Length < 2)
 			throw new ArgumentException($"Parameter {nameof(cloudId)} decoded base_64_data contains less then 2 tokens, {exceptionSuffix}", nameof(cloudId));
 

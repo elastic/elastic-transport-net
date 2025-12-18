@@ -171,10 +171,10 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// information.
 	/// </summary>
 	/// <returns>
-	/// A <see cref="T:System.Decimal" /> number equivalent to the value of this instance.
+	/// A <see cref="System.Decimal" /> number equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
@@ -188,7 +188,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// A double-precision floating-point number equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
@@ -201,7 +201,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// An 16-bit signed integer equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
@@ -214,7 +214,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// An 32-bit signed integer equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
@@ -227,7 +227,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// An 64-bit signed integer equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
@@ -240,7 +240,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// An 8-bit signed integer equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
@@ -255,37 +255,37 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// A single-precision floating-point number equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
 	public float ToSingle(IFormatProvider? provider) => Convert.ToSingle(_value, provider);
 
 	/// <summary>
-	/// Converts the value of this instance to an equivalent <see cref="T:System.String" /> using the specified culture-specific formatting
+	/// Converts the value of this instance to an equivalent <see cref="System.String" /> using the specified culture-specific formatting
 	/// information.
 	/// </summary>
 	/// <returns>
-	/// A <see cref="T:System.String" /> instance equivalent to the value of this instance.
+	/// A <see cref="System.String" /> instance equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
 	public string ToString(IFormatProvider? provider) => Convert.ToString(_value, provider)!;
 
 	/// <summary>
-	/// Converts the value of this instance to an <see cref="T:System.Object" /> of the specified <see cref="T:System.Type" /> that has an
+	/// Converts the value of this instance to an <see cref="System.Object" /> of the specified <see cref="System.Type" /> that has an
 	/// equivalent value, using the specified culture-specific formatting information.
 	/// </summary>
 	/// <returns>
-	/// An <see cref="T:System.Object" /> instance of type <paramref name="conversionType" /> whose value is equivalent to the value of this
+	/// An <see cref="System.Object" /> instance of type <paramref name="conversionType" /> whose value is equivalent to the value of this
 	/// instance.
 	/// </returns>
-	/// <param name="conversionType">The <see cref="T:System.Type" /> to which the value of this instance is converted. </param>
+	/// <param name="conversionType">The <see cref="System.Type" /> to which the value of this instance is converted. </param>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
@@ -298,7 +298,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// An 16-bit unsigned integer equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
@@ -312,7 +312,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// An 32-bit unsigned integer equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
@@ -326,7 +326,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// An 64-bit unsigned integer equivalent to the value of this instance.
 	/// </returns>
 	/// <param name="provider">
-	/// An <see cref="T:System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
+	/// An <see cref="System.IFormatProvider" /> interface implementation that supplies culture-specific formatting
 	/// information.
 	/// </param>
 	/// <filterpriority>2</filterpriority>
@@ -461,7 +461,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 			catch
 			{
 				var typeName = _value!.GetType().Name;
-				var message = string.Format("Cannot convert value of type '{0}' to type '{1}'",
+				var message = string.Format(CultureInfo.InvariantCulture, "Cannot convert value of type '{0}' to type '{1}'",
 					typeName, typeof(T).Name);
 
 				throw new InvalidCastException(message);
@@ -600,7 +600,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 			{
 				if (targetReturnType == typeof(object))
 				{
-					newObject = Convert.ChangeType(value, targetReturnType);
+					newObject = Convert.ChangeType(value, targetReturnType, InvariantCulture);
 					return true;
 				}
 
@@ -620,7 +620,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 			}
 			else if (valueType.IsValueType)
 			{
-				newObject = Convert.ChangeType(_value, targetReturnType);
+				newObject = Convert.ChangeType(_value, targetReturnType, InvariantCulture);
 				return true;
 			}
 			else if (targetReturnType == typeof(DynamicDictionary) && valueType == typeof(Dictionary<string, object>))
@@ -663,23 +663,23 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	/// <c>true</c> if the specified <see cref="object" /> is equal to the current <see cref="DynamicValue" />; otherwise,
 	/// <c>false</c>.
 	/// </returns>
-	/// <param name="compareValue">The <see cref="object" /> to compare with the current <see cref="DynamicValue" />.</param>
-	public override bool Equals(object? compareValue)
+	/// <param name="obj">The <see cref="object" /> to compare with the current <see cref="DynamicValue" />.</param>
+	public override bool Equals(object? obj)
 	{
-		if (ReferenceEquals(null, compareValue))
+		if (ReferenceEquals(null, obj))
 		{
 			return false;
 		}
 
-		if (ReferenceEquals(this, compareValue)
-			|| ReferenceEquals(_value, compareValue)
-			|| Equals(_value, compareValue)
+		if (ReferenceEquals(this, obj)
+			|| ReferenceEquals(_value, obj)
+			|| Equals(_value, obj)
 		)
 		{
 			return true;
 		}
 
-		return compareValue.GetType() == typeof(DynamicValue) && Equals((DynamicValue)compareValue);
+		return obj.GetType() == typeof(DynamicValue) && Equals((DynamicValue)obj);
 	}
 
 	/// <summary>
@@ -861,7 +861,7 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 	public static implicit operator DateTimeOffset(DynamicValue dynamicValue)
 	{
 		if (dynamicValue._value is JsonElement e && e.TryGetDateTimeOffset(out var v)) return v;
-		return dynamicValue._value is DateTimeOffset offset ? offset : DateTimeOffset.Parse(dynamicValue.ToString()!, InvariantCulture);
+		return dynamicValue._value is DateTimeOffset offset ? offset : DateTimeOffset.Parse(dynamicValue.ToString(InvariantCulture)!, InvariantCulture);
 	}
 
 	public static implicit operator TimeSpan(DynamicValue dynamicValue) =>

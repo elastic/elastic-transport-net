@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Elastic.Transport.Products;
 using Elastic.Transport.Products.Elasticsearch;
 using Elastic.Transport.Tests.Plumbing;
-using Elastic.Transport.Tests.Shared;
+using Elastic.Transport.Tests.SharedComponents;
 using FluentAssertions;
 using Xunit;
 
@@ -17,66 +17,66 @@ namespace Elastic.Transport.Tests;
 public class ResponseFactoryDisposeTests
 {
 	[Fact]
-	public async Task StreamResponse_WithPotentialBody_StreamIsNotDisposed() =>
+	public async Task StreamResponseWithPotentialBodyStreamIsNotDisposed() =>
 		// We expect no streams to be created as the original response stream should be directly returned and not disposed
 		await AssertResponse<StreamResponse>(disableDirectStreaming: false, expectMemoryStreamDisposal: false);
 
 	[Fact]
-	public async Task StreamResponse_WithPotentialBody_AndDisableDirectStreaming_MemoryStreamIsNotDisposed() =>
+	public async Task StreamResponseWithPotentialBodyAndDisableDirectStreamingMemoryStreamIsNotDisposed() =>
 		await AssertResponse<StreamResponse>(disableDirectStreaming: true, expectMemoryStreamDisposal: false, memoryStreamCreateExpected: 1);
 
 	[Fact]
-	public async Task Response_WithPotentialBody_AndDisableDirectStreaming_ButInvalidContentType_MemoryStreamIsDisposed() =>
+	public async Task ResponseWithPotentialBodyAndDisableDirectStreamingButInvalidContentTypeMemoryStreamIsDisposed() =>
 		await AssertResponse<TestResponse>(disableDirectStreaming: true, contentType: "application/not-valid", expectMemoryStreamDisposal: true,
 			memoryStreamCreateExpected: 1);
 
 	[Fact]
-	public async Task Response_WithPotentialBody_AndDisableDirectStreaming_ButSkippedStatusCode_MemoryStreamIsDisposed() =>
+	public async Task ResponseWithPotentialBodyAndDisableDirectStreamingButSkippedStatusCodeMemoryStreamIsDisposed() =>
 		await AssertResponse<TestResponse>(disableDirectStreaming: true, skipStatusCode: 200, expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 1);
 
 	[Fact]
-	public async Task Response_WithPotentialBody_AndDisableDirectStreaming_ButEmptyJson_MemoryStreamIsDisposed() =>
+	public async Task ResponseWithPotentialBodyAndDisableDirectStreamingButEmptyJsonMemoryStreamIsDisposed() =>
 		await AssertResponse<TestResponse>(disableDirectStreaming: true, responseJson: "  ", expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 1);
 
 	[Fact]
-	public async Task Response_WithPotentialBody_AndNotDisableDirectStreaming_ButEmptyJson_MemoryStreamIsDisposed() =>
+	public async Task ResponseWithPotentialBodyAndNotDisableDirectStreamingButEmptyJsonMemoryStreamIsDisposed() =>
 		await AssertResponse<TestResponse>(disableDirectStreaming: false, responseJson: "  ", expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 0);
 
 	[Fact]
 	// NOTE: The empty string here hits a fast path in STJ which returns default if the stream length is zero.
-	public async Task Response_WithPotentialBody_AndDisableDirectStreaming_ButNullResponseDuringDeserialization_MemoryStreamIsDisposed() =>
+	public async Task ResponseWithPotentialBodyAndDisableDirectStreamingButNullResponseDuringDeserializationMemoryStreamIsDisposed() =>
 		await AssertResponse<TestResponse>(disableDirectStreaming: true, responseJson: "", expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 1);
 
 	[Fact]
 	// NOTE: The empty string here hits a fast path in STJ which returns default if the stream length is zero.
-	public async Task Response_WithPotentialBody_AndNotDisableDirectStreaming_ButNullResponseDuringDeserialization_MemoryStreamIsDisposed() =>
+	public async Task ResponseWithPotentialBodyAndNotDisableDirectStreamingButNullResponseDuringDeserializationMemoryStreamIsDisposed() =>
 		await AssertResponse<TestResponse>(disableDirectStreaming: false, responseJson: "", expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 0);
 
 	[Fact]
 	// NOTE: We expect one memory stream factory creation when handling error responses even when not using DisableDirectStreaming
-	public async Task Response_WithPotentialBody_AndNotDisableDirectStreaming_AndErrorResponse_StreamIsDisposed() =>
+	public async Task ResponseWithPotentialBodyAndNotDisableDirectStreamingAndErrorResponseStreamIsDisposed() =>
 		await AssertResponse<TestResponse>(disableDirectStreaming: false, productRegistration: new ElasticsearchProductRegistration(), statusCode: 400,
 			expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 1);
 
 	[Fact]
-	public async Task Response_WithPotentialBody_AndDisableDirectStreaming_AndErrorResponse_StreamIsDisposed() =>
+	public async Task ResponseWithPotentialBodyAndDisableDirectStreamingAndErrorResponseStreamIsDisposed() =>
 		await AssertResponse<TestResponse>(disableDirectStreaming: true, productRegistration: new ElasticsearchProductRegistration(), statusCode: 400,
 			expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 1);
 
 	[Fact]
-	public async Task StringResponse_WithPotentialBody_AndNotDisableDirectStreaming_AndNotChunkedReponse_NoMemoryStreamIsCreated() =>
+	public async Task StringResponseWithPotentialBodyAndNotDisableDirectStreamingAndNotChunkedReponseNoMemoryStreamIsCreated() =>
 		await AssertResponse<StringResponse>(disableDirectStreaming: false, expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 0);
 
 	[Fact]
-	public async Task StringResponse_WithPotentialBody_AndNotDisableDirectStreaming_AndChunkedReponse_NoMemoryStreamIsCreated() =>
+	public async Task StringResponseWithPotentialBodyAndNotDisableDirectStreamingAndChunkedReponseNoMemoryStreamIsCreated() =>
 		await AssertResponse<StringResponse>(disableDirectStreaming: false, expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 0, isChunked: true);
 
 	[Fact]
-	public async Task StringResponse_WithPotentialBody_AndDisableDirectStreaming_AndChunkedReponse_MemoryStreamIsDisposed() =>
+	public async Task StringResponseWithPotentialBodyAndDisableDirectStreamingAndChunkedReponseMemoryStreamIsDisposed() =>
 		await AssertResponse<StringResponse>(disableDirectStreaming: true, expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 1, isChunked: true);
 
 	[Fact]
-	public async Task StringResponse_WithPotentialBody_AndDisableDirectStreaming_AndNotChunkedReponse_MemoryStreamIsDisposed() =>
+	public async Task StringResponseWithPotentialBodyAndDisableDirectStreamingAndNotChunkedReponseMemoryStreamIsDisposed() =>
 		await AssertResponse<StringResponse>(disableDirectStreaming: true, expectMemoryStreamDisposal: true, memoryStreamCreateExpected: 1);
 
 	private async Task AssertResponse<T>(bool disableDirectStreaming, int statusCode = 200, HttpMethod httpMethod = HttpMethod.GET, bool isChunked = true,
@@ -134,7 +134,7 @@ public class ResponseFactoryDisposeTests
 
 		Validate(disableDirectStreaming, expectMemoryStreamDisposal, memoryStreamCreateExpected, memoryStreamFactory, stream, response);
 
-		static void Validate(bool disableDirectStreaming, bool expectedDisposed, int memoryStreamCreateExpected, TrackingMemoryStreamFactory memoryStreamFactory, TrackDisposeStream stream, T response) 
+		static void Validate(bool disableDirectStreaming, bool expectedDisposed, int memoryStreamCreateExpected, TrackingMemoryStreamFactory memoryStreamFactory, TrackDisposeStream stream, T response)
 		{
 			response.Should().NotBeNull();
 

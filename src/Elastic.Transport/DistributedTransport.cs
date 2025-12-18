@@ -67,22 +67,22 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	/// <inheritdoc cref="ITransport.Request{TResponse}"/>
 	public TResponse Request<TResponse>(
 		in EndpointPath path,
-		PostData? data,
+		PostData? postData,
 		Action<Activity>? configureActivity,
 		IRequestConfiguration? localConfiguration
 	) where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(isAsync: false, path, data, configureActivity, localConfiguration)
+		RequestCoreAsync<TResponse>(isAsync: false, path, postData, configureActivity, localConfiguration)
 			.EnsureCompleted();
 
 	/// <inheritdoc cref="ITransport.RequestAsync{TResponse}"/>
 	public Task<TResponse> RequestAsync<TResponse>(
 		in EndpointPath path,
-		PostData? data,
+		PostData? postData,
 		Action<Activity>? configureActivity,
 		IRequestConfiguration? localConfiguration,
 		CancellationToken cancellationToken = default
 	) where TResponse : TransportResponse, new() =>
-		RequestCoreAsync<TResponse>(isAsync: true, path, data, configureActivity, localConfiguration, cancellationToken)
+		RequestCoreAsync<TResponse>(isAsync: true, path, postData, configureActivity, localConfiguration, cancellationToken)
 			.AsTask();
 
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(

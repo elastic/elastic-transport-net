@@ -76,13 +76,18 @@ namespace Elastic.Transport.IntegrationTests.Plumbing
 		public ITransport CreateTransport(Func<TransportConfiguration, ITransport> create) =>
 			create(new TransportConfiguration(Uri));
 
-		public void Dispose() => _host?.Dispose();
+		public void Dispose()
+		{
+			_host?.Dispose();
+			GC.SuppressFinalize(this);
+		}
 
 		public ValueTask InitializeAsync() => StartAsync();
 
 		public ValueTask DisposeAsync()
 		{
 			Dispose();
+			GC.SuppressFinalize(this);
 			return ValueTask.CompletedTask;
 		}
 
