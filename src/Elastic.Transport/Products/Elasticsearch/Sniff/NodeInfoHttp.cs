@@ -3,11 +3,15 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Elastic.Transport.Products.Elasticsearch;
 
 internal sealed class NodeInfoHttp
 {
-	public IList<string>? bound_address { get; set; }
-	public string? publish_address { get; set; }
+	[JsonPropertyName("bound_address")]
+	public IList<string>? BoundAddress { get; set; }
+
+	[JsonPropertyName("publish_address")]
+	public string? PublishAddress { get; set; }
 }

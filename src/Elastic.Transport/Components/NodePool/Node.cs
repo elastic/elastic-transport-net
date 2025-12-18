@@ -21,7 +21,7 @@ public sealed class Node : IEquatable<Node>
 	{
 		// This make sures that a node can be rooted at a path to. Without the trailing slash Uri's will remove `instance` from
 		// http://my-saas-provider.com/instance
-		// Where this might be the user specific path
+		// Where this might be the user-specific path
 #if NET6_0_OR_GREATER
 		if (!uri.OriginalString.EndsWith('/'))
 #else
@@ -46,7 +46,7 @@ public sealed class Node : IEquatable<Node>
 			field = value;
 			_featureSet = [.. field];
 		}
-	} = EmptyReadOnly<string>.Collection;
+	}
 
 	/// <summary>
 	/// Settings as returned by the server, can be used in various ways later on. E.g <see cref="ITransportConfiguration.NodePredicate"/> can use it
@@ -54,10 +54,10 @@ public sealed class Node : IEquatable<Node>
 	/// </summary>
 	public IReadOnlyDictionary<string, object> Settings { get; set; } = EmptyReadOnly<string, object>.Dictionary;
 
-	/// <summary>The id of the node, defaults to null when unknown/unspecified</summary>
+	/// <summary>The id of the node defaults to null when unknown/unspecified</summary>
 	public string? Id { get; internal set; }
 
-	/// <summary>The name of the node, defaults to null when unknown/unspecified</summary>
+	/// <summary>The name of the node defaults to null when unknown/unspecified</summary>
 	public string? Name { get; set; }
 
 	/// <summary> The base endpoint where the node can be reached </summary>
@@ -69,13 +69,13 @@ public sealed class Node : IEquatable<Node>
 	/// </summary>
 	public bool IsAlive { get; private set; }
 
-	/// <summary> When marked dead this reflects the date that the node has to be taken out of rotation till</summary>
+	/// <summary> When marked dead, this reflects the date that the node has to be taken out of rotation till</summary>
 	public DateTimeOffset DeadUntil { get; private set; }
 
-	/// <summary> The number of failed attempts trying to use this node, resets when a node is marked alive</summary>
+	/// <summary> The number of failed attempts trying to use this node resets when a node is marked alive</summary>
 	public int FailedAttempts { get; private set; }
 
-	/// <summary> When set this signals the transport that a ping before first usage would be wise</summary>
+	/// <summary> When set, this signals the transport that a ping before first usage would be wise</summary>
 	public bool IsResurrected { get; set; }
 
 	/// <summary>
