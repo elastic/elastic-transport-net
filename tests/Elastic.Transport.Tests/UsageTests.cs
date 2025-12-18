@@ -108,8 +108,8 @@ public class UsageTests
 			nodePool ?? new SingleNodePool(new Uri("http://default-endpoint.example"))
 				, transportCLient, requestResponseSerializer, productRegistration)
 	{
-		private string _setting;
-		public MyClientConfiguration NewSettings(string value) => Assign(value, (c, v) => _setting = v);
+		public string Setting { get; private set; }
+		public MyClientConfiguration NewSettings(string value) => Assign(value, (c, v) => Setting = v);
 	}
 
 	[Fact]

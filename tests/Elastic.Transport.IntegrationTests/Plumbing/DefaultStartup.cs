@@ -19,10 +19,7 @@ public class DefaultStartup(IConfiguration configuration)
 
 	public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 	{
-		if (env.IsDevelopment())
-			_ = app.UseDeveloperExceptionPage();
-		else
-			_ = app.UseHsts();
+		_ = env.IsDevelopment() ? app.UseDeveloperExceptionPage() : app.UseHsts();
 
 		_ = app.UseHttpsRedirection();
 		_ = app.UseRouting();

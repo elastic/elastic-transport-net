@@ -71,9 +71,7 @@ public abstract class ResponseFactory
 		var allowedStatusCodes = boundConfiguration.AllowedStatusCodes;
 		if (statusCode.HasValue)
 		{
-			hasSuccessfulStatusCode = allowedStatusCodes.Contains(-1) || allowedStatusCodes.Contains(statusCode.Value)
-				? true
-				: boundConfiguration.ConnectionSettings
+			hasSuccessfulStatusCode = allowedStatusCodes.Contains(-1) || allowedStatusCodes.Contains(statusCode.Value) || boundConfiguration.ConnectionSettings
 					.StatusCodeToResponseSuccess(endpoint.Method, statusCode.Value);
 		}
 
@@ -108,7 +106,7 @@ public abstract class ResponseFactory
 	/// In that case, we may have a body and can only use the status code and method conditions to rule out a potential body.
 	/// </summary>
 	protected static bool MayHaveBody(int? statusCode, HttpMethod httpMethod, long contentLength) =>
-		contentLength != 0 && (!statusCode.HasValue || statusCode.Value != 204 && httpMethod != HttpMethod.HEAD);
+		contentLength != 0 && (!statusCode.HasValue || (statusCode.Value != 204 && httpMethod != HttpMethod.HEAD));
 
 	internal static bool ValidateResponseContentType(string accept, string? responseContentType)
 	{
@@ -130,7 +128,7 @@ public abstract class ResponseFactory
 			// - 404 responses from ES8 don't include the vendored header
 			// - ES8 EQL responses don't include vendored type
 
-			|| trimmedAccept.Contains("application/vnd.elasticsearch+json")
-			&& normalizedResponseContentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.OrdinalIgnoreCase);
+			|| (trimmedAccept.Contains("application/vnd.elasticsearch+json")
+			&& normalizedResponseContentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.OrdinalIgnoreCase));
 	}
 }

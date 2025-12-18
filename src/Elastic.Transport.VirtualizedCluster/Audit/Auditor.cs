@@ -90,8 +90,8 @@ public sealed class Auditor
 		_cluster.ClientThrows(true);
 		AssertPoolBeforeCall?.Invoke(_cluster.ConnectionPool);
 
-		void call() => Response = _cluster.ClientCall(callTrace?.RequestOverrides);
-		var exception = TryCall(call, assert);
+		void Call() => Response = _cluster.ClientCall(callTrace?.RequestOverrides);
+		var exception = TryCall(Call, assert);
 		assert(exception);
 
 		AuditTrail = exception.AuditTrail;
@@ -99,8 +99,8 @@ public sealed class Auditor
 
 		_clusterAsync ??= Cluster();
 		_clusterAsync.ClientThrows(true);
-		async Task callAsync() => ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false);
-		exception = await TryCallAsync(callAsync, assert).ConfigureAwait(false);
+		async Task CallAsync() => ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false);
+		exception = await TryCallAsync(CallAsync, assert).ConfigureAwait(false);
 		assert(exception);
 
 		AsyncAuditTrail = exception.AuditTrail;
@@ -128,9 +128,8 @@ public sealed class Auditor
 		_cluster.ClientThrows(false);
 		AssertPoolBeforeCall?.Invoke(_cluster.ConnectionPool);
 
-		void call()
-		{ Response = _cluster.ClientCall(callTrace?.RequestOverrides); }
-		call();
+		void Call() => Response = _cluster.ClientCall(callTrace?.RequestOverrides);
+		Call();
 
 		if (Response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
 			throw new Exception("Expected call to not be valid");
@@ -145,9 +144,8 @@ public sealed class Auditor
 
 		_clusterAsync ??= Cluster();
 		_clusterAsync.ClientThrows(false);
-		async Task callAsync()
-		{ ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false); }
-		await callAsync().ConfigureAwait(false);
+		async Task CallAsync() => ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false);
+		await CallAsync().ConfigureAwait(false);
 		if (Response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
 			throw new Exception("Expected call to not be valid");
 		exception = ResponseAsync.ApiCallDetails.OriginalException as TransportException;
@@ -169,16 +167,16 @@ public sealed class Auditor
 		_cluster ??= Cluster();
 		AssertPoolBeforeCall?.Invoke(_cluster.ConnectionPool);
 
-		void call() => Response = _cluster.ClientCall(callTrace?.RequestOverrides);
-		var exception = TryCall(call, assert);
+		void Call() => Response = _cluster.ClientCall(callTrace?.RequestOverrides);
+		var exception = TryCall(Call, assert);
 		assert(exception);
 
 		AuditTrail = exception.AuditTrail;
 		AssertPoolAfterCall?.Invoke(_cluster.ConnectionPool);
 
 		_clusterAsync ??= Cluster();
-		async Task callAsync() => ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false);
-		exception = await TryCallAsync(callAsync, assert).ConfigureAwait(false);
+		async Task CallAsync() => ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false);
+		exception = await TryCallAsync(CallAsync, assert).ConfigureAwait(false);
 		assert(exception);
 
 		AsyncAuditTrail = exception.AuditTrail;

@@ -186,7 +186,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 				return _instanceHeader;
 		}
 
-		return Array.Empty<string>();
+		return [];
 	}
 
 	/// <inheritdoc/>

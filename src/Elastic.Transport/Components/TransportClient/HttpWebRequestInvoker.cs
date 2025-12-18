@@ -181,7 +181,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
 			// resources can be linked such that their disposal is deferred.
 			if (response.LeaveOpen)
-				response.LinkedDisposables = new[] { receivedResponse!, responseStream! };
+				response.LinkedDisposables = [receivedResponse!, responseStream!];
 			else
 			{
 				responseStream?.Dispose();
