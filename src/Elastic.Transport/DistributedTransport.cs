@@ -146,11 +146,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 				try
 				{
-					if (isAsync)
-						response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
-							.ConfigureAwait(false);
-					else
-						response = pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
+					response = isAsync
+						? await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
+							.ConfigureAwait(false)
+						: pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
 				}
 				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 				{
@@ -195,11 +194,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 								Ping(pipeline, node, auditor);
 						}
 
-						if (isAsync)
-							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
-								.ConfigureAwait(false);
-						else
-							response = pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
+						response = isAsync
+							? await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
+								.ConfigureAwait(false)
+							: pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
 
 						if (!response.ApiCallDetails.SuccessOrKnownError)
 						{
@@ -298,7 +296,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 			var cache = (Interlocked.CompareExchange(
 				ref _boundConfigurations,
-				new ConditionalWeakTable<RequestConfiguration, BoundConfiguration>(),
+				[],
 				null
 			) ?? _boundConfigurations)!;
 

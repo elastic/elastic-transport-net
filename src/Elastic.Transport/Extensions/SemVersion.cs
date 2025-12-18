@@ -122,7 +122,7 @@ public sealed partial class SemVersion :
 	/// <param name="left"></param>
 	/// <param name="right"></param>
 	/// <returns></returns>
-	public static bool operator >(SemVersion left, SemVersion right) => (left.CompareTo(right) > 0);
+	public static bool operator >(SemVersion left, SemVersion right) => left.CompareTo(right) > 0;
 
 	/// <summary>
 	/// 
@@ -138,7 +138,7 @@ public sealed partial class SemVersion :
 	/// <param name="left"></param>
 	/// <param name="right"></param>
 	/// <returns></returns>
-	public static bool operator <(SemVersion left, SemVersion right) => (left.CompareTo(right) < 0);
+	public static bool operator <(SemVersion left, SemVersion right) => left.CompareTo(right) < 0;
 
 	/// <summary>
 	/// 
@@ -250,15 +250,7 @@ public sealed partial class SemVersion :
 	/// <inheritdoc cref="object.GetHashCode"/>
 	public override int GetHashCode()
 	{
-		unchecked
-		{
-			var hashCode = Major;
-			hashCode = (hashCode * 397) ^ Minor;
-			hashCode = (hashCode * 397) ^ Patch;
-			hashCode = (hashCode * 397) ^ Prerelease.GetHashCode();
-			hashCode = (hashCode * 397) ^ Metadata.GetHashCode();
-			return hashCode;
-		}
+		return HashCode.Combine(Major, Minor, Patch, Prerelease, Metadata);
 	}
 
 	/// <inheritdoc cref="object.ToString"/>

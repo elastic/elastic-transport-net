@@ -19,7 +19,7 @@ public sealed class DefaultDateTimeProvider : DateTimeProvider
 	{
 		var timeout = minDeadTimeout.GetValueOrDefault(DefaultTimeout);
 		var maxTimeout = maxDeadTimeout.GetValueOrDefault(MaximumTimeout);
-		var milliSeconds = Math.Min(timeout.TotalMilliseconds * 2 * Math.Pow(2, attempts * 0.5 - 1), maxTimeout.TotalMilliseconds);
+		var milliSeconds = Math.Min(timeout.TotalMilliseconds * 2 * Math.Pow(2, (attempts * 0.5) - 1), maxTimeout.TotalMilliseconds);
 		return Now().AddMilliseconds(milliSeconds);
 	}
 

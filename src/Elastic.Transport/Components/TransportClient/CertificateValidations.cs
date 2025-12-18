@@ -67,8 +67,8 @@ public static class CertificateValidations
 	{
 		var ca = new X509Certificate2(caCertificate);
 		var privateChain = new X509Chain { ChainPolicy = { RevocationMode = revocationMode } };
-		privateChain.ChainPolicy.ExtraStore.Add(ca);
-		privateChain.Build(new X509Certificate2(certificate));
+		_ = privateChain.ChainPolicy.ExtraStore.Add(ca);
+		_ = privateChain.Build(new X509Certificate2(certificate));
 
 		//lets validate the our chain status
 		foreach (var chainStatus in privateChain.ChainStatus)
@@ -95,8 +95,8 @@ public static class CertificateValidations
 	{
 		var ca = new X509Certificate2(caCertificate);
 		var privateChain = new X509Chain { ChainPolicy = { RevocationMode = revocationMode } };
-		privateChain.ChainPolicy.ExtraStore.Add(ca);
-		privateChain.Build(new X509Certificate2(certificate));
+		_ = privateChain.ChainPolicy.ExtraStore.Add(ca);
+		_ = privateChain.Build(new X509Certificate2(certificate));
 
 		//Assert our chain has the same number of elements as the certifcate presented by the server
 		if (chain.ChainElements.Count != privateChain.ChainElements.Count)

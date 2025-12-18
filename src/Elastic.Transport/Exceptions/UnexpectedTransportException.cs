@@ -12,16 +12,13 @@ namespace Elastic.Transport;
 /// An exception occured that was not the result of one the well defined exit points as modelled by
 /// <see cref="PipelineFailure"/>. This exception will always bubble out.
 /// </summary>
-public class UnexpectedTransportException : TransportException
+/// <inheritdoc cref="UnexpectedTransportException"/>
+public class UnexpectedTransportException(Exception killerException, IReadOnlyCollection<PipelineException>? seenExceptions) : TransportException(PipelineFailure.Unexpected, killerException?.Message ?? "An unexpected exception occurred.", killerException)
 {
-	/// <inheritdoc cref="UnexpectedTransportException"/>
-	public UnexpectedTransportException(Exception killerException, IReadOnlyCollection<PipelineException>? seenExceptions)
-		: base(PipelineFailure.Unexpected, killerException?.Message ?? "An unexpected exception occurred.", killerException) =>
-			SeenExceptions = seenExceptions ?? EmptyReadOnly<PipelineException>.Collection;
 
 	/// <summary>
 	/// Seen Exceptions that we try to failover on before this <see cref="UnexpectedTransportException"/> was thrown.
 	/// </summary>
 	// ReSharper disable once MemberCanBePrivate.Global
-	public IReadOnlyCollection<PipelineException> SeenExceptions { get; }
+	public IReadOnlyCollection<PipelineException> SeenExceptions { get; } = seenExceptions ?? EmptyReadOnly<PipelineException>.Collection;
 }

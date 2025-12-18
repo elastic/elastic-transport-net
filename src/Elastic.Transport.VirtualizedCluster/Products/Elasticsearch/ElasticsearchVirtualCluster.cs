@@ -52,10 +52,9 @@ public sealed class ElasticsearchClusterFactory
 /// Create a virtual Elasticsearch cluster by passing a list of <see cref="Node"/>.
 /// <para>Please see <see cref="Virtual.Elasticsearch" /> for a more convenient pattern to create an instance of this class.</para>
 /// </summary>
-public class ElasticsearchVirtualCluster : VirtualCluster
+/// <inheritdoc cref="ElasticsearchVirtualCluster"/>>
+public class ElasticsearchVirtualCluster(IEnumerable<Node> nodes) : VirtualCluster(nodes, ElasticsearchMockProductRegistration.Default)
 {
-	/// <inheritdoc cref="ElasticsearchVirtualCluster"/>>
-	public ElasticsearchVirtualCluster(IEnumerable<Node> nodes) : base(nodes, ElasticsearchMockProductRegistration.Default) { }
 
 	/// <summary>
 	/// Makes sure **only** the nodes with the passed port numbers are marked as master eligible. By default **all** nodes

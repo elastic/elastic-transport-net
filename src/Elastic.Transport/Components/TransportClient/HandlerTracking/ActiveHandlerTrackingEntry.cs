@@ -18,18 +18,12 @@ namespace Elastic.Transport;
 /// for the 'expiry' pool simplifies the threading requirements significantly.
 /// <para>https://github.com/dotnet/runtime/blob/master/src/libraries/Microsoft.Extensions.Http/src/ActiveHandlerTrackingEntry.cs</para>
 /// </summary>
-internal sealed class ActiveHandlerTrackingEntry
-{
-	private static readonly TimerCallback TimerCallback = (s) => ((ActiveHandlerTrackingEntry)s!).Timer_Tick();
-	private readonly object _lock;
-	private bool _timerInitialized;
-	private Timer? _timer;
-	private TimerCallback? _callback;
+internal sealed class ActiveHandlerTrackingEntry(
+	int key,
+	LifetimeTrackingHttpMessageHandler handler,
+	TimeSpan lifetime)
 
-	public ActiveHandlerTrackingEntry(
-		int key,
-		LifetimeTrackingHttpMessageHandler handler,
-		TimeSpan lifetime)
+<<<<<<< TODO: Unmerged change from project 'Elastic.Transport(net10.0)', Before:
 	{
 		Key = key;
 		Handler = handler;
@@ -43,6 +37,32 @@ internal sealed class ActiveHandlerTrackingEntry
 	public TimeSpan Lifetime { get; }
 
 	public int Key { get; }
+=======
+{
+	private static readonly TimerCallback TimerCallback = (s) => ((ActiveHandlerTrackingEntry)s!).Timer_Tick();
+	private readonly Lock _lock = new();
+	private bool _timerInitialized;
+	private Timer? _timer;
+	private TimerCallback? _callback;
+
+	public LifetimeTrackingHttpMessageHandler Handler { get; private set; } = handler;
+
+	public TimeSpan Lifetime { get; } = lifetime;
+
+	public int Key { get; } = key;
+>>>>>>> After
+{
+	private static readonly TimerCallback TimerCallback = (s) => ((ActiveHandlerTrackingEntry)s!).Timer_Tick();
+	private readonly object _lock = new();
+	private bool _timerInitialized;
+	private Timer? _timer;
+	private TimerCallback? _callback;
+
+	public LifetimeTrackingHttpMessageHandler Handler { get; private set; } = handler;
+
+	public TimeSpan Lifetime { get; } = lifetime;
+
+	public int Key { get; } = key;
 
 	public void StartExpiryTimer(TimerCallback callback)
 	{

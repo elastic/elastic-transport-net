@@ -29,8 +29,8 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	private readonly int? _clientMajorVersion;
 
 	private static string? _clusterName;
-	private static readonly string[] _all = new[] { XFoundHandlingClusterHeader, XFoundHandlingInstanceHeader };
-	private static readonly string[] _instanceHeader = new[] { XFoundHandlingInstanceHeader };
+	private static readonly string[] _all = [XFoundHandlingClusterHeader, XFoundHandlingInstanceHeader];
+	private static readonly string[] _instanceHeader = [XFoundHandlingInstanceHeader];
 
 	/// <summary>
 	/// Create a new instance of the Elasticsearch product registration.
@@ -109,14 +109,13 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.HttpStatusCodeClassifier"/>
 	public override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
-		statusCode >= 200 && statusCode < 300;
+		statusCode is >= 200 and < 300;
 
 	/// <inheritdoc cref="ProductRegistration.TryGetServerErrorReason{TResponse}"/>>
 	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason)
 	{
 		reason = null;
-		ElasticsearchServerError? e = null;
-		if (response is StringResponse s && s.TryGetElasticsearchServerError(out e))
+		if (response is StringResponse s && s.TryGetElasticsearchServerError(out var e))
 			reason = e?.Error?.ToString();
 		else if (response is BytesResponse b && b.TryGetElasticsearchServerError(out e))
 			reason = e?.Error?.ToString();
@@ -202,7 +201,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 		if (!string.IsNullOrEmpty(_clusterName))
 		{
-			attributes ??= new Dictionary<string, object>();
+			attributes ??= [];
 			attributes.Add(OpenTelemetryAttributes.DbElasticsearchClusterName, _clusterName!);
 		}
 
@@ -211,7 +210,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 			var instance = instanceValues.FirstOrDefault();
 			if (!string.IsNullOrEmpty(instance))
 			{
-				attributes ??= new Dictionary<string, object>();
+				attributes ??= [];
 				attributes.Add(OpenTelemetryAttributes.DbElasticsearchNodeName, instance);
 			}
 		}

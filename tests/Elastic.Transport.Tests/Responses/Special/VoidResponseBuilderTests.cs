@@ -27,10 +27,10 @@ public class VoidResponseBuilderTests
 		var stream = new MemoryStream(Data);
 
 		var result = await sut.BuildAsync<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
-		result.Body.Should().BeOfType<VoidBody>();
+		_ = result.Body.Should().BeOfType<VoidBody>();
 
 		result = sut.Build<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
-		result.Body.Should().BeOfType<VoidBody>();
+		_ = result.Body.Should().BeOfType<VoidBody>();
 	}
 
 	[Fact]
@@ -44,9 +44,9 @@ public class VoidResponseBuilderTests
 		var stream = new MemoryStream(Data);
 
 		var result = await sut.BuildAsync<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
-		result.Body.Should().BeOfType<VoidBody>();
+		_ = result.Body.Should().BeOfType<VoidBody>();
 
 		result = sut.Build<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
-		result.Body.Should().BeOfType<VoidBody>();
+		_ = result.Body.Should().BeOfType<VoidBody>();
 	}
 }

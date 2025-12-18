@@ -88,23 +88,18 @@ public class ResponseFactoryDisposeTests
 
 		var memoryStreamFactory = new TrackingMemoryStreamFactory();
 
-		if (skipStatusCode > -1)
-		{
-			config = InMemoryConnectionFactory.Create(productRegistration) with
+		config = skipStatusCode > -1
+			? (InMemoryConnectionFactory.Create(productRegistration) with
 			{
 				DisableDirectStreaming = disableDirectStreaming,
 				SkipDeserializationForStatusCodes = [skipStatusCode],
 				MemoryStreamFactory = memoryStreamFactory
-			};
-		}
-		else
-		{
-			config = InMemoryConnectionFactory.Create(productRegistration) with
+			})
+			: (InMemoryConnectionFactory.Create(productRegistration) with
 			{
 				DisableDirectStreaming = disableDirectStreaming,
 				MemoryStreamFactory = memoryStreamFactory
-			};
-		}
+			});
 
 		var endpoint = new Endpoint(new EndpointPath(httpMethod, "/"), new Node(new Uri("http://localhost:9200")));
 
@@ -136,15 +131,15 @@ public class ResponseFactoryDisposeTests
 
 		static void Validate(bool disableDirectStreaming, bool expectedDisposed, int memoryStreamCreateExpected, TrackingMemoryStreamFactory memoryStreamFactory, TrackDisposeStream stream, T response)
 		{
-			response.Should().NotBeNull();
+			_ = response.Should().NotBeNull();
 
 			// The latest implementation should never dispose the incoming stream and assumes the caller will handler disposal
-			stream.IsDisposed.Should().Be(false);
+			_ = stream.IsDisposed.Should().Be(false);
 
-			memoryStreamFactory.Created.Count.Should().Be(memoryStreamCreateExpected);
+			_ = memoryStreamFactory.Created.Count.Should().Be(memoryStreamCreateExpected);
 
 			if (disableDirectStreaming)
-				memoryStreamFactory.Created[0].IsDisposed.Should().Be(expectedDisposed);
+				_ = memoryStreamFactory.Created[0].IsDisposed.Should().Be(expectedDisposed);
 		}
 	}
 }

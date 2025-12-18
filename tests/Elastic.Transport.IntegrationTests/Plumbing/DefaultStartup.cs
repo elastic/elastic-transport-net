@@ -9,32 +9,29 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Elastic.Transport.IntegrationTests.Plumbing
+namespace Elastic.Transport.IntegrationTests.Plumbing;
+
+public class DefaultStartup(IConfiguration configuration)
 {
-	public class DefaultStartup
+	public IConfiguration Configuration { get; } = configuration;
+
+	public void ConfigureServices(IServiceCollection services) => services.AddControllers();
+
+	public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 	{
-		public DefaultStartup(IConfiguration configuration) => Configuration = configuration;
+		if (env.IsDevelopment())
+			_ = app.UseDeveloperExceptionPage();
+		else
+			_ = app.UseHsts();
 
-		public IConfiguration Configuration { get; }
-
-		public void ConfigureServices(IServiceCollection services) => services.AddControllers();
-
-		public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+		_ = app.UseHttpsRedirection();
+		_ = app.UseRouting();
+		_ = app.UseEndpoints(endpoints =>
 		{
-			if (env.IsDevelopment())
-				app.UseDeveloperExceptionPage();
-			else
-				app.UseHsts();
-
-			app.UseHttpsRedirection();
-			app.UseRouting();
-			app.UseEndpoints(endpoints =>
-			{
-				MapEndpoints(endpoints);
-				endpoints.MapControllerRoute("default", "{controller=Default}/{id?}");
-			});
-		}
-
-		protected virtual void MapEndpoints(IEndpointRouteBuilder endpoints) { }
+			MapEndpoints(endpoints);
+			_ = endpoints.MapControllerRoute("default", "{controller=Default}/{id?}");
+		});
 	}
+
+	protected virtual void MapEndpoints(IEndpointRouteBuilder endpoints) { }
 }
