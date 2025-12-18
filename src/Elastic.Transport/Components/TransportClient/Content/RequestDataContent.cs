@@ -42,7 +42,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		_postData = postData;
 		_token = default;
 
-		Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
+		_ = Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 
 		if (boundConfiguration.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
@@ -71,7 +71,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		_boundConfiguration = boundConfiguration;
 		_token = token;
 
-		Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
+		_ = Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 
 		if (boundConfiguration.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
@@ -126,7 +126,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
 		var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask, source);
 		await _onStreamAvailableAsync(_boundConfiguration, _postData, wrappedStream, this, context!, source.Token).ConfigureAwait(false);
-		await serializeToStreamTask.Task.ConfigureAwait(false);
+		_ = await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 
 #if NET6_0_OR_GREATER
@@ -151,21 +151,14 @@ internal sealed class BoundConfigurationContent : HttpContent
 		return false;
 	}
 
-	internal class CompleteTaskOnCloseStream : DelegatingStream
+	internal class CompleteTaskOnCloseStream(Stream innerStream, TaskCompletionSource<bool>? serializeToStreamTask, CancellationTokenSource? source = null) : DelegatingStream(innerStream)
 	{
-		private readonly TaskCompletionSource<bool>? _serializeToStreamTask;
-		private readonly CancellationTokenSource? _source;
-
-		public CompleteTaskOnCloseStream(Stream innerStream, TaskCompletionSource<bool>? serializeToStreamTask, CancellationTokenSource? source = null)
-			: base(innerStream)
-		{
-			_serializeToStreamTask = serializeToStreamTask;
-			_source = source;
-		}
+		private readonly TaskCompletionSource<bool>? _serializeToStreamTask = serializeToStreamTask;
+		private readonly CancellationTokenSource? _source = source;
 
 		protected override void Dispose(bool disposing)
 		{
-			_serializeToStreamTask?.TrySetResult(true);
+			_ = (_serializeToStreamTask?.TrySetResult(true));
 			base.Dispose(disposing);
 			_source?.Dispose();
 		}
@@ -177,11 +170,9 @@ internal sealed class BoundConfigurationContent : HttpContent
 	/// Stream that delegates to inner stream.
 	/// This is taken from System.Net.Http
 	/// </summary>
-	internal abstract class DelegatingStream : Stream
+	internal abstract class DelegatingStream(Stream innerStream) : Stream
 	{
-		private readonly Stream _innerStream;
-
-		protected DelegatingStream(Stream innerStream) => _innerStream = innerStream ?? throw new ArgumentNullException(nameof(innerStream));
+		private readonly Stream _innerStream = innerStream ?? throw new ArgumentNullException(nameof(innerStream));
 
 		public override bool CanRead => _innerStream.CanRead;
 

@@ -20,16 +20,16 @@ public class ApiCompatibilityHeaderTests(TestServerFixture instance) : AssemblyS
 	{
 		var requestInvoker = new TrackingRequestInvoker(responseMessage =>
 		{
-			responseMessage.RequestMessage.Content.Headers.ContentType.MediaType.Should().Be("application/vnd.elasticsearch+json");
+			_ = responseMessage.RequestMessage.Content.Headers.ContentType.MediaType.Should().Be("application/vnd.elasticsearch+json");
 			var parameter = responseMessage.RequestMessage.Content.Headers.ContentType.Parameters.Single();
-			parameter.Name.Should().Be("compatible-with");
-			parameter.Value.Should().Be("8");
+			_ = parameter.Name.Should().Be("compatible-with");
+			_ = parameter.Value.Should().Be("8");
 
 			var acceptValues = responseMessage.RequestMessage.Headers.GetValues("Accept");
-			acceptValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
+			_ = acceptValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
 
 			var contentTypeValues = responseMessage.RequestMessage.Content.Headers.GetValues("Content-Type");
-			contentTypeValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
+			_ = contentTypeValues.Single().Replace(" ", "").Should().Be("application/vnd.elasticsearch+json;compatible-with=8");
 		});
 
 		var nodePool = new SingleNodePool(Server.Uri);

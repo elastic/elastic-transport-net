@@ -6,26 +6,25 @@ using System;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 
-namespace Elastic.Transport.Benchmarks
+namespace Elastic.Transport.Benchmarks;
+
+public class TransportBenchmarks
 {
-	public class TransportBenchmarks
+	private ITransport _transport;
+
+	[GlobalSetup]
+	public void Setup()
 	{
-		private ITransport _transport;
+		var requestInvoker = new InMemoryRequestInvoker();
+		var pool = new SingleNodePool(new Uri("http://localhost:9200"));
+		var settings = new TransportConfiguration(pool, requestInvoker);
 
-		[GlobalSetup]
-		public void Setup()
-		{
-			var requestInvoker = new InMemoryRequestInvoker();
-			var pool = new SingleNodePool(new Uri("http://localhost:9200"));
-			var settings = new TransportConfiguration(pool, requestInvoker);
-
-			_transport = new DistributedTransport(settings);
-		}
-
-		[Benchmark]
-		public void TransportSuccessfulRequestBenchmark() => _transport.Get<VoidResponse>("/");
-
-		[Benchmark]
-		public async Task TransportSuccessfulAsyncRequestBenchmark() => await _transport.GetAsync<VoidResponse>("/");
+		_transport = new DistributedTransport(settings);
 	}
+
+	[Benchmark]
+	public void TransportSuccessfulRequestBenchmark() => _transport.Get<VoidResponse>("/");
+
+	[Benchmark]
+	public async Task TransportSuccessfulAsyncRequestBenchmark() => await _transport.GetAsync<VoidResponse>("/");
 }

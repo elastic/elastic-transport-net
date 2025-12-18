@@ -7,12 +7,9 @@ namespace Elastic.Transport;
 /// <summary>
 /// Credentials for Api Key Authentication
 /// </summary>
-public class ApiKey : AuthorizationHeader
+public class ApiKey(string apiKey) : AuthorizationHeader
 {
-	private readonly string _apiKey;
-
-	/// <inheritdoc cref="Base64ApiKey"/>
-	public ApiKey(string apiKey) => _apiKey = apiKey;
+	private readonly string _apiKey = apiKey;
 
 	/// <inheritdoc cref="AuthorizationHeader.AuthScheme"/>
 	public override string AuthScheme { get; } = "ApiKey";

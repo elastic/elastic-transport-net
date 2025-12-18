@@ -26,9 +26,6 @@ public class RequestPipeline
 	private readonly MemoryStreamFactory _memoryStreamFactory;
 	private readonly Func<Node, bool> _nodePredicate;
 	private readonly ProductRegistration _productRegistration;
-
-	private RequestConfiguration? _pingAndSniffRequestConfiguration;
-
 	private readonly ITransportConfiguration _settings;
 
 	/// <inheritdoc cref="RequestPipeline" />
@@ -50,10 +47,10 @@ public class RequestPipeline
 		// This avoids allocating 192B per request for those which do not need to ping or sniff.
 		get
 		{
-			if (_pingAndSniffRequestConfiguration is not null)
-				return _pingAndSniffRequestConfiguration;
+			if (field is not null)
+				return field;
 
-			_pingAndSniffRequestConfiguration = new RequestConfiguration
+			field = new RequestConfiguration
 			{
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
@@ -62,8 +59,10 @@ public class RequestPipeline
 				ForceNode = _boundConfiguration.ForceNode
 			};
 
-			return _pingAndSniffRequestConfiguration;
+			return field;
 		}
+
+		set;
 	}
 
 	private bool DepletedRetries(DateTimeOffset startedOn, int attemptedNodes) => attemptedNodes >= MaxRetries + 1 || IsTakingTooLong(startedOn);
@@ -170,12 +169,9 @@ public class RequestPipeline
 
 		try
 		{
-			TResponse response;
-
-			if (isAsync)
-				response = await _requestInvoker.RequestAsync<TResponse>(endpoint, boundConfiguration, postData, cancellationToken).ConfigureAwait(false);
-			else
-				response = _requestInvoker.Request<TResponse>(endpoint, boundConfiguration, postData);
+			var response = isAsync
+				? await _requestInvoker.RequestAsync<TResponse>(endpoint, boundConfiguration, postData, cancellationToken).ConfigureAwait(false)
+				: _requestInvoker.Request<TResponse>(endpoint, boundConfiguration, postData);
 
 			response.ApiCallDetails.AuditTrail = auditor;
 
@@ -283,7 +279,7 @@ public class RequestPipeline
 
 		if (!FirstPoolUsageNeedsSniffing)
 		{
-			semaphore.Release();
+			_ = semaphore.Release();
 			return;
 		}
 
@@ -297,7 +293,7 @@ public class RequestPipeline
 		}
 		finally
 		{
-			semaphore.Release();
+			_ = semaphore.Release();
 		}
 	}
 
@@ -320,7 +316,7 @@ public class RequestPipeline
 
 		if (!FirstPoolUsageNeedsSniffing)
 		{
-			semaphore.Release();
+			_ = semaphore.Release();
 			return;
 		}
 		try
@@ -333,7 +329,7 @@ public class RequestPipeline
 		}
 		finally
 		{
-			semaphore.Release();
+			_ = semaphore.Release();
 		}
 	}
 
@@ -427,10 +423,9 @@ public class RequestPipeline
 
 		try
 		{
-			if (isAsync)
-				response = await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, _boundConfiguration, cancellationToken).ConfigureAwait(false);
-			else
-				response = _productRegistration.Ping(_requestInvoker, pingEndpoint, _boundConfiguration);
+			response = isAsync
+				? await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, _boundConfiguration, cancellationToken).ConfigureAwait(false)
+				: _productRegistration.Ping(_requestInvoker, pingEndpoint, _boundConfiguration);
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
@@ -477,17 +472,12 @@ public class RequestPipeline
 
 			try
 			{
-				if (isAsync)
-				{
-					result = await _productRegistration
+				result = isAsync
+					? await _productRegistration
 						.SniffAsync(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, _boundConfiguration, cancellationToken)
-						.ConfigureAwait(false);
-				}
-				else
-				{
-					result = _productRegistration
+						.ConfigureAwait(false)
+					: _productRegistration
 						.Sniff(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, _boundConfiguration);
-				}
 
 				ThrowBadAuthPipelineExceptionWhenNeeded(result.Item1.ApiCallDetails);
 

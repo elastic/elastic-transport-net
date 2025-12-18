@@ -20,6 +20,6 @@ internal static class RequestInvokerHelpers
 			return;
 
 		foreach (var attribute in attributes)
-			Activity.Current?.SetTag(attribute.Key, attribute.Value);
+			_ = (Activity.Current?.SetTag(attribute.Key, attribute.Value));
 	}
 }

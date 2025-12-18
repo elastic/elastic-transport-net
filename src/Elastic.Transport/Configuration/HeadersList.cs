@@ -78,7 +78,7 @@ public readonly struct HeadersList : IEnumerable<string>
 	/// Create a new <see cref="HeadersList"/> initialised with a single header name.
 	/// </summary>
 	/// <param name="header">The header name to initialise the <see cref="HeadersList"/> with.</param>
-	public HeadersList(string header) => _headers = new List<string> { header };
+	public HeadersList(string header) => _headers = [header];
 
 	/// <summary>
 	/// Gets the number of elements contained in the <see cref="HeadersList"/>.

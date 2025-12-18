@@ -309,9 +309,9 @@ internal sealed partial class RecyclableMemoryStreamManager
 			ReportBlockCreated();
 		}
 		else
-			Interlocked.Add(ref _smallPoolFreeSize, -BlockSize);
+			_ = Interlocked.Add(ref _smallPoolFreeSize, -BlockSize);
 
-		Interlocked.Add(ref _smallPoolInUseSize, BlockSize);
+		_ = Interlocked.Add(ref _smallPoolInUseSize, BlockSize);
 		return block;
 	}
 
@@ -339,7 +339,7 @@ internal sealed partial class RecyclableMemoryStreamManager
 				ReportLargeBufferCreated();
 			}
 			else
-				Interlocked.Add(ref _largeBufferFreeSize[poolIndex], -buffer.Length);
+				_ = Interlocked.Add(ref _largeBufferFreeSize[poolIndex], -buffer.Length);
 		}
 		else
 		{
@@ -359,7 +359,7 @@ internal sealed partial class RecyclableMemoryStreamManager
 			ReportLargeBufferCreated();
 		}
 
-		Interlocked.Add(ref _largeBufferInUseSize[poolIndex], buffer.Length);
+		_ = Interlocked.Add(ref _largeBufferInUseSize[poolIndex], buffer.Length);
 
 		return buffer;
 	}
@@ -392,7 +392,7 @@ internal sealed partial class RecyclableMemoryStreamManager
 			return index;
 		}
 		else
-			return length / LargeBufferMultiple - 1;
+			return (length / LargeBufferMultiple) - 1;
 	}
 
 	/// <summary>
@@ -518,11 +518,9 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// <returns>A MemoryStream.</returns>
 	public MemoryStream GetStream() => new RecyclableMemoryStream(this);
 
-	private class ReportingMemoryStream : MemoryStream
+	private class ReportingMemoryStream(byte[] bytes, RecyclableMemoryStreamManager instance) : MemoryStream(bytes)
 	{
-		private readonly RecyclableMemoryStreamManager _instance;
-
-		public ReportingMemoryStream(byte[] bytes, RecyclableMemoryStreamManager instance) : base(bytes) => _instance = instance;
+		private readonly RecyclableMemoryStreamManager _instance = instance;
 	}
 
 	/// <summary>

@@ -31,7 +31,7 @@ public abstract partial class PostData
 
 	/// <summary> A static byte[] that hols a single new line feed </summary>
 	// ReSharper disable once MemberCanBePrivate.Global
-	protected static readonly byte[] NewLineByteArray = { (byte)'\n' };
+	protected static readonly byte[] NewLineByteArray = [(byte)'\n'];
 
 	/// <summary> Reports the data this instance is wrapping </summary>
 	// ReSharper disable once MemberCanBeProtected.Global

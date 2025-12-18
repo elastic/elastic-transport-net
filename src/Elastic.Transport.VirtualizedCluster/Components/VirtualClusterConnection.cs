@@ -222,7 +222,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 
 			return Sometimes<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
 		}
-		var count = _calls.Select(kv => kv.Value.Called).Sum();
+		var count = _calls.Sum(kv => kv.Value.Called);
 		throw new Exception($@"No global or port specific {origin} rule ({endpoint.Uri.Port}) matches any longer after {count} calls in to the cluster");
 	}
 
@@ -282,7 +282,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			e => throw e,
 			statusCode => _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, boundConfiguration, postData, CallResponse(rule),
 				//make sure we never return a valid status code in Fail responses because of a bad rule.
-				statusCode >= 200 && statusCode < 300 ? 502 : statusCode, rule.ReturnContentType)
+				statusCode is >= 200 and < 300 ? 502 : statusCode, rule.ReturnContentType)
 		);
 	}
 
