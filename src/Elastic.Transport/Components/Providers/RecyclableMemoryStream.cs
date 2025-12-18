@@ -230,14 +230,16 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		_id = id;
 		_tag = tag;
 
-		if (requestedSize < memoryManager.BlockSize) requestedSize = memoryManager.BlockSize;
+		if (requestedSize < memoryManager.BlockSize)
+			requestedSize = memoryManager.BlockSize;
 
 		if (initialLargeBuffer == null)
 			EnsureCapacity(requestedSize);
 		else
 			_largeBuffer = initialLargeBuffer;
 
-		if (_memoryManager.GenerateCallStacks) AllocationStack = Environment.StackTrace;
+		if (_memoryManager.GenerateCallStacks)
+			AllocationStack = Environment.StackTrace;
 
 		RecyclableMemoryStreamManager.EventsWriter.MemoryStreamCreated(_id, _tag, requestedSize);
 		_memoryManager.ReportStreamCreated();
@@ -260,7 +262,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		if (Interlocked.CompareExchange(ref _disposedState, 1, 0) != 0)
 		{
 			string? doubleDisposeStack = null;
-			if (_memoryManager.GenerateCallStacks) doubleDisposeStack = Environment.StackTrace;
+			if (_memoryManager.GenerateCallStacks)
+				doubleDisposeStack = Environment.StackTrace;
 
 			RecyclableMemoryStreamManager.EventsWriter.MemoryStreamDoubleDispose(_id, _tag,
 				AllocationStack,
@@ -271,7 +274,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 
 		RecyclableMemoryStreamManager.EventsWriter.MemoryStreamDisposed(_id, _tag);
 
-		if (_memoryManager.GenerateCallStacks) DisposeStack = Environment.StackTrace;
+		if (_memoryManager.GenerateCallStacks)
+			DisposeStack = Environment.StackTrace;
 
 		if (disposing)
 		{
@@ -299,7 +303,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 
 		_memoryManager.ReportStreamLength(_length);
 
-		if (_largeBuffer != null) _memoryManager.ReturnLargeBuffer(_largeBuffer, _tag);
+		if (_largeBuffer != null)
+			_memoryManager.ReturnLargeBuffer(_largeBuffer, _tag);
 
 		if (_dirtyBuffers != null)
 		{
@@ -338,7 +343,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		get
 		{
 			CheckDisposed();
-			if (_largeBuffer != null) return _largeBuffer.Length;
+			if (_largeBuffer != null)
+				return _largeBuffer.Length;
 
 			var size = (long)_blocks.Count * _memoryManager.BlockSize;
 			return (int)Math.Min(int.MaxValue, size);
@@ -381,9 +387,11 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		set
 		{
 			CheckDisposed();
-			if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), "value must be non-negative");
+			if (value < 0)
+				throw new ArgumentOutOfRangeException(nameof(value), "value must be non-negative");
 
-			if (value > MaxStreamLength) throw new ArgumentOutOfRangeException(nameof(value), "value cannot be more than " + MaxStreamLength);
+			if (value > MaxStreamLength)
+				throw new ArgumentOutOfRangeException(nameof(value), "value cannot be more than " + MaxStreamLength);
 
 			_position = (int)value;
 		}
@@ -423,9 +431,11 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	{
 		CheckDisposed();
 
-		if (_largeBuffer != null) return _largeBuffer;
+		if (_largeBuffer != null)
+			return _largeBuffer;
 
-		if (_blocks.Count == 1) return _blocks[0];
+		if (_blocks.Count == 1)
+			return _blocks[0];
 
 		// Buffer needs to reflect the capacity, not the length, because
 		// it's possible that people will manipulate the buffer directly
@@ -518,14 +528,18 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 #if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(buffer);
 #else
-		if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+		if (buffer == null)
+			throw new ArgumentNullException(nameof(buffer));
 #endif
 
-		if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "offset cannot be negative");
+		if (offset < 0)
+			throw new ArgumentOutOfRangeException(nameof(offset), "offset cannot be negative");
 
-		if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), "count cannot be negative");
+		if (count < 0)
+			throw new ArgumentOutOfRangeException(nameof(count), "count cannot be negative");
 
-		if (offset + count > buffer.Length) throw new ArgumentException("buffer length must be at least offset + count");
+		if (offset + count > buffer.Length)
+			throw new ArgumentException("buffer length must be at least offset + count");
 
 		var amountRead = InternalRead(buffer, offset, count, streamPosition);
 		streamPosition += amountRead;
@@ -574,7 +588,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 #if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(buffer);
 #else
-		if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+		if (buffer == null)
+			throw new ArgumentNullException(nameof(buffer));
 #endif
 
 		if (offset < 0)
@@ -583,14 +598,17 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 				"Offset must be in the range of 0 - buffer.Length-1");
 		}
 
-		if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), count, "count must be non-negative");
+		if (count < 0)
+			throw new ArgumentOutOfRangeException(nameof(count), count, "count must be non-negative");
 
-		if (count + offset > buffer.Length) throw new ArgumentException("count must be greater than buffer.Length - offset");
+		if (count + offset > buffer.Length)
+			throw new ArgumentException("count must be greater than buffer.Length - offset");
 
 		var blockSize = _memoryManager.BlockSize;
 		var end = (long)_position + count;
 		// Check for overflow
-		if (end > MaxStreamLength) throw new IOException("Maximum capacity exceeded");
+		if (end > MaxStreamLength)
+			throw new IOException("Maximum capacity exceeded");
 
 		EnsureCapacity((int)end);
 
@@ -699,7 +717,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	public int SafeReadByte(ref int streamPosition)
 	{
 		CheckDisposed();
-		if (streamPosition == _length) return -1;
+		if (streamPosition == _length)
+			return -1;
 
 		byte value;
 		if (_largeBuffer == null)
@@ -730,7 +749,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		EnsureCapacity((int)value);
 
 		_length = (int)value;
-		if (_position > value) _position = (int)value;
+		if (_position > value)
+			_position = (int)value;
 	}
 
 	/// <summary>
@@ -746,7 +766,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	public override long Seek(long offset, SeekOrigin loc)
 	{
 		CheckDisposed();
-		if (offset > MaxStreamLength) throw new ArgumentOutOfRangeException(nameof(offset), "offset cannot be larger than " + MaxStreamLength);
+		if (offset > MaxStreamLength)
+			throw new ArgumentOutOfRangeException(nameof(offset), "offset cannot be larger than " + MaxStreamLength);
 
 		int newPosition;
 		switch (loc)
@@ -763,7 +784,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 			default:
 				throw new ArgumentException("Invalid seek origin", nameof(loc));
 		}
-		if (newPosition < 0) throw new IOException("Seek before beginning");
+		if (newPosition < 0)
+			throw new IOException("Seek before beginning");
 
 		_position = newPosition;
 		return _position;
@@ -780,7 +802,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 #if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(stream);
 #else
-		if (stream == null) throw new ArgumentNullException(nameof(stream));
+		if (stream == null)
+			throw new ArgumentNullException(nameof(stream));
 #endif
 
 		if (_largeBuffer == null)
@@ -813,13 +836,15 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 #if NET8_0_OR_GREATER
 		ObjectDisposedException.ThrowIf(Disposed, this);
 #else
-		if (Disposed) throw new ObjectDisposedException($"The stream with Id {_id} and Tag {_tag} is disposed.");
+		if (Disposed)
+			throw new ObjectDisposedException($"The stream with Id {_id} and Tag {_tag} is disposed.");
 #endif
 	}
 
 	private int InternalRead(byte[] buffer, int offset, int count, int fromPosition)
 	{
-		if (_length - fromPosition <= 0) return 0;
+		if (_length - fromPosition <= 0)
+			return 0;
 
 		int amountToCopy;
 
@@ -935,7 +960,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	/// </summary>
 	private void ReleaseLargeBuffer()
 	{
-		if (_largeBuffer is null) return;
+		if (_largeBuffer is null)
+			return;
 
 		if (_memoryManager.AggressiveBufferReturn)
 			_memoryManager.ReturnLargeBuffer(_largeBuffer, _tag);

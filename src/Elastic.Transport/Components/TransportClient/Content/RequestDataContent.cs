@@ -58,9 +58,11 @@ internal sealed class BoundConfigurationContent : HttpContent
 			stream.Dispose();
 			return;
 		}
-		if (boundConfiguration.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
+		if (boundConfiguration.HttpCompression)
+			stream = new GZipStream(stream, CompressionMode.Compress, false);
 
-		using (stream) postData.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
+		using (stream)
+			postData.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
 	}
 
 	/// <summary> Constructor used in asynchronous paths. </summary>
@@ -89,14 +91,15 @@ internal sealed class BoundConfigurationContent : HttpContent
 #endif
 			return;
 		}
-		if (boundConfiguration.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
+		if (boundConfiguration.HttpCompression)
+			stream = new GZipStream(stream, CompressionMode.Compress, false);
 
 #if NET6_0_OR_GREATER
 		await using (stream.ConfigureAwait(false))
 #else
 		using (stream)
 #endif
-		await postData.WriteAsync(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, ctx).ConfigureAwait(false);
+			await postData.WriteAsync(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, ctx).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -210,7 +213,8 @@ internal sealed class BoundConfigurationContent : HttpContent
 
 		protected override void Dispose(bool disposing)
 		{
-			if (disposing) _innerStream.Dispose();
+			if (disposing)
+				_innerStream.Dispose();
 			base.Dispose(disposing);
 		}
 

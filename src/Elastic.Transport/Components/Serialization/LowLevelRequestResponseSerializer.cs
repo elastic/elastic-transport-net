@@ -44,5 +44,6 @@ internal sealed class LowLevelRequestResponseSerializer : SystemTextJsonSerializ
 		{
 			options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 			options.TypeInfoResolver = JsonTypeInfoResolver.Combine(new DefaultJsonTypeInfoResolver(), ElasticsearchTransportSerializerContext.Default);
-		})) { }
+		}))
+	{ }
 }

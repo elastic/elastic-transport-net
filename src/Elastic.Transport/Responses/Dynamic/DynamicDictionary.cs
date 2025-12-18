@@ -82,7 +82,8 @@ public sealed partial class DynamicDictionary
 	{
 		var split = SplitRegex.Split(path);
 		var queue = new Queue<string>(split);
-		if (queue.Count == 0) return default!;
+		if (queue.Count == 0)
+			return default!;
 
 		var d = new DynamicValue(_backingDictionary);
 		while (queue.Count > 0)
@@ -90,15 +91,18 @@ public sealed partial class DynamicDictionary
 			var key = queue.Dequeue().Replace(@"\.", ".");
 			if (key == "_arbitrary_key_")
 			{
-				if (queue.Count > 0) d = d[0];
+				if (queue.Count > 0)
+					d = d[0];
 				else
 				{
 					var v = d.ToDictionary()?.Keys.FirstOrDefault();
 					d = v != null ? new DynamicValue(v) : DynamicValue.NullValue;
 				}
 			}
-			else if (int.TryParse(key, out var i)) d = d[i];
-			else d = d[key];
+			else if (int.TryParse(key, out var i))
+				d = d[i];
+			else
+				d = d[key];
 		}
 
 		return d.TryParse<T>()!;
@@ -338,7 +342,8 @@ public sealed partial class DynamicDictionary
 		{
 			result = new DynamicValue(null);
 		}
-		else result = v;
+		else
+			result = v;
 
 		return true;
 	}

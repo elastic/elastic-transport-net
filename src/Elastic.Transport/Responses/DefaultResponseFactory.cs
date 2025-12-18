@@ -134,7 +134,7 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		}
 
 		builder = default!;
-		if (TryFindResponseBuilder(type,responseBuilders, _resolvedBuilders, ref builder))
+		if (TryFindResponseBuilder(type, responseBuilders, _resolvedBuilders, ref builder))
 			return true;
 
 		return TryFindResponseBuilder(type, productResponseBuilders, _resolvedBuilders, ref builder);

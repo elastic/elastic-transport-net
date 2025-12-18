@@ -17,7 +17,8 @@ internal static class NameValueCollectionExtensions
 
 	internal static string ToQueryString(this NameValueCollection nv)
 	{
-		if (nv == null || nv.AllKeys.Length == 0) return string.Empty;
+		if (nv == null || nv.AllKeys.Length == 0)
+			return string.Empty;
 
 		var maxLength = 1 + nv.AllKeys.Length - 1; // account for '?', and any required '&' chars
 		foreach (var key in nv.AllKeys)
@@ -41,7 +42,8 @@ internal static class NameValueCollectionExtensions
 
 			foreach (var key in nv.AllKeys)
 			{
-				if (key is null) continue;
+				if (key is null)
+					continue;
 
 				if (position != 1)
 					buffer[position++] = '&';
@@ -52,7 +54,8 @@ internal static class NameValueCollectionExtensions
 
 				var value = nv[key];
 
-				if (value.IsNullOrEmpty()) continue;
+				if (value.IsNullOrEmpty())
+					continue;
 
 				buffer[position++] = '=';
 				var escapedValue = Uri.EscapeDataString(value!);
@@ -71,8 +74,10 @@ internal static class NameValueCollectionExtensions
 
 	internal static void UpdateFromDictionary(this NameValueCollection queryString, Dictionary<string, object> queryStringUpdates, UrlFormatter provider)
 	{
-		if (queryString == null || queryString.Count < 0) return;
-		if (queryStringUpdates == null || queryStringUpdates.Count < 0) return;
+		if (queryString == null || queryString.Count < 0)
+			return;
+		if (queryStringUpdates == null || queryStringUpdates.Count < 0)
+			return;
 
 		foreach (var kv in queryStringUpdates.Where(kv => !kv.Key.IsNullOrEmpty()))
 		{

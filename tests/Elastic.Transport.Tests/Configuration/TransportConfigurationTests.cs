@@ -31,7 +31,7 @@ public class TransportConfigurationTests
 		ITransportConfiguration newConfig = new TransportConfigurationDescriptor();
 
 		config.Should().BeEquivalentTo(newConfig, c => c
-			.Excluding(p=>p.BootstrapLock)
+			.Excluding(p => p.BootstrapLock)
 		);
 
 		config.BootstrapLock.CurrentCount.Should().Be(newConfig.BootstrapLock.CurrentCount);

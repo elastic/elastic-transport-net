@@ -14,8 +14,9 @@ public class Base64ApiKey : ApiKey
 {
 	/// <inheritdoc cref="Base64ApiKey"/>
 	public Base64ApiKey(string id, string apiKey) :
-		base(Convert.ToBase64String(Encoding.UTF8.GetBytes($"{id}:{apiKey}"))) {}
+		base(Convert.ToBase64String(Encoding.UTF8.GetBytes($"{id}:{apiKey}")))
+	{ }
 
 	/// <inheritdoc cref="Base64ApiKey"/>
-	public Base64ApiKey(string base64EncodedApiKey) : base(base64EncodedApiKey) {}
+	public Base64ApiKey(string base64EncodedApiKey) : base(base64EncodedApiKey) { }
 }

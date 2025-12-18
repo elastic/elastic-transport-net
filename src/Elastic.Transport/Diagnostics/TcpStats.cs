@@ -37,7 +37,7 @@ internal static class TcpStats
 			// ignored
 		}
 
-		return null;			
+		return null;
 	}
 
 	/// <summary>

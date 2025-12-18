@@ -130,7 +130,8 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// <exception cref="ArgumentException">maximumBufferSize is not a multiple/exponential of largeBufferMultiple</exception>
 	public RecyclableMemoryStreamManager(int blockSize, int largeBufferMultiple, int maximumBufferSize, bool useExponentialLargeBuffer)
 	{
-		if (blockSize <= 0) throw new ArgumentOutOfRangeException(nameof(blockSize), blockSize, "blockSize must be a positive number");
+		if (blockSize <= 0)
+			throw new ArgumentOutOfRangeException(nameof(blockSize), blockSize, "blockSize must be a positive number");
 
 		if (largeBufferMultiple <= 0)
 			throw new ArgumentOutOfRangeException(nameof(largeBufferMultiple),
@@ -163,7 +164,8 @@ internal sealed partial class RecyclableMemoryStreamManager
 
 		_largePools = new ConcurrentStack<byte[]>[numLargePools];
 
-		for (var i = 0; i < _largePools.Length; ++i) _largePools[i] = new ConcurrentStack<byte[]>();
+		for (var i = 0; i < _largePools.Length; ++i)
+			_largePools[i] = new ConcurrentStack<byte[]>();
 
 		EventsWriter.MemoryStreamManagerInitialized(blockSize, largeBufferMultiple, maximumBufferSize);
 	}
@@ -202,7 +204,8 @@ internal sealed partial class RecyclableMemoryStreamManager
 		get
 		{
 			long free = 0;
-			foreach (var pool in _largePools) free += pool.Count;
+			foreach (var pool in _largePools)
+				free += pool.Count;
 			return free;
 		}
 	}
@@ -215,7 +218,8 @@ internal sealed partial class RecyclableMemoryStreamManager
 		get
 		{
 			long sum = 0;
-			foreach (var freeSize in _largeBufferFreeSize) sum += freeSize;
+			foreach (var freeSize in _largeBufferFreeSize)
+				sum += freeSize;
 
 			return sum;
 		}
@@ -229,7 +233,8 @@ internal sealed partial class RecyclableMemoryStreamManager
 		get
 		{
 			long sum = 0;
-			foreach (var inUseSize in _largeBufferInUseSize) sum += inUseSize;
+			foreach (var inUseSize in _largeBufferInUseSize)
+				sum += inUseSize;
 
 			return sum;
 		}
@@ -363,7 +368,8 @@ internal sealed partial class RecyclableMemoryStreamManager
 		if (UseExponentialLargeBuffer)
 		{
 			var pow = 1;
-			while (LargeBufferMultiple * pow < requiredSize) pow <<= 1;
+			while (LargeBufferMultiple * pow < requiredSize)
+				pow <<= 1;
 			return LargeBufferMultiple * pow;
 		}
 		else
@@ -380,7 +386,8 @@ internal sealed partial class RecyclableMemoryStreamManager
 		if (UseExponentialLargeBuffer)
 		{
 			var index = 0;
-			while (LargeBufferMultiple << index < length) ++index;
+			while (LargeBufferMultiple << index < length)
+				++index;
 			return index;
 		}
 		else
@@ -402,7 +409,8 @@ internal sealed partial class RecyclableMemoryStreamManager
 #if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(buffer);
 #else
-		if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+		if (buffer == null)
+			throw new ArgumentNullException(nameof(buffer));
 #endif
 
 		if (!IsLargeBufferSize(buffer.Length))
@@ -457,7 +465,8 @@ internal sealed partial class RecyclableMemoryStreamManager
 #if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(blocks);
 #else
-		if (blocks == null) throw new ArgumentNullException(nameof(blocks));
+		if (blocks == null)
+			throw new ArgumentNullException(nameof(blocks));
 #endif
 
 		var bytesToReturn = blocks.Count * BlockSize;
@@ -587,7 +596,8 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// <returns>A MemoryStream.</returns>
 	public MemoryStream GetStream(Guid id, string tag, int requiredSize, bool asContiguousBuffer)
 	{
-		if (!asContiguousBuffer || requiredSize <= BlockSize) return GetStream(id, tag, requiredSize);
+		if (!asContiguousBuffer || requiredSize <= BlockSize)
+			return GetStream(id, tag, requiredSize);
 
 		return new RecyclableMemoryStream(this, id, tag, requiredSize, GetLargeBuffer(requiredSize, tag));
 	}

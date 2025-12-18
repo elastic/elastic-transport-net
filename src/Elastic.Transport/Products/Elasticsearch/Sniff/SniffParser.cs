@@ -34,11 +34,13 @@ public static partial class SniffParser
 	/// </summary>
 	public static Uri ParseToUri(string boundAddress, bool forceHttp)
 	{
-		if (boundAddress is null) throw new ArgumentNullException(nameof(boundAddress));
+		if (boundAddress is null)
+			throw new ArgumentNullException(nameof(boundAddress));
 
 		var suffix = forceHttp ? "s" : string.Empty;
 		var match = AddressRegex.Match(boundAddress);
-		if (!match.Success) throw new Exception($"Can not parse bound_address: {boundAddress} to Uri");
+		if (!match.Success)
+			throw new Exception($"Can not parse bound_address: {boundAddress} to Uri");
 
 		var fqdn = match.Groups["fqdn"].Value.Trim();
 		var ip = match.Groups["ip"].Value.Trim();

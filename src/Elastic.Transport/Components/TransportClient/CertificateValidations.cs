@@ -75,13 +75,16 @@ public static class CertificateValidations
 		{
 			//custom CA's that are not in the machine trusted store will always have this status
 			//by setting trustRoot = true (default) we skip this error
-			if (chainStatus.Status == X509ChainStatusFlags.UntrustedRoot && trustRoot) continue;
+			if (chainStatus.Status == X509ChainStatusFlags.UntrustedRoot && trustRoot)
+				continue;
 
 			//trustRoot is false so we expected our CA to be in the machines trusted store
-			if (chainStatus.Status == X509ChainStatusFlags.UntrustedRoot) return false;
+			if (chainStatus.Status == X509ChainStatusFlags.UntrustedRoot)
+				return false;
 
 			//otherwise if the chain has any error of any sort return false
-			if (chainStatus.Status != X509ChainStatusFlags.NoError) return false;
+			if (chainStatus.Status != X509ChainStatusFlags.NoError)
+				return false;
 		}
 		return true;
 	}
@@ -96,20 +99,24 @@ public static class CertificateValidations
 		privateChain.Build(new X509Certificate2(certificate));
 
 		//Assert our chain has the same number of elements as the certifcate presented by the server
-		if (chain.ChainElements.Count != privateChain.ChainElements.Count) return false;
+		if (chain.ChainElements.Count != privateChain.ChainElements.Count)
+			return false;
 
 		//lets validate the our chain status
 		foreach (var chainStatus in privateChain.ChainStatus)
 		{
 			//custom CA's that are not in the machine trusted store will always have this status
 			//by setting trustRoot = true (default) we skip this error
-			if (chainStatus.Status == X509ChainStatusFlags.UntrustedRoot && trustRoot) continue;
+			if (chainStatus.Status == X509ChainStatusFlags.UntrustedRoot && trustRoot)
+				continue;
 
 			//trustRoot is false so we expected our CA to be in the machines trusted store
-			if (chainStatus.Status == X509ChainStatusFlags.UntrustedRoot) return false;
+			if (chainStatus.Status == X509ChainStatusFlags.UntrustedRoot)
+				return false;
 
 			//otherwise if the chain has any error of any sort return false
-			if (chainStatus.Status != X509ChainStatusFlags.NoError) return false;
+			if (chainStatus.Status != X509ChainStatusFlags.NoError)
+				return false;
 		}
 
 		var found = false;
@@ -119,10 +126,12 @@ public static class CertificateValidations
 		{
 			var c = chain.ChainElements[i].Certificate.Thumbprint;
 			var cPrivate = privateChain.ChainElements[i].Certificate.Thumbprint;
-			if (!found && c == ca.Thumbprint) found = true;
+			if (!found && c == ca.Thumbprint)
+				found = true;
 
 			//mis aligned certificate chain, return false so we do not accept this certificate
-			if (c != cPrivate) return false;
+			if (c != cPrivate)
+				return false;
 		}
 		return found;
 	}

@@ -116,9 +116,12 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	{
 		reason = null;
 		ElasticsearchServerError? e = null;
-		if (response is StringResponse s && s.TryGetElasticsearchServerError(out e)) reason = e?.Error?.ToString();
-		else if (response is BytesResponse b && b.TryGetElasticsearchServerError(out e)) reason = e?.Error?.ToString();
-		else if (response.TryGetElasticsearchServerError(out e)) reason = e?.Error?.ToString();
+		if (response is StringResponse s && s.TryGetElasticsearchServerError(out e))
+			reason = e?.Error?.ToString();
+		else if (response is BytesResponse b && b.TryGetElasticsearchServerError(out e))
+			reason = e?.Error?.ToString();
+		else if (response.TryGetElasticsearchServerError(out e))
+			reason = e?.Error?.ToString();
 		return e != null;
 	}
 

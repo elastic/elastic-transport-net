@@ -552,7 +552,8 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	protected T UpdateGlobalQueryString(string key, string value, bool enabled)
 	{
 		_queryStringParameters ??= new();
-		if (!enabled && _queryStringParameters[key] != null) _queryStringParameters.Remove(key);
+		if (!enabled && _queryStringParameters[key] != null)
+			_queryStringParameters.Remove(key);
 		else if (enabled && _queryStringParameters[key] == null)
 			return GlobalQueryStringParameters(new NameValueCollection { { key, "true" } });
 		return (T)this;

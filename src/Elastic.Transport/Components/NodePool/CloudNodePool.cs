@@ -39,7 +39,7 @@ public sealed class CloudNodePool : SingleNodePool
 	/// </param>
 	/// <param name="credentials"></param>
 	public CloudNodePool(string cloudId, AuthorizationHeader credentials) : this(ParseCloudId(cloudId)) =>
-		AuthenticationHeader  = credentials;
+		AuthenticationHeader = credentials;
 
 	/// <summary>
 	/// An <see cref="NodePool"/> implementation that can be seeded with a cloud enpoint
@@ -48,7 +48,7 @@ public sealed class CloudNodePool : SingleNodePool
 	/// <param name="cloudEndpoint">Elastic Cloud endpoint</param>
 	/// <param name="credentials">The credentials to use with cloud</param>
 	public CloudNodePool(Uri cloudEndpoint, AuthorizationHeader credentials) : this(CreateCloudId(cloudEndpoint)) =>
-		AuthenticationHeader  = credentials;
+		AuthenticationHeader = credentials;
 
 	private CloudNodePool(ParsedCloudId parsedCloudId) : base(parsedCloudId.Uri) =>
 		ClusterName = parsedCloudId.ClusterName;

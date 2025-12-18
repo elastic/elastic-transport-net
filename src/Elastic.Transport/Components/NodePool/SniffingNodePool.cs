@@ -58,7 +58,8 @@ public class SniffingNodePool : StaticNodePool
 	/// <inheritdoc />
 	public override void Reseed(IEnumerable<Node> nodes)
 	{
-		if (!nodes.HasAny(out var nodesArray)) return;
+		if (!nodes.HasAny(out var nodesArray))
+			return;
 
 		try
 		{

@@ -70,9 +70,11 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 
 		while (reader.Read())
 		{
-			if (reader.TokenType == JsonTokenType.EndObject) return errorCause;
+			if (reader.TokenType == JsonTokenType.EndObject)
+				return errorCause;
 
-			if (reader.TokenType != JsonTokenType.PropertyName) throw new JsonException();
+			if (reader.TokenType != JsonTokenType.PropertyName)
+				throw new JsonException();
 
 			var propertyName = reader.GetString();
 			switch (propertyName)
@@ -138,7 +140,8 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 					ReadAssign<string>(ref reader, (e, v) => e.Type = v);
 					break;
 				default:
-					if (ReadMore(ref reader, options, propertyName!, errorCause)) break;
+					if (ReadMore(ref reader, options, propertyName!, errorCause))
+						break;
 					else
 					{
 						ReadAny(ref reader, propertyName!, (_, p, v) => additionalProperties.Add(p, v));
@@ -161,7 +164,8 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 
 		static void Serialize<T>(Utf8JsonWriter writer, JsonSerializerOptions options, string name, T value)
 		{
-			if (value is null) return;
+			if (value is null)
+				return;
 
 			writer.WritePropertyName(name);
 			JsonSerializer.Serialize(writer, value, options);
@@ -169,7 +173,8 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 
 		static void SerializeDynamic(Utf8JsonWriter writer, JsonSerializerOptions options, string name, object? value, Type inputType)
 		{
-			if (value is null) return;
+			if (value is null)
+				return;
 
 			writer.WritePropertyName(name);
 			JsonSerializer.Serialize(writer, value, inputType, options);

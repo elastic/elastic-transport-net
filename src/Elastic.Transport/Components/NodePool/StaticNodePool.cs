@@ -146,7 +146,8 @@ public class StaticNodePool : NodePool
 		}
 
 		var localCursor = globalCursor % nodes.Count;
-		foreach (var aliveNode in SelectAliveNodes(localCursor, nodes, auditor)) yield return aliveNode;
+		foreach (var aliveNode in SelectAliveNodes(localCursor, nodes, auditor))
+			yield return aliveNode;
 	}
 
 	/// <inheritdoc />

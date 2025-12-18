@@ -83,7 +83,8 @@ public abstract class NodePool : IDisposable
 	/// <param name="disposing"></param>
 	protected virtual void Dispose(bool disposing)
 	{
-		if (!_disposed) _disposed = true;
+		if (!_disposed)
+			_disposed = true;
 	}
 
 	/// <summary>

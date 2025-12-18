@@ -50,7 +50,7 @@ internal sealed class PollingCounter : IDisposable
 	public PollingCounter(string largeBuffers, RecyclableMemoryStreamManager.Events eventsWriter, Func<double> func) { }
 	// ReSharper restore UnusedParameter.Local
 
-	public void Dispose() {}
+	public void Dispose() { }
 }
 #endif
 

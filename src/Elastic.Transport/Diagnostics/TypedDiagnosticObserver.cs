@@ -25,7 +25,7 @@ internal abstract class TypedDiagnosticObserver<TOnNext> : IObserver<KeyValuePai
 		Action? onCompleted = null
 	)
 	{
-		_onNext= onNext ?? throw new ArgumentNullException(nameof(onNext));
+		_onNext = onNext ?? throw new ArgumentNullException(nameof(onNext));
 		_onError = onError;
 		_onCompleted = onCompleted;
 	}
@@ -36,10 +36,13 @@ internal abstract class TypedDiagnosticObserver<TOnNext> : IObserver<KeyValuePai
 
 	void IObserver<KeyValuePair<string, object>>.OnNext(KeyValuePair<string, object> value)
 	{
-		if (value.Value is TOnNext next) _onNext.Invoke(new KeyValuePair<string, TOnNext>(value.Key, next));
-		else if (value.Value == null) _onNext.Invoke(new KeyValuePair<string, TOnNext>(value.Key, default!));
+		if (value.Value is TOnNext next)
+			_onNext.Invoke(new KeyValuePair<string, TOnNext>(value.Key, next));
+		else if (value.Value == null)
+			_onNext.Invoke(new KeyValuePair<string, TOnNext>(value.Key, default!));
 
-		else throw new Exception($"{value.Key} received unexpected type {value.Value.GetType()}");
+		else
+			throw new Exception($"{value.Key} received unexpected type {value.Value.GetType()}");
 
 	}
 }
@@ -72,13 +75,18 @@ public abstract class TypedDiagnosticObserver<TOnNextStart, TOnNextEnd> : IObser
 
 	void IObserver<KeyValuePair<string, object>>.OnNext(KeyValuePair<string, object> value)
 	{
-		if (value.Value is TOnNextStart nextStart) _onNextStart.Invoke(new KeyValuePair<string, TOnNextStart>(value.Key, nextStart));
-		else if (value.Key.EndsWith(".Start", StringComparison.Ordinal) && value.Value is null) _onNextStart.Invoke(new KeyValuePair<string, TOnNextStart>(value.Key, default!));
+		if (value.Value is TOnNextStart nextStart)
+			_onNextStart.Invoke(new KeyValuePair<string, TOnNextStart>(value.Key, nextStart));
+		else if (value.Key.EndsWith(".Start", StringComparison.Ordinal) && value.Value is null)
+			_onNextStart.Invoke(new KeyValuePair<string, TOnNextStart>(value.Key, default!));
 
-		else if (value.Value is TOnNextEnd nextEnd) _onNextEnd.Invoke(new KeyValuePair<string, TOnNextEnd>(value.Key, nextEnd));
-		else if (value.Key.EndsWith(".Stop", StringComparison.Ordinal) && value.Value is null) _onNextEnd.Invoke(new KeyValuePair<string, TOnNextEnd>(value.Key, default!));
+		else if (value.Value is TOnNextEnd nextEnd)
+			_onNextEnd.Invoke(new KeyValuePair<string, TOnNextEnd>(value.Key, nextEnd));
+		else if (value.Key.EndsWith(".Stop", StringComparison.Ordinal) && value.Value is null)
+			_onNextEnd.Invoke(new KeyValuePair<string, TOnNextEnd>(value.Key, default!));
 
-		else throw new Exception($"{value.Key} received unexpected type {value.Value.GetType()}");
+		else
+			throw new Exception($"{value.Key} received unexpected type {value.Value.GetType()}");
 
 	}
 }

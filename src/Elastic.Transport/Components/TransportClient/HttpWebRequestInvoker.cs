@@ -39,7 +39,8 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	static HttpWebRequestInvoker()
 	{
 		//Not available under mono
-		if (!IsMono) HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
+		if (!IsMono)
+			HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
 	}
 
 	/// <summary>
@@ -171,19 +172,19 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			TResponse response;
 
-		if (isAsync)
-		{
-			response = await ResponseFactory.CreateAsync<TResponse>
-					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-				.ConfigureAwait(false);
-		}
-		else
-		{
-			response = ResponseFactory.Create<TResponse>
-				(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
-		}
+			if (isAsync)
+			{
+				response = await ResponseFactory.CreateAsync<TResponse>
+						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+					.ConfigureAwait(false);
+			}
+			else
+			{
+				response = ResponseFactory.Create<TResponse>
+					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
+			}
 
-		// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
+			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
 			// resources can be linked such that their disposal is deferred.
 			if (response.LeaveOpen)
@@ -209,7 +210,8 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 	private static Dictionary<string, IEnumerable<string>>? ParseHeaders(BoundConfiguration boundConfiguration, HttpWebResponse responseMessage, Dictionary<string, IEnumerable<string>>? responseHeaders)
 	{
-		if (!responseMessage.SupportsHeaders && !responseMessage.Headers.HasKeys()) return null;
+		if (!responseMessage.SupportsHeaders && !responseMessage.Headers.HasKeys())
+			return null;
 
 		var defaultHeadersForProduct = boundConfiguration.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
 		foreach (var headerToParse in defaultHeadersForProduct)
@@ -274,7 +276,8 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		var finalFingerprint = fingerprint;
 		if (fingerprint.IndexOf(':') >= 0)
 			finalFingerprint = fingerprint.Replace(":", string.Empty);
-		else if (fingerprint.IndexOf('-') >= 0) finalFingerprint = fingerprint.Replace("-", string.Empty);
+		else if (fingerprint.IndexOf('-') >= 0)
+			finalFingerprint = fingerprint.Replace("-", string.Empty);
 		return finalFingerprint;
 	}
 
@@ -290,10 +293,11 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((sender, certificate, chain, policyErrors) =>
 			{
-				if (certificate is null && chain is null) return false;
+				if (certificate is null && chain is null)
+					return false;
 
 				// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
-				_expectedCertificateFingerprint  ??= CertificateHelpers.ComparableFingerprint(boundConfiguration!.ConnectionSettings!.CertificateFingerprint!);
+				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration!.ConnectionSettings!.CertificateFingerprint!);
 
 				// If there is a chain, check each certificate up to the root
 				if (chain is not null)
@@ -442,7 +446,8 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			scheme = boundConfiguration.AuthenticationHeader.AuthScheme;
 		}
 
-		if (parameters.IsNullOrEmpty()) return;
+		if (parameters.IsNullOrEmpty())
+			return;
 
 		request.Headers["Authorization"] = $"{scheme} {parameters}";
 	}
@@ -461,7 +466,8 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 	private static void TimeoutCallback(object? state, bool timedOut)
 	{
-		if (!timedOut) return;
+		if (!timedOut)
+			return;
 
 		(state as WebRequest)?.Abort();
 	}

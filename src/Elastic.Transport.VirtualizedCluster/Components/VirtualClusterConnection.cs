@@ -199,12 +199,14 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			var always = rule.Times.Match(_ => true, _ => false);
 			var times = rule.Times.Match(_ => -1, t => t);
 
-			if (rule.OnPort == null || rule.OnPort.Value != endpoint.Uri.Port) continue;
+			if (rule.OnPort == null || rule.OnPort.Value != endpoint.Uri.Port)
+				continue;
 
 			if (always)
 				return Always<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
 
-			if (rule.ExecuteCount > times) continue;
+			if (rule.ExecuteCount > times)
+				continue;
 
 			return Sometimes<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
 		}
@@ -215,7 +217,8 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			if (always)
 				return Always<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
 
-			if (rule.ExecuteCount > times) continue;
+			if (rule.ExecuteCount > times)
+				continue;
 
 			return Sometimes<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
 		}
@@ -303,7 +306,8 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		if (rule.ReturnResponse != null)
 			return rule.ReturnResponse;
 
-		if (_defaultResponseBytes != null) return _defaultResponseBytes;
+		if (_defaultResponseBytes != null)
+			return _defaultResponseBytes;
 
 		var response = DefaultResponse;
 		using (var ms = TransportConfiguration.DefaultMemoryStreamFactory.Create())

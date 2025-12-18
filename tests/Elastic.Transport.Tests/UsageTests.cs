@@ -34,8 +34,11 @@ public class UsageTests
 		var settings = new TransportConfiguration(pool, requestInvoker, serializer, product);
 		var transport = new DistributedTransport<TransportConfiguration>(settings);
 
-		var requestParameters = new DefaultRequestParameters { QueryString =
-			new Dictionary<string, object>{ { "enum", MyEnum.Value } } };
+		var requestParameters = new DefaultRequestParameters
+		{
+			QueryString =
+			new Dictionary<string, object> { { "enum", MyEnum.Value } }
+		};
 		var path = requestParameters.CreatePathWithQueryStrings("/", settings);
 		var response = transport.Request<StringResponse>(new EndpointPath(HttpMethod.GET, path), null, null, null);
 

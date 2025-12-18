@@ -49,7 +49,8 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// Allows consumers to inject their own HttpMessageHandler, and optionally call our default implementation.
 	/// </summary>
 	public HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler) :
-		this(wrappingHandler, new DefaultResponseFactory()) { }
+		this(wrappingHandler, new DefaultResponseFactory())
+	{ }
 
 	internal HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler, ResponseFactory responseFactory)
 	{
@@ -233,7 +234,7 @@ public class HttpRequestInvoker : IRequestInvoker
 				responseHeaders.Add(header.Key, header.Value);
 			}
 		}
-		else if (boundConfiguration.ResponseHeadersToParse is { Count:  > 0 })
+		else if (boundConfiguration.ResponseHeadersToParse is { Count: > 0 })
 		{
 			foreach (var headerToParse in boundConfiguration.ResponseHeadersToParse)
 			{
@@ -291,7 +292,8 @@ public class HttpRequestInvoker : IRequestInvoker
 			}
 			handler.Proxy = proxy;
 		}
-		else if (boundConfiguration.DisableAutomaticProxyDetection) handler.UseProxy = false;
+		else if (boundConfiguration.DisableAutomaticProxyDetection)
+			handler.UseProxy = false;
 
 		// Configure certificate validation
 		var callback = boundConfiguration.ConnectionSettings?.ServerCertificateValidationCallback;
@@ -301,7 +303,8 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			handler.ServerCertificateCustomValidationCallback = (request, certificate, chain, policyErrors) =>
 			{
-				if (certificate is null && chain is null) return false;
+				if (certificate is null && chain is null)
+					return false;
 
 				// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
 				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings!.CertificateFingerprint!);
@@ -395,7 +398,8 @@ public class HttpRequestInvoker : IRequestInvoker
 			scheme = boundConfiguration.AuthenticationHeader.AuthScheme;
 		}
 
-		if (parameters.IsNullOrEmpty()) return;
+		if (parameters.IsNullOrEmpty())
+			return;
 
 		requestMessage.Headers.Authorization = new AuthenticationHeaderValue(scheme!, parameters);
 	}
@@ -515,11 +519,16 @@ public class HttpRequestInvoker : IRequestInvoker
 	{
 		switch (httpMethod)
 		{
-			case HttpMethod.GET: return System.Net.Http.HttpMethod.Get;
-			case HttpMethod.POST: return System.Net.Http.HttpMethod.Post;
-			case HttpMethod.PUT: return System.Net.Http.HttpMethod.Put;
-			case HttpMethod.DELETE: return System.Net.Http.HttpMethod.Delete;
-			case HttpMethod.HEAD: return System.Net.Http.HttpMethod.Head;
+			case HttpMethod.GET:
+				return System.Net.Http.HttpMethod.Get;
+			case HttpMethod.POST:
+				return System.Net.Http.HttpMethod.Post;
+			case HttpMethod.PUT:
+				return System.Net.Http.HttpMethod.Put;
+			case HttpMethod.DELETE:
+				return System.Net.Http.HttpMethod.Delete;
+			case HttpMethod.HEAD:
+				return System.Net.Http.HttpMethod.Head;
 			default:
 				throw new ArgumentException("Invalid value for HttpMethod", nameof(httpMethod));
 		}
@@ -540,7 +549,7 @@ public class HttpRequestInvoker : IRequestInvoker
 	}
 
 	/// <summary> Allows subclasses to dispose of managed resources </summary>
-	public virtual void DisposeManagedResources() {}
+	public virtual void DisposeManagedResources() { }
 	/// <inheritdoc />
 	public void Dispose()
 	{

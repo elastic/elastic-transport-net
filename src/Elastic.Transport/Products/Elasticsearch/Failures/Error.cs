@@ -50,7 +50,8 @@ public sealed class ErrorConverter : JsonConverter<Error>
 
 			while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
 			{
-				if (reader.TokenType != JsonTokenType.PropertyName) continue;
+				if (reader.TokenType != JsonTokenType.PropertyName)
+					continue;
 
 				if (reader.ValueTextEquals("root_cause"))
 				{
