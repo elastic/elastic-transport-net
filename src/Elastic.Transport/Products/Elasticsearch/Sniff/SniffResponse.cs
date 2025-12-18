@@ -5,32 +5,34 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text.Json.Serialization;
 using static Elastic.Transport.Products.Elasticsearch.ElasticsearchNodeFeatures;
 
 namespace Elastic.Transport.Products.Elasticsearch;
 
 internal sealed class SniffResponse : TransportResponse
 {
-	// ReSharper disable InconsistentNaming
-	public string? cluster_name { get; set; }
+	[JsonPropertyName("cluster_name")]
+	public string? ClusterName { get; set; }
 
-	public Dictionary<string, NodeInfo>? nodes { get; set; }
+	[JsonPropertyName("nodes")]
+	public Dictionary<string, NodeInfo>? Nodes { get; set; }
 
 	public IEnumerable<Node> ToNodes(bool forceHttp = false)
 	{
-		if (nodes == null)
+		if (Nodes == null)
 			yield break;
 
-		foreach (var kv in nodes.Where(n => n.Value.HttpEnabled))
+		foreach (var kv in Nodes.Where(n => n.Value.HttpEnabled))
 		{
 			var info = kv.Value;
-			var httpEndpoint = info.http?.publish_address;
+			var httpEndpoint = info.Http?.PublishAddress;
 			if (string.IsNullOrWhiteSpace(httpEndpoint))
-				httpEndpoint = kv.Value.http?.bound_address?.FirstOrDefault();
+				httpEndpoint = kv.Value.Http?.BoundAddress?.FirstOrDefault();
 			if (string.IsNullOrWhiteSpace(httpEndpoint))
 				continue;
 
-			var uri = SniffParser.ParseToUri(httpEndpoint!, forceHttp);
+			var uri = SniffParser.ParseToUri(httpEndpoint, forceHttp);
 			var features = new List<string>();
 			if (info.MasterEligible)
 				features.Add(MasterEligible);
@@ -43,7 +45,7 @@ internal sealed class SniffResponse : TransportResponse
 
 			var node = new Node(uri, features)
 			{
-				Name = info.name, Id = kv.Key, Settings = new ReadOnlyDictionary<string, object>(info.settings ?? new Dictionary<string, object>())
+				Name = info.Name, Id = kv.Key, Settings = new ReadOnlyDictionary<string, object>(info.Settings ?? new Dictionary<string, object>())
 			};
 			yield return node;
 		}
