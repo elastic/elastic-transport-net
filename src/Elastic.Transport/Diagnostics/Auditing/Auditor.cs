@@ -26,14 +26,14 @@ public class Auditor : IReadOnlyCollection<Audit>
 
 	internal Auditable Add(Auditable auditable)
 	{
-		_audits ??= [];
+		_audits ??= new List<Audit>();
 		_audits.Add(auditable.Audit);
 		return auditable;
 	}
 
 	internal Auditable Add(AuditEvent type, DateTimeProvider dateTimeProvider, Node? node = null)
 	{
-		_audits ??= [];
+		_audits ??= new List<Audit>();
 		var auditable = new Auditable(type, dateTimeProvider, node);
 		_audits.Add(auditable.Audit);
 		return auditable;

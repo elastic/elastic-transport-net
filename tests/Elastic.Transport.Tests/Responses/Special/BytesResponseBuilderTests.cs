@@ -39,10 +39,10 @@ public class BytesResponseBuilderTests
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, BytesResponse result)
 		{
-			_ = result.Body.AsSpan().SequenceEqual(Data).Should().BeTrue();
+			result.Body.AsSpan().SequenceEqual(Data).Should().BeTrue();
 
 			// As the incoming stream is seekable, no need to create a copy
-			_ = memoryStreamFactory.Created.Count.Should().Be(1);
+			memoryStreamFactory.Created.Count.Should().Be(1);
 		}
 	}
 
@@ -70,11 +70,11 @@ public class BytesResponseBuilderTests
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, BytesResponse result)
 		{
-			_ = result.Body.AsSpan().SequenceEqual(Data).Should().BeTrue();
+			result.Body.AsSpan().SequenceEqual(Data).Should().BeTrue();
 
-			_ = memoryStreamFactory.Created.Count.Should().Be(0);
+			memoryStreamFactory.Created.Count.Should().Be(0);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 		}
 	}
 }

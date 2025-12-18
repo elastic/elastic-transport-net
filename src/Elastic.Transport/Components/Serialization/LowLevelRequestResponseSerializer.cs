@@ -15,17 +15,27 @@ namespace Elastic.Transport;
 /// Default low level request/response-serializer implementation for <see cref="Serializer"/> which serializes using
 /// the Microsoft <c>System.Text.Json</c> library
 /// </summary>
-/// <remarks>
-/// <inheritdoc cref="LowLevelRequestResponseSerializer"/>>
-/// </remarks>
-/// <param name="converters">Add more default converters onto <see cref="JsonSerializerOptions"/> being used</param>
-[method: UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-[method: UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-/// <summary>
-/// Default low level request/response-serializer implementation for <see cref="Serializer"/> which serializes using
-/// the Microsoft <c>System.Text.Json</c> library
-/// </summary>
-internal sealed class LowLevelRequestResponseSerializer(IReadOnlyCollection<JsonConverter>? converters) : SystemTextJsonSerializer(new TransportSerializerOptionsProvider([
+internal sealed class LowLevelRequestResponseSerializer : SystemTextJsonSerializer
+{
+	/// <summary>
+	/// Provides a static reusable reference to an instance of <see cref="LowLevelRequestResponseSerializer"/> to promote reuse.
+	/// </summary>
+	internal static readonly LowLevelRequestResponseSerializer Instance = new();
+
+	/// <inheritdoc cref="LowLevelRequestResponseSerializer"/>>
+	public LowLevelRequestResponseSerializer() : this(null) { }
+
+	/// <summary>
+	/// <inheritdoc cref="LowLevelRequestResponseSerializer"/>>
+	/// </summary>
+	/// <param name="converters">Add more default converters onto <see cref="JsonSerializerOptions"/> being used</param>
+	//[RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+	//[RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	public LowLevelRequestResponseSerializer(IReadOnlyCollection<JsonConverter>? converters)
+		: base(new TransportSerializerOptionsProvider([
 			new ExceptionConverter(),
 			new ErrorCauseConverter(),
 			new ErrorConverter(),
@@ -35,12 +45,5 @@ internal sealed class LowLevelRequestResponseSerializer(IReadOnlyCollection<Json
 			options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 			options.TypeInfoResolver = JsonTypeInfoResolver.Combine(new DefaultJsonTypeInfoResolver(), ElasticsearchTransportSerializerContext.Default);
 		}))
-{
-	/// <summary>
-	/// Provides a static reusable reference to an instance of <see cref="LowLevelRequestResponseSerializer"/> to promote reuse.
-	/// </summary>
-	internal static readonly LowLevelRequestResponseSerializer Instance = new();
-
-	/// <inheritdoc cref="LowLevelRequestResponseSerializer"/>>
-	public LowLevelRequestResponseSerializer() : this(null) { }
+	{ }
 }

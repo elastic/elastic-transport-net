@@ -19,14 +19,14 @@ public class VirtualCluster
 		InternalNodes = nodes.ToList();
 	}
 
-	public List<IClientCallRule> ClientCallRules { get; } = [];
+	public List<IClientCallRule> ClientCallRules { get; } = new();
 	private TestableDateTimeProvider TestDateTimeProvider { get; } = new();
 
 	protected List<Node> InternalNodes { get; }
 	public IReadOnlyList<Node> Nodes => InternalNodes;
-	public List<IRule> PingingRules { get; } = [];
+	public List<IRule> PingingRules { get; } = new();
 
-	public List<ISniffRule> SniffingRules { get; } = [];
+	public List<ISniffRule> SniffingRules { get; } = new();
 	internal string PublishAddressOverride { get; private set; }
 
 	internal bool SniffShouldReturnFqnd { get; private set; }

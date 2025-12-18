@@ -7,16 +7,20 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Elastic.Transport.IntegrationTests.Plumbing.Stubs;
-
-public class TestableClientHandler(HttpMessageHandler handler, Action<HttpResponseMessage> responseAction) : DelegatingHandler(handler)
+namespace Elastic.Transport.IntegrationTests.Plumbing.Stubs
 {
-	private readonly Action<HttpResponseMessage> _responseAction = responseAction;
-
-	protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+	public class TestableClientHandler : DelegatingHandler
 	{
-		var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-		_responseAction?.Invoke(response);
-		return response;
+		private readonly Action<HttpResponseMessage> _responseAction;
+
+		public TestableClientHandler(HttpMessageHandler handler, Action<HttpResponseMessage> responseAction) : base(handler) =>
+			_responseAction = responseAction;
+
+		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+		{
+			var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+			_responseAction?.Invoke(response);
+			return response;
+		}
 	}
 }

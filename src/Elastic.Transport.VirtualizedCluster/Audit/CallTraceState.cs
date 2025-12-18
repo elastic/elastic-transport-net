@@ -7,11 +7,13 @@ using Elastic.Transport.Diagnostics.Auditing;
 
 namespace Elastic.Transport.VirtualizedCluster.Audit;
 
-public sealed class CallTraceState(AuditEvent e)
+public sealed class CallTraceState
 {
+	public CallTraceState(AuditEvent e) => Event = e;
+
 	public Action<string, Transport.Diagnostics.Auditing.Audit> AssertWithBecause { get; set; }
 
-	public AuditEvent Event { get; private set; } = e;
+	public AuditEvent Event { get; private set; }
 
 	public int? Port { get; set; }
 

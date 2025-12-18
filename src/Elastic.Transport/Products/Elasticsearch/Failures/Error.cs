@@ -111,7 +111,7 @@ public sealed class ErrorConverter : JsonConverter<Error>
 					continue;
 				}
 
-				additional ??= [];
+				additional ??= new Dictionary<string, object>();
 				var key = reader.GetString();
 				var additionaValue = JsonSerializer.Deserialize<object?>(ref reader, ElasticsearchTransportSerializerContext.Default.Object);
 				if (key != null && additionaValue != null)

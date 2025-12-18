@@ -69,9 +69,9 @@ public class StreamResponseBuilderTests
 #pragma warning restore CA1835 // Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'
 
 #pragma warning disable IDE0057 // Use range operator
-		_ = buffer.AsSpan().Slice(0, read).SequenceEqual(Data).Should().BeTrue();
+		buffer.AsSpan().Slice(0, read).SequenceEqual(Data).Should().BeTrue();
 #pragma warning restore IDE0057 // Use range operator
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(0);
+		memoryStreamFactory.Created.Count.Should().Be(0);
 	}
 }

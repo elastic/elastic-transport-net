@@ -15,10 +15,12 @@ namespace Elastic.Transport;
 /// A formatter that can utilize <see cref="ITransportConfiguration" /> to resolve <see cref="IUrlParameter" />'s passed
 /// as format arguments. It also handles known string representations for e.g. bool/Enums/IEnumerable.
 /// </summary>
-/// <inheritdoc cref="UrlFormatter"/>
-public sealed class UrlFormatter(ITransportConfiguration settings) : IFormatProvider, ICustomFormatter
+public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 {
-	private readonly ITransportConfiguration _settings = settings;
+	private readonly ITransportConfiguration _settings;
+
+	/// <inheritdoc cref="UrlFormatter"/>
+	public UrlFormatter(ITransportConfiguration settings) => _settings = settings;
 
 	/// <inheritdoc cref="ICustomFormatter.Format"/>>
 	public string Format(string? format, object? arg, IFormatProvider? formatProvider)
@@ -84,9 +86,9 @@ public sealed class UrlFormatter(ITransportConfiguration settings) : IFormatProv
 		for (var i = value.GetLowerBound(0); i <= value.GetUpperBound(0); ++i)
 		{
 			if (sb.Length != 0)
-				_ = sb.Append(',');
+				sb.Append(',');
 
-			_ = sb.Append(CreateString(value.GetValue(i), settings));
+			sb.Append(CreateString(value.GetValue(i), settings));
 		}
 
 		return sb.ToString();
@@ -108,9 +110,9 @@ public sealed class UrlFormatter(ITransportConfiguration settings) : IFormatProv
 		for (var i = 0; i < value.Count; ++i)
 		{
 			if (sb.Length != 0)
-				_ = sb.Append(',');
+				sb.Append(',');
 
-			_ = sb.Append(CreateString(value[i], settings));
+			sb.Append(CreateString(value[i], settings));
 		}
 
 		return sb.ToString();
@@ -123,9 +125,9 @@ public sealed class UrlFormatter(ITransportConfiguration settings) : IFormatProv
 		foreach (var v in value)
 		{
 			if (sb.Length != 0)
-				_ = sb.Append(',');
+				sb.Append(',');
 
-			_ = sb.Append(CreateString(v, settings));
+			sb.Append(CreateString(v, settings));
 		}
 
 		return sb.ToString();

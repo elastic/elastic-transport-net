@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System;
 using System.Diagnostics;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,7 +26,7 @@ public interface ITransport
 	/// Allows callers to override completely how `TResponse` should be deserialized to a `TResponse` that implements <see cref="TransportResponse"/> instance.
 	/// <para>Expert setting only</para>
 	/// <returns>The deserialized <typeparamref name="TResponse"/>.</returns>
-	TResponse Request<TResponse>(
+	public TResponse Request<TResponse>(
 		in EndpointPath path,
 		PostData? postData,
 		Action<Activity>? configureActivity,
@@ -46,7 +46,7 @@ public interface ITransport
 	/// Allows callers to override completely how `TResponse` should be deserialized to a `TResponse` that implements <see cref="TransportResponse"/> instance.
 	/// <para>Expert setting only</para>
 	/// <returns>The deserialized <typeparamref name="TResponse"/>.</returns>
-	Task<TResponse> RequestAsync<TResponse>(
+	public Task<TResponse> RequestAsync<TResponse>(
 		in EndpointPath path,
 		PostData? postData,
 		Action<Activity>? configureActivity,
@@ -56,7 +56,7 @@ public interface ITransport
 		where TResponse : TransportResponse, new();
 
 	/// <summary> The <see cref="ITransportConfiguration" /> in use by this transport instance </summary>
-	ITransportConfiguration Configuration { get; }
+	public ITransportConfiguration Configuration { get; }
 }
 
 /// <summary>
@@ -67,7 +67,7 @@ public interface ITransport<out TConfiguration> : ITransport
 	where TConfiguration : class, ITransportConfiguration
 {
 	/// <summary> The <see cref="ITransportConfiguration" /> in use by this transport instance </summary>
-	new TConfiguration Configuration { get; }
+	public new TConfiguration Configuration { get; }
 }
 
 /// <summary>

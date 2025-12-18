@@ -45,13 +45,13 @@ public sealed class UserAgent
 	/// Use <see cref="Type"/>'s assembly <see cref="AssemblyInformationalVersionAttribute"/>
 	/// to inject version information into the header
 	/// </param>
-	public static UserAgent Create(string reposName, Type typeVersionLookup) => new(reposName, typeVersionLookup);
+	public static UserAgent Create(string reposName, Type typeVersionLookup) => new UserAgent(reposName, typeVersionLookup);
 
 	/// <summary> <inheritdoc cref="Create(string,System.Type)"/> </summary>
-	public static UserAgent Create(string reposName, Type typeVersionLookup, string[] metadata) => new(reposName, typeVersionLookup, metadata);
+	public static UserAgent Create(string reposName, Type typeVersionLookup, string[] metadata) => new UserAgent(reposName, typeVersionLookup, metadata);
 
 	/// <summary> Create a user string that does not confirm to elastic client standards </summary>
-	public static UserAgent Create(string fullUserAgentString) => new(fullUserAgentString);
+	public static UserAgent Create(string fullUserAgentString) => new UserAgent(fullUserAgentString);
 
 	/// <summary> The pre=calculated string representation of this <see cref="UserAgent"/> instance </summary>
 	/// <returns></returns>

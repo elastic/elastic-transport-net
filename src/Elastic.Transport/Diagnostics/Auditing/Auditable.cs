@@ -8,6 +8,8 @@ namespace Elastic.Transport.Diagnostics.Auditing;
 
 internal class Auditable : IDisposable
 {
+	private readonly Audit _audit;
+
 	private readonly DateTimeProvider _dateTimeProvider;
 
 	public Auditable(AuditEvent type, DateTimeProvider dateTimeProvider, Node? node)
@@ -15,7 +17,7 @@ internal class Auditable : IDisposable
 		_dateTimeProvider = dateTimeProvider;
 
 		var started = _dateTimeProvider.Now();
-		Audit = new Audit(type, started)
+		_audit = new Audit(type, started)
 		{
 			Node = node
 		};
@@ -31,7 +33,7 @@ internal class Auditable : IDisposable
 		set => Audit.Exception = value;
 	}
 
-	public Audit Audit { get; }
+	public Audit Audit => _audit;
 
 	public void Dispose() => Audit.Ended = _dateTimeProvider.Now();
 }

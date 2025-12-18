@@ -13,26 +13,28 @@ using Xunit;
 
 // Feel free to delete these tests at some point, these are here as examples while we built out our test suite
 // A lot of integration tests need to be ported from elastic/elasticsearch-net
-namespace Elastic.Transport.IntegrationTests.Plumbing.Examples;
-
-/// <summary>
-/// Tests that the test framework loads a controller and the exposed transport can talk to its endpoints.
-/// Tests runs against a server that started up once and its server instance shared among many test classes
-/// </summary>
-public class ControllerIntegrationTests(BufferedServerFixture instance)
-	: AssemblyServerTestsBase<BufferedServerFixture>(instance)
+namespace Elastic.Transport.IntegrationTests.Plumbing.Examples
 {
-	[Fact]
-	public async Task CanCallIntoController()
+	/// <summary>
+	/// Tests that the test framework loads a controller and the exposed transport can talk to its endpoints.
+	/// Tests runs against a server that started up once and its server instance shared among many test classes
+	/// </summary>
+	public class ControllerIntegrationTests(BufferedServerFixture instance)
+		: AssemblyServerTestsBase<BufferedServerFixture>(instance)
 	{
-		var response = await RequestHandler.GetAsync<StringResponse>("/dummy/20", cancellationToken: TestContext.Current.CancellationToken);
-		_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue("{0}", response.ApiCallDetails.DebugInformation);
+		[Fact]
+		public async Task CanCallIntoController()
+		{
+			var response = await RequestHandler.GetAsync<StringResponse>("/dummy/20", cancellationToken: TestContext.Current.CancellationToken);
+			response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue("{0}", response.ApiCallDetails.DebugInformation);
+		}
 	}
-}
 
-[ApiController, Route("[controller]")]
-public class DummyController : ControllerBase
-{
-	[HttpGet("{id}")]
-	public async Task<int> Get(int id) => await Task.FromResult(id * 3);
+	[ApiController, Route("[controller]")]
+	public class DummyController : ControllerBase
+	{
+		[HttpGet("{id}")]
+		public async Task<int> Get(int id) => await Task.FromResult(id * 3);
+	}
+
 }

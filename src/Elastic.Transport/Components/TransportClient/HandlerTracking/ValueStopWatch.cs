@@ -32,7 +32,7 @@ internal static class NonCapturingTimer
 			if (ExecutionContext.IsFlowSuppressed())
 				return new Timer(callback, state, dueTime, period);
 
-			_ = ExecutionContext.SuppressFlow();
+			ExecutionContext.SuppressFlow();
 			restoreFlow = true;
 
 			return new Timer(callback, state, dueTime, period);

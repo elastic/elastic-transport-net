@@ -9,13 +9,9 @@ namespace Elastic.Transport;
 /// <summary>
 ///
 /// </summary>
-/// <remarks>
-///
-/// </remarks>
-/// <param name="version"></param>
-public abstract class VersionInfo(SemVersion version)
+public abstract class VersionInfo
 {
-	private readonly SemVersion _version = version;
+	private readonly SemVersion _version;
 
 	/// <summary>
 	///
@@ -46,6 +42,12 @@ public abstract class VersionInfo(SemVersion version)
 	///
 	/// </summary>
 	public bool IsPrerelease => !string.IsNullOrEmpty(_version.Prerelease);
+
+	/// <summary>
+	///
+	/// </summary>
+	/// <param name="version"></param>
+	protected VersionInfo(SemVersion version) => _version = version;
 
 	/// <summary> Returns the full version as a semantic version number </summary>
 	public override string ToString() => _version.ToString();

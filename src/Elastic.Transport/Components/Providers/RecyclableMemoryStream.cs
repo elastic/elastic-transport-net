@@ -446,7 +446,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 
 		// InternalRead will check for existence of largeBuffer, so make sure we
 		// don't set it until after we've copied the data.
-		_ = InternalRead(newBuffer, 0, _length, 0);
+		InternalRead(newBuffer, 0, _length, 0);
 		_largeBuffer = newBuffer;
 
 		if (_blocks.Count > 0 && _memoryManager.AggressiveBufferReturn)
@@ -489,7 +489,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		CheckDisposed();
 		var newBuffer = new byte[Length];
 
-		_ = InternalRead(newBuffer, 0, _length, 0);
+		InternalRead(newBuffer, 0, _length, 0);
 		var stack = _memoryManager.GenerateCallStacks ? Environment.StackTrace : null;
 		RecyclableMemoryStreamManager.EventsWriter.MemoryStreamToArray(_id, _tag, stack, 0);
 		_memoryManager.ReportStreamToArray();
@@ -548,29 +548,29 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	}
 
 #if NETSTANDARD2_1
-	/// <summary>
-	/// Reads from the current position into the provided buffer
-	/// </summary>
-	/// <param name="buffer">Destination buffer</param>
-	/// <returns>The number of bytes read</returns>
-	/// <exception cref="ObjectDisposedException">Object has been disposed</exception>
-	public override int Read(Span<byte> buffer) => SafeRead(buffer, ref _position);
+        /// <summary>
+        /// Reads from the current position into the provided buffer
+        /// </summary>
+        /// <param name="buffer">Destination buffer</param>
+        /// <returns>The number of bytes read</returns>
+        /// <exception cref="ObjectDisposedException">Object has been disposed</exception>
+        public override int Read(Span<byte> buffer) => SafeRead(buffer, ref _position);
 
 	/// <summary>
-	/// Reads from the specified position into the provided buffer
-	/// </summary>
-	/// <param name="buffer">Destination buffer</param>
-	/// <param name="streamPosition">Position in the stream to start reading from</param>
-	/// <returns>The number of bytes read</returns>
-	/// <exception cref="ObjectDisposedException">Object has been disposed</exception>
-	public int SafeRead(Span<byte> buffer, ref int streamPosition)
-	{
-		CheckDisposed();
+        /// Reads from the specified position into the provided buffer
+        /// </summary>
+        /// <param name="buffer">Destination buffer</param>
+        /// <param name="streamPosition">Position in the stream to start reading from</param>
+        /// <returns>The number of bytes read</returns>
+        /// <exception cref="ObjectDisposedException">Object has been disposed</exception>
+        public int SafeRead(Span<byte> buffer, ref int streamPosition)
+        {
+            CheckDisposed();
 
-		var amountRead = InternalRead(buffer, streamPosition);
-		streamPosition += amountRead;
-		return amountRead;
-	}
+            var amountRead = InternalRead(buffer, streamPosition);
+            streamPosition += amountRead;
+            return amountRead;
+        }
 #endif
 
 	/// <summary>
@@ -642,48 +642,47 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	}
 
 #if NETSTANDARD2_1
-	/// <summary>
-	/// Writes the buffer to the stream
-	/// </summary>
-	/// <param name="source">Source buffer</param>
-	/// <exception cref="ArgumentNullException">buffer is null</exception>
-	/// <exception cref="ObjectDisposedException">Object has been disposed</exception>
-	public override void Write(ReadOnlySpan<byte> source)
-	{
-		CheckDisposed();
+        /// <summary>
+        /// Writes the buffer to the stream
+        /// </summary>
+        /// <param name="source">Source buffer</param>
+        /// <exception cref="ArgumentNullException">buffer is null</exception>
+        /// <exception cref="ObjectDisposedException">Object has been disposed</exception>
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            CheckDisposed();
 
-		var blockSize = _memoryManager.BlockSize;
-		var end = (long)_position + source.Length;
-		// Check for overflow
-		if (end > MaxStreamLength)
-			throw new IOException("Maximum capacity exceeded");
+            var blockSize = _memoryManager.BlockSize;
+            var end = (long)_position + source.Length;
+            // Check for overflow
+            if (end > MaxStreamLength) throw new IOException("Maximum capacity exceeded");
 
 		EnsureCapacity((int)end);
 
-		if (_largeBuffer == null)
-		{
-			var blockAndOffset = GetBlockAndRelativeOffset(_position);
+            if (_largeBuffer == null)
+            {
+                var blockAndOffset = GetBlockAndRelativeOffset(_position);
 
-			while (source.Length > 0)
-			{
-				var currentBlock = _blocks[blockAndOffset.Block];
-				var remainingInBlock = blockSize - blockAndOffset.Offset;
-				var amountToWriteInBlock = Math.Min(remainingInBlock, source.Length);
+                while (source.Length > 0)
+                {
+                    var currentBlock = _blocks[blockAndOffset.Block];
+                    var remainingInBlock = blockSize - blockAndOffset.Offset;
+                    var amountToWriteInBlock = Math.Min(remainingInBlock, source.Length);
 
-				source.Slice(0, amountToWriteInBlock)
-					.CopyTo(currentBlock.AsSpan(blockAndOffset.Offset));
+                    source.Slice(0, amountToWriteInBlock)
+                        .CopyTo(currentBlock.AsSpan(blockAndOffset.Offset));
 
-				source = source.Slice(amountToWriteInBlock);
+                    source = source.Slice(amountToWriteInBlock);
 
-				++blockAndOffset.Block;
-				blockAndOffset.Offset = 0;
-			}
-		}
-		else
+                    ++blockAndOffset.Block;
+                    blockAndOffset.Offset = 0;
+                }
+            }
+            else
 			source.CopyTo(_largeBuffer.AsSpan(_position));
 		_position = (int)end;
-		_length = Math.Max(_position, _length);
-	}
+            _length = Math.Max(_position, _length);
+        }
 #endif
 
 	/// <summary>
@@ -742,7 +741,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	public override void SetLength(long value)
 	{
 		CheckDisposed();
-		if (value is < 0 or > MaxStreamLength)
+		if (value < 0 || value > MaxStreamLength)
 		{
 			throw new ArgumentOutOfRangeException(nameof(value),
 				"value must be non-negative and at most " + MaxStreamLength);
@@ -771,8 +770,6 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		if (offset > MaxStreamLength)
 			throw new ArgumentOutOfRangeException(nameof(offset), "offset cannot be larger than " + MaxStreamLength);
 
-
-<<<<<<< TODO: Unmerged change from project 'Elastic.Transport(net8.0)', Before:
 		int newPosition;
 		switch (loc)
 		{
@@ -804,132 +801,6 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	{
 		CheckDisposed();
 		stream.ThrowIfNull(nameof(stream));
-
-		if (_largeBuffer == null)
-		{
-			var currentBlock = 0;
-			var bytesRemaining = _length;
-
-			while (bytesRemaining > 0)
-			{
-				var amountToCopy = Math.Min(_blocks[currentBlock].Length, bytesRemaining);
-				stream.Write(_blocks[currentBlock], 0, amountToCopy);
-
-				bytesRemaining -= amountToCopy;
-
-				++currentBlock;
-			}
-		}
-		else
-			stream.Write(_largeBuffer, 0, _length);
-	}
-
-	#endregion
-
-	#region Helper Methods
-
-	private bool Disposed => Interlocked.Read(ref _disposedState) != 0;
-
-	private void CheckDisposed()
-	{
-#if NET8_0_OR_GREATER
-		ObjectDisposedException.ThrowIf(Disposed, this);
-#else
-		if (Disposed)
-			throw new ObjectDisposedException($"The stream with Id {_id} and Tag {_tag} is disposed.");
-#endif
-	}
-=======
-		var newPosition = loc switch
-		{
-			SeekOrigin.Begin => (int)offset,
-			SeekOrigin.Current => (int)offset + _position,
-			SeekOrigin.End => (int)offset + _length,
-			_ => throw new ArgumentException("Invalid seek origin", nameof(loc)),
-		};
-		if (newPosition < 0)
-			throw new IOException("Seek before beginning");
-
-		_position = newPosition;
-		return _position;
-	}
-
-	/// <summary>
-	/// Synchronously writes this stream's bytes to the parameter stream.
-	/// </summary>
-	/// <param name="stream">Destination stream</param>
-	/// <remarks>Important: This does a synchronous write, which may not be desired in some situations</remarks>
-	public override void WriteTo(Stream stream)
-	{
-		CheckDisposed();
-#if NET6_0_OR_GREATER
-		ArgumentNullException.ThrowIfNull(stream);
-#else
-		if (stream == null)
-			throw new ArgumentNullException(nameof(stream));
-#endif
-
-		if (_largeBuffer == null)
-		{
-			var currentBlock = 0;
-			var bytesRemaining = _length;
-
-			while (bytesRemaining > 0)
-			{
-				var amountToCopy = Math.Min(_blocks[currentBlock].Length, bytesRemaining);
-				stream.Write(_blocks[currentBlock], 0, amountToCopy);
-
-				bytesRemaining -= amountToCopy;
-
-				++currentBlock;
-			}
-		}
-		else
-			stream.Write(_largeBuffer, 0, _length);
-	}
-
-	#endregion
-
-	#region Helper Methods
-
-	private bool Disposed => Interlocked.Read(ref _disposedState) != 0;
-
-	private void CheckDisposed() =>
-#if NET8_0_OR_GREATER
-		ObjectDisposedException.ThrowIf(Disposed, this);
-#else
-		if (Disposed)
-			throw new ObjectDisposedException($"The stream with Id {_id} and Tag {_tag} is disposed.");
-#endif
->>>>>>> After
-		var newPosition = loc switch
-		{
-			SeekOrigin.Begin => (int)offset,
-			SeekOrigin.Current => (int)offset + _position,
-			SeekOrigin.End => (int)offset + _length,
-			_ => throw new ArgumentException("Invalid seek origin", nameof(loc)),
-		};
-		if (newPosition < 0)
-			throw new IOException("Seek before beginning");
-
-		_position = newPosition;
-		return _position;
-	}
-
-	/// <summary>
-	/// Synchronously writes this stream's bytes to the parameter stream.
-	/// </summary>
-	/// <param name="stream">Destination stream</param>
-	/// <remarks>Important: This does a synchronous write, which may not be desired in some situations</remarks>
-	public override void WriteTo(Stream stream)
-	{
-		CheckDisposed();
-#if NET6_0_OR_GREATER
-		ArgumentNullException.ThrowIfNull(stream);
-#else
-		if (stream == null)
-			throw new ArgumentNullException(nameof(stream));
-#endif
 
 		if (_largeBuffer == null)
 		{
@@ -1000,44 +871,49 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	}
 
 #if NETSTANDARD2_1
-	private int InternalRead(Span<byte> buffer, int fromPosition)
-	{
-		if (_length - fromPosition <= 0)
-			return 0;
+        private int InternalRead(Span<byte> buffer, int fromPosition)
+        {
+            if (_length - fromPosition <= 0) return 0;
 
 		int amountToCopy;
 
-		if (_largeBuffer == null)
-		{
-			var blockAndOffset = GetBlockAndRelativeOffset(fromPosition);
-			var bytesWritten = 0;
-			var bytesRemaining = Math.Min(buffer.Length, _length - fromPosition);
+            if (_largeBuffer == null)
+            {
+                var blockAndOffset = GetBlockAndRelativeOffset(fromPosition);
+                var bytesWritten = 0;
+                var bytesRemaining = Math.Min(buffer.Length, _length - fromPosition);
 
-			while (bytesRemaining > 0)
-			{
-				amountToCopy = Math.Min(_blocks[blockAndOffset.Block].Length - blockAndOffset.Offset,
-										bytesRemaining);
-				_blocks[blockAndOffset.Block].AsSpan(blockAndOffset.Offset, amountToCopy)
-					.CopyTo(buffer.Slice(bytesWritten));
+                while (bytesRemaining > 0)
+                {
+                    amountToCopy = Math.Min(_blocks[blockAndOffset.Block].Length - blockAndOffset.Offset,
+                                            bytesRemaining);
+                    _blocks[blockAndOffset.Block].AsSpan(blockAndOffset.Offset, amountToCopy)
+                        .CopyTo(buffer.Slice(bytesWritten));
 
-				bytesWritten += amountToCopy;
-				bytesRemaining -= amountToCopy;
+                    bytesWritten += amountToCopy;
+                    bytesRemaining -= amountToCopy;
 
-				++blockAndOffset.Block;
-				blockAndOffset.Offset = 0;
-			}
-			return bytesWritten;
-		}
-		amountToCopy = Math.Min(buffer.Length, _length - fromPosition);
-		_largeBuffer.AsSpan(fromPosition, amountToCopy).CopyTo(buffer);
-		return amountToCopy;
-	}
+                    ++blockAndOffset.Block;
+                    blockAndOffset.Offset = 0;
+                }
+                return bytesWritten;
+            }
+            amountToCopy = Math.Min(buffer.Length, _length - fromPosition);
+            _largeBuffer.AsSpan(fromPosition, amountToCopy).CopyTo(buffer);
+            return amountToCopy;
+        }
 #endif
 
-	private struct BlockAndOffset(int block, int offset)
+	private struct BlockAndOffset
 	{
-		public int Block = block;
-		public int Offset = offset;
+		public int Block;
+		public int Offset;
+
+		public BlockAndOffset(int block, int offset)
+		{
+			Block = block;
+			Offset = offset;
+		}
 	}
 
 	private BlockAndOffset GetBlockAndRelativeOffset(int offset)
@@ -1063,7 +939,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 			if (newCapacity > _largeBuffer.Length)
 			{
 				var newBuffer = _memoryManager.GetLargeBuffer(newCapacity, _tag);
-				_ = InternalRead(newBuffer, 0, _length, 0);
+				InternalRead(newBuffer, 0, _length, 0);
 				ReleaseLargeBuffer();
 				_largeBuffer = newBuffer;
 			}
@@ -1087,8 +963,9 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 			_memoryManager.ReturnLargeBuffer(_largeBuffer, _tag);
 		else
 		{
-			// We most likely will only ever need space for one
-			_dirtyBuffers ??= new List<byte[]>(1);
+			if (_dirtyBuffers == null)
+				// We most likely will only ever need space for one
+				_dirtyBuffers = new List<byte[]>(1);
 			_dirtyBuffers.Add(_largeBuffer);
 		}
 

@@ -14,6 +14,7 @@ namespace Elastic.Transport;
 /// </summary>
 public sealed class Node : IEquatable<Node>
 {
+	private IReadOnlyCollection<string> _features = EmptyReadOnly<string>.Collection;
 	private HashSet<string> _featureSet = [];
 
 	/// <inheritdoc cref="Node"/>
@@ -30,7 +31,10 @@ public sealed class Node : IEquatable<Node>
 			uri = new Uri(uri.OriginalString + "/");
 		Uri = uri;
 		IsAlive = true;
-		Features = features is IReadOnlyCollection<string> s ? s : features?.ToList().AsReadOnly() ?? EmptyReadOnly<string>.Collection;
+		if (features is IReadOnlyCollection<string> s)
+			Features = s;
+		else
+			Features = features?.ToList().AsReadOnly() ?? EmptyReadOnly<string>.Collection;
 		IsResurrected = true;
 	}
 
@@ -40,13 +44,13 @@ public sealed class Node : IEquatable<Node>
 	/// </summary>
 	public IReadOnlyCollection<string> Features
 	{
-		get;
+		get => _features;
 		set
 		{
-			field = value;
-			_featureSet = [.. field];
+			_features = value;
+			_featureSet = new HashSet<string>(_features);
 		}
-	} = EmptyReadOnly<string>.Collection;
+	}
 
 	/// <summary>
 	/// Settings as returned by the server, can be used in various ways later on. E.g <see cref="ITransportConfiguration.NodePredicate"/> can use it
@@ -82,7 +86,7 @@ public sealed class Node : IEquatable<Node>
 	/// Returns true if the <see cref="Features"/> has <paramref name="feature"/> enabled, or NO features are known on the node.
 	/// <para>The assumption being if no <see cref="Features"/> have been discovered ALL features are enabled</para>
 	/// </summary>
-	public bool HasFeature(string feature) => Features.Count == 0 || _featureSet.Contains(feature);
+	public bool HasFeature(string feature) => _features.Count == 0 || _featureSet.Contains(feature);
 
 	/// <summary>
 	/// Marks this node as dead and set the date (see <paramref name="until"/>) after which we want it to come back alive

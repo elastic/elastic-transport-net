@@ -21,10 +21,12 @@ namespace Elastic.Transport.IntegrationTests.OpenTelemetry;
 
 // We cannot allow these tests to run in parallel with other tests as the listener may pick up other activities.
 [Collection(nameof(NonParallel))]
-public class OpenTelemetryTests(TestServerFixture instance) : AssemblyServerTestsBase(instance)
+public class OpenTelemetryTests : AssemblyServerTestsBase
 {
 	internal const string Cluster = "e9106fc68e3044f0b1475b04bf4ffd5f";
 	internal const string Instance = "instance-0000000001";
+
+	public OpenTelemetryTests(TestServerFixture instance) : base(instance) { }
 
 	[Fact]
 	public async Task ElasticsearchTagsShouldBeSetWhenUsingTheElasticsearchRegistration()
@@ -48,16 +50,16 @@ public class OpenTelemetryTests(TestServerFixture instance) : AssemblyServerTest
 					Assert.Fail("Expected one activity, but received multiple stop events.");
 
 				Assertions(activity);
-				_ = mre.Set();
+				mre.Set();
 			},
 			ShouldListenTo = activitySource => activitySource.Name == Diagnostics.OpenTelemetry.ElasticTransportActivitySourceName,
-			Sample = (ref _) => ActivitySamplingResult.AllData
+			Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData
 		};
 		ActivitySource.AddActivityListener(listener);
 
 		_ = await transport.GetAsync<VoidResponse>("/opentelemetry", cancellationToken: TestContext.Current.CancellationToken);
 
-		_ = mre.WaitOne(TimeSpan.FromSeconds(1)).Should().BeTrue();
+		mre.WaitOne(TimeSpan.FromSeconds(1)).Should().BeTrue();
 
 		static void Assertions(Activity activity)
 		{
@@ -66,19 +68,19 @@ public class OpenTelemetryTests(TestServerFixture instance) : AssemblyServerTest
 				.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false)
 				as AssemblyInformationalVersionAttribute[])?.FirstOrDefault()?.InformationalVersion;
 
-			_ = activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.DbElasticsearchClusterName)
+			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.DbElasticsearchClusterName)
 				.Subject.Value.Should().BeOfType<string>()
 				.Subject.Should().Be(Cluster);
 
-			_ = activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.DbElasticsearchNodeName)
+			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.DbElasticsearchNodeName)
 				.Subject.Value.Should().BeOfType<string>()
 				.Subject.Should().Be(Instance);
 
-			_ = activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportProductName)
+			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportProductName)
 				.Subject.Value.Should().BeOfType<string>()
 				.Subject.Should().Be("elasticsearch-net");
 
-			_ = activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportProductVersion)
+			activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportProductVersion)
 				.Subject.Value.Should().BeOfType<string>()
 				.Subject.Should().Be(informationalVersion);
 		}

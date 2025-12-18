@@ -37,7 +37,7 @@ public abstract class RequestParameters
 	/// <summary>
 	///
 	/// </summary>
-	public Dictionary<string, object> QueryString { get; internal set; } = [];
+	public Dictionary<string, object> QueryString { get; internal set; } = new();
 
 	/// <summary>
 	///
@@ -84,7 +84,7 @@ public abstract class RequestParameters
 		if (!QueryString.ContainsKey(name))
 			return;
 
-		_ = QueryString.Remove(name);
+		QueryString.Remove(name);
 	}
 
 	/// <summary> </summary>
@@ -105,7 +105,7 @@ public abstract class RequestParameters
 			return path;
 
 		//create a copy of the global query string collection if needed.
-		var nv = g == null ? [] : new NameValueCollection(g);
+		var nv = g == null ? new NameValueCollection() : new NameValueCollection(g);
 
 		//set all querystring pairs from local `l` on the querystring collection
 		var formatter = globalConfig?.UrlFormatter;
@@ -130,10 +130,15 @@ public abstract class RequestParameters
 
 		var lowerFormat = format.ToLowerInvariant();
 
-		return lowerFormat switch
+		switch (lowerFormat)
 		{
-			"smile" or "yaml" or "cbor" or "json" => $"application/{lowerFormat}",
-			_ => null,
-		};
+			case "smile":
+			case "yaml":
+			case "cbor":
+			case "json":
+				return $"application/{lowerFormat}";
+			default:
+				return null;
+		}
 	}
 }

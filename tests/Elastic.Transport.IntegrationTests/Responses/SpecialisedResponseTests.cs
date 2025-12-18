@@ -143,9 +143,9 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, VoidResponse response)
 		{
-			_ = response.Body.Should().BeSameAs(VoidResponse.Default.Body);
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
-			_ = memoryStreamFactory.Created.Count.Should().Be(1); // One required for setting request content
+			response.Body.Should().BeSameAs(VoidResponse.Default.Body);
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			memoryStreamFactory.Created.Count.Should().Be(1); // One required for setting request content
 		}
 	}
 
@@ -161,7 +161,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 		};
 		var transport = new DistributedTransport(config);
 
-		var json = /*lang=json,strict*/ "{\"propertyOne\":\"value1\",\"propertyTwo\":100}";
+		var json = "{\"propertyOne\":\"value1\",\"propertyTwo\":100}";
 		var payload = new Payload { ResponseString = json, StatusCode = 200 };
 
 		var response = await transport.PostAsync<DynamicResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
@@ -175,13 +175,13 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, DynamicResponse response)
 		{
-			_ = response.Body.Should().BeOfType<DynamicDictionary>();
-			_ = response.Body.Values.Count.Should().Be(2);
-			_ = response.Body.Get<string>("propertyOne").Should().Be("value1");
-			_ = response.Body.Get<int>("propertyTwo").Should().Be(100);
+			response.Body.Should().BeOfType<DynamicDictionary>();
+			response.Body.Values.Count.Should().Be(2);
+			response.Body.Get<string>("propertyOne").Should().Be("value1");
+			response.Body.Get<int>("propertyTwo").Should().Be(100);
 
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
-			_ = memoryStreamFactory.Created.Count.Should().Be(1); // One required for setting request content
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			memoryStreamFactory.Created.Count.Should().Be(1); // One required for setting request content
 		}
 	}
 
@@ -212,12 +212,12 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, DynamicResponse response, string expected)
 		{
-			_ = response.Body.Should().BeOfType<DynamicDictionary>();
-			_ = response.Body.Values.Count.Should().Be(1);
-			_ = response.Body.Get<string>("body").Should().Be(expected);
+			response.Body.Should().BeOfType<DynamicDictionary>();
+			response.Body.Values.Count.Should().Be(1);
+			response.Body.Get<string>("body").Should().Be(expected);
 
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
-			_ = memoryStreamFactory.Created.Count.Should().Be(1); // One required for setting request content
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			memoryStreamFactory.Created.Count.Should().Be(1); // One required for setting request content
 		}
 	}
 
@@ -234,7 +234,7 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 		};
 		var transport = new DistributedTransport(config);
 
-		var json = /*lang=json,strict*/ "{\"propertyOne\":\"value1\",\"propertyTwo\":100}";
+		var json = "{\"propertyOne\":\"value1\",\"propertyTwo\":100}";
 		var payload = new Payload { ResponseString = json, StatusCode = 200 };
 
 		var response = await transport.PostAsync<DynamicResponse>(Path, PostData.Serializable(payload), cancellationToken: TestContext.Current.CancellationToken);
@@ -248,13 +248,13 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, DynamicResponse response)
 		{
-			_ = response.Body.Should().BeOfType<DynamicDictionary>();
-			_ = response.Body.Values.Count.Should().Be(2);
-			_ = response.Body.Get<string>("propertyOne").Should().Be("value1");
-			_ = response.Body.Get<int>("propertyTwo").Should().Be(100);
+			response.Body.Should().BeOfType<DynamicDictionary>();
+			response.Body.Values.Count.Should().Be(2);
+			response.Body.Get<string>("propertyOne").Should().Be("value1");
+			response.Body.Get<int>("propertyTwo").Should().Be(100);
 
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
-			_ = memoryStreamFactory.Created.Count.Should().Be(3);
+			response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
+			memoryStreamFactory.Created.Count.Should().Be(3);
 		}
 	}
 
@@ -285,12 +285,12 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, DynamicResponse response, string expected)
 		{
-			_ = response.Body.Should().BeOfType<DynamicDictionary>();
-			_ = response.Body.Values.Count.Should().Be(1);
-			_ = response.Body.Get<string>("body").Should().Be(expected);
+			response.Body.Should().BeOfType<DynamicDictionary>();
+			response.Body.Values.Count.Should().Be(1);
+			response.Body.Get<string>("body").Should().Be(expected);
 
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
-			_ = memoryStreamFactory.Created.Count.Should().Be(1); // One required for setting request content
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			memoryStreamFactory.Created.Count.Should().Be(1); // One required for setting request content
 		}
 	}
 
@@ -322,12 +322,12 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		void Validate(TrackingMemoryStreamFactory memoryStreamFactory, DynamicResponse response)
 		{
-			_ = response.Body.Should().BeOfType<DynamicDictionary>();
-			_ = response.Body.Values.Count.Should().Be(1);
-			_ = response.Body.Get<string>("body").Should().Be(stringValue);
+			response.Body.Should().BeOfType<DynamicDictionary>();
+			response.Body.Values.Count.Should().Be(1);
+			response.Body.Get<string>("body").Should().Be(stringValue);
 
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
-			_ = memoryStreamFactory.Created.Count.Should().Be(3);
+			response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
+			memoryStreamFactory.Created.Count.Should().Be(3);
 		}
 	}
 
@@ -356,12 +356,12 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, BytesResponse response)
 		{
-			_ = response.Body.AsSpan().SequenceEqual(EmptyJsonBytes);
+			response.Body.AsSpan().SequenceEqual(EmptyJsonBytes);
 			// Even when not using DisableDirectStreaming, we have a byte[] so the builder sets ResponseBodyInBytes too
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
-			_ = memoryStreamFactory.Created.Count.Should().Be(2); // One required for setting request content and one to buffer the stream
+			response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
+			memoryStreamFactory.Created.Count.Should().Be(2); // One required for setting request content and one to buffer the stream
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 		}
 	}
 
@@ -391,11 +391,11 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, BytesResponse response)
 		{
-			_ = response.Body.AsSpan().SequenceEqual(EmptyJsonBytes);
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
-			_ = memoryStreamFactory.Created.Count.Should().Be(3);
+			response.Body.AsSpan().SequenceEqual(EmptyJsonBytes);
+			response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
+			memoryStreamFactory.Created.Count.Should().Be(3);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 		}
 	}
 
@@ -424,13 +424,13 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static async Task ValidateAsync(TrackingMemoryStreamFactory memoryStreamFactory, StreamResponse response)
 		{
-			_ = response.Body.Should().NotBeSameAs(Stream.Null);
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			response.Body.Should().NotBeSameAs(Stream.Null);
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
 
-			_ = memoryStreamFactory.Created.Count.Should().Be(1);
+			memoryStreamFactory.Created.Count.Should().Be(1);
 			var sr = new StreamReader(response.Body);
 			var result = await sr.ReadToEndAsync();
-			_ = result.Should().Be(EmptyJson);
+			result.Should().Be(EmptyJson);
 		}
 	}
 
@@ -459,19 +459,19 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static async Task ValidateAsync(TrackingMemoryStreamFactory memoryStreamFactory, StreamResponse response)
 		{
-			_ = response.Should().BeOfType<StreamResponse>();
-			_ = response.Body.Should().NotBeSameAs(Stream.Null);
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
+			response.Should().BeOfType<StreamResponse>();
+			response.Body.Should().NotBeSameAs(Stream.Null);
+			response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
 
 			// When disable direct streaming, we have 1 for the original content, 1 for the buffered request bytes and the last for the buffered response
-			_ = memoryStreamFactory.Created.Count.Should().Be(3);
-			_ = memoryStreamFactory.Created[0].IsDisposed.Should().BeTrue();
-			_ = memoryStreamFactory.Created[1].IsDisposed.Should().BeTrue();
-			_ = memoryStreamFactory.Created[2].IsDisposed.Should().BeFalse();
+			memoryStreamFactory.Created.Count.Should().Be(3);
+			memoryStreamFactory.Created[0].IsDisposed.Should().BeTrue();
+			memoryStreamFactory.Created[1].IsDisposed.Should().BeTrue();
+			memoryStreamFactory.Created[2].IsDisposed.Should().BeFalse();
 
 			var sr = new StreamReader(response.Body);
 			var result = await sr.ReadToEndAsync();
-			_ = result.Should().Be(EmptyJson);
+			result.Should().Be(EmptyJson);
 		}
 	}
 
@@ -500,16 +500,16 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, StringResponse response)
 		{
-			_ = response.Should().BeOfType<StringResponse>();
+			response.Should().BeOfType<StringResponse>();
 			// All scenarios in the implementation buffer the bytes in some form and therefore expose those
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
 
 			// We expect one for the initial request stream
-			_ = memoryStreamFactory.Created.Count.Should().Be(1);
+			memoryStreamFactory.Created.Count.Should().Be(1);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 
-			_ = response.Body.Should().Be(EmptyJson);
+			response.Body.Should().Be(EmptyJson);
 		}
 	}
 
@@ -538,16 +538,16 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, StringResponse response)
 		{
-			_ = response.Should().BeOfType<StringResponse>();
+			response.Should().BeOfType<StringResponse>();
 			// All scenarios in the implementation buffer the bytes in some form and therefore expose those
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
 
 			// We expect one for the initial request stream
-			_ = memoryStreamFactory.Created.Count.Should().Be(1);
+			memoryStreamFactory.Created.Count.Should().Be(1);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 
-			_ = response.Body.Should().Be(LargeJson);
+			response.Body.Should().Be(LargeJson);
 		}
 	}
 
@@ -578,14 +578,14 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, TestResponse response)
 		{
-			_ = response.Should().BeOfType<TestResponse>();
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
+			response.Should().BeOfType<TestResponse>();
+			response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
 
-			_ = memoryStreamFactory.Created.Count.Should().Be(3);
+			memoryStreamFactory.Created.Count.Should().Be(3);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 
-			_ = response.Value.Should().Be(string.Empty);
+			response.Value.Should().Be(string.Empty);
 		}
 	}
 
@@ -615,14 +615,14 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, TestResponse response)
 		{
-			_ = response.Should().BeOfType<TestResponse>();
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			response.Should().BeOfType<TestResponse>();
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
 
-			_ = memoryStreamFactory.Created.Count.Should().Be(1);
+			memoryStreamFactory.Created.Count.Should().Be(1);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 
-			_ = response.Value.Should().Be(string.Empty);
+			response.Value.Should().Be(string.Empty);
 		}
 	}
 
@@ -652,14 +652,14 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, TestResponse response)
 		{
-			_ = response.Should().BeOfType<TestResponse>();
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			response.Should().BeOfType<TestResponse>();
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
 
-			_ = memoryStreamFactory.Created.Count.Should().Be(1);
+			memoryStreamFactory.Created.Count.Should().Be(1);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 
-			_ = response.Value.Should().Be(string.Empty);
+			response.Value.Should().Be(string.Empty);
 		}
 	}
 
@@ -690,16 +690,16 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, TestResponse response)
 		{
-			_ = response.Should().BeOfType<TestResponse>();
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			response.Should().BeOfType<TestResponse>();
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
 
 			// We expect one for sending the request payload, but as the response is 204, we shouldn't
 			// see other memory streams being created for the response.
-			_ = memoryStreamFactory.Created.Count.Should().Be(2);
+			memoryStreamFactory.Created.Count.Should().Be(2);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 
-			_ = response.Value.Should().Be(string.Empty);
+			response.Value.Should().Be(string.Empty);
 		}
 	}
 
@@ -733,15 +733,15 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, TestResponse response)
 		{
-			_ = memoryStreamFactory.Created.Count.Should().Be(3);
+			memoryStreamFactory.Created.Count.Should().Be(3);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
-			_ = response.Value.Should().Be(string.Empty); // default value as no custom builder
+			response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
+			response.Value.Should().Be(string.Empty); // default value as no custom builder
 
 			var value = Encoding.UTF8.GetString(response.ApiCallDetails.ResponseBodyInBytes);
-			_ = value.Should().Be(expectedString); // The buffered bytes should include the response string
+			value.Should().Be(expectedString); // The buffered bytes should include the response string
 		}
 	}
 
@@ -774,12 +774,12 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, TestResponse response)
 		{
-			_ = memoryStreamFactory.Created.Count.Should().Be(1);
+			memoryStreamFactory.Created.Count.Should().Be(1);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
-			_ = response.Value.Should().Be(string.Empty); // default value as no custom builder
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			response.Value.Should().Be(string.Empty); // default value as no custom builder
 		}
 	}
 
@@ -802,12 +802,12 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 		var requestConfig = new RequestConfiguration { Accept = "text/plain" };
 		var payload = new Payload { ResponseString = expectedString, ContentType = "text/plain" };
 
-		_ = await transport.Invoking(async t => await t.RequestAsync<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig))
+		await transport.Invoking(async t => await t.RequestAsync<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig))
 			.Should()
 				.ThrowAsync<UnexpectedTransportException>("when there is no custom builder, it falls through to the default builder using STJ.")
 				.WithInnerException<UnexpectedTransportException, JsonException>();
 
-		_ = transport.Invoking(t => t.Request<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig))
+		transport.Invoking(t => t.Request<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig))
 			.Should()
 				.Throw<UnexpectedTransportException>("when there is no custom builder, it falls through to the default builder using STJ.")
 				.WithInnerException<JsonException>();
@@ -842,12 +842,12 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, TestResponse response)
 		{
-			_ = memoryStreamFactory.Created.Count.Should().Be(1);
+			memoryStreamFactory.Created.Count.Should().Be(1);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				_ = memoryStream.IsDisposed.Should().BeTrue();
+				memoryStream.IsDisposed.Should().BeTrue();
 
-			_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
-			_ = response.Value.Should().Be(string.Empty); // default value as no custom builder
+			response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+			response.Value.Should().Be(string.Empty); // default value as no custom builder
 		}
 	}
 
@@ -873,26 +873,26 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 		var payload = new Payload { ResponseString = expectedString, ContentType = "text/plain" };
 		var response = await transport.RequestAsync<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig, TestContext.Current.CancellationToken);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(3);
+		memoryStreamFactory.Created.Count.Should().Be(3);
 		foreach (var memoryStream in memoryStreamFactory.Created)
-			_ = memoryStream.IsDisposed.Should().BeTrue();
+			memoryStream.IsDisposed.Should().BeTrue();
 
-		_ = response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
-		_ = response.Value.Should().Be(expectedString);
+		response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
+		response.Value.Should().Be(expectedString);
 
 		var value = Encoding.UTF8.GetString(response.ApiCallDetails.ResponseBodyInBytes);
-		_ = value.Should().Be(expectedString);
+		value.Should().Be(expectedString);
 
 		memoryStreamFactory.Reset();
 
 		response = transport.Request<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(3);
+		memoryStreamFactory.Created.Count.Should().Be(3);
 		foreach (var memoryStream in memoryStreamFactory.Created)
-			_ = memoryStream.IsDisposed.Should().BeTrue();
+			memoryStream.IsDisposed.Should().BeTrue();
 
-		_ = response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
-		_ = response.Value.Should().Be(expectedString);
+		response.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNull();
+		response.Value.Should().Be(expectedString);
 	}
 
 	[Fact]
@@ -917,17 +917,17 @@ public class SpecialisedResponseTests(TestServerFixture instance) : AssemblyServ
 		var payload = new Payload { ResponseString = expectedString, ContentType = "text/plain" };
 		var response = await transport.RequestAsync<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig, TestContext.Current.CancellationToken);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(1);
-		_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
-		_ = response.Value.Should().Be(expectedString);
+		memoryStreamFactory.Created.Count.Should().Be(1);
+		response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+		response.Value.Should().Be(expectedString);
 
 		memoryStreamFactory.Reset();
 
 		response = transport.Request<TestResponse>(new EndpointPath(HttpMethod.POST, Path), PostData.Serializable(payload), default, requestConfig);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(1);
-		_ = response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
-		_ = response.Value.Should().Be(expectedString);
+		memoryStreamFactory.Created.Count.Should().Be(1);
+		response.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+		response.Value.Should().Be(expectedString);
 	}
 
 	private sealed class TestResponse : TransportResponse
@@ -980,7 +980,7 @@ public class SpecialResponseController : ControllerBase
 
 		if (payload.StatusCode != 204)
 		{
-			_ = await Response.BodyWriter.WriteAsync(bytes);
+			await Response.BodyWriter.WriteAsync(bytes);
 			await Response.BodyWriter.CompleteAsync();
 		}
 	}

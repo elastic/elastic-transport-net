@@ -8,9 +8,17 @@ using BenchmarkDotNet.Reports;
 using BenchmarkDotNet.Running;
 using Perfolizer.Metrology;
 
-var config = ManualConfig
+namespace Elastic.Transport.Benchmarks;
+
+internal sealed class Program
+{
+	private static void Main(string[] args)
+	{
+		var config = ManualConfig
 			.Create(DefaultConfig.Instance)
 			.AddDiagnoser(MemoryDiagnoser.Default)
 			.WithSummaryStyle(new SummaryStyle(null, false, SizeUnit.B, null));
 
-_ = BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, config);
+		BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, config);
+	}
+}
