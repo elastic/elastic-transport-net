@@ -142,7 +142,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 			{
 				var version = CheckFor45PlusVersion((int)ndpKey.GetValue("Release"));
 
-				if (!string.IsNullOrEmpty(version))
+				if (!string.IsNullOrEmpty(version) )
 					// version is guaranteed non-null here due to IsNullOrEmpty check above
 					return version!;
 			}

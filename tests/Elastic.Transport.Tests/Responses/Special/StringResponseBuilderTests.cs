@@ -30,17 +30,17 @@ public class StringResponseBuilderTests
 		var stream = new MemoryStream(Data);
 
 		var result = await sut.BuildAsync<StringResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
-		_ = result.Body.Should().Be(Json);
+		result.Body.Should().Be(Json);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(0);
+		memoryStreamFactory.Created.Count.Should().Be(0);
 
 		stream.Position = 0;
 		memoryStreamFactory.Reset();
 
 		result = sut.Build<StringResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
-		_ = result.Body.Should().Be(Json);
+		result.Body.Should().Be(Json);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(0);
+		memoryStreamFactory.Created.Count.Should().Be(0);
 	}
 
 	[Fact]
@@ -74,17 +74,17 @@ public class StringResponseBuilderTests
 		var stream = new MemoryStream(data);
 
 		var result = await sut.BuildAsync<StringResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, data.Length);
-		_ = result.Body.Should().Be(largeJson);
+		result.Body.Should().Be(largeJson);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(0);
+		memoryStreamFactory.Created.Count.Should().Be(0);
 
 		stream.Position = 0;
 		memoryStreamFactory.Reset();
 
 		result = sut.Build<StringResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, data.Length);
-		_ = result.Body.Should().Be(largeJson);
+		result.Body.Should().Be(largeJson);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(0);
+		memoryStreamFactory.Created.Count.Should().Be(0);
 	}
 
 	[Fact]
@@ -118,17 +118,17 @@ public class StringResponseBuilderTests
 		var stream = new MemoryStream(data);
 
 		var result = await sut.BuildAsync<StringResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, -1);
-		_ = result.Body.Should().Be(largeJson);
+		result.Body.Should().Be(largeJson);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(0);
+		memoryStreamFactory.Created.Count.Should().Be(0);
 
 		stream.Position = 0;
 		memoryStreamFactory.Reset();
 
 		result = sut.Build<StringResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, -1);
-		_ = result.Body.Should().Be(largeJson);
+		result.Body.Should().Be(largeJson);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(0);
+		memoryStreamFactory.Created.Count.Should().Be(0);
 	}
 
 	[Fact]
@@ -143,16 +143,16 @@ public class StringResponseBuilderTests
 		var stream = new MemoryStream(Data);
 
 		var result = await sut.BuildAsync<StringResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, -1);
-		_ = result.Body.Should().Be(Json);
+		result.Body.Should().Be(Json);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(0);
+		memoryStreamFactory.Created.Count.Should().Be(0);
 
 		stream.Position = 0;
 		memoryStreamFactory.Reset();
 
 		result = sut.Build<StringResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, -1);
-		_ = result.Body.Should().Be(Json);
+		result.Body.Should().Be(Json);
 
-		_ = memoryStreamFactory.Created.Count.Should().Be(0);
+		memoryStreamFactory.Created.Count.Should().Be(0);
 	}
 }

@@ -27,7 +27,7 @@ internal class StringResponseBuilder : TypedResponseBuilder<StringResponse>
 		}
 
 #if NET8_0_OR_GREATER
-		if (contentLength is > (-1) and <= 1_048_576)
+		if (contentLength > -1 && contentLength <= 1_048_576)
 		{
 			var buffer = ArrayPool<byte>.Shared.Rent((int)contentLength);
 			responseStream.ReadExactly(buffer, 0, (int)contentLength);
@@ -54,7 +54,7 @@ internal class StringResponseBuilder : TypedResponseBuilder<StringResponse>
 		}
 
 #if NET8_0_OR_GREATER
-		if (contentLength is > (-1) and < 1_048_576)
+		if (contentLength > -1 && contentLength < 1_048_576)
 		{
 			var buffer = ArrayPool<byte>.Shared.Rent((int)contentLength);
 			await responseStream.ReadExactlyAsync(buffer, 0, (int)contentLength, cancellationToken).ConfigureAwait(false);

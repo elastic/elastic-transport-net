@@ -126,7 +126,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				var prepareRequestMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
 
 				if (prepareRequestMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
-					_ = (Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs));
+					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs);
 
 				//http://msdn.microsoft.com/en-us/library/system.net.httpwebresponse.getresponsestream.aspx
 				//Either the stream or the response object needs to be closed but not both although it won't
@@ -170,12 +170,19 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 		try
 		{
-			var response = isAsync
-				? await ResponseFactory.CreateAsync<TResponse>
+			TResponse response;
+
+			if (isAsync)
+			{
+				response = await ResponseFactory.CreateAsync<TResponse>
 						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-					.ConfigureAwait(false)
-				: ResponseFactory.Create<TResponse>
+					.ConfigureAwait(false);
+			}
+			else
+			{
+				response = ResponseFactory.Create<TResponse>
 					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
+			}
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
@@ -211,7 +218,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			if (Enumerable.Contains(responseMessage.Headers.AllKeys, headerToParse, StringComparer.OrdinalIgnoreCase))
 			{
-				responseHeaders ??= [];
+				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse)!);
 			}
 		}
@@ -220,7 +227,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			foreach (var key in responseMessage.Headers.AllKeys)
 			{
-				responseHeaders ??= [];
+				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(key, responseMessage.Headers.GetValues(key)!);
 			}
 		}
@@ -230,7 +237,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			{
 				if (Enumerable.Contains(responseMessage.Headers.AllKeys, headerToParse, StringComparer.OrdinalIgnoreCase))
 				{
-					responseHeaders ??= [];
+					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 					responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse)!);
 				}
 			}

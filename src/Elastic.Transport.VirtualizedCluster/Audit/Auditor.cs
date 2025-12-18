@@ -77,7 +77,7 @@ public sealed class Auditor
 
 	public async Task<Auditor> TraceCall(ClientCall callTrace, int nthCall = 0)
 	{
-		_ = await TraceStartup(callTrace).ConfigureAwait(false);
+		await TraceStartup(callTrace).ConfigureAwait(false);
 		return AssertAuditTrails(callTrace, nthCall);
 	}
 
@@ -90,7 +90,7 @@ public sealed class Auditor
 		_cluster.ClientThrows(true);
 		AssertPoolBeforeCall?.Invoke(_cluster.ConnectionPool);
 
-		void call() => Response = _cluster.ClientCall(callTrace?.RequestOverrides);
+		Action call = () => Response = _cluster.ClientCall(callTrace?.RequestOverrides);
 		var exception = TryCall(call, assert);
 		assert(exception);
 
@@ -99,7 +99,7 @@ public sealed class Auditor
 
 		_clusterAsync ??= Cluster();
 		_clusterAsync.ClientThrows(true);
-		async Task callAsync() => ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false);
+		Func<Task> callAsync = async () => ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false);
 		exception = await TryCallAsync(callAsync, assert).ConfigureAwait(false);
 		assert(exception);
 
@@ -128,8 +128,7 @@ public sealed class Auditor
 		_cluster.ClientThrows(false);
 		AssertPoolBeforeCall?.Invoke(_cluster.ConnectionPool);
 
-		void call()
-		{ Response = _cluster.ClientCall(callTrace?.RequestOverrides); }
+		var call = () => { Response = _cluster.ClientCall(callTrace?.RequestOverrides); };
 		call();
 
 		if (Response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
@@ -145,8 +144,7 @@ public sealed class Auditor
 
 		_clusterAsync ??= Cluster();
 		_clusterAsync.ClientThrows(false);
-		async Task callAsync()
-		{ ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false); }
+		var callAsync = async () => { ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false); };
 		await callAsync().ConfigureAwait(false);
 		if (Response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType)
 			throw new Exception("Expected call to not be valid");
@@ -169,7 +167,7 @@ public sealed class Auditor
 		_cluster ??= Cluster();
 		AssertPoolBeforeCall?.Invoke(_cluster.ConnectionPool);
 
-		void call() => Response = _cluster.ClientCall(callTrace?.RequestOverrides);
+		Action call = () => Response = _cluster.ClientCall(callTrace?.RequestOverrides);
 		var exception = TryCall(call, assert);
 		assert(exception);
 
@@ -177,7 +175,7 @@ public sealed class Auditor
 		AssertPoolAfterCall?.Invoke(_cluster.ConnectionPool);
 
 		_clusterAsync ??= Cluster();
-		async Task callAsync() => ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false);
+		Func<Task> callAsync = async () => ResponseAsync = await _clusterAsync.ClientCallAsync(callTrace?.RequestOverrides).ConfigureAwait(false);
 		exception = await TryCallAsync(callAsync, assert).ConfigureAwait(false);
 		assert(exception);
 

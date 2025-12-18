@@ -106,9 +106,10 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 			// We only attempt to build a response when the Content-Type matches the accepted type.
 			if (ValidateResponseContentType(boundConfiguration.Accept, contentType) && contentType is not null)
 			{
-				response = isAsync
-					? await builder.BuildAsync<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false)
-					: builder.Build<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength);
+				if (isAsync)
+					response = await builder.BuildAsync<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false);
+				else
+					response = builder.Build<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength);
 			}
 
 			if (ownsStream && (response is null || !response.LeaveOpen))
@@ -144,7 +145,7 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 			{
 				if (potentialBuilder.CanBuild<TResponse>())
 				{
-					_ = resolvedBuilders.TryAdd(type, potentialBuilder);
+					resolvedBuilders.TryAdd(type, potentialBuilder);
 					builder = potentialBuilder;
 					return true;
 				}

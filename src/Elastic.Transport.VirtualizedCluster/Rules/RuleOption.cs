@@ -65,12 +65,15 @@ public sealed class RuleOption<TFirst, TSecond>
 	/// <param name="second">The delegate to run when this instance encapsulates an instance of <typeparamref name="TSecond" /></param>
 	public T Match<T>(Func<TFirst, T> first, Func<TSecond, T> second)
 	{
-		return Tag switch
+		switch (Tag)
 		{
-			0 => first(Item1),
-			1 => second(Item2),
-			_ => throw new Exception($"Unrecognized tag value: {Tag}"),
-		};
+			case 0:
+				return first(Item1);
+			case 1:
+				return second(Item2);
+			default:
+				throw new Exception($"Unrecognized tag value: {Tag}");
+		}
 	}
 
 	public static implicit operator RuleOption<TFirst, TSecond>(TFirst first) => new(first);

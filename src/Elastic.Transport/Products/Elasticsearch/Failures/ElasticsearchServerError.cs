@@ -69,9 +69,9 @@ public sealed class ElasticsearchServerError : ErrorResponse
 	public override string ToString()
 	{
 		var sb = new StringBuilder();
-		_ = sb.Append($"ServerError: {Status}");
+		sb.Append($"ServerError: {Status}");
 		if (Error != null)
-			_ = sb.Append(Error);
+			sb.Append(Error);
 		return sb.ToString();
 	}
 

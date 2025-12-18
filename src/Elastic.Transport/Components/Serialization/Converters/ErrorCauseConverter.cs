@@ -27,7 +27,7 @@ public class ErrorConverter : ErrorCauseConverter<Error>
 		switch (propertyName)
 		{
 			case "headers":
-				_ = reader.Read();
+				reader.Read();
 				var headers = JsonSerializer.Deserialize<Dictionary<string, string>>(ref reader, options);
 				if (headers != null)
 					errorCause.Headers = headers;

@@ -19,7 +19,7 @@ public interface IRequestInvoker : IDisposable
 	/// <summary>
 	/// Exposes the <see cref="Transport.ResponseFactory"/> used by the <see cref="IRequestInvoker"/>.
 	/// </summary>
-	ResponseFactory ResponseFactory { get; }
+	public ResponseFactory ResponseFactory { get; }
 
 	/// <summary>
 	/// Perform a request to the endpoint described by <paramref name="boundConfiguration"/> using its associated configuration.
@@ -38,7 +38,7 @@ public interface IRequestInvoker : IDisposable
 	/// for <see cref="RequestPipeline"/> and <see cref="ITransport{TConfiguration}"/> to determine what to
 	/// do with the response
 	/// </returns>
-	Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken)
+	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken)
 		where TResponse : TransportResponse, new();
 
 	/// <summary>
@@ -57,6 +57,6 @@ public interface IRequestInvoker : IDisposable
 	/// for <see cref="RequestPipeline"/> and <see cref="ITransport{TConfiguration}"/> to determine what to
 	/// do with the response
 	/// </returns>
-	TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
+	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
 		where TResponse : TransportResponse, new();
 }

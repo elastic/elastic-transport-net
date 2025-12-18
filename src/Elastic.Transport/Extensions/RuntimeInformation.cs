@@ -12,39 +12,46 @@ using System;
 using System.Linq;
 using System.Reflection;
 
-namespace Elastic.Transport.Extensions;
-
-internal static class RuntimeInformation
+namespace Elastic.Transport.Extensions
 {
-	public static string FrameworkDescription
+	internal static class RuntimeInformation
 	{
-		get
-		{
-			if (field == null)
-			{
-				var assemblyFileVersionAttribute =
-					((AssemblyFileVersionAttribute[])Attribute.GetCustomAttributes(
-						typeof(object).Assembly,
-						typeof(AssemblyFileVersionAttribute)))
-					.OrderByDescending(a => a.Version)
-					.First();
-				field = $".NET Framework {assemblyFileVersionAttribute.Version}";
-			}
-			return field;
-		}
-	}
+		private static string? _frameworkDescription;
+		private static string? _osDescription;
 
-	public static string OSDescription
-	{
-		get
+		public static string FrameworkDescription
 		{
-			if (field == null)
+			get
 			{
-				var platform = (int)Environment.OSVersion.Platform;
-				var isWindows = platform is not 4 and not 6 and not 128;
-				field = isWindows ? NativeMethods.Windows.RtlGetVersion() ?? "Microsoft Windows" : Environment.OSVersion.VersionString;
+				if (_frameworkDescription == null)
+				{
+					var assemblyFileVersionAttribute =
+						((AssemblyFileVersionAttribute[])Attribute.GetCustomAttributes(
+							typeof(object).Assembly,
+							typeof(AssemblyFileVersionAttribute)))
+						.OrderByDescending(a => a.Version)
+						.First();
+					_frameworkDescription = $".NET Framework {assemblyFileVersionAttribute.Version}";
+				}
+				return _frameworkDescription;
 			}
-			return field;
+		}
+
+		public static string OSDescription
+		{
+			get
+			{
+				if (_osDescription == null)
+				{
+					var platform = (int)Environment.OSVersion.Platform;
+					var isWindows = platform != 4 && platform != 6 && platform != 128;
+					if (isWindows)
+						_osDescription = NativeMethods.Windows.RtlGetVersion() ?? "Microsoft Windows";
+					else
+						_osDescription = Environment.OSVersion.VersionString;
+				}
+				return _osDescription;
+			}
 		}
 	}
 }

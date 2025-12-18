@@ -21,7 +21,7 @@ public class RequestConfigurationTests
 		var config = new RequestConfiguration();
 		var newConfig = new RequestConfiguration(config);
 
-		_ = config.Should().BeEquivalentTo(newConfig);
+		config.Should().BeEquivalentTo(newConfig);
 	}
 
 	[Fact]
@@ -30,7 +30,7 @@ public class RequestConfigurationTests
 		IRequestConfiguration config = new RequestConfiguration();
 		IRequestConfiguration newConfig = new RequestConfigurationDescriptor();
 
-		_ = config.Should().BeEquivalentTo(newConfig);
+		config.Should().BeEquivalentTo(newConfig);
 	}
 
 #if !NETFRAMEWORK
@@ -38,17 +38,17 @@ public class RequestConfigurationTests
 	public void CopiesAllProperties()
 	{
 		var autoFaker = new AutoFaker<RequestConfiguration>();
-		_ = autoFaker.RuleFor(x => x.ClientCertificates, f => []);
+		autoFaker.RuleFor(x => x.ClientCertificates, f => []);
 
 		var config = autoFaker.Generate();
-		_ = config.Accept.Should().NotBeEmpty();
-		_ = config.ClientCertificates.Should().NotBeNull();
+		config.Accept.Should().NotBeEmpty();
+		config.ClientCertificates.Should().NotBeNull();
 
 		IRequestConfiguration newConfig = new RequestConfiguration(config);
-		_ = config.Should().BeEquivalentTo(newConfig);
+		config.Should().BeEquivalentTo(newConfig);
 
 		IRequestConfiguration newDescriptor = new RequestConfigurationDescriptor(config);
-		_ = config.Should().BeEquivalentTo(newDescriptor);
+		config.Should().BeEquivalentTo(newDescriptor);
 	}
 #endif
 }

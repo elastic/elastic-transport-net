@@ -10,21 +10,23 @@ using static Elastic.Transport.HttpMethod;
 
 namespace Elastic.Elasticsearch.IntegrationTests;
 
-public class DefaultClusterTests(DefaultCluster cluster, ITestOutputHelper output) : IntegrationTestBase(cluster, output)
+public class DefaultClusterTests : IntegrationTestBase
 {
+	public DefaultClusterTests(DefaultCluster cluster, ITestOutputHelper output) : base(cluster, output) { }
+
 	[Fact]
 	public async Task AsyncRequestDoesNotThrow()
 	{
 		var response = await RequestHandler.RequestAsync<StringResponse>(GET, "/");
-		_ = response.ApiCallDetails.Should().NotBeNull();
-		_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+		response.ApiCallDetails.Should().NotBeNull();
+		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
 
 	[Fact]
 	public void SyncRequestDoesNotThrow()
 	{
 		var response = RequestHandler.Request<StringResponse>(GET, "/");
-		_ = response.ApiCallDetails.Should().NotBeNull();
-		_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+		response.ApiCallDetails.Should().NotBeNull();
+		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
 }

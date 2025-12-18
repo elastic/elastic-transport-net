@@ -10,17 +10,23 @@ namespace Elastic.Transport;
 /// <summary>
 /// Credentials for Basic Authentication.
 /// </summary>
-/// <inheritdoc cref="BasicAuthentication"/>
-public sealed class BasicAuthentication(string username, string password) : AuthorizationHeader
+public sealed class BasicAuthentication : AuthorizationHeader
 {
-	private readonly string _base64String = GetBase64String($"{username}:{password}");
+	private readonly string _base64String;
 
 	/// <summary> The default http header used for basic authentication </summary>
 	public static string BasicAuthenticationScheme { get; } = "Basic";
 
+	/// <inheritdoc cref="BasicAuthentication"/>
+	public BasicAuthentication(string username, string password)
+	{
+		_base64String = GetBase64String($"{username}:{password}");
+		Username = username;
+	}
+
 	/// <inheritdoc cref="AuthorizationHeader.AuthScheme"/>
 	public override string AuthScheme { get; } = BasicAuthenticationScheme;
-	internal string Username { get; } = username;
+	internal string Username { get; }
 
 	/// <inheritdoc cref="AuthorizationHeader.TryGetAuthorizationParameters(out string)"/>
 	public override bool TryGetAuthorizationParameters(out string value)

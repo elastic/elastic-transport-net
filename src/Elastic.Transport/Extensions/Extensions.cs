@@ -50,7 +50,9 @@ internal static class Extensions
 
 	internal static void ThrowIfEmpty<T>(this IEnumerable<T>? @object, string parameterName)
 	{
-		var enumerated = (@object == null ? null : (@object as T[] ?? @object.ToArray())) ?? throw new ArgumentNullException(parameterName);
+		var enumerated = @object == null ? null : (@object as T[] ?? @object.ToArray());
+		if (enumerated is null)
+			throw new ArgumentNullException(parameterName);
 		if (enumerated.Length == 0)
 			throw new ArgumentException("Argument can not be an empty collection", parameterName);
 	}

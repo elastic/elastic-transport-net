@@ -8,13 +8,20 @@ using Xunit.Abstractions;
 
 namespace Elastic.Elasticsearch.IntegrationTests;
 
-public abstract class IntegrationTestBase(DefaultCluster cluster, ITestOutputHelper output) : IntegrationTestBase<DefaultCluster>(cluster, output)
+public abstract class IntegrationTestBase : IntegrationTestBase<DefaultCluster>
 {
+	protected IntegrationTestBase(DefaultCluster cluster, ITestOutputHelper output) : base(cluster, output) { }
 }
 
-public abstract class IntegrationTestBase<TCluster>(TCluster cluster, ITestOutputHelper output) : IClusterFixture<TCluster>
+public abstract class IntegrationTestBase<TCluster> : IClusterFixture<TCluster>
 	where TCluster : DefaultCluster, new()
 {
-	protected TCluster Cluster { get; } = cluster;
-	protected ITransport RequestHandler { get; } = cluster.CreateClient(output);
+	protected TCluster Cluster { get; }
+	protected ITransport RequestHandler { get; }
+
+	protected IntegrationTestBase(TCluster cluster, ITestOutputHelper output)
+	{
+		Cluster = cluster;
+		RequestHandler = cluster.CreateClient(output);
+	}
 }

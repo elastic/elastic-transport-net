@@ -27,7 +27,7 @@ internal static class ResponseStatics
 	public static string DebugInformationBuilder(ApiCallDetails r, StringBuilder sb)
 	{
 
-		_ = sb.AppendLine($"# Audit trail of this API call:");
+		sb.AppendLine($"# Audit trail of this API call:");
 
 		var auditTrail = (r.AuditTrail ?? Enumerable.Empty<Audit>()).ToList();
 
@@ -37,51 +37,51 @@ internal static class ResponseStatics
 		}
 		else
 		{
-			_ = sb.AppendLine("<Audit trail not captured. Set DisableAuditTrail(false) on TransportConfiguration to capture it.>");
+			sb.AppendLine("<Audit trail not captured. Set DisableAuditTrail(false) on TransportConfiguration to capture it.>");
 		}
 
 		if (r.OriginalException != null)
-			_ = sb.AppendLine($"# OriginalException: {r.OriginalException}");
+			sb.AppendLine($"# OriginalException: {r.OriginalException}");
 
 		if (!r.TransportConfiguration.DisableAuditTrail ?? true)
 			DebugAuditTrailExceptions(auditTrail, sb);
 
 		var response = r.ResponseBodyInBytes?.Utf8String() ?? ResponseAlreadyCaptured;
 		var request = r.RequestBodyInBytes?.Utf8String() ?? RequestAlreadyCaptured;
-		_ = sb.AppendLine($"# Request:{Environment.NewLine}{request}");
-		_ = sb.AppendLine($"# Response:{Environment.NewLine}{response}");
+		sb.AppendLine($"# Request:{Environment.NewLine}{request}");
+		sb.AppendLine($"# Response:{Environment.NewLine}{response}");
 
 		if (r.TcpStats != null)
 		{
-			_ = sb.AppendLine("# TCP states:");
+			sb.AppendLine("# TCP states:");
 			foreach (var stat in r.TcpStats)
 			{
-				_ = sb.Append("  ");
-				_ = sb.Append(stat.Key);
-				_ = sb.Append(": ");
-				_ = sb.AppendLine($"{stat.Value}");
+				sb.Append("  ");
+				sb.Append(stat.Key);
+				sb.Append(": ");
+				sb.AppendLine($"{stat.Value}");
 			}
-			_ = sb.AppendLine();
+			sb.AppendLine();
 		}
 
 		if (r.ThreadPoolStats != null)
 		{
-			_ = sb.AppendLine("# ThreadPool statistics:");
+			sb.AppendLine("# ThreadPool statistics:");
 			foreach (var stat in r.ThreadPoolStats)
 			{
-				_ = sb.Append("  ");
-				_ = sb.Append(stat.Key);
-				_ = sb.AppendLine(": ");
-				_ = sb.Append("    Busy: ");
-				_ = sb.AppendLine($"{stat.Value.Busy}");
-				_ = sb.Append("    Free: ");
-				_ = sb.AppendLine($"{stat.Value.Free}");
-				_ = sb.Append("    Min: ");
-				_ = sb.AppendLine($"{stat.Value.Min}");
-				_ = sb.Append("    Max: ");
-				_ = sb.AppendLine($"{stat.Value.Max}");
+				sb.Append("  ");
+				sb.Append(stat.Key);
+				sb.AppendLine(": ");
+				sb.Append("    Busy: ");
+				sb.AppendLine($"{stat.Value.Busy}");
+				sb.Append("    Free: ");
+				sb.AppendLine($"{stat.Value.Free}");
+				sb.Append("    Min: ");
+				sb.AppendLine($"{stat.Value.Min}");
+				sb.Append("    Max: ");
+				sb.AppendLine($"{stat.Value.Max}");
 			}
-			_ = sb.AppendLine();
+			sb.AppendLine();
 		}
 
 		return sb.ToString();
@@ -98,7 +98,7 @@ internal static class ResponseStatics
 
 		var auditExceptions = auditTrail.Select((audit, i) => new { audit, i }).Where(a => a.audit.Exception != null);
 		foreach (var a in auditExceptions)
-			_ = sb.AppendLine($"# Audit exception in step {a.i + 1} {a.audit.Event.ToStringFast()}:{Environment.NewLine}{a.audit.Exception}");
+			sb.AppendLine($"# Audit exception in step {a.i + 1} {a.audit.Event.ToStringFast()}:{Environment.NewLine}{a.audit.Exception}");
 	}
 
 	/// <summary>
@@ -113,16 +113,16 @@ internal static class ResponseStatics
 		foreach (var a in auditTrail.Select((a, i) => new { a, i }))
 		{
 			var audit = a.a;
-			_ = sb.Append($" - [{a.i + 1}] {audit.Event.ToStringFast()}:");
+			sb.Append($" - [{a.i + 1}] {audit.Event.ToStringFast()}:");
 
 			AuditNodeUrl(sb, audit);
 
 			if (audit.Exception != null)
-				_ = sb.Append($" Exception: {audit.Exception.GetType().Name}");
+				sb.Append($" Exception: {audit.Exception.GetType().Name}");
 			if (audit.Ended == default)
-				_ = sb.AppendLine();
+				sb.AppendLine();
 			else
-				_ = sb.AppendLine($" Took: {audit.Ended - audit.Started}");
+				sb.AppendLine($" Took: {audit.Ended - audit.Started}");
 		}
 	}
 
@@ -140,6 +140,6 @@ internal static class ResponseStatics
 			};
 			uri = builder.Uri;
 		}
-		_ = sb.Append($" Node: {uri}");
+		sb.Append($" Node: {uri}");
 	}
 }

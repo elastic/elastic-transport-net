@@ -16,9 +16,11 @@ using static Elastic.Elasticsearch.Ephemeral.ClusterAuthentication;
 namespace Elastic.Elasticsearch.IntegrationTests;
 
 /// <summary> Declare our cluster that we want to inject into our test classes </summary>
-public class DefaultCluster(XunitClusterConfiguration xunitClusterConfiguration) : XunitClusterBase(xunitClusterConfiguration)
+public class DefaultCluster : XunitClusterBase
 {
 	public DefaultCluster() : this(new XunitClusterConfiguration(Version) { StartingPortNumber = 9202, AutoWireKnownProxies = true }) { }
+
+	public DefaultCluster(XunitClusterConfiguration xunitClusterConfiguration) : base(xunitClusterConfiguration) { }
 
 	protected static string Version => "8.7.0";
 

@@ -34,16 +34,20 @@ namespace Elastic.Transport;
 /// Stub for System.Diagnostics.Tracing.EventCounter which is not available on .NET 4.6.1
 /// </summary>
 // ReSharper disable once UnusedType.Global
-internal sealed class EventCounter(string blocks, RecyclableMemoryStreamManager.Events eventsWriter)
+internal sealed class EventCounter
 {
+	// ReSharper disable UnusedParameter.Local
+	public EventCounter(string blocks, RecyclableMemoryStreamManager.Events eventsWriter) { }
 	// ReSharper restore UnusedParameter.Local
 
 	public void WriteMetric(long v) { }
 }
 #endif
 #if NETSTANDARD2_0 || NETFRAMEWORK
-internal sealed class PollingCounter(string largeBuffers, RecyclableMemoryStreamManager.Events eventsWriter, Func<double> func) : IDisposable
+internal sealed class PollingCounter : IDisposable
 {
+	// ReSharper disable UnusedParameter.Local
+	public PollingCounter(string largeBuffers, RecyclableMemoryStreamManager.Events eventsWriter, Func<double> func) { }
 	// ReSharper restore UnusedParameter.Local
 
 	public void Dispose() { }
@@ -52,7 +56,7 @@ internal sealed class PollingCounter(string largeBuffers, RecyclableMemoryStream
 
 internal sealed partial class RecyclableMemoryStreamManager
 {
-	public static readonly Events EventsWriter = new();
+	public static readonly Events EventsWriter = new Events();
 
 	[EventSource(Name = "Elastic-Transport-RecyclableMemoryStream", Guid = "{AD44FDAC-D3FC-460A-9EBE-E55A3569A8F6}")]
 	public sealed class Events : EventSource

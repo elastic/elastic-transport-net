@@ -8,58 +8,57 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Elastic.Transport;
-
-public abstract partial class PostData
+namespace Elastic.Transport
 {
-	/// <summary>
-	/// Create a <see cref="PostData"/> instance that will write the <paramref name="bytes"/> to the output <see cref="Stream"/>
-	/// </summary>
-	public static PostData ReadOnlyMemory(ReadOnlyMemory<byte> bytes) => new PostDataReadOnlyMemory(bytes);
-
-	private class PostDataReadOnlyMemory : PostData
+	public abstract partial class PostData
 	{
-		private readonly ReadOnlyMemory<byte> _memoryOfBytes;
+		/// <summary>
+		/// Create a <see cref="PostData"/> instance that will write the <paramref name="bytes"/> to the output <see cref="Stream"/>
+		/// </summary>
+		public static PostData ReadOnlyMemory(ReadOnlyMemory<byte> bytes) => new PostDataReadOnlyMemory(bytes);
 
-		protected internal PostDataReadOnlyMemory(ReadOnlyMemory<byte> item)
+		private class PostDataReadOnlyMemory : PostData
 		{
-			_memoryOfBytes = item;
-			Type = PostType.ReadOnlyMemory;
-		}
+			private readonly ReadOnlyMemory<byte> _memoryOfBytes;
 
-		public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
-		{
-			if (_memoryOfBytes.IsEmpty)
-				return;
-
-			MemoryStream? buffer = null;
-
-			if (!disableDirectStreaming)
-				writableStream.Write(_memoryOfBytes.Span);
-			else
+			protected internal PostDataReadOnlyMemory(ReadOnlyMemory<byte> item)
 			{
-				WrittenBytes ??= _memoryOfBytes.Span.ToArray();
-				buffer = settings.MemoryStreamFactory.Create(WrittenBytes);
-			}
-			FinishStream(writableStream, buffer, disableDirectStreaming);
-		}
-
-		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
-		{
-			if (_memoryOfBytes.IsEmpty)
-				return;
-
-			MemoryStream? buffer = null;
-
-			if (!disableDirectStreaming)
-				writableStream.Write(_memoryOfBytes.Span);
-			else
-			{
-				WrittenBytes ??= _memoryOfBytes.Span.ToArray();
-				buffer = settings.MemoryStreamFactory.Create(WrittenBytes);
+				_memoryOfBytes = item;
+				Type = PostType.ReadOnlyMemory;
 			}
 
-			await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);
+			public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
+			{
+				if (_memoryOfBytes.IsEmpty) return;
+
+				MemoryStream? buffer = null;
+
+				if (!disableDirectStreaming)
+					writableStream.Write(_memoryOfBytes.Span);
+				else
+				{
+					WrittenBytes ??= _memoryOfBytes.Span.ToArray();
+					buffer = settings.MemoryStreamFactory.Create(WrittenBytes);
+				}
+				FinishStream(writableStream, buffer, disableDirectStreaming);
+			}
+
+			public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
+			{
+				if (_memoryOfBytes.IsEmpty) return;
+
+				MemoryStream? buffer = null;
+
+				if (!disableDirectStreaming)
+					writableStream.Write(_memoryOfBytes.Span);
+				else
+				{
+					WrittenBytes ??= _memoryOfBytes.Span.ToArray();
+					buffer = settings.MemoryStreamFactory.Create(WrittenBytes);
+				}
+
+				await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);
+			}
 		}
 	}
 }
