@@ -303,8 +303,10 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		if (_largeBuffer != null) _memoryManager.ReturnLargeBuffer(_largeBuffer, _tag);
 
 		if (_dirtyBuffers != null)
+		{
 			foreach (var buffer in _dirtyBuffers)
 				_memoryManager.ReturnLargeBuffer(buffer, _tag);
+		}
 
 		_memoryManager.ReturnBlocks(_blocks, _tag);
 		_blocks.Clear();
@@ -380,9 +382,9 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 		set
 		{
 			CheckDisposed();
-			if (value < 0) throw new ArgumentOutOfRangeException("value", "value must be non-negative");
+			if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), "value must be non-negative");
 
-			if (value > MaxStreamLength) throw new ArgumentOutOfRangeException("value", "value cannot be more than " + MaxStreamLength);
+			if (value > MaxStreamLength) throw new ArgumentOutOfRangeException(nameof(value), "value cannot be more than " + MaxStreamLength);
 
 			_position = (int)value;
 		}
@@ -514,7 +516,11 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	public int SafeRead(byte[] buffer, int offset, int count, ref int streamPosition)
 	{
 		CheckDisposed();
+#if NET6_0_OR_GREATER
+		ArgumentNullException.ThrowIfNull(buffer);
+#else
 		if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+#endif
 
 		if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset), "offset cannot be negative");
 
@@ -566,11 +572,17 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	public override void Write(byte[] buffer, int offset, int count)
 	{
 		CheckDisposed();
+#if NET6_0_OR_GREATER
+		ArgumentNullException.ThrowIfNull(buffer);
+#else
 		if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+#endif
 
 		if (offset < 0)
+		{
 			throw new ArgumentOutOfRangeException(nameof(offset), offset,
 				"Offset must be in the range of 0 - buffer.Length-1");
+		}
 
 		if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), count, "count must be non-negative");
 
@@ -711,8 +723,10 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	{
 		CheckDisposed();
 		if (value < 0 || value > MaxStreamLength)
+		{
 			throw new ArgumentOutOfRangeException(nameof(value),
 				"value must be non-negative and at most " + MaxStreamLength);
+		}
 
 		EnsureCapacity((int)value);
 
@@ -793,7 +807,11 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 
 	private void CheckDisposed()
 	{
+#if NET8_0_OR_GREATER
+		ObjectDisposedException.ThrowIf(Disposed, this);
+#else
 		if (Disposed) throw new ObjectDisposedException($"The stream with Id {_id} and Tag {_tag} is disposed.");
+#endif
 	}
 
 	private int InternalRead(byte[] buffer, int offset, int count, int fromPosition)
@@ -903,8 +921,10 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 			}
 		}
 		else
+		{
 			while (Capacity < newCapacity)
 				_blocks.Add(_memoryManager.GetBlock());
+		}
 	}
 
 	/// <summary>

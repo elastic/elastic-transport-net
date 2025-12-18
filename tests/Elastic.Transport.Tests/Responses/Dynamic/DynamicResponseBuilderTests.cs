@@ -13,7 +13,7 @@ namespace Elastic.Transport.Tests.Responses.Dynamic;
 public class DynamicResponseBuilderTests
 {
 	[Fact]
-	public async Task ReturnsExpectedResponse_ForJsonData()
+	public async Task ReturnsExpectedResponseForJsonData()
 	{
 		IResponseBuilder sut = new DynamicResponseBuilder();
 
@@ -34,7 +34,7 @@ public class DynamicResponseBuilderTests
 	}
 
 	[Fact]
-	public async Task ReturnsExpectedResponse_ForNonJsonData()
+	public async Task ReturnsExpectedResponseForNonJsonData()
 	{
 		IResponseBuilder sut = new DynamicResponseBuilder();
 

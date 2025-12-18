@@ -38,7 +38,7 @@ public static class CertificateValidations
 	public static Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> AuthorityPartOfChain(
 		X509Certificate caCertificate, bool trustRoot = true, X509RevocationMode revocationMode = X509RevocationMode.NoCheck
 	) =>
-		(sender, cert, chain, errors) =>
+		(_, cert, chain, errors) =>
 			errors == SslPolicyErrors.None
 			|| ValidIntermediateCa(caCertificate, cert, chain, trustRoot, revocationMode);
 
@@ -57,7 +57,7 @@ public static class CertificateValidations
 	public static Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> AuthorityIsRoot(
 		X509Certificate caCertificate, bool trustRoot = true, X509RevocationMode revocationMode = X509RevocationMode.NoCheck
 	) =>
-		(sender, cert, chain, errors) =>
+		(_, cert, _, errors) =>
 			errors == SslPolicyErrors.None
 			|| ValidRootCa(caCertificate, cert, trustRoot, revocationMode);
 

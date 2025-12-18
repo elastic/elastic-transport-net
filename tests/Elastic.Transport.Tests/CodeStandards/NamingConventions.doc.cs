@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Linq;
 using FluentAssertions;
 using Xunit;
+using static System.StringComparison;
 
 namespace Elastic.Transport.Tests.CodeStandards
 {
@@ -26,7 +27,7 @@ namespace Elastic.Transport.Tests.CodeStandards
 
 			var baseClassesNotAbstract = typeof(ITransport<>).Assembly.GetTypes()
 				.Where(t => t.IsClass && !exceptions.Contains(t))
-				.Where(t => t.Name.Split('`')[0].EndsWith("Base"))
+				.Where(t => t.Name.Split('`')[0].EndsWith("Base", Ordinal))
 				.Where(t => !t.IsAbstract)
 				.Select(t => t.Name.Split('`')[0])
 				.ToList();
@@ -73,8 +74,8 @@ namespace Elastic.Transport.Tests.CodeStandards
 			};
 			var transportTypes = Scan()
 				.Where(t => t.IsPublic)
-				.Where(t => t.Namespace != root && !allowedNamespaces.Any(a => t.Namespace.StartsWith(a)))
-				.Where(t => !t.Name.StartsWith("<"))
+				.Where(t => t.Namespace != root && !allowedNamespaces.Any(a => t.Namespace.StartsWith(a, OrdinalIgnoreCase)))
+				.Where(t => !t.Name.StartsWith("<", OrdinalIgnoreCase))
 				.Where(t => IsValidTypeNameOrIdentifier(t.Name, true))
 				.ToList();
 

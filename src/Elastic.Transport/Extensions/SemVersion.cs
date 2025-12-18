@@ -12,13 +12,20 @@ namespace Elastic.Transport.Extensions;
 /// <summary>
 /// A semver2 compatible version.
 /// </summary>
-public sealed class SemVersion :
+public sealed partial class SemVersion :
 	IEquatable<SemVersion>,
 	IComparable<SemVersion>,
 	IComparable
 {
 	// https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+#if NET7_0_OR_GREATER
+	[GeneratedRegex(@"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$")]
+	private static partial Regex SemVerRegex();
+
+	private static readonly Regex Regex = SemVerRegex();
+#else
 	private static readonly Regex Regex = new(@"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$");
+#endif
 
 	/// <summary>
 	/// The major version part.

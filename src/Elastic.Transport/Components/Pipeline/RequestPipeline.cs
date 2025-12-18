@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -217,7 +218,7 @@ public class RequestPipeline
 			innerException = exs.AsAggregateOrFirst();
 		}
 
-		var statusCode = callDetails?.HttpStatusCode != null ? callDetails.HttpStatusCode.Value.ToString() : "unknown";
+		var statusCode = callDetails?.HttpStatusCode != null ? callDetails.HttpStatusCode.Value.ToString(CultureInfo.InvariantCulture) : "unknown";
 		var resource = callDetails == null
 			? "unknown resource"
 			: $"Status code {statusCode} from: {callDetails.HttpMethod} {callDetails.Uri?.PathAndQuery}";
@@ -245,7 +246,11 @@ public class RequestPipeline
 			}
 		}
 
+#if NET6_0_OR_GREATER
+		exceptionMessage += !exceptionMessage.EndsWith('.') ? $". Call: {resource}" : $" Call: {resource}";
+#else
 		exceptionMessage += !exceptionMessage.EndsWith(".", StringComparison.Ordinal) ? $". Call: {resource}" : $" Call: {resource}";
+#endif
 		if (response != null && _productRegistration.TryGetServerErrorReason(response, out var reason))
 			exceptionMessage += $". ServerError: {reason}";
 
@@ -459,12 +464,16 @@ public class RequestPipeline
 			try
 			{
 				if (isAsync)
+				{
 					result = await _productRegistration
 						.SniffAsync(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, _boundConfiguration, cancellationToken)
 						.ConfigureAwait(false);
+				}
 				else
+				{
 					result = _productRegistration
 						.Sniff(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, _boundConfiguration);
+				}
 
 				ThrowBadAuthPipelineExceptionWhenNeeded(result.Item1.ApiCallDetails);
 

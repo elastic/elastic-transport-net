@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+#pragma warning disable CA1852
+
 using System.Text.Json.Serialization;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
@@ -21,7 +23,7 @@ if (rootResponse.ApiCallDetails.HasSuccessfulStatusCode)
 else
 	Console.WriteLine(rootResponse);
 
-public class MyDocument
+internal sealed class MyDocument
 {
 	[JsonPropertyName("message")]
 	public string Message { init; get; } = null!;

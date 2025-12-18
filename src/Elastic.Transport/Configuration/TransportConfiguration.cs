@@ -287,6 +287,7 @@ public record TransportConfiguration : ITransportConfiguration
 		NodePool.Dispose();
 		RequestInvoker.Dispose();
 		BootstrapLock.Dispose();
+		GC.SuppressFinalize(this);
 	}
 
 	/// <inheritdoc />

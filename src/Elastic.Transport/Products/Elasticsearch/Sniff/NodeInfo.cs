@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.Json;
 
 namespace Elastic.Transport.Products.Elasticsearch;
@@ -29,7 +30,7 @@ internal sealed class NodeInfo
 			{
 				if (httpEnabled is JsonElement e)
 					return e.GetBoolean();
-				return Convert.ToBoolean(httpEnabled);
+				return Convert.ToBoolean(httpEnabled, CultureInfo.InvariantCulture);
 			}
 
 			return http != null;

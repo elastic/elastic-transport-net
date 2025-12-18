@@ -10,12 +10,10 @@
 #if !NETFRAMEWORK
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -165,7 +163,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		protected override void Dispose(bool disposing)
 		{
 			_serializeToStreamTask?.TrySetResult(true);
-			base.Dispose();
+			base.Dispose(disposing);
 			_source?.Dispose();
 		}
 
@@ -223,6 +221,11 @@ internal sealed class BoundConfigurationContent : HttpContent
 		public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
 			_innerStream.ReadAsync(buffer, offset, count, cancellationToken);
 
+#if NETSTANDARD2_1_OR_GREATER || NET
+		public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+			_innerStream.ReadAsync(buffer, cancellationToken);
+#endif
+
 		public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
 			_innerStream.BeginRead(buffer, offset, count, callback!, state);
 
@@ -240,6 +243,11 @@ internal sealed class BoundConfigurationContent : HttpContent
 
 		public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
 			_innerStream.WriteAsync(buffer, offset, count, cancellationToken);
+
+#if NETSTANDARD2_1_OR_GREATER || NET
+		public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
+			_innerStream.WriteAsync(buffer, cancellationToken);
+#endif
 
 		public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
 			_innerStream.BeginWrite(buffer, offset, count, callback!, state);

@@ -91,8 +91,8 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 		if (Environment.Version.Major >= 5)
 		{
 			const string dotNet = ".NET ";
-			var index = RuntimeInformation.FrameworkDescription.IndexOf(dotNet, StringComparison.OrdinalIgnoreCase);
-			if (index >= 0) return RuntimeInformation.FrameworkDescription.Substring(dotNet.Length);
+			if (RuntimeInformation.FrameworkDescription.Contains(dotNet, StringComparison.OrdinalIgnoreCase))
+				return RuntimeInformation.FrameworkDescription.Substring(dotNet.Length);
 		}
 		// next, try using file version info
 		//At this point, we can't identify whether this is a prerelease, but a version is better than nothing!
@@ -118,7 +118,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 	private static bool TryGetVersionFromFrameworkName(string frameworkName, out string? runtimeVersion)
 	{
 		const string versionPrefix = ".NETCoreApp,Version=v";
-		if (!string.IsNullOrEmpty(frameworkName) && frameworkName.StartsWith(versionPrefix))
+		if (!string.IsNullOrEmpty(frameworkName) && frameworkName.StartsWith(versionPrefix, StringComparison.Ordinal))
 		{
 			runtimeVersion = frameworkName.Substring(versionPrefix.Length);
 			return true;
@@ -128,7 +128,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 		return false;
 	}
 
-	private static bool IsRunningInContainer => string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true");
+	private static bool IsRunningInContainer => string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true", StringComparison.Ordinal);
 #endif
 
 #if NETFRAMEWORK

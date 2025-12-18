@@ -17,7 +17,7 @@ namespace Elastic.Transport.Products;
 /// </summary>
 public sealed class DefaultProductRegistration : ProductRegistration
 {
-	private readonly HeadersList _headers = new();
+	private readonly HeadersList _headers;
 	private readonly MetaHeaderProvider _metaHeaderProvider;
 
 	/// <summary>
@@ -25,6 +25,7 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	/// </summary>
 	public DefaultProductRegistration()
 	{
+		_headers = new();
 		_metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(ITransport), ServiceIdentifier ?? "et");
 
 		ProductAssemblyVersion = typeof(ProductRegistration).Assembly

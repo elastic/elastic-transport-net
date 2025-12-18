@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using Elastic.Transport.Extensions;
@@ -146,7 +147,7 @@ internal sealed partial class RecyclableMemoryStreamManager
 		UseExponentialLargeBuffer = useExponentialLargeBuffer;
 
 		if (!IsLargeBufferSize(maximumBufferSize))
-			throw new ArgumentException(string.Format("maximumBufferSize is not {0} of largeBufferMultiple",
+			throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "maximumBufferSize is not {0} of largeBufferMultiple",
 					UseExponentialLargeBuffer ? "an exponential" : "a multiple"),
 				nameof(maximumBufferSize));
 

@@ -54,7 +54,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 	internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
 
-	void IDisposable.Dispose() {}
+	void IDisposable.Dispose() => GC.SuppressFinalize(this);
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
 	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
@@ -147,9 +147,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 					httpWebResponse = (HttpWebResponse)await apmGetResponseTask.ConfigureAwait(false);
 				}
 				else
-				{
 					httpWebResponse = (HttpWebResponse)request.GetResponse();
-				}
 
 				receivedResponse = httpWebResponse;
 
@@ -174,20 +172,22 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			TResponse response;
 
 		if (isAsync)
+		{
 			response = await ResponseFactory.CreateAsync<TResponse>
-				(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-					.ConfigureAwait(false);
+					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+				.ConfigureAwait(false);
+		}
 		else
+		{
 			response = ResponseFactory.Create<TResponse>
-					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
+				(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
+		}
 
-			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
+		// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
 			// resources can be linked such that their disposal is deferred.
 			if (response.LeaveOpen)
-			{
 				response.LinkedDisposables = new[] { receivedResponse!, responseStream! };
-			}
 			else
 			{
 				responseStream?.Dispose();
@@ -214,7 +214,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		var defaultHeadersForProduct = boundConfiguration.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
 		foreach (var headerToParse in defaultHeadersForProduct)
 		{
-			if (responseMessage.Headers.AllKeys.Contains(headerToParse, StringComparer.OrdinalIgnoreCase))
+			if (Enumerable.Contains(responseMessage.Headers.AllKeys, headerToParse, StringComparer.OrdinalIgnoreCase))
 			{
 				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 				responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse)!);
@@ -233,7 +233,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			foreach (var headerToParse in boundConfiguration.ResponseHeadersToParse)
 			{
-				if (responseMessage.Headers.AllKeys.Contains(headerToParse, StringComparer.OrdinalIgnoreCase))
+				if (Enumerable.Contains(responseMessage.Headers.AllKeys, headerToParse, StringComparer.OrdinalIgnoreCase))
 				{
 					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
 					responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse)!);
@@ -272,14 +272,9 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	private string ComparableFingerprint(string fingerprint)
 	{
 		var finalFingerprint = fingerprint;
-		if (fingerprint.Contains(':'))
-		{
+		if (fingerprint.IndexOf(':') >= 0)
 			finalFingerprint = fingerprint.Replace(":", string.Empty);
-		}
-		else if (fingerprint.Contains('-'))
-		{
-			finalFingerprint = fingerprint.Replace("-", string.Empty);
-		}
+		else if (fingerprint.IndexOf('-') >= 0) finalFingerprint = fingerprint.Replace("-", string.Empty);
 		return finalFingerprint;
 	}
 
@@ -290,9 +285,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 #if !__MonoCS__
 		//Only assign if one is defined on connection settings and a subclass has not already set one
 		if (callback != null && request.ServerCertificateValidationCallback == null)
-		{
 			request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((sender, certificate, chain, policyErrors) => callback(sender, certificate!, chain!, policyErrors));
-		}
 		else if (!string.IsNullOrEmpty(boundConfiguration?.ConnectionSettings?.CertificateFingerprint))
 		{
 			request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((sender, certificate, chain, policyErrors) =>
@@ -344,7 +337,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			request.Headers.Add("Content-Encoding", "gzip");
 		}
 
-		var userAgent = boundConfiguration.UserAgent?.ToString();
+		var userAgent = boundConfiguration.UserAgent.ToString();
 		if (!string.IsNullOrWhiteSpace(userAgent))
 			request.UserAgent = userAgent;
 
@@ -414,7 +407,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	protected virtual void SetAuthenticationIfNeeded(Endpoint endpoint, BoundConfiguration boundConfiguration, HttpWebRequest request)
 	{
 		//If user manually specifies an Authorization Header give it preference
-		if (boundConfiguration.Headers is not null && boundConfiguration.Headers.HasKeys() && boundConfiguration.Headers.AllKeys.Contains("Authorization"))
+		if (boundConfiguration.Headers is not null && boundConfiguration.Headers.HasKeys() && Enumerable.Contains(boundConfiguration.Headers.AllKeys, "Authorization"))
 		{
 			var header = boundConfiguration.Headers["Authorization"];
 			request.Headers["Authorization"] = header;

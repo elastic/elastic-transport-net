@@ -81,7 +81,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		};
 
 		_expiredHandlers = new ConcurrentQueue<ExpiredHandlerTrackingEntry>();
-		_expiryCallback = ExpiryTimer_Tick!;
+		_expiryCallback = ExpiryTimer_Tick;
 
 		_cleanupTimerLock = new object();
 		_cleanupActiveLock = new object();
@@ -89,7 +89,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 
 	public HttpClient CreateClient(BoundConfiguration boundConfiguration)
 	{
-		if (boundConfiguration == null) throw new ArgumentNullException(nameof(boundConfiguration));
+		if (boundConfiguration is null) throw new ArgumentNullException(nameof(boundConfiguration));
 
 		var key = HttpRequestInvoker.GetClientKey(boundConfiguration);
 		var handler = CreateHandler(key, boundConfiguration);
@@ -102,7 +102,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 
 	private HttpMessageHandler CreateHandler(int key, BoundConfiguration boundConfiguration)
 	{
-		if (boundConfiguration == null) throw new ArgumentNullException(nameof(boundConfiguration));
+		if (boundConfiguration is null) throw new ArgumentNullException(nameof(boundConfiguration));
 
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
 		var entry = _activeHandlers.GetOrAdd(key, (k, r) => _entryFactory(k, r), boundConfiguration).Value;
@@ -206,7 +206,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 				_expiredHandlers.TryDequeue(out var entry);
 				Debug.Assert(entry != null, "Entry was null, we should always get an entry back from TryDequeue");
 
-				if (entry!.CanDispose)
+				if (entry.CanDispose)
 				{
 					try
 					{
@@ -229,7 +229,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		}
 
 		// We didn't totally empty the cleanup queue, try again later.
-		if (_expiredHandlers.Count > 0) StartCleanupTimer();
+		if (!_expiredHandlers.IsEmpty) StartCleanupTimer();
 	}
 
 	public void Dispose()
@@ -258,7 +258,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 					// ignored (ignored in HttpClientFactory too)
 				}
 			}
-		} while (attempts < 5 && _expiredHandlers.Count > 0);
+		} while (attempts < 5 && !_expiredHandlers.IsEmpty);
 
 	}
 }

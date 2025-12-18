@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Elastic.Transport.Tests.Shared;
+using Elastic.Transport.Tests.SharedComponents;
 using FluentAssertions;
 using Xunit;
 
@@ -47,7 +47,7 @@ public class BytesResponseBuilderTests
 	}
 
 	[Fact]
-	public async Task ReturnsExpectedResponse_WhenDisableDirectStreaming()
+	public async Task ReturnsExpectedResponseWhenDisableDirectStreaming()
 	{
 		IResponseBuilder sut = new BytesResponseBuilder();
 

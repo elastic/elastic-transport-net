@@ -4,11 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elastic.Transport.Extensions;
 using Elastic.Transport.Products.Elasticsearch;
 
 namespace Elastic.Transport;
@@ -54,9 +52,11 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 	public override TErrorCause? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		if (reader.TokenType != JsonTokenType.StartObject)
+		{
 			return reader.TokenType == JsonTokenType.String
 				? new TErrorCause { Reason = reader.GetString() }
 				: null;
+		}
 
 		var errorCause = new TErrorCause();
 		var additionalProperties = new Dictionary<string, object>();
@@ -141,7 +141,7 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 					if (ReadMore(ref reader, options, propertyName!, errorCause)) break;
 					else
 					{
-						ReadAny(ref reader, propertyName!, (e, p, v) => additionalProperties.Add(p, v));
+						ReadAny(ref reader, propertyName!, (_, p, v) => additionalProperties.Add(p, v));
 						break;
 					}
 			}

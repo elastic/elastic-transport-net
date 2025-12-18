@@ -29,7 +29,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Elastic.Elasticsearch.IntegrationTests/Elastic.Elasticsearch.IntegrationTests.csproj" />
     <Project Path="tests/Elastic.Transport.IntegrationTests/Elastic.Transport.IntegrationTests.csproj" />
-    <Project Path="tests/Elastic.Transport.Tests.Shared/Elastic.Transport.Tests.Shared.csproj" />
     <Project Path="tests/Elastic.Transport.Tests/Elastic.Transport.Tests.csproj" />
+    <Project Path="tests\Elastic.Transport.Tests.SharedComponents\Elastic.Transport.Tests.SharedComponents.csproj" />
   </Folder>
 </Solution>

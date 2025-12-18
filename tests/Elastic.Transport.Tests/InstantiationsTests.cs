@@ -14,14 +14,14 @@ namespace Elastic.Transport.Tests
 		[Fact]
 		public void SerializableMultiJson()
 		{
-			var p = PostData.MultiJson(new [] {new A()});
+			var p = PostData.MultiJson([new A()]);
 			p.Type.Should().Be(PostType.EnumerableOfObject);
 		}
 
 		[Fact]
 		public void StringMultiJson()
 		{
-			var p = PostData.MultiJson(new [] {""});
+			var p = PostData.MultiJson([""]);
 			p.Type.Should().Be(PostType.EnumerableOfString);
 		}
 

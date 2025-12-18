@@ -220,7 +220,7 @@ public static class TransportSerializerExtensions
 		T? data,
 		Utf8JsonWriter writer,
 		SerializationFormatting formatting = SerializationFormatting.None
-	) => Serialize<T>(serializer, data, writer, TransportConfiguration.DefaultMemoryStreamFactory, formatting);
+	) => Serialize(serializer, data, writer, TransportConfiguration.DefaultMemoryStreamFactory, formatting);
 
 	/// <summary>
 	/// Extension method that writes the serialized representation of an instance of <typeparamref name="T"/> to a

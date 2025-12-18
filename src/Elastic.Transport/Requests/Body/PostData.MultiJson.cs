@@ -91,7 +91,7 @@ public abstract partial class PostData
 					break;
 				}
 				default:
-					throw new ArgumentOutOfRangeException();
+					throw new InvalidOperationException($"Unexpected PostType: {Type}");
 			}
 
 			FinishStream(writableStream, buffer, disableDirectStreaming);
@@ -122,8 +122,16 @@ public abstract partial class PostData
 					{
 						var bytes = enumerator.Current.Utf8Bytes();
 						if (bytes is not null)
+#if NETSTANDARD2_1_OR_GREATER || NET
+							await stream.WriteAsync(bytes.AsMemory(), cancellationToken).ConfigureAwait(false);
+#else
 							await stream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+#endif
+#if NETSTANDARD2_1_OR_GREATER || NET
+						await stream.WriteAsync(NewLineByteArray.AsMemory(), cancellationToken).ConfigureAwait(false);
+#else
 						await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
+#endif
 					} while (enumerator.MoveNext());
 
 					break;
@@ -144,13 +152,17 @@ public abstract partial class PostData
 						await settings.RequestResponseSerializer.SerializeAsync(o, stream,
 								SerializationFormatting.None, cancellationToken)
 							.ConfigureAwait(false);
+#if NETSTANDARD2_1_OR_GREATER || NET
+						await stream.WriteAsync(NewLineByteArray.AsMemory(), cancellationToken).ConfigureAwait(false);
+#else
 						await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
+#endif
 					} while (enumerator.MoveNext());
 
 					break;
 				}
 				default:
-					throw new ArgumentOutOfRangeException();
+					throw new InvalidOperationException($"Unexpected PostType: {Type}");
 			}
 
 			await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);

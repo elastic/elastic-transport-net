@@ -21,8 +21,8 @@ namespace Elastic.Transport.IntegrationTests.Http
 		public Task<JsonElement> Post([FromBody]JsonElement body) => Task.FromResult(body);
 	}
 
-	public class NonParallelCollection { }
-	[CollectionDefinition(nameof(NonParallelCollection), DisableParallelization = true)]
+	public class NonParallel { }
+	[CollectionDefinition(nameof(NonParallel), DisableParallelization = true)]
 	public class TransferEncodingChunkedTests(TestServerFixture instance) : AssemblyServerTestsBase(instance)
 	{
 		private const string BodyString = "{\"query\":{\"match_all\":{}}}";

@@ -29,4 +29,4 @@ Console.WriteLine(indexResponse.DebugInformation);
 
 Console.WriteLine(registration.DefaultContentType ?? "NOT SPECIFIED");
 
-public class EsResponse : ElasticsearchResponse;
+internal sealed class EsResponse : ElasticsearchResponse;

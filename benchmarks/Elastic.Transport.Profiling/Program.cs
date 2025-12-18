@@ -9,7 +9,7 @@ using JetBrains.Profiler.Api;
 
 namespace Elastic.Transport.Profiling
 {
-	internal class Program
+	internal sealed class Program
 	{
 		private static async Task Main()
 		{

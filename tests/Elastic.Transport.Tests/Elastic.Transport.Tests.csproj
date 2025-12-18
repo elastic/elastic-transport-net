@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Transport.VirtualizedCluster\Elastic.Transport.VirtualizedCluster.csproj" />
-    <ProjectReference Include="..\Elastic.Transport.Tests.Shared\Elastic.Transport.Tests.Shared.csproj" />
+    <ProjectReference Include="..\Elastic.Transport.Tests.SharedComponents\Elastic.Transport.Tests.SharedComponents.csproj" />
   </ItemGroup>
 
 </Project>

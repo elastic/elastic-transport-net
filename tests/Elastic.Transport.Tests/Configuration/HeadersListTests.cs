@@ -21,9 +21,9 @@ namespace Elastic.Transport.Tests.Configuration
 		}
 
 		[Fact]
-		public void Ctor_SkipsDuplicates_FromSingleEnumerable()
+		public void CtorSkipsDuplicatesFromSingleEnumerable()
 		{
-			var sut = new HeadersList(new[] { "header-one", "header-two", "header-TWO" });
+			var sut = new HeadersList(["header-one", "header-two", "header-TWO"]);
 
 			sut.Count.Should().Be(2);
 			sut.First().Should().Be("header-one");
@@ -31,9 +31,9 @@ namespace Elastic.Transport.Tests.Configuration
 		}
 
 		[Fact]
-		public void Ctor_SkipsDuplicates_FromSingleEnumerable_AndSingleHeader()
+		public void CtorSkipsDuplicatesFromSingleEnumerableAndSingleHeader()
 		{
-			var sut = new HeadersList(new[] { "header-one", "header-two" }, "header-TWO");
+			var sut = new HeadersList(["header-one", "header-two"], "header-TWO");
 
 			sut.Count.Should().Be(2);
 			sut.First().Should().Be("header-one");
@@ -41,9 +41,9 @@ namespace Elastic.Transport.Tests.Configuration
 		}
 
 		[Fact]
-		public void Ctor_SkipsDuplicates_FromTwoEnumerables()
+		public void CtorSkipsDuplicatesFromTwoEnumerables()
 		{
-			var sut = new HeadersList(new[] { "header-ONE", "header-two" }, new[] { "header-one", "header-THREE", "HEADER-TWO" });
+			var sut = new HeadersList(["header-ONE", "header-two"], ["header-one", "header-THREE", "HEADER-TWO"]);
 
 			sut.Count.Should().Be(3);
 
