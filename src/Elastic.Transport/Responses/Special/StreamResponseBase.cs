@@ -46,7 +46,7 @@ public abstract class StreamResponseBase : TransportResponse, IDisposable
 		{
 			if (disposing)
 			{
-				Stream?.Dispose();
+				Stream.Dispose();
 
 				if (LinkedDisposables is not null)
 				{

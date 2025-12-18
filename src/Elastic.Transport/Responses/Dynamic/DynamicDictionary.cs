@@ -43,14 +43,14 @@ public sealed class DynamicDictionary
 	/// Creates a new instance of Dictionary{String,Object} using the keys and underlying object values of this DynamicDictionary instance's key values.
 	/// </summary>
 	/// <returns></returns>
-	public Dictionary<string, object> ToDictionary() =>
+	public Dictionary<string, object?> ToDictionary() =>
 		_backingDictionary.ToDictionary(kv => kv.Key, kv => kv.Value.Value is JsonElement e ? DynamicValue.ConsumeJsonElement(typeof(object), e) : kv.Value.Value);
 
 	/// <summary>
 	/// Returns an empty dynamic dictionary.
 	/// </summary>
 	/// <value>A <see cref="DynamicDictionary" /> instance.</value>
-	public static DynamicDictionary Empty => new DynamicDictionary();
+	public static DynamicDictionary Empty => new();
 
 	/// <summary>
 	/// Gets a value indicating whether the <see cref="DynamicDictionary" /> is read-only.
@@ -73,11 +73,9 @@ public sealed class DynamicDictionary
 	/// <returns>T or default</returns>
 	public T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string path)
 	{
-		if (path == null) return default;
-
 		var split = SplitRegex.Split(path);
 		var queue = new Queue<string>(split);
-		if (queue.Count == 0) return default;
+		if (queue.Count == 0) return default!;
 
 		var d = new DynamicValue(_backingDictionary);
 		while (queue.Count > 0)
@@ -88,7 +86,7 @@ public sealed class DynamicDictionary
 				if (queue.Count > 0) d = d[0];
 				else
 				{
-					var v = d?.ToDictionary()?.Keys.FirstOrDefault();
+					var v = d.ToDictionary()?.Keys.FirstOrDefault();
 					d = v != null ? new DynamicValue(v) : DynamicValue.NullValue;
 				}
 			}
@@ -96,7 +94,7 @@ public sealed class DynamicDictionary
 			else d = d[key];
 		}
 
-		return d.TryParse<T>();
+		return d.TryParse<T>()!;
 	}
 
 	/// <summary>
@@ -218,8 +216,13 @@ public sealed class DynamicDictionary
 	/// </param>
 	public bool TryGetValue(string key, out DynamicValue value)
 	{
-		if (_backingDictionary.TryGetValue(key, out value)) return true;
+		if (_backingDictionary.TryGetValue(key, out var foundValue))
+		{
+			value = foundValue;
+			return true;
+		}
 
+		value = DynamicValue.NullValue;
 		return false;
 	}
 
@@ -243,7 +246,7 @@ public sealed class DynamicDictionary
 	/// <see langword="false" />.
 	/// </returns>
 	/// <param name="other">An <see cref="DynamicDictionary" /> instance to compare with this instance.</param>
-	public bool Equals(DynamicDictionary other)
+	public bool Equals(DynamicDictionary? other)
 	{
 		if (ReferenceEquals(null, other))
 		{
@@ -258,7 +261,7 @@ public sealed class DynamicDictionary
 	/// </summary>
 	/// <param name="values">An <see cref="IDictionary{TKey,TValue}" /> instance, that the dynamic dictionary should be created from.</param>
 	/// <returns>An <see cref="DynamicDictionary" /> instance.</returns>
-	public static DynamicDictionary Create(IDictionary<string, object> values)
+	public static DynamicDictionary Create(IDictionary<string, object?> values)
 	{
 		var instance = new DynamicDictionary();
 
@@ -270,6 +273,7 @@ public sealed class DynamicDictionary
 
 		return instance;
 	}
+
 	/// <summary>
 	/// Creates a dynamic dictionary from an <see cref="JsonElement" /> instance.
 	/// </summary>
@@ -297,7 +301,7 @@ public sealed class DynamicDictionary
 	/// The value to set to the member. For example, for sampleObject.SampleProperty = "Test", where sampleObject is an
 	/// instance of the class derived from the <see cref="T:System.Dynamic.DynamicObject" /> class, the <paramref name="value" /> is "Test".
 	/// </param>
-	public override bool TrySetMember(SetMemberBinder binder, object value)
+	public override bool TrySetMember(SetMemberBinder binder, object? value)
 	{
 		this[binder.Name] = new DynamicValue(value);
 		return true;
@@ -346,7 +350,7 @@ public sealed class DynamicDictionary
 	/// <see langword="true" /> if the specified <see cref="object" /> is equal to this instance; otherwise,
 	/// <see langword="false" />.
 	/// </returns>
-	public override bool Equals(object obj)
+	public override bool Equals(object? obj)
 	{
 		if (ReferenceEquals(null, obj))
 		{

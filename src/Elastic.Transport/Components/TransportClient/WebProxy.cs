@@ -14,7 +14,7 @@ internal class WebProxy : IWebProxy
 
 	public WebProxy(Uri uri) => _uri = uri;
 
-	public ICredentials Credentials { get; set; }
+	public ICredentials? Credentials { get; set; }
 
 	public Uri GetProxy(Uri destination) => _uri;
 

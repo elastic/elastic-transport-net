@@ -17,14 +17,12 @@ public sealed class SealedVirtualCluster
 {
 	private readonly IRequestInvoker _requestInvoker;
 	private readonly NodePool _nodePool;
-	private readonly TestableDateTimeProvider _dateTimeProvider;
 	private readonly MockProductRegistration _productRegistration;
 
 	internal SealedVirtualCluster(VirtualCluster cluster, NodePool pool, TestableDateTimeProvider dateTimeProvider, MockProductRegistration productRegistration)
 	{
 		_nodePool = pool;
 		_requestInvoker = new VirtualClusterRequestInvoker(cluster, dateTimeProvider);
-		_dateTimeProvider = dateTimeProvider;
 		_productRegistration = productRegistration;
 	}
 

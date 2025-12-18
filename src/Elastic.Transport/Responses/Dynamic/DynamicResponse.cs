@@ -19,7 +19,7 @@ namespace Elastic.Transport;
 public sealed class DynamicResponse : TransportResponse<DynamicDictionary>
 {
 	/// <inheritdoc cref="DynamicResponse"/>
-	public DynamicResponse() { }
+	public DynamicResponse() => Dictionary = DynamicDictionary.Empty;
 
 	/// <inheritdoc cref="DynamicResponse"/>
 	public DynamicResponse(DynamicDictionary dictionary)

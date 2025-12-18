@@ -14,8 +14,8 @@ internal sealed class RequestPipelineDiagnosticObserver : TypedDiagnosticObserve
 	public RequestPipelineDiagnosticObserver(
 		Action<KeyValuePair<string, BoundConfiguration>> onNextStart,
 		Action<KeyValuePair<string, ApiCallDetails>> onNextEnd,
-		Action<Exception> onError = null,
-		Action onCompleted = null
+		Action<Exception>? onError = null,
+		Action? onCompleted = null
 	) : base(onNextStart, onNextEnd, onError, onCompleted) { }
 
 }

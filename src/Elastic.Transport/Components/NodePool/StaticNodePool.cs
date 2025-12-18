@@ -25,7 +25,7 @@ public class StaticNodePool : NodePool
 	/// </summary>
 	protected int GlobalCursor = -1;
 
-	private readonly Func<Node, float> _nodeScorer;
+	private readonly Func<Node, float>? _nodeScorer;
 
 	/// <inheritdoc cref="StaticNodePool"/>
 	public StaticNodePool(IEnumerable<Uri> uris, bool randomize = true)
@@ -43,23 +43,23 @@ public class StaticNodePool : NodePool
 			? new Random()
 			: new Random(randomizeSeed.Value);
 
-		Initialize(nodes);
+		InternalNodes = Initialize(nodes);
 	}
 
 	//this constructor is protected because nodeScorer only makes sense on subclasses that support reseeding otherwise just manually sort `nodes` before instantiating.
 	/// <inheritdoc cref="StaticNodePool"/>
-	protected StaticNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer = null)
+	protected StaticNodePool(IEnumerable<Node> nodes, Func<Node, float>? nodeScorer = null)
 	{
 		_nodeScorer = nodeScorer;
-		Initialize(nodes);
+		InternalNodes = Initialize(nodes);
 	}
 
-	private void Initialize(IEnumerable<Node> nodes)
+	private List<Node> Initialize(IEnumerable<Node> nodes)
 	{
-		var nodesProvided = nodes?.ToList() ?? throw new ArgumentNullException(nameof(nodes));
+		var nodesProvided = nodes.ToList() ?? throw new ArgumentNullException(nameof(nodes));
 		nodesProvided.ThrowIfEmpty(nameof(nodes));
 
-		string scheme = null;
+		string? scheme = null;
 		foreach (var node in nodesProvided)
 		{
 			if (scheme == null)
@@ -72,7 +72,7 @@ public class StaticNodePool : NodePool
 				throw new ArgumentException("Trying to instantiate a node pool with mixed URI Schemes");
 		}
 
-		InternalNodes = SortNodes(nodesProvided)
+		return SortNodes(nodesProvided)
 			.DistinctByCustom(n => n.Uri)
 			.ToList();
 	}
@@ -91,9 +91,6 @@ public class StaticNodePool : NodePool
 
 	/// <inheritdoc />
 	public override bool SupportsReseeding => false;
-
-	/// <inheritdoc />
-	public override bool UsingSsl { get; protected set; }
 
 	/// <summary>
 	/// A window into <see cref="InternalNodes"/> that only selects the nodes considered alive at the time of calling
@@ -121,7 +118,7 @@ public class StaticNodePool : NodePool
 	/// explicit seed passed into the constructor.
 	/// </summary>
 	// ReSharper disable once MemberCanBePrivate.Global
-	protected Random Random { get; }
+	protected Random Random { get; } = new Random();
 
 	/// <summary> Whether the nodes order should be randomized after sniffing </summary>
 	// ReSharper disable once MemberCanBePrivate.Global

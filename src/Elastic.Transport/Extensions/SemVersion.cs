@@ -222,7 +222,7 @@ public sealed class SemVersion :
 	}
 
 	/// <inheritdoc cref="IComparable.CompareTo"/>
-	public int CompareTo(object obj) => CompareTo((SemVersion)obj);
+	public int CompareTo(object? obj) => CompareTo((SemVersion)obj!);
 
 	/// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
 	public bool Equals(SemVersion? other)

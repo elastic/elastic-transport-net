@@ -12,22 +12,25 @@ namespace Elastic.Transport.Products.Elasticsearch;
 internal sealed class SniffResponse : TransportResponse
 {
 	// ReSharper disable InconsistentNaming
-	public string cluster_name { get; set; }
+	public string? cluster_name { get; set; }
 
-	public Dictionary<string, NodeInfo> nodes { get; set; }
+	public Dictionary<string, NodeInfo>? nodes { get; set; }
 
 	public IEnumerable<Node> ToNodes(bool forceHttp = false)
 	{
+		if (nodes == null)
+			yield break;
+
 		foreach (var kv in nodes.Where(n => n.Value.HttpEnabled))
 		{
 			var info = kv.Value;
 			var httpEndpoint = info.http?.publish_address;
 			if (string.IsNullOrWhiteSpace(httpEndpoint))
-				httpEndpoint = kv.Value.http?.bound_address.FirstOrDefault();
+				httpEndpoint = kv.Value.http?.bound_address?.FirstOrDefault();
 			if (string.IsNullOrWhiteSpace(httpEndpoint))
 				continue;
 
-			var uri = SniffParser.ParseToUri(httpEndpoint, forceHttp);
+			var uri = SniffParser.ParseToUri(httpEndpoint!, forceHttp);
 			var features = new List<string>();
 			if (info.MasterEligible)
 				features.Add(MasterEligible);
@@ -40,7 +43,7 @@ internal sealed class SniffResponse : TransportResponse
 
 			var node = new Node(uri, features)
 			{
-				Name = info.name, Id = kv.Key, Settings = new ReadOnlyDictionary<string, object>(info.settings)
+				Name = info.name, Id = kv.Key, Settings = new ReadOnlyDictionary<string, object>(info.settings ?? new Dictionary<string, object>())
 			};
 			yield return node;
 		}

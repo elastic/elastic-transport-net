@@ -14,8 +14,8 @@ internal sealed class HttpConnectionDiagnosticObserver : TypedDiagnosticObserver
 	public HttpConnectionDiagnosticObserver(
 		Action<KeyValuePair<string, BoundConfiguration>> onNextStart,
 		Action<KeyValuePair<string, int?>> onNextEnd,
-		Action<Exception> onError = null,
-		Action onCompleted = null
+		Action<Exception>? onError = null,
+		Action? onCompleted = null
 	) : base(onNextStart, onNextEnd, onError, onCompleted) { }
 
 }

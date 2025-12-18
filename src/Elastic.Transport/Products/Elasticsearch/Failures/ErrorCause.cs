@@ -30,18 +30,18 @@ public class ErrorCause
 	public IReadOnlyDictionary<string, object> AdditionalProperties { get; internal set; } = DefaultDictionary;
 
 	/// <summary> The name of the Elasticsearch server exception that was thrown </summary>
-	public string Type { get; internal set; }
+	public string? Type { get; internal set; }
 
 	/// <summary>
 	/// If stacktrace was requested this holds the java stack trace as it occurred on the server
 	/// </summary>
 	[JsonPropertyName("stack_trace")]
-	public string StackTrace { get; internal set; }
+	public string? StackTrace { get; internal set; }
 
 	/// <summary>
 	/// The exception message of the exception that was thrown on the server causing the request to fail
 	/// </summary>
-	public string Reason { get; internal set; }
+	public string? Reason { get; internal set; }
 
 // The following are all very specific to individual failures
 // Seeking to clean this up within Elasticsearch itself: https://github.com/elastic/elasticsearch/issues/27672
@@ -50,7 +50,7 @@ public class ErrorCause
 
 	//public long? BytesWanted { get; set; }
 
-	public ErrorCause CausedBy { get; internal set; }
+	public ErrorCause? CausedBy { get; internal set; }
 
 	//public int? Column { get; set; }
 
@@ -58,9 +58,9 @@ public class ErrorCause
 
 	//public bool? Grouped { get; set; }
 
-	public string Index { get; internal set; }
+	public string? Index { get; internal set; }
 
-	public string IndexUUID { get; internal set; }
+	public string? IndexUUID { get; internal set; }
 
 	//public string Language { get; set; }
 

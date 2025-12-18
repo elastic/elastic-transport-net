@@ -110,7 +110,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 	/// <param name="context">The associated <see cref="TransportContext"/>.</param>
 	/// <returns>A <see cref="Task"/> instance that is asynchronously serializing the object's content.</returns>
 	[SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Exception is passed as task result.")]
-	protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+	protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
 		SerializeToStreamAsync(stream, context, default);
 
 
@@ -119,21 +119,21 @@ internal sealed class BoundConfigurationContent : HttpContent
 #else
 	private
 #endif
-		async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+		async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
 	{
 		var source = CancellationTokenSource.CreateLinkedTokenSource(_token, cancellationToken);
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
 		var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask, source);
-		await _onStreamAvailableAsync(_boundConfiguration, _postData, wrappedStream, this, context, source.Token).ConfigureAwait(false);
+		await _onStreamAvailableAsync(_boundConfiguration, _postData, wrappedStream, this, context!, source.Token).ConfigureAwait(false);
 		await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 
 #if NET6_0_OR_GREATER
-	protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken _)
+	protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken _)
 	{
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
 		using var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
-		_onStreamAvailable(_boundConfiguration, _postData, wrappedStream, this, context);
+		_onStreamAvailable(_boundConfiguration, _postData, wrappedStream, this, context!);
 		//await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 #endif
@@ -152,25 +152,24 @@ internal sealed class BoundConfigurationContent : HttpContent
 
 	internal class CompleteTaskOnCloseStream : DelegatingStream
 	{
-		private readonly TaskCompletionSource<bool> _serializeToStreamTask;
+		private readonly TaskCompletionSource<bool>? _serializeToStreamTask;
 		private readonly CancellationTokenSource? _source;
 
-		public CompleteTaskOnCloseStream(Stream innerStream, TaskCompletionSource<bool> serializeToStreamTask, CancellationTokenSource? source = null)
+		public CompleteTaskOnCloseStream(Stream innerStream, TaskCompletionSource<bool>? serializeToStreamTask, CancellationTokenSource? source = null)
 			: base(innerStream)
 		{
-			Contract.Assert(serializeToStreamTask != null);
 			_serializeToStreamTask = serializeToStreamTask;
 			_source = source;
 		}
 
 		protected override void Dispose(bool disposing)
 		{
-			_serializeToStreamTask.TrySetResult(true);
+			_serializeToStreamTask?.TrySetResult(true);
 			base.Dispose();
 			_source?.Dispose();
 		}
 
-		public override void Close() => _serializeToStreamTask.TrySetResult(true);
+		public override void Close() => _serializeToStreamTask?.TrySetResult(true);
 	}
 
 	/// <summary>
@@ -224,8 +223,8 @@ internal sealed class BoundConfigurationContent : HttpContent
 		public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
 			_innerStream.ReadAsync(buffer, offset, count, cancellationToken);
 
-		public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-			_innerStream.BeginRead(buffer, offset, count, callback, state);
+		public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+			_innerStream.BeginRead(buffer, offset, count, callback!, state);
 
 		public override int EndRead(IAsyncResult asyncResult) => _innerStream.EndRead(asyncResult);
 
@@ -242,8 +241,8 @@ internal sealed class BoundConfigurationContent : HttpContent
 		public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
 			_innerStream.WriteAsync(buffer, offset, count, cancellationToken);
 
-		public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-			_innerStream.BeginWrite(buffer, offset, count, callback, state);
+		public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+			_innerStream.BeginWrite(buffer, offset, count, callback!, state);
 
 		public override void EndWrite(IAsyncResult asyncResult) => _innerStream.EndWrite(asyncResult);
 

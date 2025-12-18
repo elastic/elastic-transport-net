@@ -29,7 +29,7 @@ public sealed class UserAgent
 	{
 		var version = typeVersionLookup.Assembly
 			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-			.InformationalVersion;
+			?.InformationalVersion ?? "unknown";
 
 		var meta = string.Join("; ", metadata ?? []);
 		var assemblyName = typeVersionLookup.Assembly.GetName().Name;

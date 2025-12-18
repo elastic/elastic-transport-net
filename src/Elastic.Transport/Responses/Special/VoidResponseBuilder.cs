@@ -15,5 +15,5 @@ internal class VoidResponseBuilder : TypedResponseBuilder<VoidResponse>
 
 	protected override Task<VoidResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength,
 		CancellationToken cancellationToken = default) =>
-			Task.FromResult(VoidResponse.Default);
+			Task.FromResult<VoidResponse>(VoidResponse.Default);
 }

@@ -13,7 +13,7 @@ internal sealed class SerializerDiagnosticObserver : TypedDiagnosticObserver<Ser
 	/// <inheritdoc cref="SerializerDiagnosticObserver"/>
 	public SerializerDiagnosticObserver(
 		Action<KeyValuePair<string, SerializerRegistrationInformation>> onNext,
-		Action<Exception> onError = null,
-		Action onCompleted = null
+		Action<Exception>? onError = null,
+		Action? onCompleted = null
 	) : base(onNext, onError, onCompleted) { }
 }

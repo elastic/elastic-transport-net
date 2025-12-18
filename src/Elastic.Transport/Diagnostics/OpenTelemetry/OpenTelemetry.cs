@@ -53,7 +53,7 @@ public static class OpenTelemetry
 		}
 
 		var productSchemaVersion = string.Empty;
-		foreach (var attribute in activity.TagObjects)
+		foreach (var attribute in activity!.TagObjects)
 		{
 			if (attribute.Key.Equals(OpenTelemetryAttributes.DbElasticsearchSchemaUrl, StringComparison.Ordinal))
 			{

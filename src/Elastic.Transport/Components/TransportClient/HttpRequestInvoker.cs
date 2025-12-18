@@ -32,7 +32,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		+ $" please set {nameof(TransportConfigurationDescriptor.ConnectionLimit)} to -1 on your configuration."
 		+ $" this will cause the {nameof(HttpClientHandler.MaxConnectionsPerServer)} not to be set on {nameof(HttpClientHandler)}";
 
-	private string _expectedCertificateFingerprint;
+	private string? _expectedCertificateFingerprint;
 
 	/// <summary>
 	/// Create a new instance of the <see cref="HttpRequestInvoker"/>.
@@ -88,16 +88,16 @@ public class HttpRequestInvoker : IRequestInvoker
 		where TResponse : TransportResponse, new()
 	{
 		var client = GetClient(boundConfiguration);
-		HttpResponseMessage responseMessage;
+		HttpResponseMessage? responseMessage;
 		int? statusCode = null;
-		Stream responseStream = null;
-		Exception ex = null;
-		string contentType = null;
+		Stream? responseStream = null;
+		Exception? ex = null;
+		string? contentType = null;
 		long contentLength = -1;
-		IDisposable receivedResponse = DiagnosticSources.SingletonDisposable;
-		ReadOnlyDictionary<TcpState, int> tcpStats = null;
-		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
-		Dictionary<string, IEnumerable<string>> responseHeaders = null;
+		IDisposable? receivedResponse = DiagnosticSources.SingletonDisposable;
+		ReadOnlyDictionary<TcpState, int>? tcpStats = null;
+		ReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats = null;
+		Dictionary<string, IEnumerable<string>>? responseHeaders = null;
 
 		var beforeTicks = Stopwatch.GetTimestamp();
 
@@ -127,20 +127,20 @@ public class HttpRequestInvoker : IRequestInvoker
 					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs);
 
 				if (isAsync)
-					responseMessage = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+					responseMessage = await client.SendAsync(requestMessage!, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
 						.ConfigureAwait(false);
 				else
 #if NET6_0_OR_GREATER
-					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+					responseMessage = client.Send(requestMessage!, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 #else
-					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
+					responseMessage = client.SendAsync(requestMessage!, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
 #endif
 
 				receivedResponse = responseMessage;
 				statusCode = (int)responseMessage.StatusCode;
 			}
 
-			contentType = responseMessage.Content.Headers.ContentType?.ToString();
+			contentType = responseMessage!.Content.Headers.ContentType?.ToString();
 			responseHeaders = ParseHeaders(boundConfiguration, responseMessage);
 
 			if (responseMessage.Content != null)
@@ -160,7 +160,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			}
 
 			// We often won't have the content length as most responses are GZip compressed and the HttpContent ditches this when AutomaticDecompression is enabled.
-			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
+			contentLength = responseMessage!.Content!.Headers.ContentLength ?? -1;
 		}
 		catch (TaskCanceledException e)
 		{
@@ -177,18 +177,18 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			if (isAsync)
 				response = await ResponseFactory.CreateAsync<TResponse>
-					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
 						.ConfigureAwait(false);
 			else
 				response = ResponseFactory.Create<TResponse>
-						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats);
+						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
 			// resources can be linked such that their disposal is deferred.
 			if (response.LeaveOpen)
 			{
-				response.LinkedDisposables = [receivedResponse, responseStream];
+				response.LinkedDisposables = new[] { receivedResponse!, responseStream! };
 			}
 			else
 			{
@@ -268,7 +268,7 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		if (!boundConfiguration.ProxyAddress.IsNullOrEmpty())
 		{
-			var uri = new Uri(boundConfiguration.ProxyAddress);
+			var uri = new Uri(boundConfiguration.ProxyAddress!);
 			var proxy = new WebProxy(uri);
 			if (!string.IsNullOrEmpty(boundConfiguration.ProxyUsername))
 			{
@@ -283,16 +283,16 @@ public class HttpRequestInvoker : IRequestInvoker
 		var callback = boundConfiguration.ConnectionSettings?.ServerCertificateValidationCallback;
 		if (callback != null && handler.ServerCertificateCustomValidationCallback == null)
 		{
-			handler.ServerCertificateCustomValidationCallback = callback;
+			handler.ServerCertificateCustomValidationCallback = callback!;
 		}
-		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings.CertificateFingerprint))
+		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings?.CertificateFingerprint))
 		{
 			handler.ServerCertificateCustomValidationCallback = (request, certificate, chain, policyErrors) =>
 			{
 				if (certificate is null && chain is null) return false;
 
 				// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
-				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings.CertificateFingerprint);
+				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings!.CertificateFingerprint!);
 
 				// If there is a chain, check each certificate up to the root
 				if (chain is not null)
@@ -305,7 +305,7 @@ public class HttpRequestInvoker : IRequestInvoker
 				}
 
 				// Otherwise, check the certificate
-				return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
+				return CertificateHelpers.ValidateCertificateFingerprint(certificate!, _expectedCertificateFingerprint);
 			};
 		}
 
@@ -355,7 +355,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		//If user manually specifies an Authorization Header give it preference
 		if (boundConfiguration.Headers != null && boundConfiguration.Headers.HasKeys() && boundConfiguration.Headers.AllKeys.Contains("Authorization"))
 		{
-			var header = AuthenticationHeaderValue.Parse(boundConfiguration.Headers["Authorization"]);
+			var header = AuthenticationHeaderValue.Parse(boundConfiguration.Headers["Authorization"]!);
 			requestMessage.Headers.Authorization = header;
 			return;
 		}
@@ -370,8 +370,8 @@ public class HttpRequestInvoker : IRequestInvoker
 		// 2 - Specified on the request
 		// 3 - Specified at the global TransportClientSettings level (lowest precedence)
 
-		string parameters = null;
-		string scheme = null;
+		string? parameters = null;
+		string? scheme = null;
 		if (!endpoint.Uri.UserInfo.IsNullOrEmpty())
 		{
 			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(endpoint.Uri.UserInfo));
@@ -385,7 +385,7 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		if (parameters.IsNullOrEmpty()) return;
 
-		requestMessage.Headers.Authorization = new AuthenticationHeaderValue(scheme, parameters);
+		requestMessage.Headers.Authorization = new AuthenticationHeaderValue(scheme!, parameters);
 	}
 
 	private static HttpRequestMessage CreateRequestMessage(Endpoint endpoint, BoundConfiguration boundConfiguration, bool isAsync)
@@ -395,7 +395,7 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		if (boundConfiguration.Headers != null)
 			foreach (string key in boundConfiguration.Headers)
-				requestMessage.Headers.TryAddWithoutValidation(key, boundConfiguration.Headers.GetValues(key));
+				requestMessage.Headers.TryAddWithoutValidation(key, boundConfiguration.Headers.GetValues(key)!);
 
 		requestMessage.Headers.Connection.Clear();
 		requestMessage.Headers.ConnectionClose = false;
@@ -443,7 +443,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
 			if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
 			{
-				message.Content = new ByteArrayContent(postData.WrittenBytes);
+				message.Content = new ByteArrayContent(postData.WrittenBytes!);
 				stream.Dispose();
 			}
 			else
@@ -477,7 +477,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
 			if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
 			{
-				message.Content = new ByteArrayContent(postData.WrittenBytes);
+				message.Content = new ByteArrayContent(postData.WrittenBytes!);
 #if DOTNETCORE_2_1_OR_HIGHER
 					await stream.DisposeAsync().ConfigureAwait(false);
 #else

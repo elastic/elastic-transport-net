@@ -22,7 +22,7 @@ namespace Elastic.Transport;
 internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 {
 	private readonly Func<BoundConfiguration, HttpMessageHandler> _createHttpClientHandler;
-	private static readonly TimerCallback CleanupCallback = (s) => ((BoundConfigurationHttpClientFactory)s).CleanupTimer_Tick();
+	private static readonly TimerCallback CleanupCallback = (s) => ((BoundConfigurationHttpClientFactory)s!).CleanupTimer_Tick();
 	private readonly Func<int, BoundConfiguration, Lazy<ActiveHandlerTrackingEntry>> _entryFactory;
 
 	// Default time of 10s for cleanup seems reasonable.
@@ -37,7 +37,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 	//
 	// There's no need for the factory itself to be disposable. If you stop using it, eventually everything will
 	// get reclaimed.
-	private Timer _cleanupTimer;
+	private Timer? _cleanupTimer;
 	private readonly object _cleanupTimerLock;
 	private readonly object _cleanupActiveLock;
 
@@ -81,7 +81,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		};
 
 		_expiredHandlers = new ConcurrentQueue<ExpiredHandlerTrackingEntry>();
-		_expiryCallback = ExpiryTimer_Tick;
+		_expiryCallback = ExpiryTimer_Tick!;
 
 		_cleanupTimerLock = new object();
 		_cleanupActiveLock = new object();
@@ -130,9 +130,9 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		return new ActiveHandlerTrackingEntry(key, handler, boundConfiguration.DnsRefreshTimeout);
 	}
 
-	private void ExpiryTimer_Tick(object state)
+	private void ExpiryTimer_Tick(object? state)
 	{
-		var active = (ActiveHandlerTrackingEntry)state;
+		var active = (ActiveHandlerTrackingEntry)state!;
 
 		// The timer callback should be the only one removing from the active collection. If we can't find
 		// our entry in the collection, then this is a bug.
@@ -141,7 +141,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 			Interlocked.Increment(ref _removedHandlers);
 		Debug.Assert(removed, "Entry not found. We should always be able to remove the entry");
 		// ReSharper disable once RedundantNameQualifier
-		Debug.Assert(object.ReferenceEquals(active, found.Value), "Different entry found. The entry should not have been replaced");
+		Debug.Assert(found is not null && object.ReferenceEquals(active, found.Value), "Different entry found. The entry should not have been replaced");
 
 		// At this point the handler is no longer 'active' and will not be handed out to any new clients.
 		// However we haven't dropped our strong reference to the handler, so we can't yet determine if
@@ -206,11 +206,11 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 				_expiredHandlers.TryDequeue(out var entry);
 				Debug.Assert(entry != null, "Entry was null, we should always get an entry back from TryDequeue");
 
-				if (entry.CanDispose)
+				if (entry!.CanDispose)
 				{
 					try
 					{
-						entry.InnerHandler.Dispose();
+						entry.InnerHandler?.Dispose();
 					}
 					catch (Exception)
 					{
@@ -251,7 +251,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 				_expiredHandlers.TryDequeue(out var entry);
 				try
 				{
-					entry?.InnerHandler.Dispose();
+					entry!.InnerHandler?.Dispose();
 				}
 				catch (Exception)
 				{

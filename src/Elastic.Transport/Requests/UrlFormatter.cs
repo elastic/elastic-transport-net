@@ -37,7 +37,7 @@ public sealed class UrlFormatter : IFormatProvider, ICustomFormatter
 	}
 
 	/// <inheritdoc cref="IFormatProvider.GetFormat"/>
-	public object? GetFormat(Type formatType) => formatType == typeof(ICustomFormatter) ? this : null;
+	public object? GetFormat(Type? formatType) => formatType == typeof(ICustomFormatter) ? this : null;
 
 	/// <inheritdoc cref="CreateString(object, ITransportConfiguration)"/>
 	public string CreateString(object? value) => CreateString(value, _settings);

@@ -131,7 +131,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_clientCertificates = config.ClientCertificates;
 		_connectionLimit = config.ConnectionLimit;
 		_contentType = config.ContentType;
-		_dateTimeProvider = config.DateTimeProvider;
+		_dateTimeProvider = config.DateTimeProvider ?? DefaultDateTimeProvider.Default;
 		_deadTimeout = config.DeadTimeout;
 		_disableAuditTrail = config.DisableAuditTrail;
 		_disableAutomaticProxyDetection = config.DisableAutomaticProxyDetection;
@@ -158,7 +158,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_opaqueId = config.OpaqueId;
 		_parseAllHeaders = config.ParseAllHeaders;
 		_pingTimeout = config.PingTimeout;
-		_pipelineProvider = config.PipelineProvider;
+		_pipelineProvider = config.PipelineProvider ?? DefaultRequestPipelineFactory.Default;
 		_prettyJson = config.PrettyJson;
 		_productRegistration = config.ProductRegistration;
 		_proxyAddress = config.ProxyAddress;
@@ -179,7 +179,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_statusCodeToResponseSuccess = config.StatusCodeToResponseSuccess;
 		_throwExceptions = config.ThrowExceptions;
 		_transferEncodingChunked = config.TransferEncodingChunked;
-		_userAgent = config.UserAgent;
+		_userAgent = config.UserAgent ?? Transport.UserAgent.Create(config.ProductRegistration.Name, config.ProductRegistration.GetType());
 	}
 
 	private readonly SemaphoreSlim _bootstrapLock;
@@ -250,7 +250,8 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	private List<IResponseBuilder>? _responseBuilders;
 
 	SemaphoreSlim ITransportConfiguration.BootstrapLock => _bootstrapLock;
-	IRequestInvoker ITransportConfiguration.RequestInvoker => _requestInvoker;
+	// _requestInvoker is always initialized in constructors; null-forgiving used because field is nullable for copy constructor compatibility
+	IRequestInvoker ITransportConfiguration.RequestInvoker => _requestInvoker!;
 	int ITransportConfiguration.ConnectionLimit => _connectionLimit;
 	NodePool ITransportConfiguration.NodePool => _nodePool;
 	ProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;

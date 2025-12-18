@@ -29,7 +29,7 @@ public class TransportSerializerOptionsProvider : IJsonSerializerOptionsProvider
 	private readonly Action<JsonSerializerOptions>? _mutateOptions;
 
 	/// <inheritdoc cref="IJsonSerializerOptionsProvider"/>
-	public JsonSerializerOptions? CreateJsonSerializerOptions()
+	public JsonSerializerOptions CreateJsonSerializerOptions()
 	{
 		var options = new JsonSerializerOptions();
 

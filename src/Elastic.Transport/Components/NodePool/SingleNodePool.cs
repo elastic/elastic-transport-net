@@ -35,9 +35,6 @@ public class SingleNodePool : NodePool
 	public override bool SupportsReseeding => false;
 
 	/// <inheritdoc />
-	public override bool UsingSsl { get; protected set; }
-
-	/// <inheritdoc />
 	public override IEnumerable<Node> CreateView(Auditor? auditor) => Nodes;
 
 	/// <inheritdoc />

@@ -58,7 +58,8 @@ public sealed class CloudNodePool : SingleNodePool
 	private string ClusterName { get; }
 
 	/// <inheritdoc cref="AuthorizationHeader"/>
-	public AuthorizationHeader AuthenticationHeader { get; }
+	// Initialized by all public constructors after calling the private constructor
+	public AuthorizationHeader AuthenticationHeader { get; } = null!;
 
 	private static ParsedCloudId CreateCloudId(Uri uri)
 	{

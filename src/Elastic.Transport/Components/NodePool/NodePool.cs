@@ -66,7 +66,7 @@ public abstract class NodePool : IDisposable
 	/// <summary>
 	/// Whether SSL/TLS is being used.
 	/// </summary>
-	public abstract bool UsingSsl { get; protected set; }
+	public bool UsingSsl { get; protected set; }
 
 	/// <summary>
 	///

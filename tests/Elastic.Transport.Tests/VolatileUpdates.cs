@@ -44,7 +44,7 @@ namespace Elastic.Transport.Tests
 		private void AssertCreateView(NodePool pool)
 		{
 			var threads = Enumerable.Range(0, 50)
-				.Select(i => CreateReadAndUpdateThread(pool))
+				.Select(_ => CreateReadAndUpdateThread(pool))
 				.ToList();
 
 			foreach (var t in threads) t.Start();

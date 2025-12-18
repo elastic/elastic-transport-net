@@ -14,10 +14,11 @@ namespace Elastic.Transport;
 /// </summary>
 public sealed class Node : IEquatable<Node>
 {
-	private IReadOnlyCollection<string> _features;
+	private IReadOnlyCollection<string> _features = EmptyReadOnly<string>.Collection;
+	private HashSet<string> _featureSet = [];
 
 	/// <inheritdoc cref="Node"/>
-	public Node(Uri uri, IEnumerable<string> features = null)
+	public Node(Uri uri, IEnumerable<string>? features = null)
 	{
 		// This make sures that a node can be rooted at a path to. Without the trailing slash Uri's will remove `instance` from
 		// http://my-saas-provider.com/instance
@@ -32,8 +33,6 @@ public sealed class Node : IEquatable<Node>
 			Features = features?.ToList().AsReadOnly() ?? EmptyReadOnly<string>.Collection;
 		IsResurrected = true;
 	}
-
-	private HashSet<string> _featureSet;
 
 	/// <summary>
 	/// A readonly collection backed by an <see cref="HashSet{T}"/> that signals what features are enabled on the node.
@@ -56,10 +55,10 @@ public sealed class Node : IEquatable<Node>
 	public IReadOnlyDictionary<string, object> Settings { get; set; } = EmptyReadOnly<string, object>.Dictionary;
 
 	/// <summary>The id of the node, defaults to null when unknown/unspecified</summary>
-	public string Id { get; internal set; }
+	public string? Id { get; internal set; }
 
 	/// <summary>The name of the node, defaults to null when unknown/unspecified</summary>
-	public string Name { get; set; }
+	public string? Name { get; set; }
 
 	/// <summary> The base endpoint where the node can be reached </summary>
 	public Uri Uri { get; }
@@ -128,7 +127,7 @@ public sealed class Node : IEquatable<Node>
 		};
 
 	/// <summary> Two <see cref="Node"/>'s that point to the same <see cref="Uri"/> are considered equal</summary>
-	public bool Equals(Node other)
+	public bool Equals(Node? other)
 	{
 		if (ReferenceEquals(null, other)) return false;
 		if (ReferenceEquals(this, other)) return true;
@@ -148,7 +147,7 @@ public sealed class Node : IEquatable<Node>
 	public static implicit operator Node(Uri uri) => new(uri);
 
 	/// <inheritdoc cref="Equals(Node)"/>
-	public override bool Equals(object obj)
+	public override bool Equals(object? obj)
 	{
 		if (ReferenceEquals(null, obj)) return false;
 		if (ReferenceEquals(this, obj)) return true;
