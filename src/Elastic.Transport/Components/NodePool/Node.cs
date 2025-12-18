@@ -129,7 +129,7 @@ public sealed class Node : IEquatable<Node>
 	/// <summary> Two <see cref="Node"/>'s that point to the same <see cref="Uri"/> are considered equal</summary>
 	public bool Equals(Node? other)
 	{
-		if (ReferenceEquals(null, other))
+		if (other is null)
 			return false;
 		if (ReferenceEquals(this, other))
 			return true;
@@ -140,7 +140,7 @@ public sealed class Node : IEquatable<Node>
 	/// <inheritdoc cref="Equals(Node)"/>
 	public static bool operator ==(Node left, Node right) =>
 		// ReSharper disable once MergeConditionalExpression
-		ReferenceEquals(left, null) ? ReferenceEquals(right, null) : left.Equals(right);
+		left is null ? right is null : left.Equals(right);
 
 	/// <inheritdoc cref="Equals(Node)"/>
 	public static bool operator !=(Node left, Node right) => !(left == right);
@@ -151,7 +151,7 @@ public sealed class Node : IEquatable<Node>
 	/// <inheritdoc cref="Equals(Node)"/>
 	public override bool Equals(object? obj)
 	{
-		if (ReferenceEquals(null, obj))
+		if (obj is null)
 			return false;
 		if (ReferenceEquals(this, obj))
 			return true;

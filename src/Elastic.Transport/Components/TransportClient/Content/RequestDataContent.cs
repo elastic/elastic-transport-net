@@ -76,7 +76,11 @@ internal sealed class BoundConfigurationContent : HttpContent
 		if (boundConfiguration.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
 
+#if NET6_0_OR_GREATER
 		_onStreamAvailable = OnStreamAvailable;
+#else
+		_onStreamAvailable = null!;
+#endif
 		_onStreamAvailableAsync = OnStreamAvailableAsync;
 	}
 

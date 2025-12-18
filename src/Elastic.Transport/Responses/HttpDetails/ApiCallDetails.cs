@@ -112,12 +112,12 @@ public sealed class ApiCallDetails
 
 	internal bool SuccessOrKnownError =>
 		HasSuccessfulStatusCodeAndExpectedContentType
-			|| HttpStatusCode >= 400
+			|| (HttpStatusCode >= 400
 				&& HttpStatusCode < 599
 				&& HttpStatusCode != 504 //Gateway timeout needs to be retried
 				&& HttpStatusCode != 503 //service unavailable needs to be retried
 				&& HttpStatusCode != 502
-				&& HasExpectedContentType;
+				&& HasExpectedContentType);
 
 	/// <summary>
 	/// The <see cref="Uri"/> of the request.

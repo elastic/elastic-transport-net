@@ -35,7 +35,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 {
 	private static readonly object Lock = new();
 
-	private static byte[]? _defaultResponseBytes;
+	private static byte[]? DefaultResponseBytes;
 
 	private VirtualCluster _cluster;
 	private readonly TestableDateTimeProvider _dateTimeProvider;
@@ -306,16 +306,16 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		if (rule.ReturnResponse != null)
 			return rule.ReturnResponse;
 
-		if (_defaultResponseBytes != null)
-			return _defaultResponseBytes;
+		if (DefaultResponseBytes != null)
+			return DefaultResponseBytes;
 
 		var response = DefaultResponse;
 		using (var ms = TransportConfiguration.DefaultMemoryStreamFactory.Create())
 		{
 			LowLevelRequestResponseSerializer.Instance.Serialize(response, ms);
-			_defaultResponseBytes = ms.ToArray();
+			DefaultResponseBytes = ms.ToArray();
 		}
-		return _defaultResponseBytes;
+		return DefaultResponseBytes;
 	}
 
 	private class State

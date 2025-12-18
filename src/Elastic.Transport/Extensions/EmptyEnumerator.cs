@@ -10,7 +10,7 @@ namespace Elastic.Transport.Extensions;
 internal struct EmptyEnumerator<T> : IEnumerator<T>
 {
 	public readonly T Current => default!;
-	object IEnumerator.Current => Current!;
+	readonly object IEnumerator.Current => Current!;
 	public readonly bool MoveNext() => false;
 
 	public readonly void Reset()

@@ -22,7 +22,7 @@ internal static class EmptyReadOnlyExtensions
 internal static class EmptyReadOnly<TElement>
 {
 	public static readonly IReadOnlyCollection<TElement> Collection = new ReadOnlyCollection<TElement>(Array.Empty<TElement>());
-	public static readonly IReadOnlyList<TElement> List = new List<TElement>();
+	public static readonly IReadOnlyList<TElement> List = [];
 }
 
 internal static class EmptyReadOnly<TKey, TValue> where TKey : notnull

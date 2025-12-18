@@ -31,7 +31,6 @@ public class TransferEncodingChunkedTests(TestServerFixture instance) : Assembly
 
 	private ITransport Setup(
 		TrackingRequestInvoker requestInvoker,
-		Uri proxyAddress = null,
 		bool? disableAutomaticProxyDetection = null,
 		bool httpCompression = false,
 		bool transferEncodingChunked = false

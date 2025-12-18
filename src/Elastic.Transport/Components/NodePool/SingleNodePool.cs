@@ -16,7 +16,7 @@ public class SingleNodePool : NodePool
 	{
 		var node = new Node(uri);
 		UsingSsl = node.Uri.Scheme == "https";
-		Nodes = new List<Node> { node };
+		Nodes = [node];
 	}
 
 	/// <inheritdoc />
