@@ -71,10 +71,9 @@ public abstract class ResponseFactory
 		var allowedStatusCodes = boundConfiguration.AllowedStatusCodes;
 		if (statusCode.HasValue)
 		{
-			if (allowedStatusCodes.Contains(-1) || allowedStatusCodes.Contains(statusCode.Value))
-				hasSuccessfulStatusCode = true;
-			else
-				hasSuccessfulStatusCode = boundConfiguration.ConnectionSettings
+			hasSuccessfulStatusCode = allowedStatusCodes.Contains(-1) || allowedStatusCodes.Contains(statusCode.Value)
+				? true
+				: boundConfiguration.ConnectionSettings
 					.StatusCodeToResponseSuccess(endpoint.Method, statusCode.Value);
 		}
 

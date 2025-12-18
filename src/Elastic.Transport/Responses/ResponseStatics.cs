@@ -27,7 +27,7 @@ internal static class ResponseStatics
 	public static string DebugInformationBuilder(ApiCallDetails r, StringBuilder sb)
 	{
 
-		sb.AppendLine($"# Audit trail of this API call:");
+		_ = sb.AppendLine($"# Audit trail of this API call:");
 
 		var auditTrail = (r.AuditTrail ?? Enumerable.Empty<Audit>()).ToList();
 
@@ -37,51 +37,51 @@ internal static class ResponseStatics
 		}
 		else
 		{
-			sb.AppendLine("<Audit trail not captured. Set DisableAuditTrail(false) on TransportConfiguration to capture it.>");
+			_ = sb.AppendLine("<Audit trail not captured. Set DisableAuditTrail(false) on TransportConfiguration to capture it.>");
 		}
 
 		if (r.OriginalException != null)
-			sb.AppendLine($"# OriginalException: {r.OriginalException}");
+			_ = sb.AppendLine($"# OriginalException: {r.OriginalException}");
 
 		if (!r.TransportConfiguration.DisableAuditTrail ?? true)
 			DebugAuditTrailExceptions(auditTrail, sb);
 
 		var response = r.ResponseBodyInBytes?.Utf8String() ?? ResponseAlreadyCaptured;
 		var request = r.RequestBodyInBytes?.Utf8String() ?? RequestAlreadyCaptured;
-		sb.AppendLine($"# Request:{Environment.NewLine}{request}");
-		sb.AppendLine($"# Response:{Environment.NewLine}{response}");
+		_ = sb.AppendLine($"# Request:{Environment.NewLine}{request}");
+		_ = sb.AppendLine($"# Response:{Environment.NewLine}{response}");
 
 		if (r.TcpStats != null)
 		{
-			sb.AppendLine("# TCP states:");
+			_ = sb.AppendLine("# TCP states:");
 			foreach (var stat in r.TcpStats)
 			{
-				sb.Append("  ");
-				sb.Append(stat.Key);
-				sb.Append(": ");
-				sb.AppendLine($"{stat.Value}");
+				_ = sb.Append("  ");
+				_ = sb.Append(stat.Key);
+				_ = sb.Append(": ");
+				_ = sb.AppendLine($"{stat.Value}");
 			}
-			sb.AppendLine();
+			_ = sb.AppendLine();
 		}
 
 		if (r.ThreadPoolStats != null)
 		{
-			sb.AppendLine("# ThreadPool statistics:");
+			_ = sb.AppendLine("# ThreadPool statistics:");
 			foreach (var stat in r.ThreadPoolStats)
 			{
-				sb.Append("  ");
-				sb.Append(stat.Key);
-				sb.AppendLine(": ");
-				sb.Append("    Busy: ");
-				sb.AppendLine($"{stat.Value.Busy}");
-				sb.Append("    Free: ");
-				sb.AppendLine($"{stat.Value.Free}");
-				sb.Append("    Min: ");
-				sb.AppendLine($"{stat.Value.Min}");
-				sb.Append("    Max: ");
-				sb.AppendLine($"{stat.Value.Max}");
+				_ = sb.Append("  ");
+				_ = sb.Append(stat.Key);
+				_ = sb.AppendLine(": ");
+				_ = sb.Append("    Busy: ");
+				_ = sb.AppendLine($"{stat.Value.Busy}");
+				_ = sb.Append("    Free: ");
+				_ = sb.AppendLine($"{stat.Value.Free}");
+				_ = sb.Append("    Min: ");
+				_ = sb.AppendLine($"{stat.Value.Min}");
+				_ = sb.Append("    Max: ");
+				_ = sb.AppendLine($"{stat.Value.Max}");
 			}
-			sb.AppendLine();
+			_ = sb.AppendLine();
 		}
 
 		return sb.ToString();
@@ -98,7 +98,7 @@ internal static class ResponseStatics
 
 		var auditExceptions = auditTrail.Select((audit, i) => new { audit, i }).Where(a => a.audit.Exception != null);
 		foreach (var a in auditExceptions)
-			sb.AppendLine($"# Audit exception in step {a.i + 1} {a.audit.Event.ToStringFast()}:{Environment.NewLine}{a.audit.Exception}");
+			_ = sb.AppendLine($"# Audit exception in step {a.i + 1} {a.audit.Event.ToStringFast()}:{Environment.NewLine}{a.audit.Exception}");
 	}
 
 	/// <summary>
@@ -113,16 +113,13 @@ internal static class ResponseStatics
 		foreach (var a in auditTrail.Select((a, i) => new { a, i }))
 		{
 			var audit = a.a;
-			sb.Append($" - [{a.i + 1}] {audit.Event.ToStringFast()}:");
+			_ = sb.Append($" - [{a.i + 1}] {audit.Event.ToStringFast()}:");
 
 			AuditNodeUrl(sb, audit);
 
 			if (audit.Exception != null)
-				sb.Append($" Exception: {audit.Exception.GetType().Name}");
-			if (audit.Ended == default)
-				sb.AppendLine();
-			else
-				sb.AppendLine($" Took: {audit.Ended - audit.Started}");
+				_ = sb.Append($" Exception: {audit.Exception.GetType().Name}");
+			_ = audit.Ended == default ? sb.AppendLine() : sb.AppendLine($" Took: {audit.Ended - audit.Started}");
 		}
 	}
 
@@ -140,6 +137,6 @@ internal static class ResponseStatics
 			};
 			uri = builder.Uri;
 		}
-		sb.Append($" Node: {uri}");
+		_ = sb.Append($" Node: {uri}");
 	}
 }

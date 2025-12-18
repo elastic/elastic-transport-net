@@ -11,124 +11,123 @@ using FluentAssertions;
 using Xunit;
 using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
 
-namespace Elastic.Transport.Tests
+namespace Elastic.Transport.Tests;
+
+public class VirtualClusterTests
 {
-	public class VirtualClusterTests
+	[Fact]
+	public async Task ThrowsExceptionWithNoRules()
 	{
-		[Fact]
-		public async Task ThrowsExceptionWithNoRules()
-		{
-			var audit = new Auditor(() => Virtual.Elasticsearch
-				.Bootstrap(1)
-				.StaticNodePool()
-				.Settings(s => s.DisablePing().EnableDebugMode())
-			);
-			var e = await Assert.ThrowsAsync<UnexpectedTransportException>(
-				async () => await audit.TraceCalls(new ClientCall()));
+		var audit = new Auditor(() => Virtual.Elasticsearch
+			.Bootstrap(1)
+			.StaticNodePool()
+			.Settings(s => s.DisablePing().EnableDebugMode())
+		);
+		var e = await Assert.ThrowsAsync<UnexpectedTransportException>(
+			async () => await audit.TraceCalls(new ClientCall()));
 
-			e.Message.Should().Contain("No ClientCalls defined for the current VirtualCluster, so we do not know how to respond");
-		}
+		_ = e.Message.Should().Contain("No ClientCalls defined for the current VirtualCluster, so we do not know how to respond");
+	}
 
-		[Fact]
-		public async Task ThrowsExceptionAfterDepleedingRules()
-		{
-			var audit = new Auditor(() => Virtual.Elasticsearch
-				.Bootstrap(1)
-				.ClientCalls(r => r.Succeeds(TimesHelper.Once).ReturnResponse(new { x = 1 }))
-				.StaticNodePool()
-				.Settings(s => s.DisablePing().EnableDebugMode())
-			);
-			audit = await audit.TraceCalls(
-				new ClientCall {
+	[Fact]
+	public async Task ThrowsExceptionAfterDepleedingRules()
+	{
+		var audit = new Auditor(() => Virtual.Elasticsearch
+			.Bootstrap(1)
+			.ClientCalls(r => r.Succeeds(TimesHelper.Once).ReturnResponse(new { x = 1 }))
+			.StaticNodePool()
+			.Settings(s => s.DisablePing().EnableDebugMode())
+		);
+		audit = await audit.TraceCalls(
+			new ClientCall {
 
-					{ HealthyResponse, 9200, response =>
-					{
-						response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
-						response.ApiCallDetails.HttpStatusCode.Should().Be(200);
-						response.ApiCallDetails.DebugInformation.Should().Contain("x\":1");
-					} },
-				}
-			);
-			var e = await Assert.ThrowsAsync<UnexpectedTransportException>(
-				async () => await audit.TraceCalls(new ClientCall()));
+				{ HealthyResponse, 9200, response =>
+				{
+					_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+					_ = response.ApiCallDetails.HttpStatusCode.Should().Be(200);
+					_ = response.ApiCallDetails.DebugInformation.Should().Contain("x\":1");
+				} },
+			}
+		);
+		var e = await Assert.ThrowsAsync<UnexpectedTransportException>(
+			async () => await audit.TraceCalls(new ClientCall()));
 
-			e.Message.Should().Contain("No global or port specific ClientCalls rule (9200) matches any longer after 2 calls in to the cluster");
-		}
+		_ = e.Message.Should().Contain("No global or port specific ClientCalls rule (9200) matches any longer after 2 calls in to the cluster");
+	}
 
-		[Fact]
-		public async Task AGlobalRuleStaysValidForever()
-		{
-			var audit = new Auditor(() => Virtual.Elasticsearch
-				.Bootstrap(1)
-				.ClientCalls(c => c.SucceedAlways())
-				.StaticNodePool()
-				.Settings(s => s.DisablePing())
-			);
+	[Fact]
+	public async Task AGlobalRuleStaysValidForever()
+	{
+		var audit = new Auditor(() => Virtual.Elasticsearch
+			.Bootstrap(1)
+			.ClientCalls(c => c.SucceedAlways())
+			.StaticNodePool()
+			.Settings(s => s.DisablePing())
+		);
 
-			_ = await audit.TraceCalls(
-				Enumerable.Range(0, 1000)
-					.Select(i => new ClientCall { { HealthyResponse, 9200 }, })
-					.ToArray()
-			);
+		_ = await audit.TraceCalls(
+			Enumerable.Range(0, 1000)
+				.Select(i => new ClientCall { { HealthyResponse, 9200 }, })
+				.ToArray()
+		);
 
-		}
+	}
 
-		[Fact]
-		public async Task RulesAreIgnoredAfterBeingExecuted()
-		{
-			var audit = new Auditor(() => Virtual.Elasticsearch
-				.Bootstrap(1)
-				.ClientCalls(r => r.Succeeds(TimesHelper.Once).ReturnResponse(new { x = 1 }))
-				.ClientCalls(r => r.Fails(TimesHelper.Once, 500).ReturnResponse(new { x = 2 }))
-				.ClientCalls(r => r.Fails(TimesHelper.Twice, 400).ReturnResponse(new { x = 3 }))
-				.ClientCalls(r => r.Succeeds(TimesHelper.Once).ReturnResponse(new { x = 4 }))
-				.StaticNodePool()
-				.Settings(s => s.DisablePing().EnableDebugMode())
-			);
-			_ = await audit.TraceCalls(
-				new ClientCall {
+	[Fact]
+	public async Task RulesAreIgnoredAfterBeingExecuted()
+	{
+		var audit = new Auditor(() => Virtual.Elasticsearch
+			.Bootstrap(1)
+			.ClientCalls(r => r.Succeeds(TimesHelper.Once).ReturnResponse(new { x = 1 }))
+			.ClientCalls(r => r.Fails(TimesHelper.Once, 500).ReturnResponse(new { x = 2 }))
+			.ClientCalls(r => r.Fails(TimesHelper.Twice, 400).ReturnResponse(new { x = 3 }))
+			.ClientCalls(r => r.Succeeds(TimesHelper.Once).ReturnResponse(new { x = 4 }))
+			.StaticNodePool()
+			.Settings(s => s.DisablePing().EnableDebugMode())
+		);
+		_ = await audit.TraceCalls(
+			new ClientCall {
 
-					{ HealthyResponse, 9200, response =>
-					{
-						response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
-						response.ApiCallDetails.HttpStatusCode.Should().Be(200);
-						response.ApiCallDetails.DebugInformation.Should().Contain("x\":1");
-					} },
-				},
-				new ClientCall {
+				{ HealthyResponse, 9200, response =>
+				{
+					_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+					_ = response.ApiCallDetails.HttpStatusCode.Should().Be(200);
+					_ = response.ApiCallDetails.DebugInformation.Should().Contain("x\":1");
+				} },
+			},
+			new ClientCall {
 
-					{ BadResponse, 9200, response =>
-					{
-						response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeFalse();
-						response.ApiCallDetails.HttpStatusCode.Should().Be(500);
-						response.ApiCallDetails.DebugInformation.Should().Contain("x\":2");
-					} },
-				},
-				new ClientCall {
+				{ BadResponse, 9200, response =>
+				{
+					_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeFalse();
+					_ = response.ApiCallDetails.HttpStatusCode.Should().Be(500);
+					_ = response.ApiCallDetails.DebugInformation.Should().Contain("x\":2");
+				} },
+			},
+			new ClientCall {
 
-					{ BadResponse, 9200, response =>
-					{
-						response.ApiCallDetails.HttpStatusCode.Should().Be(400);
-						response.ApiCallDetails.DebugInformation.Should().Contain("x\":3");
-					} },
-				},
-				new ClientCall {
+				{ BadResponse, 9200, response =>
+				{
+					_ = response.ApiCallDetails.HttpStatusCode.Should().Be(400);
+					_ = response.ApiCallDetails.DebugInformation.Should().Contain("x\":3");
+				} },
+			},
+			new ClientCall {
 
-					{ BadResponse, 9200, response =>
-					{
-						response.ApiCallDetails.HttpStatusCode.Should().Be(400);
-						response.ApiCallDetails.DebugInformation.Should().Contain("x\":3");
-					} },
-				},
-				new ClientCall {
+				{ BadResponse, 9200, response =>
+				{
+					_ = response.ApiCallDetails.HttpStatusCode.Should().Be(400);
+					_ = response.ApiCallDetails.DebugInformation.Should().Contain("x\":3");
+				} },
+			},
+			new ClientCall {
 
-					{ HealthyResponse, 9200, response =>
-					{
-						response.ApiCallDetails.HttpStatusCode.Should().Be(200);
-						response.ApiCallDetails.DebugInformation.Should().Contain("x\":4");
-					} },
-				}
-			);
-		}
+				{ HealthyResponse, 9200, response =>
+				{
+					_ = response.ApiCallDetails.HttpStatusCode.Should().Be(200);
+					_ = response.ApiCallDetails.DebugInformation.Should().Contain("x\":4");
+				} },
+			}
+		);
 	}
 }

@@ -2,11 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO;
-using System.Text.Json;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Elastic.Transport.Extensions;

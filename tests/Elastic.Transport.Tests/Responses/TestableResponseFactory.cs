@@ -19,70 +19,70 @@ public class TestableResponseFactoryTests
 	public void CreateSuccessfulResponseShouldBeValid()
 	{
 		var response = TestableResponseFactory.CreateSuccessfulResponse<TestableResponse>(new(), 200);
-		response.IsValidResponse.Should().BeTrue();
+		_ = response.IsValidResponse.Should().BeTrue();
 	}
 
 	[Fact]
 	public void CreateSuccessfulResponseApiCallDetailsShouldContainStatusCode()
 	{
 		var response = TestableResponseFactory.CreateSuccessfulResponse<TestableResponse>(new(), 200);
-		response.ApiCallDetails.HttpStatusCode.Should().Be(200);
+		_ = response.ApiCallDetails.HttpStatusCode.Should().Be(200);
 	}
 
 	[Fact]
 	public void CreateSuccessfulResponseApiCallDetailsShouldBeSuccessful()
 	{
 		var response = TestableResponseFactory.CreateSuccessfulResponse<TestableResponse>(new(), 200);
-		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+		_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
 
 	[Fact]
 	public void CreateResponseGivenBadResponseShouldNotBeValid()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
-		response.IsValidResponse.Should().BeFalse();
+		_ = response.IsValidResponse.Should().BeFalse();
 	}
 
 	[Fact]
 	public void CreateResponseApiCallDetailsShouldContainStatusCode()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
-		response.ApiCallDetails.HttpStatusCode.Should().Be(400);
+		_ = response.ApiCallDetails.HttpStatusCode.Should().Be(400);
 	}
 
 	[Fact]
 	public void CreateResponseApiCallDetailsShouldNotBeSuccessful()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
-		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeFalse();
+		_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeFalse();
 	}
 
 	[Fact]
 	public void CreateResponseResponseShouldIncludeDebugInfo()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
-		response.DebugInformation.Should().NotBeNull();
+		_ = response.DebugInformation.Should().NotBeNull();
 	}
 
 	[Fact]
 	public void CreateResponseOriginalExceptionShouldBeNull()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
-		response.TryGetOriginalException(out var exception);
-		exception.Should().BeNull();
+		_ = response.TryGetOriginalException(out var exception);
+		_ = exception.Should().BeNull();
 	}
 
 	[Fact]
 	public void CreateResponseElasticsearchServerErrorShouldBeNull()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
-		response.ElasticsearchServerError.Should().BeNull();
+		_ = response.ElasticsearchServerError.Should().BeNull();
 	}
 
 	[Fact]
 	public void CreateResponseElasticsearchWarningsShouldBeEmpty()
 	{
 		var response = TestableResponseFactory.CreateResponse<TestableResponse>(new(), 400, false);
-		response.ElasticsearchWarnings.Should().BeEmpty();
+		_ = response.ElasticsearchWarnings.Should().BeEmpty();
 	}
 }

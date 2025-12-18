@@ -178,17 +178,12 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		try
 		{
-			if (isAsync)
-			{
-				response = await ResponseFactory.CreateAsync<TResponse>
+			response = isAsync
+				? await ResponseFactory.CreateAsync<TResponse>
 						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-					.ConfigureAwait(false);
-			}
-			else
-			{
-				response = ResponseFactory.Create<TResponse>
+					.ConfigureAwait(false)
+				: ResponseFactory.Create<TResponse>
 					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
-			}
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
@@ -221,7 +216,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 			{
-				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+				responseHeaders ??= [];
 				responseHeaders.Add(headerToParse, values);
 			}
 		}
@@ -230,7 +225,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			foreach (var header in responseMessage.Headers)
 			{
-				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+				responseHeaders ??= [];
 				responseHeaders.Add(header.Key, header.Value);
 			}
 		}
@@ -240,7 +235,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			{
 				if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 				{
-					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+					responseHeaders ??= [];
 					responseHeaders.Add(headerToParse, values);
 				}
 			}
@@ -412,18 +407,18 @@ public class HttpRequestInvoker : IRequestInvoker
 		if (boundConfiguration.Headers != null)
 		{
 			foreach (string key in boundConfiguration.Headers)
-				requestMessage.Headers.TryAddWithoutValidation(key, boundConfiguration.Headers.GetValues(key)!);
+				_ = requestMessage.Headers.TryAddWithoutValidation(key, boundConfiguration.Headers.GetValues(key)!);
 		}
 
 		requestMessage.Headers.Connection.Clear();
 		requestMessage.Headers.ConnectionClose = false;
-		requestMessage.Headers.TryAddWithoutValidation("Accept", boundConfiguration.Accept);
+		_ = requestMessage.Headers.TryAddWithoutValidation("Accept", boundConfiguration.Accept);
 
 		var userAgent = boundConfiguration.UserAgent?.ToString();
 		if (!string.IsNullOrWhiteSpace(userAgent))
 		{
 			requestMessage.Headers.UserAgent.Clear();
-			requestMessage.Headers.UserAgent.TryParseAdd(userAgent);
+			_ = requestMessage.Headers.UserAgent.TryParseAdd(userAgent);
 		}
 
 		if (!boundConfiguration.RunAs.IsNullOrEmpty())
@@ -436,7 +431,7 @@ public class HttpRequestInvoker : IRequestInvoker
 				var value = producer.ProduceHeaderValue(boundConfiguration, isAsync);
 
 				if (!string.IsNullOrEmpty(value))
-					requestMessage.Headers.TryAddWithoutValidation(producer.HeaderName, value);
+					_ = requestMessage.Headers.TryAddWithoutValidation(producer.HeaderName, value);
 			}
 		}
 
@@ -473,7 +468,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (boundConfiguration.HttpCompression)
 				message.Content.Headers.ContentEncoding.Add("gzip");
 
-			message.Content.Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
+			_ = message.Content.Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 		}
 	}
 
@@ -515,24 +510,15 @@ public class HttpRequestInvoker : IRequestInvoker
 		}
 	}
 
-	private static System.Net.Http.HttpMethod ConvertHttpMethod(HttpMethod httpMethod)
+	private static System.Net.Http.HttpMethod ConvertHttpMethod(HttpMethod httpMethod) => httpMethod switch
 	{
-		switch (httpMethod)
-		{
-			case HttpMethod.GET:
-				return System.Net.Http.HttpMethod.Get;
-			case HttpMethod.POST:
-				return System.Net.Http.HttpMethod.Post;
-			case HttpMethod.PUT:
-				return System.Net.Http.HttpMethod.Put;
-			case HttpMethod.DELETE:
-				return System.Net.Http.HttpMethod.Delete;
-			case HttpMethod.HEAD:
-				return System.Net.Http.HttpMethod.Head;
-			default:
-				throw new ArgumentException("Invalid value for HttpMethod", nameof(httpMethod));
-		}
-	}
+		HttpMethod.GET => System.Net.Http.HttpMethod.Get,
+		HttpMethod.POST => System.Net.Http.HttpMethod.Post,
+		HttpMethod.PUT => System.Net.Http.HttpMethod.Put,
+		HttpMethod.DELETE => System.Net.Http.HttpMethod.Delete,
+		HttpMethod.HEAD => System.Net.Http.HttpMethod.Head,
+		_ => throw new ArgumentException("Invalid value for HttpMethod", nameof(httpMethod)),
+	};
 
 	internal static int GetClientKey(BoundConfiguration boundConfiguration)
 	{

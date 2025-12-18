@@ -37,44 +37,44 @@ public class LowLevelRequestResponseSerializerTests : SerializerTestBase
 
 		var jsonDocument = JsonDocument.Parse(stream);
 
-		jsonDocument.RootElement.EnumerateArray().Should().HaveCount(1);
+		_ = jsonDocument.RootElement.EnumerateArray().Should().HaveCount(1);
 		var exception = jsonDocument.RootElement.EnumerateArray().First();
 
-		exception.TryGetProperty("Depth", out var depth).Should().BeTrue();
-		depth.ValueKind.Should().Be(JsonValueKind.Number);
-		depth.GetInt32().Should().Be(0);
+		_ = exception.TryGetProperty("Depth", out var depth).Should().BeTrue();
+		_ = depth.ValueKind.Should().Be(JsonValueKind.Number);
+		_ = depth.GetInt32().Should().Be(0);
 
-		exception.TryGetProperty("ClassName", out var className).Should().BeTrue();
-		className.ValueKind.Should().Be(JsonValueKind.String);
-		className.GetString().Should().Be("Elastic.Transport.Tests.Components.Serialization.CustomException");
+		_ = exception.TryGetProperty("ClassName", out var className).Should().BeTrue();
+		_ = className.ValueKind.Should().Be(JsonValueKind.String);
+		_ = className.GetString().Should().Be("Elastic.Transport.Tests.Components.Serialization.CustomException");
 
-		exception.TryGetProperty("Message", out var message).Should().BeTrue();
-		message.ValueKind.Should().Be(JsonValueKind.String);
-		message.GetString().Should().Be(messageValue);
+		_ = exception.TryGetProperty("Message", out var message).Should().BeTrue();
+		_ = message.ValueKind.Should().Be(JsonValueKind.String);
+		_ = message.GetString().Should().Be(messageValue);
 
-		exception.TryGetProperty("Source", out var source).Should().BeTrue();
-		source.ValueKind.Should().Be(JsonValueKind.String);
-		source.GetString().Should().Be("Elastic.Transport.Tests");
+		_ = exception.TryGetProperty("Source", out var source).Should().BeTrue();
+		_ = source.ValueKind.Should().Be(JsonValueKind.String);
+		_ = source.GetString().Should().Be("Elastic.Transport.Tests");
 
 		var windowsPath = "Components\\Serialization\\LowLevelRequestResponseSerializerTests.cs";
 		var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 			? windowsPath
 			: windowsPath.Replace('\\', '/');
 
-		exception.TryGetProperty("StackTraceString", out var stackTrace).Should().BeTrue();
-		stackTrace.ValueKind.Should().Be(JsonValueKind.String);
+		_ = exception.TryGetProperty("StackTraceString", out var stackTrace).Should().BeTrue();
+		_ = stackTrace.ValueKind.Should().Be(JsonValueKind.String);
 		var stackTraceString = stackTrace.GetString();
-		stackTraceString.Should()
+		_ = stackTraceString.Should()
 			.Contain("at Elastic.Transport.Tests.Components.Serialization.LowLevelRequestResponseSerializerTests")
 			.And.Contain(path, stackTraceString);
 
-		exception.TryGetProperty("HResult", out var hResult).Should().BeTrue();
-		hResult.ValueKind.Should().Be(JsonValueKind.Number);
-		hResult.GetInt32().Should().Be(-2146233088);
+		_ = exception.TryGetProperty("HResult", out var hResult).Should().BeTrue();
+		_ = hResult.ValueKind.Should().Be(JsonValueKind.Number);
+		_ = hResult.GetInt32().Should().Be(-2146233088);
 
-		exception.TryGetProperty("HelpURL", out var helpUrl).Should().BeTrue();
-		helpUrl.ValueKind.Should().Be(JsonValueKind.String);
-		helpUrl.GetString().Should().Be(urlValue);
+		_ = exception.TryGetProperty("HelpURL", out var helpUrl).Should().BeTrue();
+		_ = helpUrl.ValueKind.Should().Be(JsonValueKind.String);
+		_ = helpUrl.GetString().Should().Be(urlValue);
 	}
 }
 
