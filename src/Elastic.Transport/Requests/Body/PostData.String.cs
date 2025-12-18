@@ -41,10 +41,13 @@ public abstract partial class PostData
 
 			var stringBytes = WrittenBytes ?? _literalString.Utf8Bytes();
 			WrittenBytes ??= stringBytes;
-			if (!disableDirectStreaming)
-				writableStream.Write(stringBytes, 0, stringBytes.Length);
-			else
-				buffer = settings.MemoryStreamFactory.Create(stringBytes);
+			if (stringBytes is not null)
+			{
+				if (!disableDirectStreaming)
+					writableStream.Write(stringBytes, 0, stringBytes.Length);
+				else
+					buffer = settings.MemoryStreamFactory.Create(stringBytes);
+			}
 
 			FinishStream(writableStream, buffer, disableDirectStreaming);
 		}
@@ -57,11 +60,14 @@ public abstract partial class PostData
 
 			var stringBytes = WrittenBytes ?? _literalString.Utf8Bytes();
 			WrittenBytes ??= stringBytes;
-			if (!disableDirectStreaming)
-				await writableStream.WriteAsync(stringBytes, 0, stringBytes.Length, cancellationToken)
-					.ConfigureAwait(false);
-			else
-				buffer = settings.MemoryStreamFactory.Create(stringBytes);
+			if (stringBytes is not null)
+			{
+				if (!disableDirectStreaming)
+					await writableStream.WriteAsync(stringBytes, 0, stringBytes.Length, cancellationToken)
+						.ConfigureAwait(false);
+				else
+					buffer = settings.MemoryStreamFactory.Create(stringBytes);
+			}
 
 			await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);
 		}

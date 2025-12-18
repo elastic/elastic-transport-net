@@ -86,31 +86,23 @@ public sealed record BoundConfiguration : IRequestConfiguration
 		}
 
 		// If there are builders set at the transport level and on the request config, we combine them,
-		// prioritising the request config response builders as most specific.
+		// prioritizing the request config response builders as most specific.
 		if (local is not null && local.ResponseBuilders.Count > 0 && global.ResponseBuilders.Count > 0)
 		{
 			var builders = new IResponseBuilder[local.ResponseBuilders.Count + global.ResponseBuilders.Count];
 
 			var counter = 0;
 			foreach (var builder in local.ResponseBuilders)
-			{
 				builders[counter++] = builder;
-			}
 			foreach (var builder in global.ResponseBuilders)
-			{
 				builders[counter++] = builder;
-			}
 
 			ResponseBuilders = builders;
 		}
 		else if (local is not null && local.ResponseBuilders.Count > 0)
-		{
 			ResponseBuilders = local.ResponseBuilders;
-		}
 		else
-		{
 			ResponseBuilders = global.ResponseBuilders;
-		}
 
 		ProductResponseBuilders = global.ProductRegistration.ResponseBuilders;
 		DisableAuditTrail = local?.DisableAuditTrail ?? global.DisableAuditTrail ?? false;
@@ -153,7 +145,7 @@ public sealed record BoundConfiguration : IRequestConfiguration
 	/// <inheritdoc cref="IRequestConfiguration.ResponseHeadersToParse"/>
 	public HeadersList? ResponseHeadersToParse { get; }
 	/// <inheritdoc cref="IRequestConfiguration.Headers"/>
-	public NameValueCollection Headers { get; }
+	public NameValueCollection? Headers { get; }
 	/// <inheritdoc cref="IRequestConfiguration.DisableDirectStreaming"/>
 	public bool DisableDirectStreaming { get; }
 	/// <inheritdoc cref="IRequestConfiguration.ParseAllHeaders"/>
@@ -195,11 +187,11 @@ public sealed record BoundConfiguration : IRequestConfiguration
 	/// <inheritdoc cref="IRequestConfiguration.OpaqueId"/>
 	public string? OpaqueId { get; }
 
-	string? IRequestConfiguration.Accept => Accept;
-	IReadOnlyCollection<int>? IRequestConfiguration.AllowedStatusCodes => AllowedStatusCodes;
+	string IRequestConfiguration.Accept => Accept;
+	IReadOnlyCollection<int> IRequestConfiguration.AllowedStatusCodes => AllowedStatusCodes;
 	AuthorizationHeader? IRequestConfiguration.Authentication => AuthenticationHeader;
 	X509CertificateCollection? IRequestConfiguration.ClientCertificates => ClientCertificates;
-	string? IRequestConfiguration.ContentType => ContentType;
+	string IRequestConfiguration.ContentType => ContentType;
 	bool? IRequestConfiguration.DisableDirectStreaming => DisableDirectStreaming;
 	bool? IRequestConfiguration.DisableAuditTrail => DisableAuditTrail;
 	bool? IRequestConfiguration.DisablePings => DisablePings;

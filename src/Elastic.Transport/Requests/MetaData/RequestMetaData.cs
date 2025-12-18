@@ -34,5 +34,5 @@ public sealed class RequestMetaData
 	}
 
 	/// <summary> Retrieves a read-only dictionary of metadata items associated with a client request.</summary>
-	public IReadOnlyDictionary<string, string> Items => _metaDataItems;
+	public IReadOnlyDictionary<string, string>? Items => _metaDataItems;
 }

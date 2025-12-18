@@ -47,7 +47,7 @@ public abstract class RequestParameters
 	/// <summary>
 	///
 	/// </summary>
-	public TOut GetQueryStringValue<TOut>(string name)
+	public TOut? GetQueryStringValue<TOut>(string name)
 	{
 		if (!ContainsQueryString(name))
 			return default;
@@ -69,7 +69,7 @@ public abstract class RequestParameters
 	}
 
 	/// <summary> Shortcut to <see cref="GetQueryStringValue{TOut}"/> for generated code </summary>
-	protected TOut Q<TOut>(string name) => GetQueryStringValue<TOut>(name);
+	protected TOut? Q<TOut>(string name) => GetQueryStringValue<TOut>(name);
 
 	/// <summary> Shortcut to <see cref="SetQueryString"/> for generated code </summary>
 	protected void Q(string name, object value) => SetQueryString(name, value);
@@ -91,7 +91,7 @@ public abstract class RequestParameters
 		if (path.Contains("?"))
 			throw new ArgumentException($"{nameof(path)} can not contain querystring parameters and needs to be already escaped");
 
-		var g = global.QueryStringParameters;
+		var g = global?.QueryStringParameters;
 		var l = QueryString;
 
 		if ((g == null || g.Count == 0) && (l == null || l.Count == 0)) return path;
@@ -101,7 +101,8 @@ public abstract class RequestParameters
 
 		//set all querystring pairs from local `l` on the querystring collection
 		var formatter = global?.UrlFormatter;
-		nv.UpdateFromDictionary(l, formatter);
+		if (formatter is not null)
+			nv.UpdateFromDictionary(l, formatter);
 
 		//if nv has no keys simply return path as provided
 		if (!nv.HasKeys()) return path;

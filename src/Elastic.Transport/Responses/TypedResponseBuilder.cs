@@ -17,16 +17,18 @@ public abstract class TypedResponseBuilder<TResponse> : IResponseBuilder
 	bool IResponseBuilder.CanBuild<T>() => typeof(TResponse) == typeof(T);
 
 	/// <inheritdoc cref="IResponseBuilder.Build{TResponse}(ApiCallDetails, BoundConfiguration, Stream, string, long)"/>
-	protected abstract TResponse? Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength);
+	protected abstract TResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength);
 
-	T IResponseBuilder.Build<T>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
+	T? IResponseBuilder.Build<T>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength)
+		where T : class =>
 		Build(apiCallDetails, boundConfiguration, responseStream, contentType, contentLength) as T;
 
 	/// <inheritdoc cref="IResponseBuilder.BuildAsync{TResponse}(ApiCallDetails, BoundConfiguration, Stream, string, long, CancellationToken)"/>
-	protected abstract Task<TResponse?> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream,
+	protected abstract Task<TResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream,
 		string contentType, long contentLength, CancellationToken cancellationToken = default);
 
-	Task<T> IResponseBuilder.BuildAsync<T>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType,
-		long contentLength, CancellationToken cancellationToken) =>
-			BuildAsync(apiCallDetails, boundConfiguration, responseStream, contentType, contentLength, cancellationToken) as Task<T>;
+	async Task<T?> IResponseBuilder.BuildAsync<T>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType,
+		long contentLength, CancellationToken cancellationToken)
+		where T : class =>
+			await BuildAsync(apiCallDetails, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false) as T;
 }

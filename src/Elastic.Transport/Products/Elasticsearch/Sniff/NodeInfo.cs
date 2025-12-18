@@ -10,15 +10,15 @@ namespace Elastic.Transport.Products.Elasticsearch;
 
 internal sealed class NodeInfo
 {
-	public string build_hash { get; set; }
-	public string host { get; set; }
-	public NodeInfoHttp http { get; set; }
-	public string ip { get; set; }
-	public string name { get; set; }
-	public IList<string> roles { get; set; }
-	public IDictionary<string, object> settings { get; set; }
-	public string transport_address { get; set; }
-	public string version { get; set; }
+	public string? build_hash { get; set; }
+	public string? host { get; set; }
+	public NodeInfoHttp? http { get; set; }
+	public string? ip { get; set; }
+	public string? name { get; set; }
+	public IList<string>? roles { get; set; }
+	public IDictionary<string, object>? settings { get; set; }
+	public string? transport_address { get; set; }
+	public string? version { get; set; }
 	internal bool HoldsData => roles?.Contains("data") ?? false;
 
 	internal bool HttpEnabled

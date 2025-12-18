@@ -72,7 +72,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 
 #endif
 
-		if (!SemVersion.TryParse(version, out var result))
+		if (version is null || !SemVersion.TryParse(version, out var result))
 			return Empty;
 
 		// 5.0.1 FrameworkDescription returns .NET 5.0.1-servicing.20575.16, so we special case servicing as
@@ -115,7 +115,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 	// sample input:
 	// .NETCoreApp,Version=v2.0
 	// .NETCoreApp,Version=v2.1
-	private static bool TryGetVersionFromFrameworkName(string frameworkName, out string runtimeVersion)
+	private static bool TryGetVersionFromFrameworkName(string frameworkName, out string? runtimeVersion)
 	{
 		const string versionPrefix = ".NETCoreApp,Version=v";
 		if (!string.IsNullOrEmpty(frameworkName) && frameworkName.StartsWith(versionPrefix))
@@ -143,7 +143,8 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 				var version = CheckFor45PlusVersion((int)ndpKey.GetValue("Release"));
 
 				if (!string.IsNullOrEmpty(version) )
-					return version;
+					// version is guaranteed non-null here due to IsNullOrEmpty check above
+					return version!;
 			}
 		}
 
@@ -171,7 +172,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 		}
 
 		// Checking the version using >= enables forward compatibility.
-		static string CheckFor45PlusVersion(int releaseKey)
+		static string? CheckFor45PlusVersion(int releaseKey)
 		{
 			if (releaseKey >= 528040)
 				return "4.8.0";

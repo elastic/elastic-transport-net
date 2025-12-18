@@ -20,11 +20,11 @@ namespace Elastic.Transport;
 /// </summary>
     internal sealed class ActiveHandlerTrackingEntry
     {
-        private static readonly TimerCallback TimerCallback = (s) => ((ActiveHandlerTrackingEntry)s).Timer_Tick();
+        private static readonly TimerCallback TimerCallback = (s) => ((ActiveHandlerTrackingEntry)s!).Timer_Tick();
         private readonly object _lock;
         private bool _timerInitialized;
-        private Timer _timer;
-        private TimerCallback _callback;
+        private Timer? _timer;
+        private TimerCallback? _callback;
 
         public ActiveHandlerTrackingEntry(
             int key,
@@ -80,7 +80,7 @@ namespace Elastic.Transport;
 			_timer.Dispose();
 			_timer = null;
 
-			_callback(this);
+			_callback!(this);
 		}
         }
     }

@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+// Nullable disabled for vendored Microsoft code
+
 // ---------------------------------------------------------------------
 // Copyright (c) 2015-2016 Microsoft
 //
@@ -313,13 +315,13 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// <param name="requiredSize">The minimum length of the buffer</param>
 	/// <param name="tag">The tag of the stream returning this buffer, for logging if necessary.</param>
 	/// <returns>A buffer of at least the required size.</returns>
-	internal byte[] GetLargeBuffer(int requiredSize, string tag)
+	internal byte[] GetLargeBuffer(int requiredSize, string? tag)
 	{
 		requiredSize = RoundToLargeBufferSize(requiredSize);
 
 		var poolIndex = GetPoolIndex(requiredSize);
 
-		byte[] buffer;
+		byte[]? buffer;
 		if (poolIndex < _largePools.Length)
 		{
 			if (!_largePools[poolIndex].TryPop(out buffer))
@@ -342,7 +344,7 @@ internal sealed partial class RecyclableMemoryStreamManager
 
 			// We still want to round up to reduce heap fragmentation.
 			buffer = new byte[requiredSize];
-			string callStack = null;
+			string? callStack = null;
 			if (GenerateCallStacks)
 				// Grab the stack -- we want to know who requires such large buffers
 				callStack = Environment.StackTrace;
@@ -394,14 +396,14 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// buffer.Length is not a multiple/exponential of LargeBufferMultiple (it did not
 	/// originate from this pool)
 	/// </exception>
-	internal void ReturnLargeBuffer(byte[] buffer, string tag)
+	internal void ReturnLargeBuffer(byte[] buffer, string? tag)
 	{
-		if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+		ArgumentNullException.ThrowIfNull(buffer);
 
 		if (!IsLargeBufferSize(buffer.Length))
 			throw new ArgumentException(
-				string.Format("buffer did not originate from this memory manager. The size is not {0} of ",
-					UseExponentialLargeBuffer ? "an exponential" : "a multiple") +
+				$"buffer did not originate from this memory manager. The size is not {(UseExponentialLargeBuffer ? "an exponential" : "a multiple")} of "
+				+
 				LargeBufferMultiple);
 
 		var poolIndex = GetPoolIndex(buffer.Length);
@@ -445,9 +447,9 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// <param name="tag">The tag of the stream returning these blocks, for logging if necessary.</param>
 	/// <exception cref="ArgumentNullException">blocks is null</exception>
 	/// <exception cref="ArgumentException">blocks contains buffers that are the wrong size (or null) for this memory manager</exception>
-	internal void ReturnBlocks(ICollection<byte[]> blocks, string tag)
+	internal void ReturnBlocks(ICollection<byte[]> blocks, string? tag)
 	{
-		if (blocks == null) throw new ArgumentNullException(nameof(blocks));
+		ArgumentNullException.ThrowIfNull(blocks);
 
 		var bytesToReturn = blocks.Count * BlockSize;
 		Interlocked.Add(ref _smallPoolInUseSize, -bytesToReturn);
@@ -611,7 +613,7 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// <returns>A MemoryStream.</returns>
 	public MemoryStream GetStream(Guid id, string tag, byte[] buffer, int offset, int count)
 	{
-		RecyclableMemoryStream stream = null;
+		RecyclableMemoryStream? stream = null;
 		try
 		{
 			stream = new RecyclableMemoryStream(this, id, tag, count);
@@ -641,51 +643,51 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// <summary>
 	/// Triggered when a new block is created.
 	/// </summary>
-	public event EventHandler BlockCreated;
+	public event EventHandler? BlockCreated;
 
 	/// <summary>
 	/// Triggered when a new block is created.
 	/// </summary>
-	public event EventHandler BlockDiscarded;
+	public event EventHandler? BlockDiscarded;
 
 	/// <summary>
 	/// Triggered when a new large buffer is created.
 	/// </summary>
-	public event EventHandler LargeBufferCreated;
+	public event EventHandler? LargeBufferCreated;
 
 	/// <summary>
 	/// Triggered when a new stream is created.
 	/// </summary>
-	public event EventHandler StreamCreated;
+	public event EventHandler? StreamCreated;
 
 	/// <summary>
 	/// Triggered when a stream is disposed.
 	/// </summary>
-	public event EventHandler StreamDisposed;
+	public event EventHandler? StreamDisposed;
 
 	/// <summary>
 	/// Triggered when a stream is finalized.
 	/// </summary>
-	public event EventHandler StreamFinalized;
+	public event EventHandler? StreamFinalized;
 
 	/// <summary>
 	/// Triggered when a stream is finalized.
 	/// </summary>
-	public event StreamLengthReportHandler StreamLength;
+	public event StreamLengthReportHandler? StreamLength;
 
 	/// <summary>
 	/// Triggered when a user converts a stream to array.
 	/// </summary>
-	public event EventHandler StreamConvertedToArray;
+	public event EventHandler? StreamConvertedToArray;
 
 	/// <summary>
 	/// Triggered when a large buffer is discarded, along with the reason for the discard.
 	/// </summary>
-	public event LargeBufferDiscardedEventHandler LargeBufferDiscarded;
+	public event LargeBufferDiscardedEventHandler? LargeBufferDiscarded;
 
 	/// <summary>
 	/// Periodically triggered to report usage statistics.
 	/// </summary>
-	public event UsageReportEventHandler UsageReport;
+	public event UsageReportEventHandler? UsageReport;
 
 }

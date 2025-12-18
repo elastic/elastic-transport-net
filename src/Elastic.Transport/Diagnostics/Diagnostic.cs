@@ -28,8 +28,8 @@ internal class Diagnostic<
 
 	public static Diagnostic<TState, TStateEnd> Default { get; } = new Diagnostic<TState, TStateEnd>();
 
-	private readonly DiagnosticSource _source;
-	private TStateEnd _endState;
+	private readonly DiagnosticSource? _source;
+	private TStateEnd? _endState;
 	private readonly bool _default;
 	private bool _disposed;
 
@@ -42,7 +42,7 @@ internal class Diagnostic<
 		_source.StartActivity(SetStartTime(DateTime.UtcNow), state);
 	}
 
-	public TStateEnd EndState
+	public TStateEnd? EndState
 	{
 		get => _endState;
 		internal set

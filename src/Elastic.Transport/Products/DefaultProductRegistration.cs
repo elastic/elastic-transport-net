@@ -25,11 +25,11 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	/// </summary>
 	public DefaultProductRegistration()
 	{
-		_metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(ITransport), ServiceIdentifier);
+		_metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(ITransport), ServiceIdentifier ?? "et");
 
 		ProductAssemblyVersion = typeof(ProductRegistration).Assembly
-			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-			.InformationalVersion;
+			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+			.InformationalVersion ?? "unknown";
 	}
 
 	/// <summary> A static instance of <see cref="DefaultProductRegistration"/> to promote reuse </summary>
@@ -73,7 +73,7 @@ public sealed class DefaultProductRegistration : ProductRegistration
 		statusCode >= 200 && statusCode < 300;
 
 	/// <inheritdoc cref="ProductRegistration.TryGetServerErrorReason{TResponse}"/>>
-	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason)
+	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason)
 	{
 		reason = null;
 		return false;

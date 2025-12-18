@@ -20,7 +20,7 @@ namespace Elastic.Transport.Extensions
 			[DllImport("ntdll")]
 			private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
 
-			internal static string RtlGetVersion()
+			internal static string? RtlGetVersion()
 			{
 				var osvi = new RTL_OSVERSIONINFOEX();
 				osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);

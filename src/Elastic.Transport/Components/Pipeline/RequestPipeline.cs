@@ -37,7 +37,7 @@ public class RequestPipeline
 		_settings = boundConfiguration.ConnectionSettings;
 		_nodePool = boundConfiguration.ConnectionSettings.NodePool;
 		_requestInvoker = boundConfiguration.ConnectionSettings.RequestInvoker;
-		_dateTimeProvider = boundConfiguration.ConnectionSettings.DateTimeProvider;
+		_dateTimeProvider = boundConfiguration.ConnectionSettings.DateTimeProvider ?? DefaultDateTimeProvider.Default;
 		_memoryStreamFactory = boundConfiguration.MemoryStreamFactory;
 		_productRegistration = boundConfiguration.ConnectionSettings.ProductRegistration;
 		_nodePredicate = boundConfiguration.ConnectionSettings.NodePredicate ?? _productRegistration.NodePredicate;
@@ -108,7 +108,7 @@ public class RequestPipeline
 
 			// ReSharper disable once PossibleInvalidOperationException
 			// already checked by SniffsOnStaleCluster
-			var sniffLifeSpan = _settings.SniffInformationLifeSpan.Value;
+			var sniffLifeSpan = _settings.SniffInformationLifeSpan!.Value;
 
 			var now = _dateTimeProvider.Now();
 			var lastSniff = _nodePool.LastUpdate;
@@ -188,7 +188,7 @@ public class RequestPipeline
 		}
 		catch (Exception e) when (audit is not null)
 		{
-			var @event = e is TransportException t && t.ApiCallDetails.HttpStatusCode != null ? AuditEvent.BadResponse : BadRequest;
+			var @event = e is TransportException t && t.ApiCallDetails?.HttpStatusCode != null ? AuditEvent.BadResponse : BadRequest;
 			audit.Event = @event;
 			audit.Exception = e;
 			throw;
@@ -197,7 +197,7 @@ public class RequestPipeline
 
 	/// Create a rich enough <see cref="TransportException"/>
 	public TransportException? CreateClientException<TResponse>(
-		TResponse response,
+		TResponse? response,
 		ApiCallDetails? callDetails,
 		Endpoint endpoint,
 		Auditor? auditor,
@@ -213,14 +213,14 @@ public class RequestPipeline
 		var innerException = callDetails?.OriginalException;
 		if (seenExceptions is not null && seenExceptions.HasAny(out var exs))
 		{
-			pipelineFailure = exs.Last().FailureReason;
+			pipelineFailure = exs!.Last().FailureReason;
 			innerException = exs.AsAggregateOrFirst();
 		}
 
 		var statusCode = callDetails?.HttpStatusCode != null ? callDetails.HttpStatusCode.Value.ToString() : "unknown";
 		var resource = callDetails == null
 			? "unknown resource"
-			: $"Status code {statusCode} from: {callDetails.HttpMethod} {callDetails.Uri.PathAndQuery}";
+			: $"Status code {statusCode} from: {callDetails.HttpMethod} {callDetails.Uri?.PathAndQuery}";
 
 		var exceptionMessage = innerException?.Message ?? "Request failed to execute";
 
@@ -405,7 +405,7 @@ public class RequestPipeline
 
 		using var audit = auditor?.Add(PingSuccess, _dateTimeProvider, node);
 
-		TransportResponse response;
+		TransportResponse? response;
 
 		try
 		{
@@ -425,7 +425,8 @@ public class RequestPipeline
 		}
 		catch (Exception e)
 		{
-			response = (e as PipelineException)?.Response;
+			var pipelineException = e as PipelineException;
+			response = pipelineException?.Response;
 			if (audit is not null)
 			{
 				audit.Event = PingFailure;

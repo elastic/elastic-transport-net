@@ -58,13 +58,13 @@ public abstract class ResponseFactory
 		Endpoint endpoint,
 		BoundConfiguration boundConfiguration,
 		PostData? postData,
-		Exception exception,
+		Exception? exception,
 		int? statusCode,
-		Dictionary<string, IEnumerable<string>> headers, 
-		string contentType,
+		Dictionary<string, IEnumerable<string>>? headers,
+		string? contentType,
 		IReadOnlyDictionary<string,
-		ThreadPoolStatistics> threadPoolStats, 
-		IReadOnlyDictionary<TcpState, int> tcpStats,
+		ThreadPoolStatistics>? threadPoolStats,
+		IReadOnlyDictionary<TcpState, int>? tcpStats,
 		long contentLength)
 	{
 		var hasSuccessfulStatusCode = false;
@@ -93,7 +93,7 @@ public abstract class ResponseFactory
 			HttpMethod = endpoint.Method,
 			TcpStats = tcpStats,
 			ThreadPoolStats = threadPoolStats,
-			ResponseContentType = contentType,
+			ResponseContentType = contentType ?? string.Empty,
 			TransportConfiguration = boundConfiguration.ConnectionSettings
 		};
 
@@ -111,7 +111,7 @@ public abstract class ResponseFactory
 	protected static bool MayHaveBody(int? statusCode, HttpMethod httpMethod, long contentLength) =>
 		contentLength != 0 && (!statusCode.HasValue || statusCode.Value != 204 && httpMethod != HttpMethod.HEAD);
 
-	internal static bool ValidateResponseContentType(string accept, string responseContentType)
+	internal static bool ValidateResponseContentType(string accept, string? responseContentType)
 	{
 		if (string.IsNullOrEmpty(responseContentType)) return false;
 
@@ -119,8 +119,9 @@ public abstract class ResponseFactory
 			return true;
 
 		// TODO - Performance: Review options to avoid the replace here and compare more efficiently.
+		// At this point, responseContentType is guaranteed to be non-null due to the check at line 116
 		var trimmedAccept = accept.Replace(" ", "");
-		var normalizedResponseContentType = responseContentType.Replace(" ", "");
+		var normalizedResponseContentType = responseContentType!.Replace(" ", "");
 
 		return normalizedResponseContentType.Equals(trimmedAccept, StringComparison.OrdinalIgnoreCase)
 			|| normalizedResponseContentType.StartsWith(trimmedAccept, StringComparison.OrdinalIgnoreCase)

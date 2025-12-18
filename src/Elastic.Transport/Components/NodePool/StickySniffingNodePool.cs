@@ -17,11 +17,11 @@ namespace Elastic.Transport;
 public sealed class StickySniffingNodePool : SniffingNodePool
 {
 	/// <inheritdoc cref="StickySniffingNodePool"/>
-	public StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float> nodeScorer)
+	public StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float>? nodeScorer = null)
 		: base(uris.Select(uri => new Node(uri)), nodeScorer ?? DefaultNodeScore) { }
 
 	/// <inheritdoc cref="StickySniffingNodePool"/>
-	public StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer)
+	public StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float>? nodeScorer = null)
 		: base(nodes, nodeScorer ?? DefaultNodeScore) { }
 
 	/// <inheritdoc cref="NodePool.SupportsPinging"/>
@@ -56,5 +56,5 @@ public sealed class StickySniffingNodePool : SniffingNodePool
 	}
 
 	/// <summary> Allows subclasses to hook into the parents dispose </summary>
-	private static float DefaultNodeScore(Node node) => 0f;
+	internal static float DefaultNodeScore(Node node) => 0f;
 }

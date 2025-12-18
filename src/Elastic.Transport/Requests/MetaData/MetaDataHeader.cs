@@ -62,9 +62,9 @@ public sealed class MetaDataHeader
 	public string ClientVersion { get; private set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
-	public string TransportVersion { get; private set; }
+	public string? TransportVersion { get; private set; }
 
 	/// <summary>
 	/// 

@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+// Nullable disabled for vendored Microsoft code
+
 // The MIT License (MIT)
 //
 // Copyright (c) 2015-2016 Microsoft
@@ -66,12 +68,12 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 {
 	private const long MaxStreamLength = int.MaxValue;
 
-	private static readonly byte[] EmptyArray = new byte[0];
+	private static readonly byte[] EmptyArray = [];
 
 	/// <summary>
 	/// All of these blocks must be the same size
 	/// </summary>
-	private readonly List<byte[]> _blocks = new List<byte[]>(1);
+	private readonly List<byte[]> _blocks = new(1);
 
 	/// <summary>
 	/// This buffer exists so that WriteByte can forward all of its calls to Write
@@ -83,14 +85,14 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 
 	private readonly RecyclableMemoryStreamManager _memoryManager;
 
-	private readonly string _tag;
+	private readonly string? _tag;
 
 	/// <summary>
 	/// This list is used to store buffers once they're replaced by something larger.
 	/// This is for the cases where you have users of this class that may hold onto the buffers longer
 	/// than they should and you want to prevent race conditions which could corrupt the data.
 	/// </summary>
-	private List<byte[]> _dirtyBuffers;
+	private List<byte[]>? _dirtyBuffers;
 
 	// long to allow Interlocked.Read (for .NET Standard 1.4 compat)
 	private long _disposedState;
@@ -103,7 +105,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	/// If this field is non-null, it contains the concatenation of the bytes found in the individual
 	/// blocks. Once it is created, this (or a larger) largeBuffer will be used for the life of the stream.
 	/// </remarks>
-	private byte[] _largeBuffer;
+	private byte[]? _largeBuffer;
 
 	/// <summary>
 	/// Unique identifier for this stream across it's entire lifetime
@@ -122,7 +124,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	/// A temporary identifier for the current usage of this stream.
 	/// </summary>
 	/// <exception cref="ObjectDisposedException">Object has been disposed</exception>
-	internal string Tag
+	internal string? Tag
 	{
 		get
 		{
@@ -148,13 +150,13 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	/// Callstack of the constructor. It is only set if MemoryManager.GenerateCallStacks is true,
 	/// which should only be in debugging situations.
 	/// </summary>
-	internal string AllocationStack { get; }
+	internal string? AllocationStack { get; }
 
 	/// <summary>
 	/// Callstack of the Dispose call. It is only set if MemoryManager.GenerateCallStacks is true,
 	/// which should only be in debugging situations.
 	/// </summary>
-	internal string DisposeStack { get; private set; }
+	internal string? DisposeStack { get; private set; }
 
 	#region Constructors
 
@@ -220,7 +222,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	/// An initial buffer to use. This buffer will be owned by the stream and returned to the
 	/// memory manager upon Dispose.
 	/// </param>
-	internal RecyclableMemoryStream(RecyclableMemoryStreamManager memoryManager, Guid id, string tag, int requestedSize, byte[] initialLargeBuffer
+	internal RecyclableMemoryStream(RecyclableMemoryStreamManager memoryManager, Guid id, string? tag, int requestedSize, byte[]? initialLargeBuffer
 	)
 		: base(EmptyArray)
 	{
@@ -257,7 +259,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	{
 		if (Interlocked.CompareExchange(ref _disposedState, 1, 0) != 0)
 		{
-			string doubleDisposeStack = null;
+			string? doubleDisposeStack = null;
 			if (_memoryManager.GenerateCallStacks) doubleDisposeStack = Environment.StackTrace;
 
 			RecyclableMemoryStreamManager.EventsWriter.MemoryStreamDoubleDispose(_id, _tag,
@@ -761,7 +763,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	public override void WriteTo(Stream stream)
 	{
 		CheckDisposed();
-		if (stream == null) throw new ArgumentNullException(nameof(stream));
+		ArgumentNullException.ThrowIfNull(stream);
 
 		if (_largeBuffer == null)
 		{
@@ -909,6 +911,8 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	/// </summary>
 	private void ReleaseLargeBuffer()
 	{
+		if (_largeBuffer is null) return;
+
 		if (_memoryManager.AggressiveBufferReturn)
 			_memoryManager.ReturnLargeBuffer(_largeBuffer, _tag);
 		else

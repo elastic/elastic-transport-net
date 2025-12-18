@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Elastic.Transport.Extensions;
 using Elastic.Transport.VirtualizedCluster.Extensions;
 
 namespace Elastic.Transport.VirtualizedCluster.Audit;
@@ -208,7 +207,7 @@ public sealed class Auditor
 			var call = cluster.ClientCall();
 			var d = call.ApiCallDetails;
 			var actualAuditTrail = AuditTrailToString(d.AuditTrail);
-			messages.Add($"{d.HttpMethod.GetStringValue()} ({d.Uri.Port}) (status: {d.HttpStatusCode})");
+			messages.Add($"{d.HttpMethod.GetStringValue()} ({d.Uri?.Port}) (status: {d.HttpStatusCode})");
 			messages.Add(actualAuditTrail);
 		}
 		throw new Exception(string.Join(Environment.NewLine, messages));
@@ -234,16 +233,17 @@ public sealed class Auditor
 		var typeOfTrail = (sync ? "synchronous" : "asynchronous") + " audit trail";
 		var nthClientCall = (nthCall + 1).ToOrdinal();
 
-		var actualAuditTrail = auditTrail.Aggregate(new StringBuilder(Environment.NewLine),
+		var audits = auditTrail as Diagnostics.Auditing.Audit[] ?? auditTrail.ToArray();
+		var actualAuditTrail = audits.Aggregate(new StringBuilder(Environment.NewLine),
 			(sb, a) => sb.AppendLine($"-> {a}"),
 			sb => sb.ToString());
 
 		var traceEvents = callTrace.Select(c => c.Event).ToList();
-		var auditEvents = auditTrail.Select(a => a.Event).ToList();
+		var auditEvents = audits.Select(a => a.Event).ToList();
 		if (!traceEvents.SequenceEqual(auditEvents))
 			throw new Exception($"the {nthClientCall} client call's {typeOfTrail} should assert ALL audit trail items{actualAuditTrail}");
 
-		foreach (var t in auditTrail.Select((a, i) => new { a, i }))
+		foreach (var t in audits.Select((a, i) => new { a, i }))
 		{
 			var i = t.i;
 			var audit = t.a;
@@ -252,7 +252,7 @@ public sealed class Auditor
 			var c = callTrace[i];
 			if (audit.Event != c.Event)
 				throw new Exception(string.Format(because, "event"));
-			if (c.Port.HasValue && audit.Node.Uri.Port != c.Port.Value)
+			if (c.Port.HasValue && audit.Node?.Uri.Port != c.Port.Value)
 				throw new Exception(string.Format(because, "port"));
 
 			c.SimpleAssert?.Invoke(audit);
@@ -261,7 +261,7 @@ public sealed class Auditor
 
 		if (auditTrail is ICollection<Diagnostics.Auditing.Audit> at && callTrace.Count != at.Count)
 			throw new Exception($"callTrace has {callTrace.Count} items. Actual auditTrail {actualAuditTrail}");
-		else if (callTrace.Count != auditTrail.Count())
+		else if (callTrace.Count != audits.Count())
 			throw new Exception($"callTrace has {callTrace.Count} items. Actual auditTrail {actualAuditTrail}");
 	}
 

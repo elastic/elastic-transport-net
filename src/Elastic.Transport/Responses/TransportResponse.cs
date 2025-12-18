@@ -17,7 +17,8 @@ public abstract class TransportResponse<T> : TransportResponse
 	/// <summary>
 	/// The (potentially deserialized) response returned by the product.
 	/// </summary>
-	public T Body { get; protected internal set; }
+	// Initialized by response builders after construction
+	public T Body { get; protected internal set; } = default!;
 }
 
 /// <summary>
@@ -27,22 +28,20 @@ public abstract class TransportResponse
 {
 	/// <summary> Returns details about the API call that created this response. </summary>
 	[JsonIgnore]
-	// TODO: ApiCallDetails is always set, but nothing enforces it
+	// ApiCallDetails is always set by ResponseFactory after construction, but nothing enforces it
 	// since we use new() generic constraint we can not enforce a protected constructor.
 	// ReSharper disable once NotNullOrRequiredMemberIsNotInitialized
-	public ApiCallDetails ApiCallDetails { get; internal set; }
+	public ApiCallDetails ApiCallDetails { get; internal set; } = null!;
 
 	/// <inheritdoc cref="object.ToString"/>
-	public override string ToString() => ApiCallDetails?.DebugInformation
-		// ReSharper disable once ConstantNullCoalescingCondition
-		?? $"{nameof(ApiCallDetails)} not set, likely a bug, reverting to default ToString(): {base.ToString()}";
+	public override string ToString() => ApiCallDetails.DebugInformation;
 
 	/// <summary>
-	/// Allows other disposable resources to to be disposed along with the response.
+	/// Allows other disposable resources to be disposed of along with the response.
 	/// </summary>
 	/// <remarks>
 	/// While it's slightly confusing to have this on the base type which is NOT IDisposable, it avoids
-	/// specialised type checking in the request invoker and response builder code. Currently, only used by
+	/// specialized type checking in the request invoker and response builder code. Currently, only used by
 	/// StreamResponse and kept internal. If we later make this public, we might need to refine this.
 	/// </remarks>
 	[JsonIgnore]
@@ -55,6 +54,6 @@ public abstract class TransportResponse
 	/// Currently only used by StreamResponse and therefore internal.
 	/// </remarks>
 	[JsonIgnore]
-	protected internal virtual bool LeaveOpen { get; } = false;
+	protected internal virtual bool LeaveOpen => false;
 }
 

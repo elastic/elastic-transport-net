@@ -48,7 +48,7 @@ public abstract partial class PostData
 
 		public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
 		{
-			MemoryStream buffer = null;
+			MemoryStream? buffer = null;
 			var stream = writableStream;
 			BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
 			_syncWriter(_state, stream);
@@ -57,7 +57,7 @@ public abstract partial class PostData
 
 		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
 		{
-			MemoryStream buffer = null;
+			MemoryStream? buffer = null;
 			var stream = writableStream;
 			BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
 			await _asyncWriter(_state, stream, cancellationToken).ConfigureAwait(false);

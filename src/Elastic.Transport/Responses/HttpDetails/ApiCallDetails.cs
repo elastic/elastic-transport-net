@@ -96,7 +96,7 @@ public sealed class ApiCallDetails
 	/// <summary>
 	/// The value of the Content-Type header in the response.
 	/// </summary>
-	public string ResponseContentType { get; set; }
+	public string ResponseContentType { get; set; } = string.Empty;
 
 	/// <summary>
 	/// Indicates whether the response has a status code that is considered successful.
@@ -124,7 +124,7 @@ public sealed class ApiCallDetails
 	/// </summary>
 	public Uri? Uri { get; internal set; }
 
-	internal ITransportConfiguration TransportConfiguration { get; set; }
+	internal ITransportConfiguration TransportConfiguration { get; set; } = null!; // Always set during initialization in ResponseFactory
 
 	internal IReadOnlyDictionary<string, IEnumerable<string>> ParsedHeaders { get; set; }
 		= EmptyReadOnly<string, IEnumerable<string>>.Dictionary;

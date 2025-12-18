@@ -72,7 +72,7 @@ public abstract partial class PostData
 	/// <param name="disableDirectStreaming">Flag indicating whether direct streaming is disabled.</param>
 	/// <param name="buffer">Reference to the buffer memory stream.</param>
 	/// <param name="stream">Reference to the stream to write to.</param>
-	protected void BufferIfNeeded(MemoryStreamFactory memoryStreamFactory, bool disableDirectStreaming, ref MemoryStream buffer, ref Stream stream)
+	protected void BufferIfNeeded(MemoryStreamFactory memoryStreamFactory, bool disableDirectStreaming, ref MemoryStream? buffer, ref Stream stream)
 	{
 		if (!disableDirectStreaming) return;
 

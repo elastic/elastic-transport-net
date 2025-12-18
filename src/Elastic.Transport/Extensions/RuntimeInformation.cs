@@ -16,8 +16,8 @@ namespace Elastic.Transport.Extensions
 {
 	internal static class RuntimeInformation
 	{
-		private static string _frameworkDescription;
-		private static string _osDescription;
+		private static string? _frameworkDescription;
+		private static string? _osDescription;
 
 		public static string FrameworkDescription
 		{

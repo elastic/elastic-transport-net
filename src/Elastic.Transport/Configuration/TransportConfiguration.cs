@@ -143,7 +143,7 @@ public record TransportConfiguration : ITransportConfiguration
 		ClientCertificates = config.ClientCertificates;
 		ConnectionLimit = config.ConnectionLimit;
 		ContentType = config.ContentType;
-		DateTimeProvider = config.DateTimeProvider;
+		DateTimeProvider = config.DateTimeProvider ?? DefaultDateTimeProvider.Default;
 		DeadTimeout = config.DeadTimeout;
 		DisableAuditTrail = config.DisableAuditTrail;
 		DisableAutomaticProxyDetection = config.DisableAutomaticProxyDetection;
@@ -171,7 +171,7 @@ public record TransportConfiguration : ITransportConfiguration
 		OpaqueId = config.OpaqueId;
 		ParseAllHeaders = config.ParseAllHeaders;
 		PingTimeout = config.PingTimeout;
-		PipelineProvider = config.PipelineProvider;
+		PipelineProvider = config.PipelineProvider ?? DefaultRequestPipelineFactory.Default;
 		PrettyJson = config.PrettyJson;
 		ProductRegistration = config.ProductRegistration;
 		ProxyAddress = config.ProxyAddress;
@@ -192,7 +192,7 @@ public record TransportConfiguration : ITransportConfiguration
 		StatusCodeToResponseSuccess = config.StatusCodeToResponseSuccess;
 		ThrowExceptions = config.ThrowExceptions;
 		TransferEncodingChunked = config.TransferEncodingChunked;
-		UserAgent = config.UserAgent;
+		UserAgent = config.UserAgent ?? UserAgent.Create(config.ProductRegistration.Name, config.ProductRegistration.GetType());
 	}
 
 	/// <summary>

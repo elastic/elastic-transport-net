@@ -65,7 +65,8 @@ public abstract partial class PostData
 					do
 					{
 						var bytes = enumerator.Current.Utf8Bytes();
-						stream.Write(bytes, 0, bytes.Length);
+						if (bytes is not null)
+							stream.Write(bytes, 0, bytes.Length);
 						stream.Write(NewLineByteArray, 0, 1);
 					} while (enumerator.MoveNext());
 
@@ -120,7 +121,8 @@ public abstract partial class PostData
 					do
 					{
 						var bytes = enumerator.Current.Utf8Bytes();
-						await stream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+						if (bytes is not null)
+							await stream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
 						await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
 					} while (enumerator.MoveNext());
 

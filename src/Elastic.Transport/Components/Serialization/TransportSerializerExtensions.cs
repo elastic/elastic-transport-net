@@ -153,7 +153,7 @@ public static class TransportSerializerExtensions
 
 		serializer.Serialize(data, ms, formatting);
 
-		return ms.Utf8String();
+		return ms.Utf8String() ?? string.Empty;
 	}
 
 	/// <summary>
@@ -203,7 +203,7 @@ public static class TransportSerializerExtensions
 
 		serializer.Serialize(data, ms, formatting);
 
-		return ms.Utf8String();
+		return ms.Utf8String() ?? string.Empty;
 	}
 
 	/// <summary>
@@ -548,7 +548,7 @@ public static class TransportSerializerExtensions
 		using var ms = memoryStreamFactory.Create();
 
 		var writer = new Utf8JsonWriter(ms);
-		jsonDoc.WriteTo(writer);
+		jsonDoc?.WriteTo(writer);
 		writer.Flush();
 		ms.Position = 0;
 
@@ -587,7 +587,7 @@ public static class TransportSerializerExtensions
 		using var ms = memoryStreamFactory.Create();
 
 		var writer = new Utf8JsonWriter(ms);
-		jsonDoc.WriteTo(writer);
+		jsonDoc?.WriteTo(writer);
 		writer.Flush();
 		ms.Position = 0;
 

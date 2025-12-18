@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-#nullable enable
 namespace Elastic.Transport.VirtualizedCluster.Components;
 
 /// <summary>
@@ -22,4 +21,3 @@ public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFac
 
 	public override RequestPipeline Create(BoundConfiguration boundConfiguration) => new(boundConfiguration);
 }
-#nullable restore

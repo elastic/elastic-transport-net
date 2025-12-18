@@ -8,7 +8,7 @@
       This package is heavily optimized for the Elastic (elastic.co) product suite and Elastic Cloud (cloud.elastic.co) SAAS offering. 
     </Description>
     <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
-    <Nullable>annotations</Nullable>
+    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net462;net8.0;net10.0</TargetFrameworks>
@@ -25,6 +25,11 @@
   <PropertyGroup>
     <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <!-- 👇 disable the nullable warnings when compiling for .NET Standard 2.0 -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net462'">
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

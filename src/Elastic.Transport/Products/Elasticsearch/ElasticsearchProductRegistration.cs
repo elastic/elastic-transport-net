@@ -28,14 +28,19 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	private readonly MetaHeaderProvider _metaHeaderProvider;
 	private readonly int? _clientMajorVersion;
 
-	private static string _clusterName;
+	private static string? _clusterName;
 	private static readonly string[] _all = new[] { XFoundHandlingClusterHeader, XFoundHandlingInstanceHeader };
 	private static readonly string[] _instanceHeader = new[] { XFoundHandlingInstanceHeader };
 
 	/// <summary>
 	/// Create a new instance of the Elasticsearch product registration.
 	/// </summary>
-	internal ElasticsearchProductRegistration() => _headers = new HeadersList("warning");
+	internal ElasticsearchProductRegistration()
+	{
+		_headers = new HeadersList("warning");
+		_metaHeaderProvider = null!;
+		ProductAssemblyVersion = null!;
+	}
 
 	/// <summary>
 	///
@@ -47,7 +52,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 		var identifier = ServiceIdentifier;
 		if (!string.IsNullOrEmpty(identifier))
-			_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, identifier);
+			_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, identifier!);
 
 		// Only set this if we have a version.
 		// If we don't have a version we won't apply the vendor-based REST API compatibility Accept header.
@@ -56,7 +61,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 		ProductAssemblyVersion = markerType.Assembly
 			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-			.InformationalVersion;
+			?.InformationalVersion ?? string.Empty;
 	}
 
 	/// <summary> A static instance of <see cref="ElasticsearchProductRegistration"/> to promote reuse </summary>
@@ -107,12 +112,13 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		statusCode >= 200 && statusCode < 300;
 
 	/// <inheritdoc cref="ProductRegistration.TryGetServerErrorReason{TResponse}"/>>
-	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason)
+	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason)
 	{
 		reason = null;
-		if (response is StringResponse s && s.TryGetElasticsearchServerError(out var e)) reason = e.Error?.ToString();
-		else if (response is BytesResponse b && b.TryGetElasticsearchServerError(out e)) reason = e.Error?.ToString();
-		else if (response.TryGetElasticsearchServerError(out e)) reason = e.Error?.ToString();
+		ElasticsearchServerError? e = null;
+		if (response is StringResponse s && s.TryGetElasticsearchServerError(out e)) reason = e?.Error?.ToString();
+		else if (response is BytesResponse b && b.TryGetElasticsearchServerError(out e)) reason = e?.Error?.ToString();
+		else if (response.TryGetElasticsearchServerError(out e)) reason = e?.Error?.ToString();
 		return e != null;
 	}
 
@@ -120,10 +126,10 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	/// <inheritdoc cref="ProductRegistration.CreateSniffEndpoint"/>
 	public override Endpoint CreateSniffEndpoint(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings)
 	{
-		var requestParameters = new DefaultRequestParameters
-		{
-			QueryString = { { "timeout", requestConfiguration.PingTimeout }, { "flat_settings", true } }
-		};
+		var requestParameters = new DefaultRequestParameters();
+		if (requestConfiguration.PingTimeout.HasValue)
+			requestParameters.QueryString.Add("timeout", requestConfiguration.PingTimeout.Value.ToString());
+		requestParameters.QueryString.Add("flat_settings", true);
 		var sniffPath = requestParameters.CreatePathWithQueryStrings(SniffPath, settings);
 		return new Endpoint(new EndpointPath(HttpMethod.GET, sniffPath), node);
 	}
@@ -194,7 +200,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		if (!string.IsNullOrEmpty(_clusterName))
 		{
 			attributes ??= new Dictionary<string, object>();
-			attributes.Add(OpenTelemetryAttributes.DbElasticsearchClusterName, _clusterName);
+			attributes.Add(OpenTelemetryAttributes.DbElasticsearchClusterName, _clusterName!);
 		}
 
 		if (callDetails.TryGetHeader(XFoundHandlingInstanceHeader, out var instanceValues))
