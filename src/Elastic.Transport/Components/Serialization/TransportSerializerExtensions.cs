@@ -2,11 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO;
-using System.Text.Json;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Elastic.Transport.Extensions;
@@ -153,7 +153,7 @@ public static class TransportSerializerExtensions
 
 		serializer.Serialize(data, ms, formatting);
 
-		return ms.Utf8String();
+		return ms.Utf8String() ?? string.Empty;
 	}
 
 	/// <summary>
@@ -203,7 +203,7 @@ public static class TransportSerializerExtensions
 
 		serializer.Serialize(data, ms, formatting);
 
-		return ms.Utf8String();
+		return ms.Utf8String() ?? string.Empty;
 	}
 
 	/// <summary>
@@ -220,7 +220,7 @@ public static class TransportSerializerExtensions
 		T? data,
 		Utf8JsonWriter writer,
 		SerializationFormatting formatting = SerializationFormatting.None
-	) => Serialize<T>(serializer, data, writer, TransportConfiguration.DefaultMemoryStreamFactory, formatting);
+	) => Serialize(serializer, data, writer, TransportConfiguration.DefaultMemoryStreamFactory, formatting);
 
 	/// <summary>
 	/// Extension method that writes the serialized representation of an instance of <typeparamref name="T"/> to a
@@ -548,7 +548,7 @@ public static class TransportSerializerExtensions
 		using var ms = memoryStreamFactory.Create();
 
 		var writer = new Utf8JsonWriter(ms);
-		jsonDoc.WriteTo(writer);
+		jsonDoc?.WriteTo(writer);
 		writer.Flush();
 		ms.Position = 0;
 
@@ -587,7 +587,7 @@ public static class TransportSerializerExtensions
 		using var ms = memoryStreamFactory.Create();
 
 		var writer = new Utf8JsonWriter(ms);
-		jsonDoc.WriteTo(writer);
+		jsonDoc?.WriteTo(writer);
 		writer.Flush();
 		ms.Position = 0;
 

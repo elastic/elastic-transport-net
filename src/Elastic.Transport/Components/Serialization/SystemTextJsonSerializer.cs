@@ -41,10 +41,10 @@ public abstract class SystemTextJsonSerializer : Serializer
 	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override T Deserialize<T>(Stream stream)
 	{
-		if (TryReturnDefault(stream, out T deserialize))
-			return deserialize;
+		if (TryReturnDefault(stream, out T? deserialize))
+			return deserialize!;
 
-		return JsonSerializer.Deserialize<T>(stream, GetJsonSerializerOptions());
+		return JsonSerializer.Deserialize<T>(stream, GetJsonSerializerOptions())!;
 	}
 
 	/// <inheritdoc />
@@ -52,7 +52,7 @@ public abstract class SystemTextJsonSerializer : Serializer
 	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override object? Deserialize(Type type, Stream stream)
 	{
-		if (TryReturnDefault(stream, out object deserialize))
+		if (TryReturnDefault(stream, out object? deserialize))
 			return deserialize;
 
 		return JsonSerializer.Deserialize(stream, type, GetJsonSerializerOptions());
@@ -61,12 +61,12 @@ public abstract class SystemTextJsonSerializer : Serializer
 	/// <inheritdoc />
 	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-	public override ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
+	public override async ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
 	{
-		if (TryReturnDefault(stream, out T deserialize))
-			return new ValueTask<T>(deserialize);
+		if (TryReturnDefault(stream, out T? deserialize))
+			return deserialize!;
 
-		return JsonSerializer.DeserializeAsync<T>(stream, GetJsonSerializerOptions(), cancellationToken);
+		return (await JsonSerializer.DeserializeAsync<T>(stream, GetJsonSerializerOptions(), cancellationToken).ConfigureAwait(false))!;
 	}
 
 	/// <inheritdoc />
@@ -74,7 +74,7 @@ public abstract class SystemTextJsonSerializer : Serializer
 	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	public override ValueTask<object?> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
 	{
-		if (TryReturnDefault(stream, out object deserialize))
+		if (TryReturnDefault(stream, out object? deserialize))
 			return new ValueTask<object?>(deserialize);
 
 		return JsonSerializer.DeserializeAsync(stream, type, GetJsonSerializerOptions(), cancellationToken);
@@ -144,7 +144,7 @@ public abstract class SystemTextJsonSerializer : Serializer
 	protected internal JsonSerializerOptions GetJsonSerializerOptions(SerializationFormatting formatting = SerializationFormatting.None) =>
 		formatting is SerializationFormatting.None ? _options : _indentedOptions;
 
-	private static bool TryReturnDefault<T>(Stream? stream, out T deserialize)
+	private static bool TryReturnDefault<T>(Stream? stream, out T? deserialize)
 	{
 		deserialize = default;
 		return (stream is null) || stream == Stream.Null || (stream.CanSeek && stream.Length == 0);

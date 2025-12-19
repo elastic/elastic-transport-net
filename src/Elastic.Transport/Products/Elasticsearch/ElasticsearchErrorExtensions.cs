@@ -12,7 +12,7 @@ namespace Elastic.Transport.Products.Elasticsearch;
 public static class ElasticsearchErrorExtensions
 {
 	/// <summary> Try to parse an Elasticsearch <see cref="ElasticsearchServerError"/> </summary>
-	public static bool TryGetElasticsearchServerError(this StringResponse response, out ElasticsearchServerError serverError)
+	public static bool TryGetElasticsearchServerError(this StringResponse response, out ElasticsearchServerError? serverError)
 	{
 		serverError = null;
 		if (string.IsNullOrEmpty(response.Body) || response.ApiCallDetails.ResponseContentType != BoundConfiguration.DefaultContentType)
@@ -24,7 +24,7 @@ public static class ElasticsearchErrorExtensions
 	}
 
 	/// <summary> Try to parse an Elasticsearch <see cref="ElasticsearchServerError"/> </summary>
-	public static bool TryGetElasticsearchServerError(this BytesResponse response, out ElasticsearchServerError serverError)
+	public static bool TryGetElasticsearchServerError(this BytesResponse response, out ElasticsearchServerError? serverError)
 	{
 		serverError = null;
 		if (response.Body == null || response.Body.Length == 0 || response.ApiCallDetails.ResponseContentType != BoundConfiguration.DefaultContentType)
@@ -39,7 +39,7 @@ public static class ElasticsearchErrorExtensions
 	/// Try to parse an Elasticsearch <see cref="ElasticsearchServerError"/>, this only works if
 	/// <see cref="IRequestConfiguration.DisableDirectStreaming"/> gives us access to <see cref="ApiCallDetails.RequestBodyInBytes"/>
 	/// </summary>
-	public static bool TryGetElasticsearchServerError(this TransportResponse response, out ElasticsearchServerError serverError)
+	public static bool TryGetElasticsearchServerError(this TransportResponse response, out ElasticsearchServerError? serverError)
 	{
 		serverError = null;
 		var bytes = response.ApiCallDetails.ResponseBodyInBytes;

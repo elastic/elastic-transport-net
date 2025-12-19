@@ -10,20 +10,22 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.Hosting;
 
-namespace Elastic.Transport.IntegrationTests.Plumbing
+namespace Elastic.Transport.IntegrationTests.Plumbing;
+
+internal static partial class WebHostExtensions
 {
-	internal static class WebHostExtensions
+	internal static int GetServerPort(this IServer server)
 	{
-		internal static int GetServerPort(this IServer server)
-		{
-			var address = server.Features.Get<IServerAddressesFeature>().Addresses.First();
-			var match = Regex.Match(address, @"^.+:(\d+)$");
+		var address = server.Features.Get<IServerAddressesFeature>().Addresses.First();
+		var match = AddressRegex().Match(address);
 
-			if (!match.Success) throw new Exception($"Unable to parse port from address: {address}");
+		if (!match.Success)
+			throw new Exception($"Unable to parse port from address: {address}");
 
-			var port = int.TryParse(match.Groups[1].Value, out var p);
-			return port ? p : throw new Exception($"Unable to parse port to integer from address: {address}");
-		}
-
+		var port = int.TryParse(match.Groups[1].Value, out var p);
+		return port ? p : throw new Exception($"Unable to parse port to integer from address: {address}");
 	}
+
+	[GeneratedRegex(@"^.+:(\d+)$")]
+	private static partial Regex AddressRegex();
 }

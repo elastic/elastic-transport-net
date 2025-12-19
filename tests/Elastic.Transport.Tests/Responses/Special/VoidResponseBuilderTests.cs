@@ -27,14 +27,14 @@ public class VoidResponseBuilderTests
 		var stream = new MemoryStream(Data);
 
 		var result = await sut.BuildAsync<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
-		result.Body.Should().BeOfType(typeof(VoidBody));
+		_ = result.Body.Should().BeOfType<VoidBody>();
 
 		result = sut.Build<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
-		result.Body.Should().BeOfType(typeof(VoidBody));
+		_ = result.Body.Should().BeOfType<VoidBody>();
 	}
 
 	[Fact]
-	public async Task ReturnsExpectedResponse_WhenDisableDirectStreaming()
+	public async Task ReturnsExpectedResponseWhenDisableDirectStreaming()
 	{
 		IResponseBuilder sut = new VoidResponseBuilder();
 
@@ -44,9 +44,9 @@ public class VoidResponseBuilderTests
 		var stream = new MemoryStream(Data);
 
 		var result = await sut.BuildAsync<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
-		result.Body.Should().BeOfType(typeof(VoidBody));
+		_ = result.Body.Should().BeOfType<VoidBody>();
 
 		result = sut.Build<VoidResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, Data.Length);
-		result.Body.Should().BeOfType(typeof(VoidBody));
+		_ = result.Body.Should().BeOfType<VoidBody>();
 	}
 }

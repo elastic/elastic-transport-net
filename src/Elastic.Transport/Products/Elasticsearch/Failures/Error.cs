@@ -14,7 +14,9 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <summary> Represents the serialized Elasticsearch java exception that caused a request to fail </summary>
 [DataContract]
 [JsonConverter(typeof(ErrorConverter))]
+#pragma warning disable CA1716 // Identifiers should not match keywords
 public sealed class Error : ErrorCause
+#pragma warning restore CA1716 // Identifiers should not match keywords
 {
 	private static readonly IReadOnlyDictionary<string, string> DefaultHeaders =
 		new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0));
@@ -25,7 +27,7 @@ public sealed class Error : ErrorCause
 
 	/// <summary> The root cause exception </summary>
 	[JsonPropertyName("root_cause")]
-	public IReadOnlyCollection<ErrorCause> RootCause { get; set; }
+	public IReadOnlyCollection<ErrorCause>? RootCause { get; set; }
 
 	/// <summary> A human readable string representation of the exception returned by Elasticsearch </summary>
 	public override string ToString() => CausedBy == null
@@ -37,30 +39,30 @@ public sealed class Error : ErrorCause
 public sealed class ErrorConverter : JsonConverter<Error>
 {
 	/// <inheritdoc cref="JsonConverter{T}.Read"/>
-	public override Error Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+	public override Error? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		if (reader.TokenType == JsonTokenType.String)
-			return new Error { Reason = reader.GetString() };
+			return new Error { Reason = reader.GetString()! };
 		if (reader.TokenType == JsonTokenType.StartObject)
 		{
 			var error = new Error();
-			Dictionary<string, object> additional = null;
+			Dictionary<string, object>? additional = null;
 
 			while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
 			{
-				if (reader.TokenType != JsonTokenType.PropertyName) continue;
+				if (reader.TokenType != JsonTokenType.PropertyName)
+					continue;
 
 				if (reader.ValueTextEquals("root_cause"))
 				{
-					var value = JsonSerializer.Deserialize<IReadOnlyCollection<ErrorCause>>(ref reader, ElasticsearchTransportSerializerContext.Default.IReadOnlyCollectionErrorCause);
+					var value = JsonSerializer.Deserialize<IReadOnlyCollection<ErrorCause>?>(ref reader, ElasticsearchTransportSerializerContext.Default.IReadOnlyCollectionErrorCause);
 					error.RootCause = value;
 					continue;
 				}
 
 				if (reader.ValueTextEquals("caused_by"))
 				{
-					var value = JsonSerializer.Deserialize<ErrorCause>(ref reader, ElasticsearchTransportSerializerContext.Default.ErrorCause);
-					error.CausedBy = value;
+					error.CausedBy = JsonSerializer.Deserialize<ErrorCause?>(ref reader, ElasticsearchTransportSerializerContext.Default.ErrorCause)!; // Deserialized from JSON
 					continue;
 				}
 
@@ -73,50 +75,47 @@ public sealed class ErrorConverter : JsonConverter<Error>
 
 				if (reader.ValueTextEquals("headers"))
 				{
-					var value = JsonSerializer.Deserialize<IReadOnlyDictionary<string, string>>(ref reader, ElasticsearchTransportSerializerContext.Default.IReadOnlyDictionaryStringString); // TODO: Test! This might not work without adding `IReadOnlyDictionary<string, string>` to `ErrorSerializationContext`
-					error.Headers = value;
+					var value = JsonSerializer.Deserialize<IReadOnlyDictionary<string, string>?>(ref reader, ElasticsearchTransportSerializerContext.Default.IReadOnlyDictionaryStringString); // TODO: Test! This might not work without adding `IReadOnlyDictionary<string, string>` to `ErrorSerializationContext`
+					if (value != null)
+						error.Headers = value;
 					continue;
 				}
 
 				if (reader.ValueTextEquals("stack_trace"))
 				{
-					var value = JsonSerializer.Deserialize<string>(ref reader, ElasticsearchTransportSerializerContext.Default.String);
-					error.StackTrace = value;
+					error.StackTrace = JsonSerializer.Deserialize<string?>(ref reader, ElasticsearchTransportSerializerContext.Default.String)!; // Deserialized from JSON
 					continue;
 				}
 
 				if (reader.ValueTextEquals("type"))
 				{
-					var value = JsonSerializer.Deserialize<string>(ref reader, ElasticsearchTransportSerializerContext.Default.String);
-					error.Type = value;
+					error.Type = JsonSerializer.Deserialize<string?>(ref reader, ElasticsearchTransportSerializerContext.Default.String)!; // Deserialized from JSON
 					continue;
 				}
 
 				if (reader.ValueTextEquals("index"))
 				{
-					var value = JsonSerializer.Deserialize<string>(ref reader, ElasticsearchTransportSerializerContext.Default.String);
-					error.Index = value;
+					error.Index = JsonSerializer.Deserialize<string?>(ref reader, ElasticsearchTransportSerializerContext.Default.String)!; // Deserialized from JSON
 					continue;
 				}
 
 				if (reader.ValueTextEquals("index_uuid"))
 				{
-					var value = JsonSerializer.Deserialize<string>(ref reader, ElasticsearchTransportSerializerContext.Default.String);
-					error.IndexUUID = value;
+					error.IndexUUID = JsonSerializer.Deserialize<string?>(ref reader, ElasticsearchTransportSerializerContext.Default.String)!; // Deserialized from JSON
 					continue;
 				}
 
 				if (reader.ValueTextEquals("reason"))
 				{
-					var value = JsonSerializer.Deserialize<string>(ref reader, ElasticsearchTransportSerializerContext.Default.String);
-					error.Reason = value;
+					error.Reason = JsonSerializer.Deserialize<string?>(ref reader, ElasticsearchTransportSerializerContext.Default.String)!; // Deserialized from JSON
 					continue;
 				}
 
-				additional ??= new Dictionary<string, object>();
+				additional ??= [];
 				var key = reader.GetString();
-				var additionaValue = JsonSerializer.Deserialize<object>(ref reader, ElasticsearchTransportSerializerContext.Default.Object);
-				additional.Add(key, additionaValue);
+				var additionaValue = JsonSerializer.Deserialize<object?>(ref reader, ElasticsearchTransportSerializerContext.Default.Object);
+				if (key != null && additionaValue != null)
+					additional.Add(key, additionaValue);
 			}
 
 			if (additional is not null)

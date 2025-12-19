@@ -9,16 +9,15 @@ using Xunit;
 [assembly: CaptureConsole, AssemblyFixture(typeof(TestServerFixture))]
 [assembly: AssemblyFixture(typeof(BufferedServerFixture))]
 
-namespace Elastic.Transport.IntegrationTests.Plumbing
+namespace Elastic.Transport.IntegrationTests.Plumbing;
+
+public class AssemblyServerTestsBase<TServer>(TServer instance)
+	: IClassFixture<TServer> where TServer : class, IHttpTransportTestServer
 {
-	public class AssemblyServerTestsBase<TServer>(TServer instance)
-		: IClassFixture<TServer> where TServer : class, IHttpTransportTestServer
-	{
-		protected TServer Server { get; } = instance;
+	protected TServer Server { get; } = instance;
 
-		protected ITransport RequestHandler => Server.DefaultRequestHandler;
-	}
-
-	public class AssemblyServerTestsBase(TestServerFixture instance)
-		: AssemblyServerTestsBase<TestServerFixture>(instance);
+	protected ITransport RequestHandler => Server.DefaultRequestHandler;
 }
+
+public class AssemblyServerTestsBase(TestServerFixture instance)
+	: AssemblyServerTestsBase<TestServerFixture>(instance);

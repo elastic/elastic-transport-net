@@ -40,22 +40,22 @@ public abstract class ElasticsearchResponse : TransportResponse
 		get
 		{
 			var sb = new StringBuilder();
-			sb.Append($"{(!IsValidResponse ? "Inv" : "V")}alid Elasticsearch response built from a ");
-			sb.AppendLine(ApiCallDetails?.ToString().ToCamelCase() ??
+			_ = sb.Append($"{(!IsValidResponse ? "Inv" : "V")}alid Elasticsearch response built from a ");
+			_ = sb.AppendLine(ApiCallDetails?.ToString().ToCamelCase() ??
 						"null ApiCall which is highly exceptional, please open a bug if you see this");
 			if (!IsValidResponse)
 				DebugIsValid(sb);
 
 			if (ApiCallDetails?.ParsedHeaders is not null && ApiCallDetails.ParsedHeaders.TryGetValue("warning", out var warnings))
 			{
-				sb.AppendLine($"# Server indicated warnings:");
+				_ = sb.AppendLine($"# Server indicated warnings:");
 
 				foreach (var warning in warnings)
-					sb.AppendLine($"- {warning}");
+					_ = sb.AppendLine($"- {warning}");
 			}
 
 			if (ApiCallDetails != null)
-				Diagnostics.ResponseStatics.DebugInformationBuilder(ApiCallDetails, sb);
+				_ = Diagnostics.ResponseStatics.DebugInformationBuilder(ApiCallDetails, sb);
 
 			return sb.ToString();
 		}

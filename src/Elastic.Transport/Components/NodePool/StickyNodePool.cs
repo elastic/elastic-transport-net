@@ -39,7 +39,7 @@ public sealed class StickyNodePool : StaticNodePool
 		// If the cursor is greater than the default then it's been
 		// set already but we now have a live node so we should reset it
 		if (GlobalCursor > -1)
-			Interlocked.Exchange(ref GlobalCursor, -1);
+			_ = Interlocked.Exchange(ref GlobalCursor, -1);
 
 		var localCursor = 0;
 		foreach (var aliveNode in SelectAliveNodes(localCursor, nodes, auditor))

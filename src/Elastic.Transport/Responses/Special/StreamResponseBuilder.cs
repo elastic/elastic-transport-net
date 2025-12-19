@@ -15,5 +15,5 @@ internal class StreamResponseBuilder : TypedResponseBuilder<StreamResponse>
 
 	protected override Task<StreamResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType,
 		long contentLength, CancellationToken cancellationToken = default) =>
-			Task.FromResult(new StreamResponse(responseStream, contentType));
+			Task.FromResult<StreamResponse>(new StreamResponse(responseStream, contentType));
 }

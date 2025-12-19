@@ -6,64 +6,63 @@ using System.Linq;
 using FluentAssertions;
 using Xunit;
 
-namespace Elastic.Transport.Tests.Configuration
+namespace Elastic.Transport.Tests.Configuration;
+
+public class HeadersListTests
 {
-	public class HeadersListTests
+	[Fact]
+	public void SupportsEnumerationWhenEmpty()
 	{
-		[Fact]
-		public void SupportsEnumerationWhenEmpty()
-		{
-			var sut = new HeadersList();
+		var sut = new HeadersList();
 
-			foreach (var header in sut)
+		foreach (var header in sut)
+		{
+		}
+	}
+
+	[Fact]
+	public void CtorSkipsDuplicatesFromSingleEnumerable()
+	{
+		var sut = new HeadersList(["header-one", "header-two", "header-TWO"]);
+
+		_ = sut.Count.Should().Be(2);
+		_ = sut.First().Should().Be("header-one");
+		_ = sut.Last().Should().Be("header-two");
+	}
+
+	[Fact]
+	public void CtorSkipsDuplicatesFromSingleEnumerableAndSingleHeader()
+	{
+		var sut = new HeadersList(["header-one", "header-two"], "header-TWO");
+
+		_ = sut.Count.Should().Be(2);
+		_ = sut.First().Should().Be("header-one");
+		_ = sut.Last().Should().Be("header-two");
+	}
+
+	[Fact]
+	public void CtorSkipsDuplicatesFromTwoEnumerables()
+	{
+		var sut = new HeadersList(["header-ONE", "header-two"], ["header-one", "header-THREE", "HEADER-TWO"]);
+
+		_ = sut.Count.Should().Be(3);
+
+		var count = 0;
+		foreach (var header in sut)
+		{
+			count++;
+
+			switch (count)
 			{
-			}
-		}
-
-		[Fact]
-		public void Ctor_SkipsDuplicates_FromSingleEnumerable()
-		{
-			var sut = new HeadersList(new[] { "header-one", "header-two", "header-TWO" });
-
-			sut.Count.Should().Be(2);
-			sut.First().Should().Be("header-one");
-			sut.Last().Should().Be("header-two");
-		}
-
-		[Fact]
-		public void Ctor_SkipsDuplicates_FromSingleEnumerable_AndSingleHeader()
-		{
-			var sut = new HeadersList(new[] { "header-one", "header-two" }, "header-TWO");
-
-			sut.Count.Should().Be(2);
-			sut.First().Should().Be("header-one");
-			sut.Last().Should().Be("header-two");
-		}
-
-		[Fact]
-		public void Ctor_SkipsDuplicates_FromTwoEnumerables()
-		{
-			var sut = new HeadersList(new[] { "header-ONE", "header-two" }, new[] { "header-one", "header-THREE", "HEADER-TWO" });
-
-			sut.Count.Should().Be(3);
-
-			var count = 0;
-			foreach (var header in sut)
-			{
-				count++;
-
-				switch (count)
-				{
-					case 1:
-						header.Should().Be("header-ONE");
-						break;
-					case 2:
-						header.Should().Be("header-two");
-						break;
-					case 3:
-						header.Should().Be("header-THREE");
-						break;
-				}
+				case 1:
+					_ = header.Should().Be("header-ONE");
+					break;
+				case 2:
+					_ = header.Should().Be("header-two");
+					break;
+				case 3:
+					_ = header.Should().Be("header-THREE");
+					break;
 			}
 		}
 	}
