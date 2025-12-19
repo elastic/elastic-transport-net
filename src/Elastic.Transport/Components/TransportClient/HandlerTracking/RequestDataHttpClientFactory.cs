@@ -207,6 +207,8 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 				// Since we're the only one removing from _expired, TryDequeue must always succeed.
 				_expiredHandlers.TryDequeue(out var entry);
 				Debug.Assert(entry != null, "Entry was null, we should always get an entry back from TryDequeue");
+				if (entry is null)
+					continue;
 
 				if (entry.CanDispose)
 				{

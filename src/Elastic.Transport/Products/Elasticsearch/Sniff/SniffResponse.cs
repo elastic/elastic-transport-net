@@ -29,7 +29,7 @@ internal sealed class SniffResponse : TransportResponse
 			var httpEndpoint = info.Http?.PublishAddress;
 			if (string.IsNullOrWhiteSpace(httpEndpoint))
 				httpEndpoint = kv.Value.Http?.BoundAddress?.FirstOrDefault();
-			if (string.IsNullOrWhiteSpace(httpEndpoint))
+			if (httpEndpoint is null || string.IsNullOrWhiteSpace(httpEndpoint))
 				continue;
 
 			var uri = SniffParser.ParseToUri(httpEndpoint, forceHttp);
