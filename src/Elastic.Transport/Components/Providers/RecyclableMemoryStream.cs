@@ -34,6 +34,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
+using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
 
@@ -763,7 +764,7 @@ internal sealed class RecyclableMemoryStream : MemoryStream
 	public override void WriteTo(Stream stream)
 	{
 		CheckDisposed();
-		ArgumentNullException.ThrowIfNull(stream);
+		stream.ThrowIfNull(nameof(stream));
 
 		if (_largeBuffer == null)
 		{

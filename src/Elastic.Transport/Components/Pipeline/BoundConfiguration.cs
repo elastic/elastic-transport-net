@@ -82,7 +82,11 @@ public sealed record BoundConfiguration : IRequestConfiguration
 		if (!string.IsNullOrEmpty(local?.OpaqueId))
 		{
 			Headers ??= [];
+#if NETSTANDARD2_0 || NETFRAMEWORK
+			Headers.Add(OpaqueIdHeader, local!.OpaqueId);
+#else
 			Headers.Add(OpaqueIdHeader, local.OpaqueId);
+#endif
 		}
 
 		// If there are builders set at the transport level and on the request config, we combine them,

@@ -31,6 +31,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
 
@@ -398,7 +399,7 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// </exception>
 	internal void ReturnLargeBuffer(byte[] buffer, string? tag)
 	{
-		ArgumentNullException.ThrowIfNull(buffer);
+		buffer.ThrowIfNull(nameof(buffer));
 
 		if (!IsLargeBufferSize(buffer.Length))
 			throw new ArgumentException(
@@ -449,7 +450,7 @@ internal sealed partial class RecyclableMemoryStreamManager
 	/// <exception cref="ArgumentException">blocks contains buffers that are the wrong size (or null) for this memory manager</exception>
 	internal void ReturnBlocks(ICollection<byte[]> blocks, string? tag)
 	{
-		ArgumentNullException.ThrowIfNull(blocks);
+		blocks.ThrowIfNull(nameof(blocks));
 
 		var bytesToReturn = blocks.Count * BlockSize;
 		Interlocked.Add(ref _smallPoolInUseSize, -bytesToReturn);
