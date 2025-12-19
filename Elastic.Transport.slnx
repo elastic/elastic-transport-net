@@ -18,6 +18,7 @@
     <Project Path="build/scripts/scripts.fsproj" />
   </Folder>
   <Folder Name="/examples/">
+    <Project Path="examples/aspnetcore-pipe-example/aspnetcore-pipe-example.csproj" />
     <Project Path="examples/transport-aot-example/transport-aot-example.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -29,6 +30,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Elastic.Elasticsearch.IntegrationTests/Elastic.Elasticsearch.IntegrationTests.csproj" />
     <Project Path="tests/Elastic.Transport.IntegrationTests/Elastic.Transport.IntegrationTests.csproj" />
+    <Project Path="tests/Elastic.Transport.Pipes.IntegrationTests/Elastic.Transport.Pipes.IntegrationTests.csproj" />
     <Project Path="tests/Elastic.Transport.Tests/Elastic.Transport.Tests.csproj" />
     <Project Path="tests\Elastic.Transport.Tests.SharedComponents\Elastic.Transport.Tests.SharedComponents.csproj" />
   </Folder>
