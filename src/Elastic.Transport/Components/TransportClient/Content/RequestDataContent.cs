@@ -66,9 +66,10 @@ internal sealed class BoundConfigurationContent : HttpContent
 	}
 
 	/// <summary> Constructor used in asynchronous paths. </summary>
-	public BoundConfigurationContent(BoundConfiguration boundConfiguration, CancellationToken token)
+	public BoundConfigurationContent(BoundConfiguration boundConfiguration, PostData? postData, CancellationToken token)
 	{
 		_boundConfiguration = boundConfiguration;
+		_postData = postData;
 		_token = token;
 
 		Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
