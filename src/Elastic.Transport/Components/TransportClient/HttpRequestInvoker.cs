@@ -462,7 +462,7 @@ public class HttpRequestInvoker : IRequestInvoker
 	private static async Task SetContentAsync(HttpRequestMessage message, BoundConfiguration boundConfiguration, PostData postData, CancellationToken cancellationToken)
 	{
 		if (boundConfiguration.TransferEncodingChunked)
-			message.Content = new BoundConfigurationContent(boundConfiguration, cancellationToken);
+			message.Content = new BoundConfigurationContent(boundConfiguration, postData, cancellationToken);
 		else
 		{
 			var stream = boundConfiguration.MemoryStreamFactory.Create();
