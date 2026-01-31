@@ -16,24 +16,17 @@ namespace Elastic.Transport;
 /// Thread-safety: This class is immutable
 /// <para>https://github.com/dotnet/runtime/blob/master/src/libraries/Microsoft.Extensions.Http/src/ExpiredHandlerTrackingEntry.cs</para>
 /// </summary>
-internal sealed class ExpiredHandlerTrackingEntry
+internal sealed class ExpiredHandlerTrackingEntry(ActiveHandlerTrackingEntry other)
 {
-	private readonly WeakReference _livenessTracker;
+	private readonly WeakReference _livenessTracker = new(other.Handler);
 
 	// IMPORTANT: don't cache a reference to `other` or `other.Handler` here.
 	// We need to allow it to be GC'ed.
-	public ExpiredHandlerTrackingEntry(ActiveHandlerTrackingEntry other)
-	{
-		Key = other.Key;
-
-		_livenessTracker = new WeakReference(other.Handler);
-		InnerHandler = other.Handler.InnerHandler;
-	}
 
 	public bool CanDispose => !_livenessTracker.IsAlive;
 
-	public HttpMessageHandler InnerHandler { get; }
+	public HttpMessageHandler? InnerHandler { get; } = other.Handler.InnerHandler;
 
-	public int Key { get; }
+	public int Key { get; } = other.Key;
 }
 #endif

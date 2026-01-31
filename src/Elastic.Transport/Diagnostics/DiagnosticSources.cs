@@ -66,7 +66,7 @@ internal static class DiagnosticSources
 	public class SerializerDiagnosticKeys : IDiagnosticsKeys
 	{
 		/// <inheritdoc cref="IDiagnosticsKeys.SourceName"/>
-		public string SourceName { get; } = typeof(Serializer).FullName;
+		public string SourceName { get; } = typeof(Serializer).FullName!;
 
 		/// <summary> Start and stop event around <see cref="Serializer.Serialize{T}"/> invocations</summary>
 		public string Serialize { get; } = nameof(Serialize);
@@ -102,7 +102,7 @@ internal static class DiagnosticSources
 	public class AuditDiagnosticKeys : IDiagnosticsKeys
 	{
 		/// <inheritdoc cref="IDiagnosticsKeys.SourceName"/>
-		public string SourceName { get; } = typeof(Audit).FullName;
+		public string SourceName { get; } = typeof(Audit).FullName!;
 	}
 
 	internal class EmptyDisposable : IDisposable

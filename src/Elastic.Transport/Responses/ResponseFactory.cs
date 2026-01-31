@@ -58,23 +58,20 @@ public abstract class ResponseFactory
 		Endpoint endpoint,
 		BoundConfiguration boundConfiguration,
 		PostData? postData,
-		Exception exception,
+		Exception? exception,
 		int? statusCode,
-		Dictionary<string, IEnumerable<string>> headers, 
-		string contentType,
+		Dictionary<string, IEnumerable<string>>? headers,
+		string? contentType,
 		IReadOnlyDictionary<string,
-		ThreadPoolStatistics> threadPoolStats, 
-		IReadOnlyDictionary<TcpState, int> tcpStats,
+		ThreadPoolStatistics>? threadPoolStats,
+		IReadOnlyDictionary<TcpState, int>? tcpStats,
 		long contentLength)
 	{
 		var hasSuccessfulStatusCode = false;
 		var allowedStatusCodes = boundConfiguration.AllowedStatusCodes;
 		if (statusCode.HasValue)
 		{
-			if (allowedStatusCodes.Contains(-1) || allowedStatusCodes.Contains(statusCode.Value))
-				hasSuccessfulStatusCode = true;
-			else
-				hasSuccessfulStatusCode = boundConfiguration.ConnectionSettings
+			hasSuccessfulStatusCode = allowedStatusCodes.Contains(-1) || allowedStatusCodes.Contains(statusCode.Value) || boundConfiguration.ConnectionSettings
 					.StatusCodeToResponseSuccess(endpoint.Method, statusCode.Value);
 		}
 
@@ -93,7 +90,7 @@ public abstract class ResponseFactory
 			HttpMethod = endpoint.Method,
 			TcpStats = tcpStats,
 			ThreadPoolStats = threadPoolStats,
-			ResponseContentType = contentType,
+			ResponseContentType = contentType ?? string.Empty,
 			TransportConfiguration = boundConfiguration.ConnectionSettings
 		};
 
@@ -109,18 +106,20 @@ public abstract class ResponseFactory
 	/// In that case, we may have a body and can only use the status code and method conditions to rule out a potential body.
 	/// </summary>
 	protected static bool MayHaveBody(int? statusCode, HttpMethod httpMethod, long contentLength) =>
-		contentLength != 0 && (!statusCode.HasValue || statusCode.Value != 204 && httpMethod != HttpMethod.HEAD);
+		contentLength != 0 && (!statusCode.HasValue || (statusCode.Value != 204 && httpMethod != HttpMethod.HEAD));
 
-	internal static bool ValidateResponseContentType(string accept, string responseContentType)
+	internal static bool ValidateResponseContentType(string accept, string? responseContentType)
 	{
-		if (string.IsNullOrEmpty(responseContentType)) return false;
+		if (string.IsNullOrEmpty(responseContentType))
+			return false;
 
 		if (accept == responseContentType)
 			return true;
 
 		// TODO - Performance: Review options to avoid the replace here and compare more efficiently.
+		// At this point, responseContentType is guaranteed to be non-null due to the check at line 116
 		var trimmedAccept = accept.Replace(" ", "");
-		var normalizedResponseContentType = responseContentType.Replace(" ", "");
+		var normalizedResponseContentType = responseContentType!.Replace(" ", "");
 
 		return normalizedResponseContentType.Equals(trimmedAccept, StringComparison.OrdinalIgnoreCase)
 			|| normalizedResponseContentType.StartsWith(trimmedAccept, StringComparison.OrdinalIgnoreCase)
@@ -129,7 +128,7 @@ public abstract class ResponseFactory
 			// - 404 responses from ES8 don't include the vendored header
 			// - ES8 EQL responses don't include vendored type
 
-			|| trimmedAccept.Contains("application/vnd.elasticsearch+json")
-			&& normalizedResponseContentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.OrdinalIgnoreCase);
+			|| (trimmedAccept.Contains("application/vnd.elasticsearch+json")
+			&& normalizedResponseContentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.OrdinalIgnoreCase));
 	}
 }

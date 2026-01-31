@@ -28,7 +28,10 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		[typeof(StreamResponse)] = new StreamResponseBuilder(),
 		[typeof(StringResponse)] = new StringResponseBuilder(),
 		[typeof(DynamicResponse)] = new DynamicResponseBuilder(),
-		[typeof(VoidResponse)] = new VoidResponseBuilder()
+		[typeof(VoidResponse)] = new VoidResponseBuilder(),
+#if NET10_0_OR_GREATER
+		[typeof(PipeResponse)] = new PipeResponseBuilder(),
+#endif
 	};
 
 	/// <inheritdoc/>
@@ -104,12 +107,11 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 			}
 
 			// We only attempt to build a response when the Content-Type matches the accepted type.
-			if (ValidateResponseContentType(boundConfiguration.Accept, contentType))
+			if (ValidateResponseContentType(boundConfiguration.Accept, contentType) && contentType is not null)
 			{
-				if (isAsync)
-					response = await builder.BuildAsync<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false);
-				else
-					response = builder.Build<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength);
+				response = isAsync
+					? await builder.BuildAsync<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false)
+					: builder.Build<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength);
 			}
 
 			if (ownsStream && (response is null || !response.LeaveOpen))
@@ -127,10 +129,14 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 	{
 		var type = typeof(TResponse);
 
-		if (_resolvedBuilders.TryGetValue(type, out builder))
+		if (_resolvedBuilders.TryGetValue(type, out var foundBuilder))
+		{
+			builder = foundBuilder;
 			return true;
+		}
 
-		if (TryFindResponseBuilder(type,responseBuilders, _resolvedBuilders, ref builder))
+		builder = default!;
+		if (TryFindResponseBuilder(type, responseBuilders, _resolvedBuilders, ref builder))
 			return true;
 
 		return TryFindResponseBuilder(type, productResponseBuilders, _resolvedBuilders, ref builder);
@@ -141,7 +147,7 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 			{
 				if (potentialBuilder.CanBuild<TResponse>())
 				{
-					resolvedBuilders.TryAdd(type, potentialBuilder);
+					_ = resolvedBuilders.TryAdd(type, potentialBuilder);
 					builder = potentialBuilder;
 					return true;
 				}

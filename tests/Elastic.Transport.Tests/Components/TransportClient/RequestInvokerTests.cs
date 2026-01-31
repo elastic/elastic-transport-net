@@ -18,7 +18,7 @@ namespace Elastic.Transport.Tests.Components.TransportClient
 	public class RequestInvokerTests
 	{
 		[Fact]
-		public void NoExceptionShouldBeThrown_WhenHttpResponseDoesNotIncludeCloudHeaders()
+		public void NoExceptionShouldBeThrownWhenHttpResponseDoesNotIncludeCloudHeaders()
 		{
 			// This test validates that if `ProductRegistration.ParseOpenTelemetryAttributesFromApiCallDetails` returns null,
 			// no exception is thrown and attributes are not set.

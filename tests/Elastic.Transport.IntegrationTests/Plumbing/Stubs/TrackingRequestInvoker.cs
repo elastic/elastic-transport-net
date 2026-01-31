@@ -47,5 +47,6 @@ public class TrackingRequestInvoker : IRequestInvoker
 	{
 		_handler?.Dispose();
 		_requestInvoker?.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }

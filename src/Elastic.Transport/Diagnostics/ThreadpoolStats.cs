@@ -31,36 +31,29 @@ public static class ThreadPoolStats
 }
 
 /// <summary> Statistics for a thread pool </summary>
-public class ThreadPoolStatistics
+/// <inheritdoc cref="ThreadPoolStatistics"/>>
+public class ThreadPoolStatistics(int min, int max, int busy, int free)
 {
-	/// <inheritdoc cref="ThreadPoolStatistics"/>>
-	public ThreadPoolStatistics(int min, int max, int busy, int free)
-	{
-		Min = min;
-		Max = max;
-		Busy = busy;
-		Free = free;
-	}
 
 	/// <summary>The difference between the maximum number of thread pool threads returned by
 	/// <see cref="Max"/>, and the number currently free.
 	/// </summary>
-	public int Busy { get; }
+	public int Busy { get; } = busy;
 
 	/// <summary>The difference between the maximum number of thread pool threads returned by
 	/// <see cref="Max"/>, and the number currently active.
 	/// </summary>
-	public int Free { get; }
+	public int Free { get; } = free;
 
 	/// <summary>
 	/// The number of requests to the thread pool that can be active concurrently. All requests above that number remain queued until
 	/// thread pool threads become available.
 	/// </summary>
-	public int Max { get; }
+	public int Max { get; } = max;
 
 	/// <summary>
 	/// The minimum number of threads the thread pool creates on demand, as new requests are made, before switching to an algorithm for
 	/// managing thread creation and destruction.
 	/// </summary>
-	public int Min { get; }
+	public int Min { get; } = min;
 }

@@ -62,10 +62,11 @@ public sealed class ReflectionVersionInfo : VersionInfo
 			if (!string.IsNullOrEmpty(version))
 			{
 				// Version string is already in semver format
-				if (SemVersion.TryParse(version, out var result))
+				// version is guaranteed non-null here due to IsNullOrEmpty check above
+				if (SemVersion.TryParse(version!, out var result))
 					return result;
 
-				var prefix = GetVersionPrefixPart(version);
+				var prefix = GetVersionPrefixPart(version!);
 
 				// Version prefix is not in a valid 'major.minor[.build[.revision]]' form
 				if (!Version.TryParse(prefix, out var prefixVersion))
@@ -77,7 +78,7 @@ public sealed class ReflectionVersionInfo : VersionInfo
 					return Empty;
 
 				// Remove non semver compliant '[.revision]'
-				version = $"{prefixVersion.Major}.{prefixVersion.Minor}.{prefixVersion.Build}{version.Substring(prefix.Length)}";
+				version = $"{prefixVersion.Major}.{prefixVersion.Minor}.{prefixVersion.Build}{version!.Substring(prefix.Length)}";
 				if (!SemVersion.TryParse(version, out result))
 					return Empty;
 
@@ -110,7 +111,8 @@ public sealed class ReflectionVersionInfo : VersionInfo
 
 			if (!string.IsNullOrEmpty(version))
 			{
-				var parts = version.Split('.');
+				// version is guaranteed non-null here due to IsNullOrEmpty check above
+				var parts = version!.Split('.');
 
 				var major = parts.Length >= 1 && int.TryParse(parts[0], out var majorVal) ? majorVal : 0;
 				var minor = parts.Length >= 2 && int.TryParse(parts[1], out var minorVal) ? minorVal : 0;

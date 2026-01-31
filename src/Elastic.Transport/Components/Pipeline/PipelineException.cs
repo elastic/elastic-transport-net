@@ -30,9 +30,9 @@ public class PipelineException : Exception
 	/// <para><see cref="PipelineFailure.PingFailure"/></para>
 	/// </summary>
 	public bool Recoverable =>
-		FailureReason == PipelineFailure.BadRequest
-		|| FailureReason == PipelineFailure.BadResponse
-		|| FailureReason == PipelineFailure.PingFailure;
+		FailureReason is PipelineFailure.BadRequest
+		or PipelineFailure.BadResponse
+		or PipelineFailure.PingFailure;
 
 	/// <summary> The response that triggered this exception </summary>
 	public TransportResponse? Response { get; internal set; }

@@ -83,7 +83,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_nodePool = nodePool;
 		_requestInvoker = requestInvoker ?? new HttpRequestInvoker();
 		_productRegistration = productRegistration ?? DefaultProductRegistration.Default;
-		_requestResponseSerializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
+		UseThisRequestResponseSerializer = requestResponseSerializer ?? new LowLevelRequestResponseSerializer();
 		_pipelineProvider = DefaultRequestPipelineFactory.Default;
 		_dateTimeProvider = nodePool.DateTimeProvider;
 		_bootstrapLock = new(1, 1);
@@ -131,7 +131,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_clientCertificates = config.ClientCertificates;
 		_connectionLimit = config.ConnectionLimit;
 		_contentType = config.ContentType;
-		_dateTimeProvider = config.DateTimeProvider;
+		_dateTimeProvider = config.DateTimeProvider ?? DefaultDateTimeProvider.Default;
 		_deadTimeout = config.DeadTimeout;
 		_disableAuditTrail = config.DisableAuditTrail;
 		_disableAutomaticProxyDetection = config.DisableAutomaticProxyDetection;
@@ -158,7 +158,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_opaqueId = config.OpaqueId;
 		_parseAllHeaders = config.ParseAllHeaders;
 		_pingTimeout = config.PingTimeout;
-		_pipelineProvider = config.PipelineProvider;
+		_pipelineProvider = config.PipelineProvider ?? DefaultRequestPipelineFactory.Default;
 		_prettyJson = config.PrettyJson;
 		_productRegistration = config.ProductRegistration;
 		_proxyAddress = config.ProxyAddress;
@@ -167,7 +167,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_queryStringParameters = config.QueryStringParameters;
 		_requestInvoker = config.RequestInvoker;
 		_requestMetaData = config.RequestMetaData;
-		_requestResponseSerializer = config.RequestResponseSerializer;
+		UseThisRequestResponseSerializer = config.RequestResponseSerializer;
 		_requestTimeout = config.RequestTimeout;
 		_responseHeadersToParse = config.ResponseHeadersToParse;
 		_runAs = config.RunAs;
@@ -179,7 +179,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_statusCodeToResponseSuccess = config.StatusCodeToResponseSuccess;
 		_throwExceptions = config.ThrowExceptions;
 		_transferEncodingChunked = config.TransferEncodingChunked;
-		_userAgent = config.UserAgent;
+		_userAgent = config.UserAgent ?? Transport.UserAgent.Create(config.ProductRegistration.Name, config.ProductRegistration.GetType());
 	}
 
 	private readonly SemaphoreSlim _bootstrapLock;
@@ -230,7 +230,6 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	private string? _proxyPassword;
 	private string? _proxyUsername;
 	private NameValueCollection? _queryStringParameters;
-	private Serializer _requestResponseSerializer;
 	private Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool>? _serverCertificateValidationCallback;
 	private string? _certificateFingerprint;
 	private IReadOnlyCollection<int>? _skipDeserializationForStatusCodes;
@@ -250,7 +249,8 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	private List<IResponseBuilder>? _responseBuilders;
 
 	SemaphoreSlim ITransportConfiguration.BootstrapLock => _bootstrapLock;
-	IRequestInvoker ITransportConfiguration.RequestInvoker => _requestInvoker;
+	// _requestInvoker is always initialized in constructors; null-forgiving used because field is nullable for copy constructor compatibility
+	IRequestInvoker ITransportConfiguration.RequestInvoker => _requestInvoker!;
 	int ITransportConfiguration.ConnectionLimit => _connectionLimit;
 	NodePool ITransportConfiguration.NodePool => _nodePool;
 	ProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
@@ -271,7 +271,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	string? ITransportConfiguration.ProxyPassword => _proxyPassword;
 	string? ITransportConfiguration.ProxyUsername => _proxyUsername;
 	NameValueCollection? ITransportConfiguration.QueryStringParameters => _queryStringParameters;
-	Serializer ITransportConfiguration.RequestResponseSerializer => _requestResponseSerializer;
+	Serializer ITransportConfiguration.RequestResponseSerializer => UseThisRequestResponseSerializer;
 	Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool>? ITransportConfiguration.ServerCertificateValidationCallback => _serverCertificateValidationCallback;
 	string? ITransportConfiguration.CertificateFingerprint => _certificateFingerprint;
 	IReadOnlyCollection<int>? ITransportConfiguration.SkipDeserializationForStatusCodes => _skipDeserializationForStatusCodes;
@@ -320,11 +320,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	/// </summary>
 	// ReSharper disable once MemberCanBePrivate.Global
 	// ReSharper disable once AutoPropertyCanBeMadeGetOnly.Global
-	protected Serializer UseThisRequestResponseSerializer
-	{
-		get => _requestResponseSerializer;
-		set => _requestResponseSerializer = value;
-	}
+	protected Serializer UseThisRequestResponseSerializer { get; set; }
 
 	private static void DefaultCompletedRequestHandler(ApiCallDetails response) { }
 
@@ -550,12 +546,17 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	/// <summary> Allows subclasses to add/remove default global query string parameters </summary>
 	protected T UpdateGlobalQueryString(string key, string value, bool enabled)
 	{
-		_queryStringParameters ??= new();
-		if (!enabled && _queryStringParameters[key] != null) _queryStringParameters.Remove(key);
+		_queryStringParameters ??= [];
+		if (!enabled && _queryStringParameters[key] != null)
+			_queryStringParameters.Remove(key);
 		else if (enabled && _queryStringParameters[key] == null)
 			return GlobalQueryStringParameters(new NameValueCollection { { key, "true" } });
 		return (T)this;
 	}
 
-	void IDisposable.Dispose() => DisposeManagedResources();
+	void IDisposable.Dispose()
+	{
+		DisposeManagedResources();
+		GC.SuppressFinalize(this);
+	}
 }

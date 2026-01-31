@@ -37,7 +37,7 @@ public static class OpenTelemetry
 		(Activity.Current?.Source.Name.Equals(ElasticTransportActivitySourceName, StringComparison.Ordinal) ?? false);
 
 	internal static bool CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested => ElasticTransportActivitySource.HasListeners() &&
-		((Activity.Current?.Source.Name.Equals(ElasticTransportActivitySourceName, StringComparison.Ordinal) ?? false) && (Activity.Current?.IsAllDataRequested ?? false));
+		(Activity.Current?.Source.Name.Equals(ElasticTransportActivitySourceName, StringComparison.Ordinal) ?? false) && (Activity.Current?.IsAllDataRequested ?? false);
 
 	internal static void SetCommonAttributes(Activity? activity, ITransportConfiguration settings)
 	{
@@ -48,12 +48,12 @@ public static class OpenTelemetry
 		{
 			foreach (var attribute in settings.ProductRegistration.DefaultOpenTelemetryAttributes)
 			{
-				activity?.SetTag(attribute.Key, attribute.Value);
+				_ = (activity?.SetTag(attribute.Key, attribute.Value));
 			}
 		}
 
 		var productSchemaVersion = string.Empty;
-		foreach (var attribute in activity.TagObjects)
+		foreach (var attribute in activity!.TagObjects)
 		{
 			if (attribute.Key.Equals(OpenTelemetryAttributes.DbElasticsearchSchemaUrl, StringComparison.Ordinal))
 			{
@@ -61,9 +61,9 @@ public static class OpenTelemetry
 					productSchemaVersion = schemaVersion;
 			}
 		}
-		
+
 		// We add the client schema version only when it differs from the product schema version
 		if (!productSchemaVersion.Equals(OpenTelemetrySchemaVersion, StringComparison.Ordinal))
-			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportSchemaVersion, OpenTelemetrySchemaVersion);
+			_ = (activity?.SetTag(OpenTelemetryAttributes.ElasticTransportSchemaVersion, OpenTelemetrySchemaVersion));
 	}
 }

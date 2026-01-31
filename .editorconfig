@@ -1,48 +1,119 @@
 root=true
 
-[*.cs]
-trim_trailing_whitespace=true
-insert_final_newline=true
-end_of_line = lf
-
 [*]
 charset = utf-8
 indent_style = tab
 indent_size = 4
+# Spell checker configuration
+spelling_exclusion_path = "./build/exclusion.dic"
 
-[*.cshtml]
-indent_style = tab
-indent_size = 4
-end_of_line = lf
+[*.{fs,fsx,cs,vb}]
+file_header_template=Licensed to Elasticsearch B.V under one or more agreements.\nElasticsearch B.V licenses this file to you under the Apache 2.0 License.\nSee the LICENSE file in the project root for more information
+max_line_length = 160
 
-[*.{fs,fsx,yml}]
+[*.{fs,fsx}]
 indent_style = space
 indent_size = 4
-end_of_line = lf
 
-[*.{md,markdown,json,js,csproj,fsproj,targets,targets,props}]
+[*.{md,markdown,json,js,yml,yaml,csproj,fsproj,targets,targets,props}]
 indent_style = space
 indent_size = 2
-end_of_line = lf
+
+[*.{ts,tsx}]
+indent_style = space
+indent_size = 4
+quote_type = single
 
 # Dotnet code style settings:
 [*.{cs,vb}]
-
+trim_trailing_whitespace=true
+insert_final_newline=true
 # ---
 # naming conventions https://docs.microsoft.com/en-us/visualstudio/ide/editorconfig-naming-conventions
 # currently not supported in Rider/Resharper so not using these for now
 # ---
 
 # ---
-# langugage conventions https://docs.microsoft.com/en-us/visualstudio/ide/editorconfig-code-style-settings-reference#language-conventions
+# language conventions https://docs.microsoft.com/en-us/visualstudio/ide/editorconfig-code-style-settings-reference#language-conventions
 
 # Sort using and Import directives with System.* appearing first
 dotnet_sort_system_directives_first = true
 
-# Prefer this.X except for _fields
-# TODO can we force _ for private fields?
-# TODO elevate severity after code cleanup to warning minimum
-# TODO use language latest
+# Style rules
+# https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/naming-rules?view=vs-2017
+
+# Constants always pascal case
+dotnet_naming_rule.constants_should_be_pascal_case.symbols  = consts
+dotnet_naming_rule.constants_should_be_pascal_case.style    = consts
+dotnet_naming_rule.constants_should_be_pascal_case.severity = suggestion
+
+dotnet_naming_symbols.consts.applicable_kinds           = field
+dotnet_naming_symbols.consts.applicable_accessibilities = *
+dotnet_naming_symbols.consts.required_modifiers = const
+
+dotnet_naming_style.consts.capitalization = pascal_case
+
+# Non-public static fields always pascal case
+dotnet_naming_rule.non_public_static_fields_should_be_pascal_case.symbols  = non_public_static_fields
+dotnet_naming_rule.non_public_static_fields_should_be_pascal_case.style    = non_public_static_fields
+dotnet_naming_rule.non_public_static_fields_should_be_pascal_case.severity = suggestion
+
+dotnet_naming_symbols.non_public_static_fields.applicable_kinds           = field
+dotnet_naming_symbols.non_public_static_fields.applicable_accessibilities = private,protected,internal,protected_internal,private_protected
+dotnet_naming_symbols.non_public_static_fields.required_modifiers = static
+
+dotnet_naming_style.non_public_static_fields.capitalization = pascal_case
+
+# Non-private readonly fields are pascal case
+dotnet_naming_rule.non_private_readonly_fields_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.non_private_readonly_fields_should_be_pascal_case.symbols = non_private_readonly_fields
+dotnet_naming_rule.non_private_readonly_fields_should_be_pascal_case.style = non_private_readonly_fields
+
+dotnet_naming_symbols.non_private_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.non_private_readonly_fields.applicable_accessibilities = public,protected,internal,protected_internal,private_protected
+dotnet_naming_symbols.non_private_readonly_fields.required_modifiers = readonly
+
+dotnet_naming_style.non_private_readonly_fields.capitalization = pascal_case
+
+# Private instance fields are camel case prefixed underscore
+dotnet_naming_rule.private_fields_should_be_camelcase_prefix_underscore.symbols  = private_fields
+dotnet_naming_rule.private_fields_should_be_camelcase_prefix_underscore.style    = private_fields
+dotnet_naming_rule.private_fields_should_be_camelcase_prefix_underscore.severity = suggestion
+
+dotnet_naming_symbols.private_fields.applicable_kinds           = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.private_fields.capitalization = camel_case
+dotnet_naming_style.private_fields.required_prefix = _
+
+# Locals and parameters are camel case
+dotnet_naming_rule.locals.severity = suggestion
+dotnet_naming_rule.locals.symbols = locals
+dotnet_naming_rule.locals.style = locals
+
+dotnet_naming_symbols.locals.applicable_kinds = parameter, local
+
+dotnet_naming_style.locals.capitalization = camel_case
+
+# Local functions are pascal case
+dotnet_naming_rule.local_functions.severity = suggestion
+dotnet_naming_rule.local_functions.symbols = local_functions
+dotnet_naming_rule.local_functions.style = local_functions
+
+dotnet_naming_symbols.local_functions.applicable_kinds = local_function
+
+dotnet_naming_style.local_functions.capitalization = pascal_case
+
+# Public members always pascal case
+dotnet_naming_rule.public_members_should_be_pascal_case.symbols  = public_members
+dotnet_naming_rule.public_members_should_be_pascal_case.style    = public_members
+dotnet_naming_rule.public_members_should_be_pascal_case.severity = suggestion
+
+dotnet_naming_symbols.public_members.applicable_kinds           = property,method,field,event,delegate
+dotnet_naming_symbols.public_members.applicable_accessibilities = public
+
+dotnet_naming_style.public_members.capitalization = pascal_case
+
 dotnet_style_qualification_for_field = false:error
 dotnet_style_qualification_for_property = false:error
 dotnet_style_qualification_for_method = false:error
@@ -71,12 +142,24 @@ csharp_style_var_for_built_in_types = true:error
 csharp_style_var_when_type_is_apparent = true:error
 csharp_style_var_elsewhere = true:error
 
-csharp_style_expression_bodied_methods = true:error
-csharp_style_expression_bodied_constructors = true:error
-csharp_style_expression_bodied_operators = true:error
-csharp_style_expression_bodied_properties = true:error
-csharp_style_expression_bodied_indexers = true:error
-csharp_style_expression_bodied_accessors = true:error
+csharp_style_expression_bodied_methods = true:suggestion
+csharp_style_expression_bodied_constructors = true:suggestion
+csharp_style_expression_bodied_operators = true:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_expression_bodied_indexers = true:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+csharp_style_expression_bodied_local_functions = when_on_single_line:error
+dotnet_style_prefer_conditional_expression_over_return = false
+
+csharp_alignment_tab_fill_style=optimal_fill
+csharp_align_multiline_parameter=false
+csharp_align_multiline_extends_list=false
+csharp_align_multiline_array_and_object_initializer=false
+csharp_align_multiline_switch_expression=false
+csharp_align_multiline_property_pattern=false
+csharp_align_multiline_list_pattern=false
+indent_braces_inside_statement_conditions=false
+
 
 # Suggest more modern language features when available
 csharp_style_pattern_matching_over_is_with_cast_check = true:error
@@ -95,59 +178,106 @@ csharp_preferred_modifier_order = public,private,protected,internal,static,exter
 
 # Newline settings (Allman yo!)
 csharp_new_line_before_open_brace = all
-csharp_new_line_before_else = true:error
-csharp_new_line_before_catch = true:error
-csharp_new_line_before_finally = true:error
-csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = false
+
 # just a suggestion do to our JSON tests that use anonymous types to 
 # represent json quite a bit (makes copy paste easier).
-csharp_new_line_before_members_in_anonymous_types = true:suggestion
-csharp_new_line_between_query_expression_clauses = true:error
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
 
 # Indent
-csharp_indent_case_contents = true:error
-csharp_indent_switch_labels = true:error
-csharp_space_after_cast = false:error
-csharp_space_after_keywords_in_control_flow_statements = true:error
-csharp_space_between_method_declaration_parameter_list_parentheses = false:error
-csharp_space_between_method_call_parameter_list_parentheses = false:error
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
 
 #Wrap
-csharp_preserve_single_line_statements = false:error
-csharp_preserve_single_line_blocks = true:error
-
-csharp_style_namespace_declarations = file_scoped
+csharp_preserve_single_line_statements = false
+csharp_preserve_single_line_blocks = true
+csharp_place_simple_initializer_on_single_line = true
+csharp_max_initializer_elements_on_line = 5
+csharp_wrap_object_and_collection_initializer_style = wrap_if_long
+resharper_wrap_object_and_collection_initializer_style = chop_always
 
 # Resharper
-resharper_csharp_braces_for_lock=required_for_complex
-resharper_csharp_braces_for_using=required_for_complex
-resharper_csharp_braces_for_while=required_for_complex
-resharper_csharp_braces_for_foreach=required_for_complex
-resharper_csharp_braces_for_for=required_for_complex
-resharper_csharp_braces_for_fixed=required_for_complex
-resharper_csharp_braces_for_ifelse=required_for_complex
+resharper_csharp_braces_for_lock=required_for_multiline
+resharper_csharp_braces_for_using=required_for_multiline
+resharper_csharp_braces_for_while=required_for_multiline
+resharper_csharp_braces_for_foreach=required_for_multiline
+resharper_csharp_braces_for_for=required_for_multiline
+resharper_csharp_braces_for_fixed=required_for_multiline
+resharper_csharp_braces_for_ifelse=required_for_multiline
+resharper_csharp_keep_existing_attribute_arrangement=true
 
 resharper_csharp_accessor_owner_body=expression_body
 
 resharper_redundant_case_label_highlighting=do_not_show
 resharper_redundant_argument_default_value_highlighting=do_not_show
-# Do not penalize code that explicitly lists generic arguments
-resharper_redundant_type_arguments_of_method_highlighting=do_not_show
-resharper_switch_expression_handles_some_known_enum_values_with_exception_in_default_highlighting=error
+resharper_explicit_caller_info_argument_highlighting=hint
 
-resharper_arrange_type_member_modifiers_highlighting=none;
+csharp_style_namespace_declarations = file_scoped
+
+dotnet_analyzer_diagnostic.severity = warning
+dotnet_analyzer_diagnostic.category-Style.severity = warning
+
+# can be made static
+dotnet_diagnostic.CA1822.severity = suggestion
+
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1848
+dotnet_diagnostic.CA1848.severity = suggestion
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2201
+dotnet_diagnostic.CA2201.severity = none
+
+# disable for default arm on switches, IDE0072 still covers missing enum members
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0010
+dotnet_diagnostic.IDE0010.severity = none
+
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/IDE0200
+dotnet_diagnostic.IDE0200.severity = none
+
+# TODO enable GenerateDocumentationFile to properly document our code
+dotnet_diagnostic.IDE0005.severity = none
+
+dotnet_diagnostic.IDE0001.severity = none
+
+dotnet_diagnostic.IDE0057.severity = none
+
+dotnet_diagnostic.IDE0051.severity = suggestion
+dotnet_diagnostic.IDE0059.severity = suggestion
+
+dotnet_diagnostic.CA1859.severity = none
+
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1727
+dotnet_diagnostic.CA1727.severity = none
+
+dotnet_diagnostic.IDE0305.severity = none
+
+# https://github.com/dotnet/roslyn/issues/60784
+# CS8509 already warns
+dotnet_diagnostic.IDE0072.severity = none
+
+dotnet_diagnostic.CA1873.severity = suggestion
+
+# ArgumentNullException.ThrowIfNull not available on all target frameworks
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1510
+dotnet_diagnostic.CA1510.severity = none
+
+# StringBuilder.AppendLine(IFormatProvider, ...) not available on all target frameworks
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1305
+dotnet_diagnostic.CA1305.severity = none
+
+# string.Contains(char) not available on all target frameworks, use IndexOf instead
+# https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2249
+dotnet_diagnostic.CA2249.severity = none
 
 [src/api/Elastic.Transport/Components/Serialization/**.cs]
 dotnet_diagnostic.IL3050.severity = none
 dotnet_diagnostic.IL2026.severity = none
-
-[Jenkinsfile]
-indent_style = space
-indent_size = 2
-end_of_line = lf
-charset = utf-8
-trim_trailing_whitespace = true
-insert_final_newline = true
 
 [*.{sh,bat,ps1}]
 trim_trailing_whitespace=true

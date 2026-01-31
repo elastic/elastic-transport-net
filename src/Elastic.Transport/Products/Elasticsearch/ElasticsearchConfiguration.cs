@@ -16,7 +16,7 @@ public record ElasticsearchConfiguration : TransportConfiguration
 	/// </summary>
 	/// <param name="uri">The root of the Elastic stack product node we want to connect to. Defaults to http://localhost:9200</param>
 	public ElasticsearchConfiguration(Uri? uri = null)
-		: base(new SingleNodePool(uri ?? new Uri("http://localhost:9200")), productRegistration: ElasticsearchProductRegistration.Default ) { }
+		: base(new SingleNodePool(uri ?? new Uri("http://localhost:9200")), productRegistration: ElasticsearchProductRegistration.Default) { }
 
 	/// <summary>
 	/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,

@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Elastic.Transport.Tests.Shared;
+using Elastic.Transport.Tests.SharedComponents;
 using FluentAssertions;
 using Xunit;
 
@@ -39,15 +39,15 @@ public class BytesResponseBuilderTests
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, BytesResponse result)
 		{
-			result.Body.AsSpan().SequenceEqual(Data).Should().BeTrue();
+			_ = result.Body.AsSpan().SequenceEqual(Data).Should().BeTrue();
 
 			// As the incoming stream is seekable, no need to create a copy
-			memoryStreamFactory.Created.Count.Should().Be(1);
+			_ = memoryStreamFactory.Created.Count.Should().Be(1);
 		}
 	}
 
 	[Fact]
-	public async Task ReturnsExpectedResponse_WhenDisableDirectStreaming()
+	public async Task ReturnsExpectedResponseWhenDisableDirectStreaming()
 	{
 		IResponseBuilder sut = new BytesResponseBuilder();
 
@@ -70,11 +70,11 @@ public class BytesResponseBuilderTests
 
 		static void Validate(TrackingMemoryStreamFactory memoryStreamFactory, BytesResponse result)
 		{
-			result.Body.AsSpan().SequenceEqual(Data).Should().BeTrue();
+			_ = result.Body.AsSpan().SequenceEqual(Data).Should().BeTrue();
 
-			memoryStreamFactory.Created.Count.Should().Be(0);
+			_ = memoryStreamFactory.Created.Count.Should().Be(0);
 			foreach (var memoryStream in memoryStreamFactory.Created)
-				memoryStream.IsDisposed.Should().BeTrue();
+				_ = memoryStream.IsDisposed.Should().BeTrue();
 		}
 	}
 }

@@ -43,8 +43,6 @@ public record Endpoint(in EndpointPath Path, Node Node)
 	/// <summary> Gets the path and query of the endpoint.</summary>
 	public string PathAndQuery => Path.PathAndQuery;
 
-	private readonly Node _node = Node;
-
 	/// <summary>
 	/// Represents a node within the transport layer of the Elastic search client.
 	/// This object encapsulates the characteristics of a node, allowing for comparisons and operations
@@ -52,13 +50,13 @@ public record Endpoint(in EndpointPath Path, Node Node)
 	/// </summary>
 	public Node Node
 	{
-		get => _node;
+		get;
 		init
 		{
-			_node = value;
+			field = value;
 			Uri = new(Node.Uri, Path.PathAndQuery);
 		}
-	}
+	} = Node;
 
 	/// <inheritdoc/>
 	public override string ToString() => $"{Path.Method.GetStringValue()} {Uri}";

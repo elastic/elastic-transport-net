@@ -19,25 +19,25 @@ internal class ExceptionConverter : JsonConverter<Exception>
 {
 	public override bool CanConvert(Type typeToConvert) => typeof(Exception).IsAssignableFrom(typeToConvert);
 
-	private static List<Dictionary<string, object>> FlattenExceptions(Exception e)
+	private static List<Dictionary<string, object?>> FlattenExceptions(Exception e)
 	{
 		var maxExceptions = 20;
-		var exceptions = new List<Dictionary<string, object>>(maxExceptions);
+		var exceptions = new List<Dictionary<string, object?>>(maxExceptions);
 		var depth = 0;
 		do
 		{
 			var o = ToDictionary(e, depth);
 			exceptions.Add(o);
 			depth++;
-			e = e.InnerException;
+			e = e.InnerException!;
 		} while (depth < maxExceptions && e != null);
 
 		return exceptions;
 	}
 
-	private static Dictionary<string, object> ToDictionary(Exception e, int depth)
+	private static Dictionary<string, object?> ToDictionary(Exception e, int depth)
 	{
-		var o = new Dictionary<string, object>(7);
+		var o = new Dictionary<string, object?>(7);
 
 		var className = e.GetType().FullName;
 

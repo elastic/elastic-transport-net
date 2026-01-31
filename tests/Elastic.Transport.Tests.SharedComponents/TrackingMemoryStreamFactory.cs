@@ -2,9 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-namespace Elastic.Transport.Tests.Shared;
+namespace Elastic.Transport.Tests.SharedComponents;
 
-public class TrackingMemoryStreamFactory() : MemoryStreamFactory
+public class TrackingMemoryStreamFactory : MemoryStreamFactory
 {
 	public IList<TrackDisposeStream> Created { get; private set; } = [];
 
