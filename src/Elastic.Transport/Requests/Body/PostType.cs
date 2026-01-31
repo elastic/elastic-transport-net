@@ -52,6 +52,13 @@ public enum PostType
 	/// <para>Instantiate using <see cref="PostData.StreamHandler{T}"/></para>
 	/// </summary>
 	StreamHandler,
+#if NET10_0_OR_GREATER
+	/// <summary>
+	/// The user provided a delegate to write the instance using a <see cref="System.IO.Pipelines.PipeWriter"/>
+	/// <para>Instantiate using <see cref="PostData.PipeWriter{T}"/></para>
+	/// </summary>
+	Pipe,
+#endif
 
 }
 
@@ -67,6 +74,9 @@ internal static class PostTypeExtensions
 		PostType.StreamHandler => nameof(PostType.StreamHandler),
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
 		PostType.ReadOnlyMemory => nameof(PostType.ReadOnlyMemory),
+#endif
+#if NET10_0_OR_GREATER
+		PostType.Pipe => nameof(PostType.Pipe),
 #endif
 		_ => throw new ArgumentOutOfRangeException(nameof(postType), postType, null)
 	};
