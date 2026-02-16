@@ -24,6 +24,11 @@ var searchResponse = transport.Post<StringResponse>("/my-index/_search", body);
 // HEAD request — no body needed
 var headResponse = transport.Head("/my-index");
 
+// JSON DOM with safe path traversal
+var jsonResponse = transport.Get<JsonResponse>("/my-index/_search?q=title:hello");
+int totalHits = jsonResponse.Get<int>("hits.total.value");
+string firstId = jsonResponse.Get<string>("hits.hits.[0]._id");
+
 // Async variants
 var asyncResponse = await transport.GetAsync<StringResponse>("/my-index/_search?q=title:hello");
 ```
@@ -32,27 +37,35 @@ var asyncResponse = await transport.GetAsync<StringResponse>("/my-index/_search?
 
 The generic type parameter on `Get<TResponse>`, `Post<TResponse>`, etc. controls how the response body is read:
 
-| Type | Body Representation | Notes |
-|---|---|---|
-| `StringResponse` | `string` | Good for debugging and small payloads |
-| `BytesResponse` | `byte[]` | Raw bytes, useful for binary content |
-| `VoidResponse` | _(skipped)_ | Body is not read. Used for `HEAD` and fire-and-forget calls |
-| `StreamResponse` | `Stream` | Caller **must** dispose. Best for large payloads |
-| `DynamicResponse` | `DynamicDictionary` | Dynamic dictionary with typed path traversal |
+| Type              | Body Representation | Notes                                                       |
+|-------------------|---------------------|-------------------------------------------------------------|
+| `StringResponse`  | `string`            | Good for debugging and small payloads                       |
+| `BytesResponse`   | `byte[]`            | Raw bytes, useful for binary content                        |
+| `VoidResponse`    | _(skipped)_         | Body is not read. Used for `HEAD` and fire-and-forget calls |
+| `StreamResponse`  | `Stream`            | Caller **must** dispose. Best for large payloads            |
+| `JsonResponse`    | `JsonNode`          | System.Text.Json DOM with safe `Get<T>()` path traversal    |
+| `DynamicResponse` | `DynamicDictionary` | Legacy — prefer `JsonResponse`                              |
 
-## DynamicResponse
+## JsonResponse
 
-`DynamicResponse` deserializes JSON into a `DynamicDictionary` and exposes a `Get<T>()` method for safe, typed path traversal using dot-separated keys:
+`JsonResponse` deserializes JSON into a `System.Text.Json.Nodes.JsonNode` and exposes a `Get<T>()` method for safe, typed path traversal using dot-separated keys:
 
 ```csharp
-var response = transport.Get<DynamicResponse>("/my-index/_search?q=title:hello");
+var response = transport.Get<JsonResponse>("/my-index/_search?q=title:hello");
 
 // Traverse nested JSON with dot notation
 int totalHits = response.Get<int>("hits.total.value");
-string firstId = response.Get<string>("hits.hits.0._id");
+string firstId = response.Get<string>("hits.hits.[0]._id");
+
+// Bracket syntax for array access
+string lastId = response.Get<string>("hits.hits.[last()]._id");
+string firstSource = response.Get<string>("hits.hits.[first()]._source.title");
 
 // _arbitrary_key_ traverses into the first key at that level
 string fieldType = response.Get<string>("my-index.mappings.properties._arbitrary_key_.type");
+
+// Direct DOM access is also available via .Body
+JsonNode hitsNode = response.Body["hits"]["hits"];
 ```
 
 ## Configuration
@@ -89,10 +102,9 @@ var transport = new DistributedTransport(settings);
 ```csharp
 var pool = new StaticNodePool(new[] { new Node(new Uri("http://localhost:9200")) });
 var requestInvoker = new HttpRequestInvoker();
-var serializer = new LowLevelRequestResponseSerializer();
 var product = ElasticsearchProductRegistration.Default;
 
-var settings = new TransportConfiguration(pool, requestInvoker, serializer, product);
+var settings = new TransportConfiguration(pool, requestInvoker, productRegistration: product);
 var transport = new DistributedTransport(settings);
 ```
 
@@ -111,12 +123,12 @@ The transport fails over in constant time. If a node is marked dead, it is skipp
 
 ## Components
 
-| Component | Description |
-|---|---|
-| `NodePool` | Registry of `Node` instances. Implementations: `SingleNodePool`, `StaticNodePool`, `SniffingNodePool`, `StickyNodePool`, `CloudNodePool` |
-| `IRequestInvoker` | Abstraction for HTTP I/O. Default: `HttpRequestInvoker` |
-| `Serializer` | Request/response serialization. Default uses `System.Text.Json` |
-| `ProductRegistration` | Product-specific metadata, sniff/ping behavior. Use `ElasticsearchProductRegistration` for Elasticsearch |
+| Component             | Description                                                                                                                              |
+|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `NodePool`            | Registry of `Node` instances. Implementations: `SingleNodePool`, `StaticNodePool`, `SniffingNodePool`, `StickyNodePool`, `CloudNodePool` |
+| `IRequestInvoker`     | Abstraction for HTTP I/O. Default: `HttpRequestInvoker`                                                                                  |
+| `Serializer`          | Request/response serialization. Default uses `System.Text.Json`                                                                          |
+| `ProductRegistration` | Product-specific metadata, sniff/ping behavior. Use `ElasticsearchProductRegistration` for Elasticsearch                                 |
 
 ## Observability
 
@@ -135,6 +147,115 @@ Console.WriteLine(details.DebugInformation);
 ```
 
 The transport also emits `DiagnosticSource` events for serialization timing, time-to-first-byte, and other counters.
+
+## Custom Typed Responses
+
+Any class inheriting from `TransportResponse` can be used as a response type. The transport will deserialize the response body into it using `System.Text.Json`:
+
+```csharp
+public class SearchResult : TransportResponse
+{
+    [JsonPropertyName("hits")]
+    public HitsContainer Hits { get; set; }
+}
+
+public class HitsContainer
+{
+    [JsonPropertyName("total")]
+    public TotalHits Total { get; set; }
+
+    [JsonPropertyName("hits")]
+    public List<Hit> Hits { get; set; }
+}
+
+public class TotalHits
+{
+    [JsonPropertyName("value")]
+    public long Value { get; set; }
+}
+
+public class Hit
+{
+    [JsonPropertyName("_id")]
+    public string Id { get; set; }
+
+    [JsonPropertyName("_source")]
+    public JsonNode Source { get; set; }
+}
+
+// Use it directly as a type parameter
+var response = transport.Get<SearchResult>("/my-index/_search?q=title:hello");
+long total = response.Hits.Total.Value;
+```
+
+For full control over how a response is built from the stream, implement `TypedResponseBuilder<TResponse>` and register it via `ResponseBuilders` on the configuration:
+
+```csharp
+public class CsvResponse : TransportResponse
+{
+    public List<string[]> Rows { get; set; }
+}
+
+public class CsvResponseBuilder : TypedResponseBuilder<CsvResponse>
+{
+    protected override CsvResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration,
+        Stream responseStream, string contentType, long contentLength)
+    {
+        using var reader = new StreamReader(responseStream);
+        var rows = new List<string[]>();
+        while (reader.ReadLine() is { } line)
+            rows.Add(line.Split(','));
+        return new CsvResponse { Rows = rows };
+    }
+
+    protected override async Task<CsvResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration,
+        Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default)
+    {
+        using var reader = new StreamReader(responseStream);
+        var rows = new List<string[]>();
+        while (await reader.ReadLineAsync(cancellationToken) is { } line)
+            rows.Add(line.Split(','));
+        return new CsvResponse { Rows = rows };
+    }
+}
+
+var settings = new TransportConfiguration(new Uri("http://localhost:9200"))
+{
+    ResponseBuilders = [new CsvResponseBuilder()]
+};
+```
+
+## AOT and Source Generators
+
+The default serializer uses `System.Text.Json` with a `JsonSerializerContext` for AOT compatibility. When using custom typed responses in AOT/trimmed applications, provide a `JsonSerializerContext` that includes your response types:
+
+```csharp
+[JsonSerializable(typeof(SearchResult))]
+[JsonSerializable(typeof(HitsContainer))]
+[JsonSerializable(typeof(TotalHits))]
+[JsonSerializable(typeof(Hit))]
+public partial class MySerializerContext : JsonSerializerContext;
+```
+
+Create a concrete serializer that combines your context with the transport's built-in resolvers:
+
+```csharp
+public class MySerializer : SystemTextJsonSerializer
+{
+    public MySerializer() : base(new TransportSerializerOptionsProvider([], null, options =>
+    {
+        options.TypeInfoResolver = JsonTypeInfoResolver.Combine(
+            MySerializerContext.Default,
+            new DefaultJsonTypeInfoResolver()
+        );
+    })) { }
+}
+
+var settings = new TransportConfiguration(
+    new SingleNodePool(new Uri("http://localhost:9200")),
+    serializer: new MySerializer()
+);
+```
 
 ## Links
 
