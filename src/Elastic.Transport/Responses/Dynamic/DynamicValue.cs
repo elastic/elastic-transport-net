@@ -390,6 +390,11 @@ public sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, ICon
 			return true;
 		}
 
+		if (Value is IDictionary<string, DynamicValue> dv)
+		{
+			result = dv.TryGetValue(name, out var r) ? r : NullValue;
+			return true;
+		}
 		if (Value is IDictionary<string, object> d)
 		{
 			result = d.TryGetValue(name, out var r) ? SelfOrNew(r) : NullValue;
