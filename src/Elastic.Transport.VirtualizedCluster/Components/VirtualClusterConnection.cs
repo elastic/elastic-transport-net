@@ -54,7 +54,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		_inMemoryRequestInvoker = new InMemoryRequestInvoker();
 	}
 
-	void IDisposable.Dispose() { }
+	void IDisposable.Dispose() => GC.SuppressFinalize(this);
 
 	/// <summary>
 	/// Create a <see cref="VirtualClusterRequestInvoker"/> instance that always returns a successful response.
@@ -126,12 +126,11 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
 		where TResponse : TransportResponse, new()
 	{
-		if (!_calls.ContainsKey(endpoint.Uri.Port))
+		if (!_calls.TryGetValue(endpoint.Uri.Port, out var state))
 			throw new Exception($"Expected a call to happen on port {endpoint.Uri.Port} but received none");
 
 		try
 		{
-			var state = _calls[endpoint.Uri.Port];
 			if (IsSniffRequest(endpoint))
 			{
 				_ = Interlocked.Increment(ref state.Sniffed);
@@ -318,7 +317,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		return DefaultResponseBytes;
 	}
 
-	private class State
+	private sealed class State
 	{
 		public int Called;
 		public int Failures;

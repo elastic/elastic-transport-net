@@ -13,7 +13,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components;
 /// an instance of <see cref="TransportConfigurationDescriptor"/> for the cluster after which the components such as
 /// <see cref="IRequestInvoker"/> and <see cref="NodePool"/> can no longer be updated.
 /// </summary>
-public sealed class SealedVirtualCluster
+public sealed class SealedVirtualCluster : IDisposable
 {
 	private readonly IRequestInvoker _requestInvoker;
 	private readonly NodePool _nodePool;
@@ -46,4 +46,7 @@ public sealed class SealedVirtualCluster
 	public VirtualClusterRequestInvoker VirtualClusterConnection(Func<TransportConfigurationDescriptor, TransportConfigurationDescriptor> selector = null) =>
 		new VirtualizedCluster(selector == null ? CreateSettings() : selector(CreateSettings()))
 			.Connection;
+
+	/// <inheritdoc />
+	public void Dispose() => _requestInvoker?.Dispose();
 }

@@ -269,7 +269,7 @@ public sealed class Auditor
 
 		if (auditTrail is ICollection<Diagnostics.Auditing.Audit> at && callTrace.Count != at.Count)
 			throw new Exception($"callTrace has {callTrace.Count} items. Actual auditTrail {actualAuditTrail}");
-		else if (callTrace.Count != audits.Count())
+		else if (callTrace.Count != audits.Length)
 			throw new Exception($"callTrace has {callTrace.Count} items. Actual auditTrail {actualAuditTrail}");
 	}
 

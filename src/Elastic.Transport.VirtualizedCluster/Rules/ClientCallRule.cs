@@ -6,6 +6,7 @@
 using System;
 using TheException = System.Net.Http.HttpRequestException;
 #else
+using System;
 using TheException = System.Net.WebException;
 #endif
 

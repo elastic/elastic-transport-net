@@ -78,8 +78,10 @@ public sealed partial class DynamicDictionary
 	/// <param name="path">path into the stored object, keys are separated with a dot and the last key is returned as T</param>
 	/// <typeparam name="T"></typeparam>
 	/// <returns>T or default</returns>
-	public T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string path)
+	public T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string? path)
 	{
+		if (path is null) return default!;
+
 		var split = SplitRegex.Split(path);
 		var queue = new Queue<string>(split);
 		if (queue.Count == 0)
@@ -117,7 +119,11 @@ public sealed partial class DynamicDictionary
 		}
 
 		// Bracket index: [N]
+#if NETSTANDARD2_0 || NET462
 		if (key.Length > 2 && key[0] == '[' && key[key.Length - 1] == ']' && int.TryParse(key.Substring(1, key.Length - 2), out var bracketIndex))
+#else
+		if (key.Length > 2 && key[0] == '[' && key[key.Length - 1] == ']' && int.TryParse(key.AsSpan(1, key.Length - 2), out var bracketIndex))
+#endif
 			return d[bracketIndex];
 
 		// Plain numeric index
