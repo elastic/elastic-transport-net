@@ -94,10 +94,7 @@ let private generateApiChanges (arguments:ParseResults<Arguments>) =
         let outputFile =
             let f = sprintf "breaking-changes-%s.md" p
             Path.Combine(output, f)
-        let directory =
-            match p with
-            | "Elastic.Transport.VirtualizedCluster" -> $".artifacts/bin/%s{p}/release"
-            | _ -> $".artifacts/bin/%s{p}/release_%s{Paths.MainTFM}"
+        let directory = $".artifacts/bin/%s{p}/release_%s{Paths.MainTFM}"
 
         let args =
             [
