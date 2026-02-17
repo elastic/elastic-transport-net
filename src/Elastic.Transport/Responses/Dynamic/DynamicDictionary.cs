@@ -89,23 +89,42 @@ public sealed partial class DynamicDictionary
 		while (queue.Count > 0)
 		{
 			var key = queue.Dequeue().Replace(@"\.", ".");
-			if (key == "_arbitrary_key_")
-			{
-				if (queue.Count > 0)
-					d = d[0];
-				else
-				{
-					var v = d.ToDictionary()?.Keys.FirstOrDefault();
-					d = v != null ? new DynamicValue(v) : DynamicValue.NullValue;
-				}
-			}
-			else if (int.TryParse(key, out var i))
-				d = d[i];
-			else
-				d = d[key];
+			d = ResolvePathSegment(d, key, queue.Count == 0);
 		}
 
 		return d.TryParse<T>()!;
+	}
+
+	internal static DynamicValue ResolvePathSegment(DynamicValue d, string key, bool isLast)
+	{
+		if (key == "_arbitrary_key_")
+		{
+			var dict = d?.ToDictionary();
+			if (dict == null || dict.Count == 0) return DynamicValue.NullValue;
+
+			var firstKey = dict.Keys.First();
+			if (isLast) return new DynamicValue(firstKey);
+			return dict[firstKey];
+		}
+
+		if (key == "_first_" || key == "[first()]")
+			return d[0];
+
+		if (key == "_last_" || key == "[last()]")
+		{
+			var count = d.Count;
+			return count > 0 ? d[count - 1] : DynamicValue.NullValue;
+		}
+
+		// Bracket index: [N]
+		if (key.Length > 2 && key[0] == '[' && key[key.Length - 1] == ']' && int.TryParse(key.Substring(1, key.Length - 2), out var bracketIndex))
+			return d[bracketIndex];
+
+		// Plain numeric index
+		if (int.TryParse(key, out var i))
+			return d[i];
+
+		return d[key];
 	}
 
 	/// <summary>

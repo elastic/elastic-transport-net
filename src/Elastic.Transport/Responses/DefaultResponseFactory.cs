@@ -28,6 +28,7 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		[typeof(StreamResponse)] = new StreamResponseBuilder(),
 		[typeof(StringResponse)] = new StringResponseBuilder(),
 		[typeof(DynamicResponse)] = new DynamicResponseBuilder(),
+		[typeof(JsonResponse)] = new JsonResponseBuilder(),
 		[typeof(VoidResponse)] = new VoidResponseBuilder(),
 #if NET10_0_OR_GREATER
 		[typeof(PipeResponse)] = new PipeResponseBuilder(),
