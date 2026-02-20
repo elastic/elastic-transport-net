@@ -61,11 +61,11 @@ namespace Elastic.Transport.IntegrationTests.Http
 			var transport = Setup(requestInvoker, disableAutomaticProxyDetection: true);
 
 			var r = transport.Post<StringResponse>(Path, Body);
-			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeFalse();
+			requestInvoker.LastSocketsHttpHandler.UseProxy.Should().BeFalse();
 			r.Body.Should().Be(BodyString);
 
 			r = await transport.PostAsync<StringResponse>(Path, Body, CancellationToken.None);
-			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeFalse();
+			requestInvoker.LastSocketsHttpHandler.UseProxy.Should().BeFalse();
 			r.Body.Should().Be(BodyString);
 		}
 
@@ -75,9 +75,9 @@ namespace Elastic.Transport.IntegrationTests.Http
 			var transport = Setup(requestInvoker);
 
 			transport.Post<StringResponse>(Path, Body);
-			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeTrue();
+			requestInvoker.LastSocketsHttpHandler.UseProxy.Should().BeTrue();
 			await transport.PostAsync<StringResponse>(Path, Body, CancellationToken.None);
-			requestInvoker.LastHttpClientHandler.UseProxy.Should().BeTrue();
+			requestInvoker.LastSocketsHttpHandler.UseProxy.Should().BeTrue();
 		}
 
 		[Fact] public async Task HttpClientUseTransferEncodingChunkedWhenTransferEncodingChunkedTrue()
