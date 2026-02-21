@@ -12,7 +12,7 @@ namespace Elastic.Transport.Tests.Components.NodePool
 	public class StaticNodePoolTests
 	{
 		[Fact]
-		public void MultipleRequests_WhenOnlyASingleEndpointIsConfigured_AndTheEndpointIsUnavailable_DoNotThrowAnException()
+		public void MultipleRequestsWhenOnlyASingleEndpointIsConfiguredAndTheEndpointIsUnavailableDoNotThrowAnException()
 		{
 			Node[] nodes = [new Uri("http://localhost:9200")];
 			var pool = new StaticNodePool(nodes);

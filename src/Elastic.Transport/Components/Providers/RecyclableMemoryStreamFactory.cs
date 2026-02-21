@@ -23,7 +23,8 @@ public sealed class RecyclableMemoryStreamFactory : MemoryStreamFactory
 
 	private static RecyclableMemoryStreamManager CreateManager(bool experimental)
 	{
-		if (!experimental) return new RecyclableMemoryStreamManager() { AggressiveBufferReturn = true };
+		if (!experimental)
+			return new RecyclableMemoryStreamManager() { AggressiveBufferReturn = true };
 
 		const int blockSize = 1024;
 		const int largeBufferMultiple = 1024 * 1024;

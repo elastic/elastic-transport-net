@@ -37,14 +37,15 @@ var asyncResponse = await transport.GetAsync<StringResponse>("/my-index/_search?
 
 The generic type parameter on `Get<TResponse>`, `Post<TResponse>`, etc. controls how the response body is read:
 
-| Type              | Body Representation | Notes                                                       |
-|-------------------|---------------------|-------------------------------------------------------------|
-| `StringResponse`  | `string`            | Good for debugging and small payloads                       |
-| `BytesResponse`   | `byte[]`            | Raw bytes, useful for binary content                        |
-| `VoidResponse`    | _(skipped)_         | Body is not read. Used for `HEAD` and fire-and-forget calls |
-| `StreamResponse`  | `Stream`            | Caller **must** dispose. Best for large payloads            |
-| `JsonResponse`    | `JsonNode`          | System.Text.Json DOM with safe `Get<T>()` path traversal    |
-| `DynamicResponse` | `DynamicDictionary` | Legacy — prefer `JsonResponse`                              |
+| Type              | Body Representation | Notes                                                            |
+|-------------------|---------------------|------------------------------------------------------------------|
+| `StringResponse`  | `string`            | Good for debugging and small payloads                            |
+| `BytesResponse`   | `byte[]`            | Raw bytes, useful for binary content                             |
+| `VoidResponse`    | _(skipped)_         | Body is not read. Used for `HEAD` and fire-and-forget calls      |
+| `StreamResponse`  | `Stream`            | Caller **must** dispose. Best for large payloads                 |
+| `JsonResponse`    | `JsonNode`          | System.Text.Json DOM with safe `Get<T>()` path traversal        |
+| `DynamicResponse` | `DynamicDictionary` | Dynamic path traversal via `Get<T>()`                            |
+| `PipeResponse`    | `PipeReader`        | .NET 10+ only. Zero-copy streaming via `System.IO.Pipelines`    |
 
 ## JsonResponse
 
@@ -67,6 +68,23 @@ string fieldType = response.Get<string>("my-index.mappings.properties._arbitrary
 // Direct DOM access is also available via .Body
 JsonNode hitsNode = response.Body["hits"]["hits"];
 ```
+
+## PipeResponse (.NET 10+)
+
+On .NET 10+, `PipeResponse` exposes the response body as a `PipeReader` for zero-copy streaming. Pair it with `PostData.PipeReader()` and `PostData.PipeWriter()` for efficient request body handling via `System.IO.Pipelines`.
+
+```csharp
+// Response streaming — deserialize directly from PipeReader
+await using var response = await transport.GetAsync<PipeResponse>("/my-index/_search");
+var result = await JsonSerializer.DeserializeAsync<SearchResult>(response.Body);
+
+// Request forwarding — pipe an ASP.NET Core request body straight through
+var postData = PostData.PipeReader(context.Request.BodyReader);
+await using var fwd = await transport.PostAsync<PipeResponse>("/my-index/_doc", postData);
+await fwd.CopyToAsync(context.Response.BodyWriter);
+```
+
+See [docs/pipe-streaming.md](https://github.com/elastic/elastic-transport-net/blob/main/docs/pipe-streaming.md) for full API reference and examples.
 
 ## Configuration
 

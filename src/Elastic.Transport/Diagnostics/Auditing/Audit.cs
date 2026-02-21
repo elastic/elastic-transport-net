@@ -39,7 +39,7 @@ public sealed class Audit
 	/// <summary>
 	/// The exception for the audit, if there was one.
 	/// </summary>
-	public Exception Exception { get; internal set; }
+	public Exception? Exception { get; internal set; }
 
 	/// <summary>
 	/// Returns a string representation of the this audit.
@@ -48,10 +48,11 @@ public sealed class Audit
 	{
 		var took = Ended - Started;
 		var tookString = string.Empty;
-		if (took >= TimeSpan.Zero) tookString = $" Took: {took}";
+		if (took >= TimeSpan.Zero)
+			tookString = $" Took: {took}";
 
-		return Node == null
+		return Node is null
 			? $"Event: {Event.ToStringFast()}{tookString}"
-			: $"Event: {Event.ToStringFast()} Node: {Node?.Uri} NodeAlive: {Node?.IsAlive}Took: {tookString}";
+			: $"Event: {Event.ToStringFast()} Node: {Node.Uri} NodeAlive: {Node.IsAlive}Took: {tookString}";
 	}
 }

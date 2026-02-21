@@ -44,9 +44,9 @@ public abstract partial class PostData
 
 		public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
 		{
-			if (Type != PostType.EnumerableOfObject && Type != PostType.EnumerableOfString)
+			if (Type is not PostType.EnumerableOfObject and not PostType.EnumerableOfString)
 				throw new Exception(
-					$"{nameof(PostDataMultiJson<T>)} only does not support {nameof(PostType)}.{Type.ToStringFast()}");
+					$"{nameof(PostDataMultiJson<>)} only does not support {nameof(PostType)}.{Type.ToStringFast()}");
 
 			MemoryStream? buffer = null;
 			var stream = writableStream;
@@ -54,43 +54,46 @@ public abstract partial class PostData
 			switch (Type)
 			{
 				case PostType.EnumerableOfString:
-				{
-					if (_enumerableOfStrings == null) return;
-
-					using var enumerator = _enumerableOfStrings.GetEnumerator();
-					if (!enumerator.MoveNext())
-						return;
-
-					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
-					do
 					{
-						var bytes = enumerator.Current.Utf8Bytes();
-						stream.Write(bytes, 0, bytes.Length);
-						stream.Write(NewLineByteArray, 0, 1);
-					} while (enumerator.MoveNext());
+						if (_enumerableOfStrings == null)
+							return;
 
-					break;
-				}
+						using var enumerator = _enumerableOfStrings.GetEnumerator();
+						if (!enumerator.MoveNext())
+							return;
+
+						BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
+						do
+						{
+							var bytes = enumerator.Current.Utf8Bytes();
+							if (bytes is not null)
+								stream.Write(bytes, 0, bytes.Length);
+							stream.Write(NewLineByteArray, 0, 1);
+						} while (enumerator.MoveNext());
+
+						break;
+					}
 				case PostType.EnumerableOfObject:
-				{
-					if (_enumerableOfObject == null) return;
-
-					using var enumerator = _enumerableOfObject.GetEnumerator();
-					if (!enumerator.MoveNext())
-						return;
-
-					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
-					do
 					{
-						var o = enumerator.Current;
-						settings.RequestResponseSerializer.Serialize(o, stream, SerializationFormatting.None);
-						stream.Write(NewLineByteArray, 0, 1);
-					} while (enumerator.MoveNext());
+						if (_enumerableOfObject == null)
+							return;
 
-					break;
-				}
+						using var enumerator = _enumerableOfObject.GetEnumerator();
+						if (!enumerator.MoveNext())
+							return;
+
+						BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
+						do
+						{
+							var o = enumerator.Current;
+							settings.RequestResponseSerializer.Serialize(o, stream, SerializationFormatting.None);
+							stream.Write(NewLineByteArray, 0, 1);
+						} while (enumerator.MoveNext());
+
+						break;
+					}
 				default:
-					throw new ArgumentOutOfRangeException();
+					throw new InvalidOperationException($"Unexpected PostType: {Type}");
 			}
 
 			FinishStream(writableStream, buffer, disableDirectStreaming);
@@ -98,9 +101,9 @@ public abstract partial class PostData
 
 		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
 		{
-			if (Type != PostType.EnumerableOfObject && Type != PostType.EnumerableOfString)
+			if (Type is not PostType.EnumerableOfObject and not PostType.EnumerableOfString)
 				throw new Exception(
-					$"{nameof(PostDataMultiJson<T>)} only does not support {nameof(PostType)}.{Type.ToStringFast()}");
+					$"{nameof(PostDataMultiJson<>)} only does not support {nameof(PostType)}.{Type.ToStringFast()}");
 
 			MemoryStream? buffer = null;
 			var stream = writableStream;
@@ -108,47 +111,60 @@ public abstract partial class PostData
 			switch (Type)
 			{
 				case PostType.EnumerableOfString:
-				{
-					if (_enumerableOfStrings == null)
-						return;
-
-					using var enumerator = _enumerableOfStrings.GetEnumerator();
-					if (!enumerator.MoveNext())
-						return;
-
-					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
-					do
 					{
-						var bytes = enumerator.Current.Utf8Bytes();
-						await stream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
-						await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
-					} while (enumerator.MoveNext());
+						if (_enumerableOfStrings == null)
+							return;
 
-					break;
-				}
+						using var enumerator = _enumerableOfStrings.GetEnumerator();
+						if (!enumerator.MoveNext())
+							return;
+
+						BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
+						do
+						{
+							var bytes = enumerator.Current.Utf8Bytes();
+							if (bytes is not null)
+#if NETSTANDARD2_1_OR_GREATER || NET
+								await stream.WriteAsync(bytes.AsMemory(), cancellationToken).ConfigureAwait(false);
+#else
+								await stream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
+#endif
+#if NETSTANDARD2_1_OR_GREATER || NET
+							await stream.WriteAsync(NewLineByteArray.AsMemory(), cancellationToken).ConfigureAwait(false);
+#else
+							await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
+#endif
+						} while (enumerator.MoveNext());
+
+						break;
+					}
 				case PostType.EnumerableOfObject:
-				{
-					if (_enumerableOfObject == null)
-						return;
-
-					using var enumerator = _enumerableOfObject.GetEnumerator();
-					if (!enumerator.MoveNext())
-						return;
-
-					BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
-					do
 					{
-						var o = enumerator.Current;
-						await settings.RequestResponseSerializer.SerializeAsync(o, stream,
-								SerializationFormatting.None, cancellationToken)
-							.ConfigureAwait(false);
-						await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
-					} while (enumerator.MoveNext());
+						if (_enumerableOfObject == null)
+							return;
 
-					break;
-				}
+						using var enumerator = _enumerableOfObject.GetEnumerator();
+						if (!enumerator.MoveNext())
+							return;
+
+						BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
+						do
+						{
+							var o = enumerator.Current;
+							await settings.RequestResponseSerializer.SerializeAsync(o, stream,
+									SerializationFormatting.None, cancellationToken)
+								.ConfigureAwait(false);
+#if NETSTANDARD2_1_OR_GREATER || NET
+							await stream.WriteAsync(NewLineByteArray.AsMemory(), cancellationToken).ConfigureAwait(false);
+#else
+							await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
+#endif
+						} while (enumerator.MoveNext());
+
+						break;
+					}
 				default:
-					throw new ArgumentOutOfRangeException();
+					throw new InvalidOperationException($"Unexpected PostType: {Type}");
 			}
 
 			await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);

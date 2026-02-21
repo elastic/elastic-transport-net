@@ -31,7 +31,7 @@ public abstract partial class PostData
 
 	/// <summary> A static byte[] that hols a single new line feed </summary>
 	// ReSharper disable once MemberCanBePrivate.Global
-	protected static readonly byte[] NewLineByteArray = {(byte) '\n'};
+	protected static readonly byte[] NewLineByteArray = [(byte)'\n'];
 
 	/// <summary> Reports the data this instance is wrapping </summary>
 	// ReSharper disable once MemberCanBeProtected.Global
@@ -72,9 +72,10 @@ public abstract partial class PostData
 	/// <param name="disableDirectStreaming">Flag indicating whether direct streaming is disabled.</param>
 	/// <param name="buffer">Reference to the buffer memory stream.</param>
 	/// <param name="stream">Reference to the stream to write to.</param>
-	protected void BufferIfNeeded(MemoryStreamFactory memoryStreamFactory, bool disableDirectStreaming, ref MemoryStream buffer, ref Stream stream)
+	protected void BufferIfNeeded(MemoryStreamFactory memoryStreamFactory, bool disableDirectStreaming, ref MemoryStream? buffer, ref Stream stream)
 	{
-		if (!disableDirectStreaming) return;
+		if (!disableDirectStreaming)
+			return;
 
 		buffer = memoryStreamFactory.Create();
 		stream = buffer;
@@ -86,7 +87,8 @@ public abstract partial class PostData
 	/// </summary>
 	protected void FinishStream(Stream writableStream, MemoryStream? buffer, bool disableDirectStreaming)
 	{
-		if (buffer == null || !disableDirectStreaming) return;
+		if (buffer == null || !disableDirectStreaming)
+			return;
 
 		buffer.Position = 0;
 		buffer.CopyTo(writableStream, BufferSize);
@@ -106,7 +108,8 @@ public abstract partial class PostData
 #endif
 		FinishStreamAsync(Stream writableStream, MemoryStream? buffer, bool disableDirectStreaming, CancellationToken ctx)
 	{
-		if (buffer == null || !disableDirectStreaming) return;
+		if (buffer == null || !disableDirectStreaming)
+			return;
 
 		buffer.Position = 0;
 		await buffer.CopyToAsync(writableStream, BufferSize, ctx).ConfigureAwait(false);

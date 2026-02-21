@@ -13,17 +13,17 @@ public sealed class ShardFailure
 {
 	/// <summary> This index this shard belongs to </summary>
 	[JsonPropertyName("index")]
-	public string Index { get; set; }
+	public string? Index { get; set; }
 
 	/// <summary> The node the shard is currently allocated on</summary>
 	[JsonPropertyName("node")]
-	public string Node { get; set; }
+	public string? Node { get; set; }
 
 	/// <summary>
 	/// The java exception that caused the shard to fail
 	/// </summary>
 	[JsonPropertyName("reason")]
-	public ErrorCause Reason { get; set; }
+	public ErrorCause? Reason { get; set; }
 
 	/// <summary> The shard number that failed </summary>
 	[JsonPropertyName("shard")]
@@ -32,5 +32,5 @@ public sealed class ShardFailure
 
 	/// <summary> The status of the shard when the exception occured</summary>
 	[JsonPropertyName("status")]
-	public string Status { get; set; }
+	public string? Status { get; set; }
 }

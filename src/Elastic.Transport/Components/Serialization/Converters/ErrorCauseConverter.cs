@@ -4,11 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Elastic.Transport.Extensions;
 using Elastic.Transport.Products.Elasticsearch;
 
 namespace Elastic.Transport;
@@ -24,16 +22,19 @@ public class ErrorConverter : ErrorCauseConverter<Error>
 	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	protected override bool ReadMore(ref Utf8JsonReader reader, JsonSerializerOptions options, string propertyName, Error errorCause)
 	{
-		void ReadAssign<T>(ref Utf8JsonReader r, Action<Error, T> set) =>
+		void ReadAssign<T>(ref Utf8JsonReader r, Action<Error, T?> set) =>
 			set(errorCause, JsonSerializer.Deserialize<T>(ref r, options));
 		switch (propertyName)
 		{
 			case "headers":
-				ReadAssign<Dictionary<string, string>>(ref reader, (e, v) => e.Headers = v);
+				_ = reader.Read();
+				var headers = JsonSerializer.Deserialize<Dictionary<string, string>>(ref reader, options);
+				if (headers != null)
+					errorCause.Headers = headers;
 				return true;
 
 			case "root_cause":
-				ReadAssign<IReadOnlyCollection<ErrorCause>>(ref reader, (e, v) => e.RootCause = v);
+				ReadAssign<IReadOnlyCollection<ErrorCause>?>(ref reader, (e, v) => e.RootCause = v);
 				return true;
 			default:
 				return false;
@@ -48,18 +49,20 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 	/// <inheritdoc cref="JsonConverter{T}.Read"/>
 	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
 	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-	public override TErrorCause Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+	public override TErrorCause? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
 		if (reader.TokenType != JsonTokenType.StartObject)
+		{
 			return reader.TokenType == JsonTokenType.String
 				? new TErrorCause { Reason = reader.GetString() }
 				: null;
+		}
 
 		var errorCause = new TErrorCause();
 		var additionalProperties = new Dictionary<string, object>();
 		errorCause.AdditionalProperties = additionalProperties;
 
-		void ReadAssign<T>(ref Utf8JsonReader r, Action<ErrorCause, T> set) =>
+		void ReadAssign<T>(ref Utf8JsonReader r, Action<ErrorCause, T?> set) =>
 			set(errorCause, JsonSerializer.Deserialize<T>(ref r, options));
 
 		void ReadAny(ref Utf8JsonReader r, string property, Action<ErrorCause, string, object> set) =>
@@ -67,9 +70,11 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 
 		while (reader.Read())
 		{
-			if (reader.TokenType == JsonTokenType.EndObject) return errorCause;
+			if (reader.TokenType == JsonTokenType.EndObject)
+				return errorCause;
 
-			if (reader.TokenType != JsonTokenType.PropertyName) throw new JsonException();
+			if (reader.TokenType != JsonTokenType.PropertyName)
+				throw new JsonException();
 
 			var propertyName = reader.GetString();
 			switch (propertyName)
@@ -135,10 +140,11 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 					ReadAssign<string>(ref reader, (e, v) => e.Type = v);
 					break;
 				default:
-					if (ReadMore(ref reader, options, propertyName, errorCause)) break;
+					if (ReadMore(ref reader, options, propertyName!, errorCause))
+						break;
 					else
 					{
-						ReadAny(ref reader, propertyName, (e, p, v) => additionalProperties.Add(p, v));
+						ReadAny(ref reader, propertyName!, (_, p, v) => additionalProperties.Add(p, v));
 						break;
 					}
 			}
@@ -158,7 +164,8 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 
 		static void Serialize<T>(Utf8JsonWriter writer, JsonSerializerOptions options, string name, T value)
 		{
-			if (value is null) return;
+			if (value is null)
+				return;
 
 			writer.WritePropertyName(name);
 			JsonSerializer.Serialize(writer, value, options);
@@ -166,7 +173,8 @@ public abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCau
 
 		static void SerializeDynamic(Utf8JsonWriter writer, JsonSerializerOptions options, string name, object? value, Type inputType)
 		{
-			if (value is null) return;
+			if (value is null)
+				return;
 
 			writer.WritePropertyName(name);
 			JsonSerializer.Serialize(writer, value, inputType, options);

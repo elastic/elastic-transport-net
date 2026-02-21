@@ -17,7 +17,7 @@ public class JsonResponseTests
 	// --- Builder tests ---
 
 	[Fact]
-	public async Task Builder_JsonContent()
+	public async Task BuilderJsonContent()
 	{
 		IResponseBuilder sut = new JsonResponseBuilder();
 		var config = new TransportConfiguration();
@@ -38,7 +38,7 @@ public class JsonResponseTests
 	}
 
 	[Fact]
-	public async Task Builder_NonJsonContent()
+	public async Task BuilderNonJsonContent()
 	{
 		IResponseBuilder sut = new JsonResponseBuilder();
 		var config = new TransportConfiguration();
@@ -69,7 +69,7 @@ public class JsonResponseTests
 	}
 
 	[Fact]
-	public void DirectDomAccess_Array()
+	public void DirectDomAccessArray()
 	{
 		var node = JsonNode.Parse("""{"items":["a","b","c"]}""");
 		var response = new JsonResponse(node);
@@ -183,14 +183,14 @@ public class JsonResponseTests
 	}
 
 	[Fact]
-	public void ArbitraryKey_TraversesIntoFirstKey()
+	public void ArbitraryKeyTraversesIntoFirstKey()
 	{
 		var response = new JsonResponse(JsonNode.Parse("""{"data":{"some_key":{"value":1}}}"""));
 		response.Get<int>("data._arbitrary_key_.value").Should().Be(1);
 	}
 
 	[Fact]
-	public void ArbitraryKey_ReturnsKeyName()
+	public void ArbitraryKeyReturnsKeyName()
 	{
 		var response = new JsonResponse(JsonNode.Parse("""{"data":{"first_key":"v1","second_key":"v2"}}"""));
 		response.Get<string>("data._arbitrary_key_").Should().NotBeNull();

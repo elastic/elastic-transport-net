@@ -26,7 +26,7 @@ public abstract class ProductRegistration
 	/// <summary>
 	/// The default MIME type used for Accept and Content-Type headers for requests.
 	/// </summary>
-	public abstract string DefaultContentType { get; }
+	public abstract string? DefaultContentType { get; }
 
 	/// <summary>
 	/// The name of the current product utilizing <see cref="ITransport{TConfiguration}"/>
@@ -108,7 +108,7 @@ public abstract class ProductRegistration
 	/// <summary>
 	/// Try to obtain a server error from the response, this is used for debugging and exception messages
 	/// </summary>
-	public abstract bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason) where TResponse : TransportResponse;
+	public abstract bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason) where TResponse : TransportResponse;
 
 	/// <summary>
 	/// Allows product implementations to inject a metadata header to all outgoing requests.

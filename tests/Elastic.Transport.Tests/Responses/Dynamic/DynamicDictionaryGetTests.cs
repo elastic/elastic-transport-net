@@ -59,7 +59,7 @@ public class DynamicDictionaryGetTests
 		Deserialize("""{"items":[10,20,30]}""").Get<int>("items.0").Should().Be(10);
 
 	[Fact]
-	public void ArrayPropertyByNumericIndex_Second() =>
+	public void ArrayPropertyByNumericIndexSecond() =>
 		Deserialize("""{"items":[10,20,30]}""").Get<int>("items.1").Should().Be(20);
 
 	[Fact]
@@ -67,7 +67,7 @@ public class DynamicDictionaryGetTests
 		Deserialize("""{"hits":[{"name":"a"},{"name":"b"}]}""").Get<string>("hits.0.name").Should().Be("a");
 
 	[Fact]
-	public void ArrayOfObjectsByIndex_Second() =>
+	public void ArrayOfObjectsByIndexSecond() =>
 		Deserialize("""{"hits":[{"name":"a"},{"name":"b"}]}""").Get<string>("hits.1.name").Should().Be("b");
 
 	// --- Bracket index syntax [N] ---
@@ -77,7 +77,7 @@ public class DynamicDictionaryGetTests
 		Deserialize("""{"items":[10,20,30]}""").Get<int>("items.[0]").Should().Be(10);
 
 	[Fact]
-	public void BracketIndex_Second() =>
+	public void BracketIndexSecond() =>
 		Deserialize("""{"items":[10,20,30]}""").Get<int>("items.[2]").Should().Be(30);
 
 	[Fact]
@@ -86,7 +86,7 @@ public class DynamicDictionaryGetTests
 			.Get<string>("hits.hits.[0]._source.name").Should().Be("first");
 
 	[Fact]
-	public void BracketIndexOnNestedArrayOfObjects_Last() =>
+	public void BracketIndexOnNestedArrayOfObjectsLast() =>
 		Deserialize("""{"hits":{"hits":[{"_source":{"name":"first"}},{"_source":{"name":"second"}}]}}""")
 			.Get<string>("hits.hits.[1]._source.name").Should().Be("second");
 

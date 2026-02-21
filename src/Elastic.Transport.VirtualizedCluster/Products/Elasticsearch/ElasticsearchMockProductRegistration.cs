@@ -26,5 +26,5 @@ public sealed class ElasticsearchMockProductRegistration : MockProductRegistrati
 		endpoint.PathAndQuery.StartsWith(ElasticsearchProductRegistration.SniffPath, StringComparison.Ordinal);
 
 	public override bool IsPingRequest(Endpoint endpoint) =>
-		endpoint.Method == HttpMethod.HEAD && (endpoint.PathAndQuery == string.Empty || endpoint.PathAndQuery.StartsWith("?"));
+		endpoint.Method == HttpMethod.HEAD && (endpoint.PathAndQuery.Length == 0 || endpoint.PathAndQuery[0] == '?');
 }

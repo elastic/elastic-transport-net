@@ -14,7 +14,7 @@ public class TrackingRequestInvoker : IRequestInvoker
 	private readonly Action<HttpResponseMessage> _response;
 	private TestableClientHandler _handler;
 	public int CallCount { get; private set; }
-	public SocketsHttpHandler LastSocketsHttpHandler => (SocketsHttpHandler)_handler.InnerHandler;
+	public SocketsHttpHandler LastHttpClientHandler => (SocketsHttpHandler)_handler.InnerHandler;
 
 	public ResponseFactory ResponseFactory => _requestInvoker.ResponseFactory;
 
@@ -47,5 +47,6 @@ public class TrackingRequestInvoker : IRequestInvoker
 	{
 		_handler?.Dispose();
 		_requestInvoker?.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }

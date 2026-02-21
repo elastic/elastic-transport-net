@@ -12,7 +12,7 @@ namespace Elastic.Transport;
 public sealed class BytesResponse : TransportResponse<byte[]>
 {
 	/// <inheritdoc cref="BytesResponse"/>
-	public BytesResponse() => Body = Array.Empty<byte>();
+	public BytesResponse() => Body = [];
 
 	/// <inheritdoc cref="BytesResponse"/>
 	public BytesResponse(byte[] body) => Body = body;
