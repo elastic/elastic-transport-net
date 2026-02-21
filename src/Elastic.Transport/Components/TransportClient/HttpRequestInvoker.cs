@@ -257,6 +257,85 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// </exception>
 	protected HttpMessageHandler CreateHttpClientHandler(BoundConfiguration boundConfiguration)
 	{
+#if NET6_0_OR_GREATER
+		return CreateSocketsHttpHandler(boundConfiguration);
+#else
+		return CreateLegacyHttpClientHandler(boundConfiguration);
+#endif
+	}
+
+#if NET6_0_OR_GREATER
+	private HttpMessageHandler CreateSocketsHttpHandler(BoundConfiguration boundConfiguration)
+	{
+		var handler = new System.Net.Http.SocketsHttpHandler
+		{
+			AutomaticDecompression = boundConfiguration.HttpCompression ? GZip | Deflate : None,
+			// Proactively recycle connections so that DNS changes are picked up and
+			// cloud load-balancer idle-timeout closures don't produce stale pooled connections.
+			PooledConnectionLifetime = boundConfiguration.DnsRefreshTimeout,
+			PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
+		};
+
+		if (boundConfiguration.ConnectionSettings.ConnectionLimit > 0)
+			handler.MaxConnectionsPerServer = boundConfiguration.ConnectionSettings.ConnectionLimit;
+
+		ConfigureProxy(handler, boundConfiguration);
+		ConfigureSslOptions(handler, boundConfiguration);
+
+		return handler;
+	}
+
+	private static void ConfigureProxy(System.Net.Http.SocketsHttpHandler handler, BoundConfiguration boundConfiguration)
+	{
+		if (!boundConfiguration.ProxyAddress.IsNullOrEmpty())
+		{
+			var uri = new Uri(boundConfiguration.ProxyAddress);
+			var proxy = new WebProxy(uri);
+			if (!string.IsNullOrEmpty(boundConfiguration.ProxyUsername))
+				proxy.Credentials = new NetworkCredential(boundConfiguration.ProxyUsername, boundConfiguration.ProxyPassword);
+			handler.Proxy = proxy;
+		}
+		else if (boundConfiguration.DisableAutomaticProxyDetection)
+			handler.UseProxy = false;
+	}
+
+	private void ConfigureSslOptions(System.Net.Http.SocketsHttpHandler handler, BoundConfiguration boundConfiguration)
+	{
+		var callback = boundConfiguration.ConnectionSettings?.ServerCertificateValidationCallback;
+		if (callback != null)
+		{
+			handler.SslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) => callback(sender, cert!, chain!, errors);
+		}
+		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings.CertificateFingerprint))
+		{
+			handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, chain, _) =>
+			{
+				if (certificate is null && chain is null) return false;
+
+				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings.CertificateFingerprint);
+
+				if (chain is not null)
+				{
+					foreach (var element in chain.ChainElements)
+					{
+						if (CertificateHelpers.ValidateCertificateFingerprint(element.Certificate, _expectedCertificateFingerprint))
+							return true;
+					}
+				}
+				return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
+			};
+		}
+
+		if (boundConfiguration.ClientCertificates != null)
+		{
+			handler.SslOptions.ClientCertificates ??= new System.Security.Cryptography.X509Certificates.X509CertificateCollection();
+			handler.SslOptions.ClientCertificates.AddRange(boundConfiguration.ClientCertificates);
+		}
+	}
+#endif
+
+	private HttpMessageHandler CreateLegacyHttpClientHandler(BoundConfiguration boundConfiguration)
+	{
 		var handler = new HttpClientHandler { AutomaticDecompression = boundConfiguration.HttpCompression ? GZip | Deflate : None, };
 
 		// same limit as desktop clr
@@ -290,7 +369,6 @@ public class HttpRequestInvoker : IRequestInvoker
 		else if (boundConfiguration.DisableAutomaticProxyDetection)
 			handler.UseProxy = false;
 
-		// Configure certificate validation
 		var callback = boundConfiguration.ConnectionSettings?.ServerCertificateValidationCallback;
 		if (callback != null && handler.ServerCertificateCustomValidationCallback == null)
 			handler.ServerCertificateCustomValidationCallback = callback!;
@@ -304,7 +382,6 @@ public class HttpRequestInvoker : IRequestInvoker
 				// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
 				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings!.CertificateFingerprint!);
 
-				// If there is a chain, check each certificate up to the root
 				if (chain is not null)
 				{
 					foreach (var element in chain.ChainElements)

@@ -144,25 +144,43 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				activity?.SetTag(SemanticConventions.ServerAddress, endpoint.Uri?.Host);
 				activity?.SetTag(SemanticConventions.ServerPort, endpoint.Uri?.Port);
 
-				try
+				for (var attempt = 0; attempt < 2; attempt++)
 				{
-					if (isAsync)
-						response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
-							.ConfigureAwait(false);
-					else
-						response = pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
-				}
-				catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
-				{
-					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
-				}
-				catch (PipelineException pipelineException)
-				{
-					HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
-				}
-				catch (Exception killerException)
-				{
-					ThrowUnexpectedTransportException(killerException, seenExceptions, endpoint, response, auditor);
+					try
+					{
+						if (isAsync)
+							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
+								.ConfigureAwait(false);
+						else
+							response = pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
+					}
+					catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
+					{
+						HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
+						break;
+					}
+					catch (PipelineException pipelineException)
+					{
+						HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
+						break;
+					}
+					catch (Exception killerException)
+					{
+						ThrowUnexpectedTransportException(killerException, seenExceptions, endpoint, response, auditor);
+					}
+
+					// Retry once when a pooled connection was closed by the server/LB
+					// before we used it. SocketsHttpHandler classifies this as InvalidResponse
+					// rather than a connection error, so it does not auto-retry internally.
+					// The stale connection is purged after the first failure; the retry
+					// succeeds on a fresh connection.
+					if (attempt == 0 && IsStaleConnectionException(response))
+					{
+						attemptedNodes++;
+						continue;
+					}
+
+					break;
 				}
 			}
 			else
@@ -353,6 +371,26 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		pipeline.MarkDead(node);
 		seenExceptions ??= new List<PipelineException>(1);
 		seenExceptions.Add(ex);
+	}
+
+	/// <summary>
+	/// Detects responses caused by a pooled HTTP connection that was silently closed by the
+	/// server or an intermediate load balancer. <c>SocketsHttpHandler</c> surfaces this as
+	/// an <c>HttpRequestException</c> with "Received an invalid status line:" rather than a
+	/// connection-level error, so its built-in retry does not fire. A single transport-level
+	/// retry on the same node is safe because the dead connection is already purged from the
+	/// pool after the first failure.
+	/// </summary>
+	private static bool IsStaleConnectionException(TransportResponse? response)
+	{
+		var ex = response?.ApiCallDetails?.OriginalException;
+		while (ex is not null)
+		{
+			if (ex.Message.Contains("Received an invalid status line:"))
+				return true;
+			ex = ex.InnerException;
+		}
+		return false;
 	}
 
 	private TResponse FinalizeResponse<TResponse>(
