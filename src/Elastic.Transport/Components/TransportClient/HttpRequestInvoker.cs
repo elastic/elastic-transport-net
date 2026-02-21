@@ -289,7 +289,7 @@ public class HttpRequestInvoker : IRequestInvoker
 	{
 		if (!boundConfiguration.ProxyAddress.IsNullOrEmpty())
 		{
-			var uri = new Uri(boundConfiguration.ProxyAddress);
+			var uri = new Uri(boundConfiguration.ProxyAddress!);
 			var proxy = new WebProxy(uri);
 			if (!string.IsNullOrEmpty(boundConfiguration.ProxyUsername))
 				proxy.Credentials = new NetworkCredential(boundConfiguration.ProxyUsername, boundConfiguration.ProxyPassword);
@@ -306,15 +306,15 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			handler.SslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) => callback(sender, cert!, chain!, errors);
 		}
-		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings.CertificateFingerprint))
+		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings?.CertificateFingerprint))
 		{
 			handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, chain, _) =>
 			{
 				if (certificate is null && chain is null) return false;
 
-				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings.CertificateFingerprint);
+			_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings!.CertificateFingerprint!);
 
-				if (chain is not null)
+			if (chain is not null)
 				{
 					foreach (var element in chain.ChainElements)
 					{
@@ -322,13 +322,13 @@ public class HttpRequestInvoker : IRequestInvoker
 							return true;
 					}
 				}
-				return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
-			};
-		}
+			return CertificateHelpers.ValidateCertificateFingerprint(certificate!, _expectedCertificateFingerprint);
+		};
+	}
 
-		if (boundConfiguration.ClientCertificates != null)
-		{
-			handler.SslOptions.ClientCertificates ??= new System.Security.Cryptography.X509Certificates.X509CertificateCollection();
+	if (boundConfiguration.ClientCertificates != null)
+	{
+		handler.SslOptions.ClientCertificates ??= new System.Security.Cryptography.X509Certificates.X509CertificateCollection();
 			handler.SslOptions.ClientCertificates.AddRange(boundConfiguration.ClientCertificates);
 		}
 	}
