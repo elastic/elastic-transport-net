@@ -109,6 +109,23 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 			return dotNetVersion ?? aspNetCoreVersion;
 		}
 
+		// When the netstandard2.0 build is loaded by .NET Framework,
+		// FrameworkDescription reports e.g. ".NET Framework 4.8.4614.0".
+		// Extract major.minor and return as major.minor.0 for semver compatibility.
+		const string dotNetFramework = ".NET Framework ";
+		var description = RuntimeInformation.FrameworkDescription;
+		if (description.StartsWith(dotNetFramework, StringComparison.OrdinalIgnoreCase))
+		{
+			var version = description.Substring(dotNetFramework.Length);
+			var firstDot = version.IndexOf('.');
+			if (firstDot > 0)
+			{
+				var secondDot = version.IndexOf('.', firstDot + 1);
+				var majorMinor = secondDot > 0 ? version.Substring(0, secondDot) : version;
+				return $"{majorMinor}.0";
+			}
+		}
+
 		return null;
 	}
 
