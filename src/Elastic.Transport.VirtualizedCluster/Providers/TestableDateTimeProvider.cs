@@ -20,5 +20,12 @@ public sealed class TestableDateTimeProvider : DateTimeProvider
 	/// <param name="change">A fun that gets passed the current <see cref="Now"/> and needs to return the new value</param>
 	public void ChangeTime(Func<DateTimeOffset, DateTimeOffset> change) => MutableNow = change(MutableNow);
 
-	public override DateTimeOffset DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout) => throw new NotImplementedException();
+	/// <inheritdoc cref="DateTimeProvider.DeadTime"/>
+	public override DateTimeOffset DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout)
+	{
+		var timeout = minDeadTimeout.GetValueOrDefault(TimeSpan.FromSeconds(60));
+		var maxTimeout = maxDeadTimeout.GetValueOrDefault(TimeSpan.FromMinutes(30));
+		var milliSeconds = Math.Min(timeout.TotalMilliseconds * 2 * Math.Pow(2, (attempts * 0.5) - 1), maxTimeout.TotalMilliseconds);
+		return Now().AddMilliseconds(milliSeconds);
+	}
 }

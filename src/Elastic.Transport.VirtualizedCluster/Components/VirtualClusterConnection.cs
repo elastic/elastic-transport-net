@@ -118,9 +118,62 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 	private bool IsPingRequest(Endpoint endpoint) => _productRegistration.IsPingRequest(endpoint);
 
 	/// <inheritdoc cref="IRequestInvoker.RequestAsync{TResponse}"/>>
-	public Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken)
-		where TResponse : TransportResponse, new() =>
-		Task.FromResult(Request<TResponse>(endpoint, boundConfiguration, postData));
+	public async Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken)
+		where TResponse : TransportResponse, new()
+	{
+		if (!_calls.TryGetValue(endpoint.Uri.Port, out var state))
+			throw new Exception($"Expected a call to happen on port {endpoint.Uri.Port} but received none");
+
+		try
+		{
+			if (IsSniffRequest(endpoint))
+			{
+				_ = Interlocked.Increment(ref state.Sniffed);
+				return await HandleRulesAsync<TResponse, ISniffRule>(
+					endpoint,
+					boundConfiguration,
+					postData,
+					nameof(VirtualCluster.Sniff),
+					_cluster.SniffingRules,
+					boundConfiguration.RequestTimeout,
+					r => UpdateCluster(r.NewClusterState),
+					_ => _productRegistration.CreateSniffResponseBytes(_cluster.Nodes, _cluster.ElasticsearchVersion, _cluster.PublishAddressOverride, _cluster.SniffShouldReturnFqnd),
+					cancellationToken
+				).ConfigureAwait(false);
+			}
+			if (IsPingRequest(endpoint))
+			{
+				_ = Interlocked.Increment(ref state.Pinged);
+				return await HandleRulesAsync<TResponse, IRule>(
+					endpoint,
+					boundConfiguration,
+					postData,
+					nameof(VirtualCluster.Ping),
+					_cluster.PingingRules,
+					boundConfiguration.PingTimeout,
+					_ => { },
+					_ => null, //HEAD request
+					cancellationToken
+				).ConfigureAwait(false);
+			}
+			_ = Interlocked.Increment(ref state.Called);
+			return await HandleRulesAsync<TResponse, IClientCallRule>(
+				endpoint,
+				boundConfiguration,
+				postData,
+				nameof(VirtualCluster.ClientCalls),
+				_cluster.ClientCallRules,
+				boundConfiguration.RequestTimeout,
+				_ => { },
+				CallResponse,
+				cancellationToken
+			).ConfigureAwait(false);
+		}
+		catch (TheException e)
+		{
+			return ResponseFactory.Create<TResponse>(endpoint, boundConfiguration, postData, e, null, null, Stream.Null, null, -1, null, null);
+		}
+	}
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
 	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
@@ -176,6 +229,8 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			return ResponseFactory.Create<TResponse>(endpoint, boundConfiguration, postData, e, null, null, Stream.Null, null, -1, null, null);
 		}
 	}
+
+	// --- Sync path ---
 
 	private TResponse HandleRules<TResponse, TRule>(
 		Endpoint endpoint,
@@ -315,6 +370,143 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		beforeReturn.Invoke(rule);
 		return _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, boundConfiguration, postData, successResponse(rule), contentType: rule.ReturnContentType);
 	}
+
+	// --- Async path ---
+
+	private async Task<TResponse> HandleRulesAsync<TResponse, TRule>(
+		Endpoint endpoint,
+		BoundConfiguration boundConfiguration,
+		PostData? postData,
+		string origin,
+		IList<TRule> rules,
+		TimeSpan timeout,
+		Action<TRule> beforeReturn,
+		Func<TRule, byte[]?> successResponse,
+		CancellationToken cancellationToken
+	)
+		where TResponse : TransportResponse, new()
+		where TRule : IRule
+	{
+		if (rules.Count == 0)
+			throw new Exception($"No {origin} defined for the current VirtualCluster, so we do not know how to respond");
+
+		var (matched, response) = await TryMatchRulesAsync<TResponse, TRule>(rules.Where(s => s.OnPort.HasValue && s.PathFilter != null), endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, cancellationToken).ConfigureAwait(false);
+		if (matched) return response!;
+		(matched, response) = await TryMatchRulesAsync<TResponse, TRule>(rules.Where(s => s.OnPort.HasValue && s.PathFilter == null), endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, cancellationToken).ConfigureAwait(false);
+		if (matched) return response!;
+		(matched, response) = await TryMatchRulesAsync<TResponse, TRule>(rules.Where(s => !s.OnPort.HasValue && s.PathFilter != null), endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, cancellationToken).ConfigureAwait(false);
+		if (matched) return response!;
+		(matched, response) = await TryMatchRulesAsync<TResponse, TRule>(rules.Where(s => !s.OnPort.HasValue && s.PathFilter == null), endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, cancellationToken).ConfigureAwait(false);
+		if (matched) return response!;
+
+		var count = _calls.Sum(kv => kv.Value.Called);
+		throw new Exception($@"No global or port specific {origin} rule ({endpoint.Uri.Port}) matches any longer after {count} calls in to the cluster");
+	}
+
+	private async Task<(bool matched, TResponse? response)> TryMatchRulesAsync<TResponse, TRule>(
+		IEnumerable<TRule> rules,
+		Endpoint endpoint,
+		BoundConfiguration boundConfiguration,
+		PostData? postData,
+		TimeSpan timeout,
+		Action<TRule> beforeReturn,
+		Func<TRule, byte[]?> successResponse,
+		CancellationToken cancellationToken
+	)
+		where TResponse : TransportResponse, new()
+		where TRule : IRule
+	{
+		foreach (var rule in rules)
+		{
+			if (rule.OnPort.HasValue && rule.OnPort.Value != endpoint.Uri.Port) continue;
+			if (rule.PathFilter != null && !rule.PathFilter(endpoint.PathAndQuery)) continue;
+
+			var always = rule.Times.Match(_ => true, _ => false);
+			var times = rule.Times.Match(_ => -1, t => t);
+
+			if (always)
+				return (true, await AlwaysAsync<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule, cancellationToken).ConfigureAwait(false));
+
+			if (rule.ExecuteCount > times) continue;
+
+			return (true, await SometimesAsync<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule, cancellationToken).ConfigureAwait(false));
+		}
+		return (false, default);
+	}
+
+	private async Task<TResponse> AlwaysAsync<TResponse, TRule>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse, TRule rule, CancellationToken cancellationToken)
+		where TResponse : TransportResponse, new()
+		where TRule : IRule
+	{
+		if (rule.Takes.HasValue)
+		{
+			var time = timeout < rule.Takes.Value ? timeout : rule.Takes.Value;
+			_dateTimeProvider.ChangeTime(d => d.Add(time));
+			if (rule.Takes.Value > boundConfiguration.RequestTimeout)
+				throw new TheException(
+					$"Request timed out after {time} : call configured to take {rule.Takes.Value} while requestTimeout was: {timeout}");
+		}
+
+		return rule.Succeeds
+			? await SuccessAsync<TResponse, TRule>(endpoint, boundConfiguration, postData, beforeReturn, successResponse, rule, cancellationToken).ConfigureAwait(false)
+			: await FailAsync<TResponse, TRule>(endpoint, boundConfiguration, postData, rule, cancellationToken).ConfigureAwait(false);
+	}
+
+	private async Task<TResponse> SometimesAsync<TResponse, TRule>(
+		Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse, TRule rule, CancellationToken cancellationToken
+	)
+		where TResponse : TransportResponse, new()
+		where TRule : IRule
+	{
+		if (rule.Takes.HasValue)
+		{
+			var time = timeout < rule.Takes.Value ? timeout : rule.Takes.Value;
+			_dateTimeProvider.ChangeTime(d => d.Add(time));
+			if (rule.Takes.Value > boundConfiguration.RequestTimeout)
+				throw new TheException(
+					$"Request timed out after {time} : call configured to take {rule.Takes.Value} while requestTimeout was: {timeout}");
+		}
+
+		if (rule.Succeeds)
+			return await SuccessAsync<TResponse, TRule>(endpoint, boundConfiguration, postData, beforeReturn, successResponse, rule, cancellationToken).ConfigureAwait(false);
+
+		return await FailAsync<TResponse, TRule>(endpoint, boundConfiguration, postData, rule, cancellationToken).ConfigureAwait(false);
+	}
+
+	private async Task<TResponse> FailAsync<TResponse, TRule>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, TRule rule, CancellationToken cancellationToken, RuleOption<Exception, int>? returnOverride = null)
+		where TResponse : TransportResponse, new()
+		where TRule : IRule
+	{
+		var state = _calls[endpoint.Uri.Port];
+		_ = Interlocked.Increment(ref state.Failures);
+		var ret = returnOverride ?? rule.Return;
+		rule.RecordExecuted();
+
+		if (ret == null)
+			throw new TheException();
+
+		return await ret.Match<Task<TResponse>>(
+			e => throw e,
+			async statusCode => await _inMemoryRequestInvoker.BuildResponseAsync<TResponse>(endpoint, boundConfiguration, postData, cancellationToken, CallResponse(rule),
+				statusCode is >= 200 and < 300 ? 502 : statusCode, rule.ReturnContentType).ConfigureAwait(false)
+		).ConfigureAwait(false);
+	}
+
+	private async Task<TResponse> SuccessAsync<TResponse, TRule>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse,
+		TRule rule, CancellationToken cancellationToken
+	)
+		where TResponse : TransportResponse, new()
+		where TRule : IRule
+	{
+		var state = _calls[endpoint.Uri.Port];
+		_ = Interlocked.Increment(ref state.Successes);
+		rule.RecordExecuted();
+
+		beforeReturn.Invoke(rule);
+		return await _inMemoryRequestInvoker.BuildResponseAsync<TResponse>(endpoint, boundConfiguration, postData, cancellationToken, successResponse(rule), contentType: rule.ReturnContentType).ConfigureAwait(false);
+	}
+
+	// --- Shared helpers ---
 
 	private static byte[] CallResponse<TRule>(TRule rule)
 		where TRule : IRule

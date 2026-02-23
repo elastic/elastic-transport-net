@@ -124,7 +124,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 		Stream responseStream = body != null ? boundConfiguration.MemoryStreamFactory.Create(body) : boundConfiguration.MemoryStreamFactory.Create(EmptyBody);
 
 		return await ResponseFactory
-			.CreateAsync<TResponse>(endpoint, boundConfiguration, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType, body?.Length ?? 0, null, null, cancellationToken)
+			.CreateAsync<TResponse>(endpoint, boundConfiguration, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? BoundConfiguration.DefaultContentType, body?.Length ?? 0, null, null, cancellationToken)
 			.ConfigureAwait(false);
 	}
 }
