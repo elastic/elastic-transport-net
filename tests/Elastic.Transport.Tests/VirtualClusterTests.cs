@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Elastic.Transport.VirtualizedCluster;
@@ -129,5 +130,91 @@ public class VirtualClusterTests
 				} },
 			}
 		);
+	}
+
+	[Fact]
+	public async Task PathSpecificRulesReturnDifferentResponses()
+	{
+		var cluster = Virtual.Elasticsearch
+			.Bootstrap(1)
+			.ClientCalls(r => r.OnPath("/_search").SucceedAlways().ReturnResponse(new { endpoint = "search" }))
+			.ClientCalls(r => r.OnPath("/_bulk").SucceedAlways().ReturnResponse(new { endpoint = "index" }))
+			.ClientCalls(r => r.SucceedAlways().ReturnResponse(new { endpoint = "catchall" }))
+			.StaticNodePool()
+			.Settings(s => s.DisablePing().EnableDebugMode());
+
+		var transport = cluster.RequestHandler;
+
+		var searchResponse = transport.Request<StringResponse>(HttpMethod.GET, "/_search");
+		_ = searchResponse.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+		_ = searchResponse.Body.Should().Contain("endpoint\":\"search\"");
+
+		var bulkResponse = transport.Request<StringResponse>(HttpMethod.POST, "/_bulk");
+		_ = bulkResponse.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+		_ = bulkResponse.Body.Should().Contain("endpoint\":\"index\"");
+
+		var otherResponse = transport.Request<StringResponse>(HttpMethod.GET, "/other");
+		_ = otherResponse.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+		_ = otherResponse.Body.Should().Contain("endpoint\":\"catchall\"");
+	}
+
+	[Fact]
+	public async Task PathSpecificRulesFallThroughToCatchAll()
+	{
+		var audit = new Auditor(() => Virtual.Elasticsearch
+			.Bootstrap(1)
+			.ClientCalls(r => r.OnPath("/_search").SucceedAlways().ReturnResponse(new { endpoint = "search" }))
+			.ClientCalls(r => r.SucceedAlways().ReturnResponse(new { endpoint = "catchall" }))
+			.StaticNodePool()
+			.Settings(s => s.DisablePing().EnableDebugMode())
+		);
+
+		_ = await audit.TraceCalls(
+			new ClientCall {
+				{ HealthyResponse, 9200, response =>
+				{
+					_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+					_ = response.ApiCallDetails.DebugInformation.Should().Contain("endpoint\":\"catchall\"");
+				} },
+			}
+		);
+	}
+
+	[Fact]
+	public void PathSpecificRulesWithTimesAreExhausted()
+	{
+		var cluster = Virtual.Elasticsearch
+			.Bootstrap(1)
+			.ClientCalls(r => r.OnPath("/_search").Succeeds(TimesHelper.Once).ReturnResponse(new { call = 1 }))
+			.ClientCalls(r => r.OnPath("/_search").SucceedAlways().ReturnResponse(new { call = "default" }))
+			.StaticNodePool()
+			.Settings(s => s.DisablePing().EnableDebugMode());
+
+		var transport = cluster.RequestHandler;
+
+		var first = transport.Request<StringResponse>(HttpMethod.GET, "/_search");
+		_ = first.Body.Should().Contain("call\":1");
+
+		var second = transport.Request<StringResponse>(HttpMethod.GET, "/_search");
+		_ = second.Body.Should().Contain("call\":\"default\"");
+	}
+
+	[Fact]
+	public void PathSpecificRulesUsePredicateOverload()
+	{
+		var cluster = Virtual.Elasticsearch
+			.Bootstrap(1)
+			.ClientCalls(r => r.OnPath(p => p.StartsWith("/_cat", StringComparison.OrdinalIgnoreCase)).SucceedAlways().ReturnResponse(new { matched = "predicate" }))
+			.ClientCalls(r => r.SucceedAlways().ReturnResponse(new { matched = "catchall" }))
+			.StaticNodePool()
+			.Settings(s => s.DisablePing().EnableDebugMode());
+
+		var transport = cluster.RequestHandler;
+
+		var catResponse = transport.Request<StringResponse>(HttpMethod.GET, "/_cat/indices");
+		_ = catResponse.Body.Should().Contain("matched\":\"predicate\"");
+
+		var otherResponse = transport.Request<StringResponse>(HttpMethod.GET, "/other");
+		_ = otherResponse.Body.Should().Contain("matched\":\"catchall\"");
 	}
 }
