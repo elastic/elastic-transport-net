@@ -7,7 +7,7 @@ using System.Buffers;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Elastic.Transport.Tests.Shared;
+using Elastic.Transport.Tests.SharedComponents;
 using FluentAssertions;
 using Xunit;
 
@@ -40,7 +40,7 @@ public class StreamResponseBuilderTests
 	}
 
 	[Fact]
-	public async Task ReturnsExpectedResponse_WhenDisableDirectStreaming()
+	public async Task ReturnsExpectedResponseWhenDisableDirectStreaming()
 	{
 		IResponseBuilder sut = new StreamResponseBuilder();
 
@@ -69,9 +69,9 @@ public class StreamResponseBuilderTests
 #pragma warning restore CA1835 // Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'
 
 #pragma warning disable IDE0057 // Use range operator
-		buffer.AsSpan().Slice(0, read).SequenceEqual(Data).Should().BeTrue();
+		_ = buffer.AsSpan().Slice(0, read).SequenceEqual(Data).Should().BeTrue();
 #pragma warning restore IDE0057 // Use range operator
 
-		memoryStreamFactory.Created.Count.Should().Be(0);
+		_ = memoryStreamFactory.Created.Count.Should().Be(0);
 	}
 }

@@ -17,7 +17,7 @@ namespace Elastic.Transport.Products;
 /// </summary>
 public sealed class DefaultProductRegistration : ProductRegistration
 {
-	private readonly HeadersList _headers = new();
+	private readonly HeadersList _headers;
 	private readonly MetaHeaderProvider _metaHeaderProvider;
 
 	/// <summary>
@@ -25,11 +25,12 @@ public sealed class DefaultProductRegistration : ProductRegistration
 	/// </summary>
 	public DefaultProductRegistration()
 	{
-		_metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(ITransport), ServiceIdentifier);
+		_headers = new();
+		_metaHeaderProvider = new DefaultMetaHeaderProvider(typeof(ITransport), ServiceIdentifier ?? "et");
 
 		ProductAssemblyVersion = typeof(ProductRegistration).Assembly
-			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-			.InformationalVersion;
+			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+			.InformationalVersion ?? "unknown";
 	}
 
 	/// <summary> A static instance of <see cref="DefaultProductRegistration"/> to promote reuse </summary>
@@ -70,10 +71,10 @@ public sealed class DefaultProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.HttpStatusCodeClassifier"/>
 	public override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
-		statusCode >= 200 && statusCode < 300;
+		statusCode is >= 200 and < 300;
 
 	/// <inheritdoc cref="ProductRegistration.TryGetServerErrorReason{TResponse}"/>>
-	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string reason)
+	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason)
 	{
 		reason = null;
 		return false;

@@ -16,18 +16,18 @@ internal static class JsonElementExtensions
 	/// recursively to their actual types. This should only be used in the context of <see cref="DynamicDictionary"/> which is
 	/// allowed to be slow yet convenient
 	/// </summary>
-	public static IDictionary<string, object> ToDictionary(this JsonElement e) =>
+	public static IDictionary<string, object?>? ToDictionary(this JsonElement e) =>
 		e.ValueKind switch
 		{
 			JsonValueKind.Object => e.EnumerateObject()
-				.Aggregate(new Dictionary<string, object>(), (dict, je) =>
+				.Aggregate(new Dictionary<string, object?>(), (dict, je) =>
 				{
 					dict.Add(je.Name, DynamicValue.ConsumeJsonElement(typeof(object), je.Value));
 					return dict;
 				}),
 			JsonValueKind.Array => e.EnumerateArray()
 				.Select((je, i) => (i, o: DynamicValue.ConsumeJsonElement(typeof(object), je)))
-				.Aggregate(new Dictionary<string, object>(), (dict, t) =>
+				.Aggregate(new Dictionary<string, object?>(), (dict, t) =>
 				{
 					dict.Add(t.i.ToString(CultureInfo.InvariantCulture), t.o);
 					return dict;

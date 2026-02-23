@@ -4,39 +4,59 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Elastic.Transport.Products.Elasticsearch;
 
 internal sealed class NodeInfo
 {
-	public string build_hash { get; set; }
-	public string host { get; set; }
-	public NodeInfoHttp http { get; set; }
-	public string ip { get; set; }
-	public string name { get; set; }
-	public IList<string> roles { get; set; }
-	public IDictionary<string, object> settings { get; set; }
-	public string transport_address { get; set; }
-	public string version { get; set; }
-	internal bool HoldsData => roles?.Contains("data") ?? false;
+	[JsonPropertyName("build_hash")]
+	public string? BuildHash { get; set; }
+
+	[JsonPropertyName("host")]
+	public string? Host { get; set; }
+
+	[JsonPropertyName("http")]
+	public NodeInfoHttp? Http { get; set; }
+
+	[JsonPropertyName("ip")]
+	public string? Ip { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("roles")]
+	public IList<string>? Roles { get; set; }
+
+	[JsonPropertyName("settings")]
+	public IDictionary<string, object>? Settings { get; set; }
+
+	[JsonPropertyName("transport_address")]
+	public string? TransportAddress { get; set; }
+
+	[JsonPropertyName("version")]
+	public string? Version { get; set; }
+
+	internal bool HoldsData => Roles?.Contains("data") ?? false;
 
 	internal bool HttpEnabled
 	{
 		get
 		{
-			if (settings != null && settings.TryGetValue("http.enabled", out var httpEnabled))
+			if (Settings != null && Settings.TryGetValue("http.enabled", out var httpEnabled))
 			{
 				if (httpEnabled is JsonElement e)
 					return e.GetBoolean();
-				return Convert.ToBoolean(httpEnabled);
+				return Convert.ToBoolean(httpEnabled, CultureInfo.InvariantCulture);
 			}
 
-			return http != null;
+			return Http != null;
 		}
 	}
 
-	internal bool IngestEnabled => roles?.Contains("ingest") ?? false;
+	internal bool IngestEnabled => Roles?.Contains("ingest") ?? false;
 
-	internal bool MasterEligible => roles?.Contains("master") ?? false;
+	internal bool MasterEligible => Roles?.Contains("master") ?? false;
 }

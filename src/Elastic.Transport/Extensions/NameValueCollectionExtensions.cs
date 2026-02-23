@@ -17,19 +17,20 @@ internal static class NameValueCollectionExtensions
 
 	internal static string ToQueryString(this NameValueCollection nv)
 	{
-		if (nv == null || nv.AllKeys.Length == 0) return string.Empty;
+		if (nv == null || nv.AllKeys.Length == 0)
+			return string.Empty;
 
 		var maxLength = 1 + nv.AllKeys.Length - 1; // account for '?', and any required '&' chars
 		foreach (var key in nv.AllKeys)
 		{
-			var bytes = Encoding.UTF8.GetByteCount(key) + Encoding.UTF8.GetByteCount(nv[key] ?? string.Empty);
+			var bytes = Encoding.UTF8.GetByteCount(key ?? string.Empty) + Encoding.UTF8.GetByteCount(nv[key] ?? string.Empty);
 			var maxEncodedSize = bytes * 3; // worst case, assume all bytes are URL escaped to 3 chars
 			maxLength += 1 + maxEncodedSize; // '=' + encoded chars
 		}
 
 		// prefer stack allocated array for short lengths
 		// note: renting for larger lengths is slightly more efficient since no zeroing occurs
-		char[] rentedFromPool = null;
+		char[]? rentedFromPool = null;
 		var buffer = maxLength > MaxCharsOnStack
 			? rentedFromPool = ArrayPool<char>.Shared.Rent(maxLength)
 			: stackalloc char[maxLength];
@@ -41,6 +42,9 @@ internal static class NameValueCollectionExtensions
 
 			foreach (var key in nv.AllKeys)
 			{
+				if (key is null)
+					continue;
+
 				if (position != 1)
 					buffer[position++] = '&';
 
@@ -50,10 +54,11 @@ internal static class NameValueCollectionExtensions
 
 				var value = nv[key];
 
-				if (value.IsNullOrEmpty()) continue;
+				if (value.IsNullOrEmpty())
+					continue;
 
 				buffer[position++] = '=';
-				var escapedValue = Uri.EscapeDataString(value);
+				var escapedValue = Uri.EscapeDataString(value!);
 				escapedValue.AsSpan().CopyTo(buffer.Slice(position));
 				position += escapedValue.Length;
 			}
@@ -69,8 +74,10 @@ internal static class NameValueCollectionExtensions
 
 	internal static void UpdateFromDictionary(this NameValueCollection queryString, Dictionary<string, object> queryStringUpdates, UrlFormatter provider)
 	{
-		if (queryString == null || queryString.Count < 0) return;
-		if (queryStringUpdates == null || queryStringUpdates.Count < 0) return;
+		if (queryString == null || queryString.Count < 0)
+			return;
+		if (queryStringUpdates == null || queryStringUpdates.Count < 0)
+			return;
 
 		foreach (var kv in queryStringUpdates.Where(kv => !kv.Key.IsNullOrEmpty()))
 		{

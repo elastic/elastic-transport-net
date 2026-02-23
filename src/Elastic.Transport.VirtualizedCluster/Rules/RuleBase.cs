@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Elastic.Transport.VirtualizedCluster.Rules;
@@ -19,6 +20,7 @@ public interface IRule
 	Func<string, bool> PathFilter { get; set; }
 
 	/// <summary> Either a hard exception or soft HTTP error code</summary>
+	[SuppressMessage("Naming", "CA1716:Identifiers should not match keywords")]
 	RuleOption<Exception, int> Return { get; set; }
 
 	/// <summary>Set an explicit return content type for the API call</summary>

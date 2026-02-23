@@ -18,11 +18,11 @@ namespace Elastic.Transport;
 public class InMemoryRequestInvoker : IRequestInvoker
 {
 	private static readonly byte[] EmptyBody = Encoding.UTF8.GetBytes("");
-	private readonly string _contentType;
+	private readonly string? _contentType;
 	private readonly Exception? _exception;
-	private readonly byte[] _responseBody;
+	private readonly byte[]? _responseBody;
 	private readonly int _statusCode;
-	private readonly Dictionary<string, IEnumerable<string>> _headers;
+	private readonly Dictionary<string, IEnumerable<string>>? _headers;
 
 	/// <summary>
 	/// Every request will succeed with this overload, note that it won't actually return mocked responses
@@ -36,7 +36,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	}
 
 	/// <inheritdoc cref="InMemoryRequestInvoker"/>
-	public InMemoryRequestInvoker(byte[] responseBody, int statusCode = 200, Exception? exception = null, string contentType = BoundConfiguration.DefaultContentType, Dictionary<string, IEnumerable<string>> headers = null)
+	public InMemoryRequestInvoker(byte[]? responseBody, int statusCode = 200, Exception? exception = null, string contentType = BoundConfiguration.DefaultContentType, Dictionary<string, IEnumerable<string>>? headers = null)
 	{
 		_responseBody = responseBody;
 		_statusCode = statusCode;
@@ -50,7 +50,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 	/// <inheritdoc />
 	public ResponseFactory ResponseFactory { get; }
 
-	void IDisposable.Dispose() { }
+	void IDisposable.Dispose() => GC.SuppressFinalize(this);
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
 	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
@@ -88,9 +88,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 				data.Write(zipStream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
 			}
 			else
-			{
 				data.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
-			}
 		}
 
 		var sc = statusCode ?? _statusCode;

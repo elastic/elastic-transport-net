@@ -4,30 +4,23 @@
 
 namespace Elastic.Transport.VirtualizedCluster.Extensions;
 
-	internal static class NumericExtensions
+internal static class NumericExtensions
+{
+	public static string ToOrdinal(this int num)
 	{
-		public static string ToOrdinal(this int num)
+		if (num <= 0)
+			return num.ToString();
+
+		return (num % 100) switch
 		{
-			if (num <= 0) return num.ToString();
-
-			switch (num % 100)
+			11 or 12 or 13 => num + "th",
+			_ => (num % 10) switch
 			{
-				case 11:
-				case 12:
-				case 13:
-					return num + "th";
+				1 => num + "st",
+				2 => num + "nd",
+				3 => num + "rd",
+				_ => num + "th",
 			}
-
-			switch (num % 10)
-			{
-				case 1:
-					return num + "st";
-				case 2:
-					return num + "nd";
-				case 3:
-					return num + "rd";
-				default:
-					return num + "th";
-			}
-		}
+		};
 	}
+}

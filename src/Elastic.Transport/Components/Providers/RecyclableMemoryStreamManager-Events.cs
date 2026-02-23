@@ -25,10 +25,7 @@
 // ---------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics.Tracing;
-using System.Threading;
 
 namespace Elastic.Transport;
 
@@ -53,14 +50,14 @@ internal sealed class PollingCounter : IDisposable
 	public PollingCounter(string largeBuffers, RecyclableMemoryStreamManager.Events eventsWriter, Func<double> func) { }
 	// ReSharper restore UnusedParameter.Local
 
-	public void Dispose() {}
+	public void Dispose() { }
 }
 #endif
 
 internal sealed partial class RecyclableMemoryStreamManager
 {
 	public static readonly Events EventsWriter = new Events();
-	
+
 	[EventSource(Name = "Elastic-Transport-RecyclableMemoryStream", Guid = "{AD44FDAC-D3FC-460A-9EBE-E55A3569A8F6}")]
 	public sealed class Events : EventSource
 	{
@@ -78,21 +75,21 @@ internal sealed partial class RecyclableMemoryStreamManager
 		}
 
 		[Event(1, Level = EventLevel.Verbose)]
-		public void MemoryStreamCreated(Guid guid, string tag, int requestedSize)
+		public void MemoryStreamCreated(Guid guid, string? tag, int requestedSize)
 		{
 			if (IsEnabled(EventLevel.Verbose, EventKeywords.None))
 				WriteEvent(1, guid, tag ?? string.Empty, requestedSize);
 		}
 
 		[Event(2, Level = EventLevel.Verbose)]
-		public void MemoryStreamDisposed(Guid guid, string tag)
+		public void MemoryStreamDisposed(Guid guid, string? tag)
 		{
 			if (IsEnabled(EventLevel.Verbose, EventKeywords.None))
 				WriteEvent(2, guid, tag ?? string.Empty);
 		}
 
 		[Event(3, Level = EventLevel.Critical)]
-		public void MemoryStreamDoubleDispose(Guid guid, string tag, string allocationStack, string disposeStack1, string disposeStack2)
+		public void MemoryStreamDoubleDispose(Guid guid, string? tag, string? allocationStack, string? disposeStack1, string? disposeStack2)
 		{
 			if (IsEnabled())
 				WriteEvent(3, guid, tag ?? string.Empty, allocationStack ?? string.Empty,
@@ -100,14 +97,14 @@ internal sealed partial class RecyclableMemoryStreamManager
 		}
 
 		[Event(4, Level = EventLevel.Error)]
-		public void MemoryStreamFinalized(Guid guid, string tag, string allocationStack)
+		public void MemoryStreamFinalized(Guid guid, string? tag, string? allocationStack)
 		{
 			if (IsEnabled())
 				WriteEvent(4, guid, tag ?? string.Empty, allocationStack ?? string.Empty);
 		}
 
 		[Event(5, Level = EventLevel.Verbose)]
-		public void MemoryStreamToArray(Guid guid, string tag, string stack, int size)
+		public void MemoryStreamToArray(Guid guid, string? tag, string? stack, int size)
 		{
 			if (IsEnabled(EventLevel.Verbose, EventKeywords.None))
 				WriteEvent(5, guid, tag ?? string.Empty, stack ?? string.Empty, size);
@@ -135,21 +132,21 @@ internal sealed partial class RecyclableMemoryStreamManager
 		}
 
 		[Event(9, Level = EventLevel.Verbose)]
-		public void MemoryStreamNonPooledLargeBufferCreated(int requiredSize, string tag, string allocationStack)
+		public void MemoryStreamNonPooledLargeBufferCreated(int requiredSize, string? tag, string? allocationStack)
 		{
 			if (IsEnabled(EventLevel.Verbose, EventKeywords.None))
 				WriteEvent(9, requiredSize, tag ?? string.Empty, allocationStack ?? string.Empty);
 		}
 
 		[Event(10, Level = EventLevel.Warning)]
-		public void MemoryStreamDiscardBuffer(MemoryStreamBufferType bufferType, string tag, MemoryStreamDiscardReason reason)
+		public void MemoryStreamDiscardBuffer(MemoryStreamBufferType bufferType, string? tag, MemoryStreamDiscardReason reason)
 		{
 			if (IsEnabled())
 				WriteEvent(10, bufferType, tag ?? string.Empty, reason);
 		}
 
 		[Event(11, Level = EventLevel.Error)]
-		public void MemoryStreamOverCapacity(int requestedCapacity, long maxCapacity, string tag, string allocationStack)
+		public void MemoryStreamOverCapacity(int requestedCapacity, long maxCapacity, string? tag, string? allocationStack)
 		{
 			if (IsEnabled())
 				WriteEvent(11, requestedCapacity, maxCapacity, tag ?? string.Empty, allocationStack ?? string.Empty);

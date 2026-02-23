@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.VirtualizedCluster.Products;
@@ -36,26 +35,26 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 {
 	private static readonly object Lock = new();
 
-	private static byte[]? _defaultResponseBytes;
+	private static byte[]? DefaultResponseBytes;
 
 	private VirtualCluster _cluster;
 	private readonly TestableDateTimeProvider _dateTimeProvider;
 	private MockProductRegistration _productRegistration;
-	private IDictionary<int, State> _calls = new Dictionary<int, State>();
+	private IDictionary<int, State> _calls;
 
 	private readonly InMemoryRequestInvoker _inMemoryRequestInvoker;
 
 	internal VirtualClusterRequestInvoker(VirtualCluster cluster, TestableDateTimeProvider dateTimeProvider)
 	{
 		_cluster = cluster;
-		_calls = cluster.Nodes.ToDictionary(n => n.Uri.Port, v => new State());
+		_calls = cluster.Nodes.ToDictionary(n => n.Uri.Port, _ => new State());
 		_productRegistration = cluster.ProductRegistration;
 		_dateTimeProvider = dateTimeProvider;
 		_productRegistration = cluster.ProductRegistration;
 		_inMemoryRequestInvoker = new InMemoryRequestInvoker();
 	}
 
-	void IDisposable.Dispose() { }
+	void IDisposable.Dispose() => GC.SuppressFinalize(this);
 
 	/// <summary>
 	/// Create a <see cref="VirtualClusterRequestInvoker"/> instance that always returns a successful response.
@@ -109,7 +108,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		lock (Lock)
 		{
 			_cluster = cluster;
-			_calls = cluster.Nodes.ToDictionary(n => n.Uri.Port, v => new State());
+			_calls = cluster.Nodes.ToDictionary(n => n.Uri.Port, _ => new State());
 			_productRegistration = cluster.ProductRegistration;
 		}
 	}
@@ -127,12 +126,11 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
 		where TResponse : TransportResponse, new()
 	{
-		if (!_calls.ContainsKey(endpoint.Uri.Port))
+		if (!_calls.TryGetValue(endpoint.Uri.Port, out var state))
 			throw new Exception($"Expected a call to happen on port {endpoint.Uri.Port} but received none");
 
 		try
 		{
-			var state = _calls[endpoint.Uri.Port];
 			if (IsSniffRequest(endpoint))
 			{
 				_ = Interlocked.Increment(ref state.Sniffed);
@@ -143,8 +141,8 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 					nameof(VirtualCluster.Sniff),
 					_cluster.SniffingRules,
 					boundConfiguration.RequestTimeout,
-					(r) => UpdateCluster(r.NewClusterState),
-					(r) => _productRegistration.CreateSniffResponseBytes(_cluster.Nodes, _cluster.ElasticsearchVersion, _cluster.PublishAddressOverride, _cluster.SniffShouldReturnFqnd)
+					r => UpdateCluster(r.NewClusterState),
+					_ => _productRegistration.CreateSniffResponseBytes(_cluster.Nodes, _cluster.ElasticsearchVersion, _cluster.PublishAddressOverride, _cluster.SniffShouldReturnFqnd)
 				);
 			}
 			if (IsPingRequest(endpoint))
@@ -157,8 +155,8 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 					nameof(VirtualCluster.Ping),
 					_cluster.PingingRules,
 					boundConfiguration.PingTimeout,
-					(r) => { },
-					(r) => null //HEAD request
+					_ => { },
+					_ => null //HEAD request
 				);
 			}
 			_ = Interlocked.Increment(ref state.Called);
@@ -169,7 +167,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 				nameof(VirtualCluster.ClientCalls),
 				_cluster.ClientCallRules,
 				boundConfiguration.RequestTimeout,
-				(r) => { },
+				_ => { },
 				CallResponse
 			);
 		}
@@ -204,7 +202,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		if (TryMatchRules<TResponse, TRule>(rules.Where(s => !s.OnPort.HasValue && s.PathFilter == null), endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, out response))
 			return response;
 
-		var count = _calls.Select(kv => kv.Value.Called).Sum();
+		var count = _calls.Sum(kv => kv.Value.Called);
 		throw new Exception($@"No global or port specific {origin} rule ({endpoint.Uri.Port}) matches any longer after {count} calls in to the cluster");
 	}
 
@@ -226,8 +224,8 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			if (rule.OnPort.HasValue && rule.OnPort.Value != endpoint.Uri.Port) continue;
 			if (rule.PathFilter != null && !rule.PathFilter(endpoint.PathAndQuery)) continue;
 
-			var always = rule.Times.Match(t => true, t => false);
-			var times = rule.Times.Match(t => -1, t => t);
+			var always = rule.Times.Match(_ => true, _ => false);
+			var times = rule.Times.Match(_ => -1, t => t);
 
 			if (always)
 			{
@@ -254,10 +252,8 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			var time = timeout < rule.Takes.Value ? timeout : rule.Takes.Value;
 			_dateTimeProvider.ChangeTime(d => d.Add(time));
 			if (rule.Takes.Value > boundConfiguration.RequestTimeout)
-			{
 				throw new TheException(
 					$"Request timed out after {time} : call configured to take {rule.Takes.Value} while requestTimeout was: {timeout}");
-			}
 		}
 
 		return rule.Succeeds
@@ -276,10 +272,8 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			var time = timeout < rule.Takes.Value ? timeout : rule.Takes.Value;
 			_dateTimeProvider.ChangeTime(d => d.Add(time));
 			if (rule.Takes.Value > boundConfiguration.RequestTimeout)
-			{
 				throw new TheException(
 					$"Request timed out after {time} : call configured to take {rule.Takes.Value} while requestTimeout was: {timeout}");
-			}
 		}
 
 		if (rule.Succeeds)
@@ -304,7 +298,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 			e => throw e,
 			statusCode => _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, boundConfiguration, postData, CallResponse(rule),
 				//make sure we never return a valid status code in Fail responses because of a bad rule.
-				statusCode >= 200 && statusCode < 300 ? 502 : statusCode, rule.ReturnContentType)
+				statusCode is >= 200 and < 300 ? 502 : statusCode, rule.ReturnContentType)
 		);
 	}
 
@@ -318,28 +312,29 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		_ = Interlocked.Increment(ref state.Successes);
 		rule.RecordExecuted();
 
-		beforeReturn?.Invoke(rule);
+		beforeReturn.Invoke(rule);
 		return _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, boundConfiguration, postData, successResponse(rule), contentType: rule.ReturnContentType);
 	}
 
 	private static byte[] CallResponse<TRule>(TRule rule)
 		where TRule : IRule
 	{
-		if (rule?.ReturnResponse != null)
+		if (rule.ReturnResponse != null)
 			return rule.ReturnResponse;
 
-		if (_defaultResponseBytes != null) return _defaultResponseBytes;
+		if (DefaultResponseBytes != null)
+			return DefaultResponseBytes;
 
 		var response = DefaultResponse;
 		using (var ms = TransportConfiguration.DefaultMemoryStreamFactory.Create())
 		{
 			LowLevelRequestResponseSerializer.Instance.Serialize(response, ms);
-			_defaultResponseBytes = ms.ToArray();
+			DefaultResponseBytes = ms.ToArray();
 		}
-		return _defaultResponseBytes;
+		return DefaultResponseBytes;
 	}
 
-	private class State
+	private sealed class State
 	{
 		public int Called;
 		public int Failures;
@@ -348,4 +343,3 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		public int Successes;
 	}
 }
-#nullable restore

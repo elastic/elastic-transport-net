@@ -25,7 +25,7 @@ public sealed class MetaDataHeader
 	{
 		if (serviceIdentifier != "et")
 			TransportVersion = ReflectionVersionInfo.Create<ITransport>().ToString();
-		
+
 		ClientVersion = version.ToMetadataHeaderValue();
 		RuntimeVersion = new RuntimeVersionInfo().ToString();
 		ServiceIdentifier = serviceIdentifier;
@@ -39,7 +39,7 @@ public sealed class MetaDataHeader
 			.Append(_httpClientIdentifier).Append('=').Append(RuntimeVersion);
 
 		if (!string.IsNullOrEmpty(TransportVersion))
-			builder.Append(_separator).Append("t=").Append(TransportVersion);
+			_ = builder.Append(_separator).Append("t=").Append(TransportVersion);
 
 		_headerValue = builder.ToString();
 	}
@@ -62,9 +62,9 @@ public sealed class MetaDataHeader
 	public string ClientVersion { get; private set; }
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
-	public string TransportVersion { get; private set; }
+	public string? TransportVersion { get; private set; }
 
 	/// <summary>
 	/// 

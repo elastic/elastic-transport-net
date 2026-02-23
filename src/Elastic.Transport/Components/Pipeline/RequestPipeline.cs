@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -25,9 +26,6 @@ public class RequestPipeline
 	private readonly MemoryStreamFactory _memoryStreamFactory;
 	private readonly Func<Node, bool> _nodePredicate;
 	private readonly ProductRegistration _productRegistration;
-
-	private RequestConfiguration? _pingAndSniffRequestConfiguration;
-
 	private readonly ITransportConfiguration _settings;
 
 	/// <inheritdoc cref="RequestPipeline" />
@@ -37,7 +35,7 @@ public class RequestPipeline
 		_settings = boundConfiguration.ConnectionSettings;
 		_nodePool = boundConfiguration.ConnectionSettings.NodePool;
 		_requestInvoker = boundConfiguration.ConnectionSettings.RequestInvoker;
-		_dateTimeProvider = boundConfiguration.ConnectionSettings.DateTimeProvider;
+		_dateTimeProvider = boundConfiguration.ConnectionSettings.DateTimeProvider ?? DefaultDateTimeProvider.Default;
 		_memoryStreamFactory = boundConfiguration.MemoryStreamFactory;
 		_productRegistration = boundConfiguration.ConnectionSettings.ProductRegistration;
 		_nodePredicate = boundConfiguration.ConnectionSettings.NodePredicate ?? _productRegistration.NodePredicate;
@@ -49,9 +47,10 @@ public class RequestPipeline
 		// This avoids allocating 192B per request for those which do not need to ping or sniff.
 		get
 		{
-			if (_pingAndSniffRequestConfiguration is not null) return _pingAndSniffRequestConfiguration;
+			if (field is not null)
+				return field;
 
-			_pingAndSniffRequestConfiguration = new RequestConfiguration
+			field = new RequestConfiguration
 			{
 				PingTimeout = PingTimeout,
 				RequestTimeout = PingTimeout,
@@ -60,8 +59,10 @@ public class RequestPipeline
 				ForceNode = _boundConfiguration.ForceNode
 			};
 
-			return _pingAndSniffRequestConfiguration;
+			return field;
 		}
+
+		set;
 	}
 
 	private bool DepletedRetries(DateTimeOffset startedOn, int attemptedNodes) => attemptedNodes >= MaxRetries + 1 || IsTakingTooLong(startedOn);
@@ -104,11 +105,12 @@ public class RequestPipeline
 	{
 		get
 		{
-			if (!SniffsOnStaleCluster) return false;
+			if (!SniffsOnStaleCluster)
+				return false;
 
 			// ReSharper disable once PossibleInvalidOperationException
 			// already checked by SniffsOnStaleCluster
-			var sniffLifeSpan = _settings.SniffInformationLifeSpan.Value;
+			var sniffLifeSpan = _settings.SniffInformationLifeSpan!.Value;
 
 			var now = _dateTimeProvider.Now();
 			var lastSniff = _nodePool.LastUpdate;
@@ -167,12 +169,9 @@ public class RequestPipeline
 
 		try
 		{
-			TResponse response;
-
-			if (isAsync)
-				response = await _requestInvoker.RequestAsync<TResponse>(endpoint, boundConfiguration, postData, cancellationToken).ConfigureAwait(false);
-			else
-				response = _requestInvoker.Request<TResponse>(endpoint, boundConfiguration, postData);
+			var response = isAsync
+				? await _requestInvoker.RequestAsync<TResponse>(endpoint, boundConfiguration, postData, cancellationToken).ConfigureAwait(false)
+				: _requestInvoker.Request<TResponse>(endpoint, boundConfiguration, postData);
 
 			response.ApiCallDetails.AuditTrail = auditor;
 
@@ -188,7 +187,7 @@ public class RequestPipeline
 		}
 		catch (Exception e) when (audit is not null)
 		{
-			var @event = e is TransportException t && t.ApiCallDetails.HttpStatusCode != null ? AuditEvent.BadResponse : BadRequest;
+			var @event = e is TransportException t && t.ApiCallDetails?.HttpStatusCode != null ? AuditEvent.BadResponse : BadRequest;
 			audit.Event = @event;
 			audit.Exception = e;
 			throw;
@@ -197,7 +196,7 @@ public class RequestPipeline
 
 	/// Create a rich enough <see cref="TransportException"/>
 	public TransportException? CreateClientException<TResponse>(
-		TResponse response,
+		TResponse? response,
 		ApiCallDetails? callDetails,
 		Endpoint endpoint,
 		Auditor? auditor,
@@ -207,20 +206,21 @@ public class RequestPipeline
 	)
 		where TResponse : TransportResponse, new()
 	{
-		if (callDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false) return null;
+		if (callDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false)
+			return null;
 
 		var pipelineFailure = callDetails?.HttpStatusCode != null ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
 		var innerException = callDetails?.OriginalException;
 		if (seenExceptions is not null && seenExceptions.HasAny(out var exs))
 		{
-			pipelineFailure = exs.Last().FailureReason;
+			pipelineFailure = exs!.Last().FailureReason;
 			innerException = exs.AsAggregateOrFirst();
 		}
 
-		var statusCode = callDetails?.HttpStatusCode != null ? callDetails.HttpStatusCode.Value.ToString() : "unknown";
+		var statusCode = callDetails?.HttpStatusCode != null ? callDetails.HttpStatusCode.Value.ToString(CultureInfo.InvariantCulture) : "unknown";
 		var resource = callDetails == null
 			? "unknown resource"
-			: $"Status code {statusCode} from: {callDetails.HttpMethod} {callDetails.Uri.PathAndQuery}";
+			: $"Status code {statusCode} from: {callDetails.HttpMethod} {callDetails.Uri?.PathAndQuery}";
 
 		var exceptionMessage = innerException?.Message ?? "Request failed to execute";
 
@@ -245,7 +245,11 @@ public class RequestPipeline
 			}
 		}
 
+#if NET6_0_OR_GREATER
+		exceptionMessage += !exceptionMessage.EndsWith('.') ? $". Call: {resource}" : $" Call: {resource}";
+#else
 		exceptionMessage += !exceptionMessage.EndsWith(".", StringComparison.Ordinal) ? $". Call: {resource}" : $" Call: {resource}";
+#endif
 		if (response != null && _productRegistration.TryGetServerErrorReason(response, out var reason))
 			exceptionMessage += $". ServerError: {reason}";
 
@@ -262,7 +266,8 @@ public class RequestPipeline
 	/// Routine for the first call into the product, potentially sniffing to discover the network topology
 	public void FirstPoolUsage(SemaphoreSlim semaphore, Auditor? auditor)
 	{
-		if (!FirstPoolUsageNeedsSniffing) return;
+		if (!FirstPoolUsageNeedsSniffing)
+			return;
 
 		if (!semaphore.Wait(RequestTimeout))
 		{
@@ -274,7 +279,7 @@ public class RequestPipeline
 
 		if (!FirstPoolUsageNeedsSniffing)
 		{
-			semaphore.Release();
+			_ = semaphore.Release();
 			return;
 		}
 
@@ -288,14 +293,15 @@ public class RequestPipeline
 		}
 		finally
 		{
-			semaphore.Release();
+			_ = semaphore.Release();
 		}
 	}
 
 	/// <inheritdoc cref="FirstPoolUsage"/>
 	public async Task FirstPoolUsageAsync(SemaphoreSlim semaphore, Auditor? auditor, CancellationToken cancellationToken)
 	{
-		if (!FirstPoolUsageNeedsSniffing) return;
+		if (!FirstPoolUsageNeedsSniffing)
+			return;
 
 		// TODO cancellationToken could throw here and will bubble out as OperationCancelledException
 		// everywhere else it would bubble out wrapped in a `UnexpectedTransportException`
@@ -310,7 +316,7 @@ public class RequestPipeline
 
 		if (!FirstPoolUsageNeedsSniffing)
 		{
-			semaphore.Release();
+			_ = semaphore.Release();
 			return;
 		}
 		try
@@ -323,7 +329,7 @@ public class RequestPipeline
 		}
 		finally
 		{
-			semaphore.Release();
+			_ = semaphore.Release();
 		}
 	}
 
@@ -345,7 +351,8 @@ public class RequestPipeline
 		{
 			node = _nodePool.Nodes.FirstOrDefault();
 
-			if (node is not null && _nodePredicate(node)) return true;
+			if (node is not null && _nodePredicate(node))
+				return true;
 		}
 
 		node = null;
@@ -367,17 +374,21 @@ public class RequestPipeline
 		var refreshed = false;
 		for (var i = 0; i < 100; i++)
 		{
-			if (DepletedRetries(startedOn, attemptedNodes)) yield break;
+			if (DepletedRetries(startedOn, attemptedNodes))
+				yield break;
 
 			foreach (var node in _nodePool.CreateView(auditor))
 			{
-				if (DepletedRetries(startedOn, attemptedNodes)) break;
+				if (DepletedRetries(startedOn, attemptedNodes))
+					break;
 
-				if (!_nodePredicate(node)) continue;
+				if (!_nodePredicate(node))
+					continue;
 
 				yield return node;
 
-				if (!Refresh) continue;
+				if (!Refresh)
+					continue;
 
 				Refresh = false;
 				refreshed = true;
@@ -385,7 +396,8 @@ public class RequestPipeline
 			}
 			//unless a refresh was requested we will not iterate over more then a single view.
 			//keep in mind refreshes are also still bound to overall maxretry count/timeout.
-			if (!refreshed) break;
+			if (!refreshed)
+				break;
 		}
 	}
 
@@ -398,21 +410,22 @@ public class RequestPipeline
 
 	private async ValueTask PingCoreAsync(bool isAsync, Node node, Auditor? auditor, CancellationToken cancellationToken = default)
 	{
-		if (!_productRegistration.SupportsPing) return;
-		if (PingDisabled(node)) return;
+		if (!_productRegistration.SupportsPing)
+			return;
+		if (PingDisabled(node))
+			return;
 
 		var pingEndpoint = _productRegistration.CreatePingEndpoint(node, PingAndSniffRequestConfiguration);
 
 		using var audit = auditor?.Add(PingSuccess, _dateTimeProvider, node);
 
-		TransportResponse response;
+		TransportResponse? response;
 
 		try
 		{
-			if (isAsync)
-				response = await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, _boundConfiguration, cancellationToken).ConfigureAwait(false);
-			else
-				response = _productRegistration.Ping(_requestInvoker, pingEndpoint, _boundConfiguration);
+			response = isAsync
+				? await _productRegistration.PingAsync(_requestInvoker, pingEndpoint, _boundConfiguration, cancellationToken).ConfigureAwait(false)
+				: _productRegistration.Ping(_requestInvoker, pingEndpoint, _boundConfiguration);
 
 			ThrowBadAuthPipelineExceptionWhenNeeded(response.ApiCallDetails);
 
@@ -425,7 +438,8 @@ public class RequestPipeline
 		}
 		catch (Exception e)
 		{
-			response = (e as PipelineException)?.Response;
+			var pipelineException = e as PipelineException;
+			response = pipelineException?.Response;
 			if (audit is not null)
 			{
 				audit.Event = PingFailure;
@@ -444,7 +458,8 @@ public class RequestPipeline
 
 	private async ValueTask SniffCoreAsync(bool isAsync, Auditor? auditor, CancellationToken cancellationToken = default)
 	{
-		if (!_productRegistration.SupportsSniff) return;
+		if (!_productRegistration.SupportsSniff)
+			return;
 
 		var exceptions = new List<Exception>();
 
@@ -457,12 +472,11 @@ public class RequestPipeline
 
 			try
 			{
-				if (isAsync)
-					result = await _productRegistration
+				result = isAsync
+					? await _productRegistration
 						.SniffAsync(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, _boundConfiguration, cancellationToken)
-						.ConfigureAwait(false);
-				else
-					result = _productRegistration
+						.ConfigureAwait(false)
+					: _productRegistration
 						.Sniff(_requestInvoker, _nodePool.UsingSsl, sniffEndpoint, _boundConfiguration);
 
 				ThrowBadAuthPipelineExceptionWhenNeeded(result.Item1.ApiCallDetails);
@@ -496,7 +510,8 @@ public class RequestPipeline
 	/// sniff the topology when a connection failure happens
 	public void SniffOnConnectionFailure(Auditor? auditor)
 	{
-		if (!SniffsOnConnectionFailure) return;
+		if (!SniffsOnConnectionFailure)
+			return;
 
 		using (auditor?.Add(SniffOnFail, _dateTimeProvider))
 			Sniff(auditor);
@@ -505,7 +520,8 @@ public class RequestPipeline
 	/// sniff the topology when a connection failure happens
 	public async Task SniffOnConnectionFailureAsync(Auditor? auditor, CancellationToken cancellationToken)
 	{
-		if (!SniffsOnConnectionFailure) return;
+		if (!SniffsOnConnectionFailure)
+			return;
 
 		using (auditor?.Add(SniffOnFail, _dateTimeProvider))
 			await SniffAsync(auditor, cancellationToken).ConfigureAwait(false);
@@ -514,7 +530,8 @@ public class RequestPipeline
 	/// sniff the topology after a set period to ensure it's up to date
 	public void SniffOnStaleCluster(Auditor? auditor)
 	{
-		if (!StaleClusterState) return;
+		if (!StaleClusterState)
+			return;
 
 		using (auditor?.Add(AuditEvent.SniffOnStaleCluster, _dateTimeProvider))
 		{
@@ -526,7 +543,8 @@ public class RequestPipeline
 	/// sniff the topology after a set period to ensure its up to date
 	public async Task SniffOnStaleClusterAsync(Auditor? auditor, CancellationToken cancellationToken)
 	{
-		if (!StaleClusterState) return;
+		if (!StaleClusterState)
+			return;
 
 		using (auditor?.Add(AuditEvent.SniffOnStaleCluster, _dateTimeProvider))
 		{

@@ -9,10 +9,10 @@ namespace Elastic.Transport;
 /// </summary>
 internal sealed class DefaultRequestPipelineFactory : RequestPipelineFactory
 {
-	public static readonly DefaultRequestPipelineFactory Default = new ();
+	public static readonly DefaultRequestPipelineFactory Default = new();
 	/// <summary>
 	/// returns instances of <see cref="RequestPipeline"/>
 	/// </summary>
 	public override RequestPipeline Create(BoundConfiguration boundConfiguration) =>
-			new RequestPipeline(boundConfiguration);
+			new(boundConfiguration);
 }

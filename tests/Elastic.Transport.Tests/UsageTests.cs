@@ -34,19 +34,22 @@ public class UsageTests
 		var settings = new TransportConfiguration(pool, requestInvoker, serializer, product);
 		var transport = new DistributedTransport<TransportConfiguration>(settings);
 
-		var requestParameters = new DefaultRequestParameters { QueryString =
-			new Dictionary<string, object>{ { "enum", MyEnum.Value } } };
+		var requestParameters = new DefaultRequestParameters
+		{
+			QueryString =
+			new Dictionary<string, object> { { "enum", MyEnum.Value } }
+		};
 		var path = requestParameters.CreatePathWithQueryStrings("/", settings);
 		var response = transport.Request<StringResponse>(new EndpointPath(HttpMethod.GET, path), null, null, null);
 
-		response.ApiCallDetails.Uri.Should().Be(new Uri("http://localhost:9200?enum=different"));
+		_ = response.ApiCallDetails.Uri.Should().Be(new Uri("http://localhost:9200?enum=different"));
 	}
 
 	[Fact]
 	public void TransportVersionIsSet()
 	{
 		var version = ReflectionVersionInfo.TransportVersion;
-		version.Should().NotBeNull();
+		_ = version.Should().NotBeNull();
 	}
 
 	[Fact]
@@ -97,21 +100,16 @@ public class UsageTests
 		var headResponse = transport.Head("/");
 	}
 
-	public class MyClientConfiguration : TransportConfigurationDescriptorBase<MyClientConfiguration>
-	{
-		public MyClientConfiguration(
-			NodePool nodePool = null,
-			IRequestInvoker transportCLient = null,
-			Serializer requestResponseSerializer = null,
-			ProductRegistration productRegistration = null)
-			: base(
-				nodePool ?? new SingleNodePool(new Uri("http://default-endpoint.example"))
+	public class MyClientConfiguration(
+		NodePool nodePool = null,
+		IRequestInvoker transportCLient = null,
+		Serializer requestResponseSerializer = null,
+		ProductRegistration productRegistration = null) : TransportConfigurationDescriptorBase<MyClientConfiguration>(
+			nodePool ?? new SingleNodePool(new Uri("http://default-endpoint.example"))
 				, transportCLient, requestResponseSerializer, productRegistration)
-		{
-		}
-
-		private string _setting;
-		public MyClientConfiguration NewSettings(string value) => Assign(value, (c, v) => _setting = v);
+	{
+		public string Setting { get; private set; }
+		public MyClientConfiguration NewSettings(string value) => Assign(value, (c, v) => Setting = v);
 	}
 
 	[Fact]

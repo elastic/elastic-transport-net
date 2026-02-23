@@ -10,7 +10,7 @@ using System.Net.Http;
 namespace Elastic.Transport;
 
 internal static class ConnectionInfo
-{ 
+{
 	public static bool UsingCurlHandler
 	{
 		get

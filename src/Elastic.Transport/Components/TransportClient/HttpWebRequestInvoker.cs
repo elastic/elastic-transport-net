@@ -34,12 +34,13 @@ namespace Elastic.Transport;
 #endif
 public class HttpWebRequestInvoker : IRequestInvoker
 {
-	private string _expectedCertificateFingerprint;
+	private string? _expectedCertificateFingerprint;
 
 	static HttpWebRequestInvoker()
 	{
 		//Not available under mono
-		if (!IsMono) HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
+		if (!IsMono)
+			HttpWebRequest.DefaultMaximumErrorResponseLength = -1;
 	}
 
 	/// <summary>
@@ -54,7 +55,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 	internal static bool IsMono { get; } = Type.GetType("Mono.Runtime") != null;
 
-	void IDisposable.Dispose() {}
+	void IDisposable.Dispose() => GC.SuppressFinalize(this);
 
 	/// <inheritdoc cref="IRequestInvoker.Request{TResponse}"/>>
 	public TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)
@@ -69,16 +70,16 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	private async ValueTask<TResponse> RequestCoreAsync<TResponse>(bool isAsync, Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
-		Action unregisterWaitHandle = null;
+		Action? unregisterWaitHandle = null;
 		int? statusCode = null;
-		Stream responseStream = null;
-		Exception ex = null;
-		string contentType = null;
+		Stream? responseStream = null;
+		Exception? ex = null;
+		string? contentType = null;
 		long contentLength = -1;
-		IDisposable receivedResponse = DiagnosticSources.SingletonDisposable;
-		ReadOnlyDictionary<TcpState, int> tcpStats = null;
-		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
-		Dictionary<string, IEnumerable<string>> responseHeaders = null;
+		IDisposable? receivedResponse = DiagnosticSources.SingletonDisposable;
+		ReadOnlyDictionary<TcpState, int>? tcpStats = null;
+		ReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats = null;
+		Dictionary<string, IEnumerable<string>>? responseHeaders = null;
 
 		var beforeTicks = Stopwatch.GetTimestamp();
 
@@ -125,7 +126,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				var prepareRequestMs = (Stopwatch.GetTimestamp() - beforeTicks) / (Stopwatch.Frequency / 1000);
 
 				if (prepareRequestMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
-					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs);
+					_ = (Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs));
 
 				//http://msdn.microsoft.com/en-us/library/system.net.httpwebresponse.getresponsestream.aspx
 				//Either the stream or the response object needs to be closed but not both although it won't
@@ -147,9 +148,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 					httpWebResponse = (HttpWebResponse)await apmGetResponseTask.ConfigureAwait(false);
 				}
 				else
-				{
 					httpWebResponse = (HttpWebResponse)request.GetResponse();
-				}
 
 				receivedResponse = httpWebResponse;
 
@@ -171,23 +170,18 @@ public class HttpWebRequestInvoker : IRequestInvoker
 
 		try
 		{
-			TResponse response;
-
-		if (isAsync)
-			response = await ResponseFactory.CreateAsync<TResponse>
-				(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-					.ConfigureAwait(false);
-		else
-			response = ResponseFactory.Create<TResponse>
-					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats);
+			var response = isAsync
+				? await ResponseFactory.CreateAsync<TResponse>
+						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+					.ConfigureAwait(false)
+				: ResponseFactory.Create<TResponse>
+					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
 			// resources can be linked such that their disposal is deferred.
 			if (response.LeaveOpen)
-			{
-				response.LinkedDisposables = [receivedResponse, responseStream];
-			}
+				response.LinkedDisposables = [receivedResponse!, responseStream!];
 			else
 			{
 				responseStream?.Dispose();
@@ -207,17 +201,18 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		}
 	}
 
-	private static Dictionary<string, IEnumerable<string>> ParseHeaders(BoundConfiguration boundConfiguration, HttpWebResponse responseMessage, Dictionary<string, IEnumerable<string>> responseHeaders)
+	private static Dictionary<string, IEnumerable<string>>? ParseHeaders(BoundConfiguration boundConfiguration, HttpWebResponse responseMessage, Dictionary<string, IEnumerable<string>>? responseHeaders)
 	{
-		if (!responseMessage.SupportsHeaders && !responseMessage.Headers.HasKeys()) return null;
+		if (!responseMessage.SupportsHeaders && !responseMessage.Headers.HasKeys())
+			return null;
 
 		var defaultHeadersForProduct = boundConfiguration.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
 		foreach (var headerToParse in defaultHeadersForProduct)
 		{
-			if (responseMessage.Headers.AllKeys.Contains(headerToParse, StringComparer.OrdinalIgnoreCase))
+			if (Enumerable.Contains(responseMessage.Headers.AllKeys, headerToParse, StringComparer.OrdinalIgnoreCase))
 			{
-				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
-				responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse));
+				responseHeaders ??= [];
+				responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse)!);
 			}
 		}
 
@@ -225,18 +220,18 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		{
 			foreach (var key in responseMessage.Headers.AllKeys)
 			{
-				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
-				responseHeaders.Add(key, responseMessage.Headers.GetValues(key));
+				responseHeaders ??= [];
+				responseHeaders.Add(key, responseMessage.Headers.GetValues(key)!);
 			}
 		}
 		else if (boundConfiguration.ResponseHeadersToParse is { Count: > 0 })
 		{
 			foreach (var headerToParse in boundConfiguration.ResponseHeadersToParse)
 			{
-				if (responseMessage.Headers.AllKeys.Contains(headerToParse, StringComparer.OrdinalIgnoreCase))
+				if (Enumerable.Contains(responseMessage.Headers.AllKeys, headerToParse, StringComparer.OrdinalIgnoreCase))
 				{
-					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
-					responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse));
+					responseHeaders ??= [];
+					responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse)!);
 				}
 			}
 		}
@@ -272,14 +267,10 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	private string ComparableFingerprint(string fingerprint)
 	{
 		var finalFingerprint = fingerprint;
-		if (fingerprint.Contains(':'))
-		{
+		if (fingerprint.IndexOf(':') >= 0)
 			finalFingerprint = fingerprint.Replace(":", string.Empty);
-		}
-		else if (fingerprint.Contains('-'))
-		{
+		else if (fingerprint.IndexOf('-') >= 0)
 			finalFingerprint = fingerprint.Replace("-", string.Empty);
-		}
 		return finalFingerprint;
 	}
 
@@ -290,17 +281,16 @@ public class HttpWebRequestInvoker : IRequestInvoker
 #if !__MonoCS__
 		//Only assign if one is defined on connection settings and a subclass has not already set one
 		if (callback != null && request.ServerCertificateValidationCallback == null)
+			request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((sender, certificate, chain, policyErrors) => callback(sender, certificate!, chain!, policyErrors));
+		else if (!string.IsNullOrEmpty(boundConfiguration?.ConnectionSettings?.CertificateFingerprint))
 		{
-			request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(callback);
-		}
-		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings.CertificateFingerprint))
-		{
-			request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((request, certificate, chain, policyErrors) =>
+			request.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback((sender, certificate, chain, policyErrors) =>
 			{
-				if (certificate is null && chain is null) return false;
+				if (certificate is null && chain is null)
+					return false;
 
 				// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
-				_expectedCertificateFingerprint  ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings.CertificateFingerprint);
+				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration!.ConnectionSettings!.CertificateFingerprint!);
 
 				// If there is a chain, check each certificate up to the root
 				if (chain is not null)
@@ -313,7 +303,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				}
 
 				// Otherwise, check the certificate
-				return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
+				return CertificateHelpers.ValidateCertificateFingerprint(certificate!, _expectedCertificateFingerprint);
 			});
 		}
 #else
@@ -344,7 +334,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			request.Headers.Add("Content-Encoding", "gzip");
 		}
 
-		var userAgent = boundConfiguration.UserAgent?.ToString();
+		var userAgent = boundConfiguration.UserAgent.ToString();
 		if (!string.IsNullOrWhiteSpace(userAgent))
 			request.UserAgent = userAgent;
 
@@ -414,7 +404,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 	protected virtual void SetAuthenticationIfNeeded(Endpoint endpoint, BoundConfiguration boundConfiguration, HttpWebRequest request)
 	{
 		//If user manually specifies an Authorization Header give it preference
-		if (boundConfiguration.Headers is not null && boundConfiguration.Headers.HasKeys() && boundConfiguration.Headers.AllKeys.Contains("Authorization"))
+		if (boundConfiguration.Headers is not null && boundConfiguration.Headers.HasKeys() && Enumerable.Contains(boundConfiguration.Headers.AllKeys, "Authorization"))
 		{
 			var header = boundConfiguration.Headers["Authorization"];
 			request.Headers["Authorization"] = header;
@@ -436,8 +426,8 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		// 2 - Specified on the request
 		// 3 - Specified at the global TransportClientSettings level (lowest precedence)
 
-		string parameters = null;
-		string scheme = null;
+		string? parameters = null;
+		string? scheme = null;
 		if (!endpoint.Uri.UserInfo.IsNullOrEmpty())
 		{
 			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(endpoint.Uri.UserInfo));
@@ -449,7 +439,8 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			scheme = boundConfiguration.AuthenticationHeader.AuthScheme;
 		}
 
-		if (parameters.IsNullOrEmpty()) return;
+		if (parameters.IsNullOrEmpty())
+			return;
 
 		request.Headers["Authorization"] = $"{scheme} {parameters}";
 	}
@@ -466,14 +457,15 @@ public class HttpWebRequestInvoker : IRequestInvoker
 		return () => registeredWaitHandle.Unregister(waitHandle);
 	}
 
-	private static void TimeoutCallback(object state, bool timedOut)
+	private static void TimeoutCallback(object? state, bool timedOut)
 	{
-		if (!timedOut) return;
+		if (!timedOut)
+			return;
 
 		(state as WebRequest)?.Abort();
 	}
 
-	private static void HandleResponse(HttpWebResponse response, out int? statusCode, out Stream responseStream, out string contentType)
+	private static void HandleResponse(HttpWebResponse response, out int? statusCode, out Stream? responseStream, out string? contentType)
 	{
 		statusCode = (int)response.StatusCode;
 		responseStream = response.GetResponseStream();

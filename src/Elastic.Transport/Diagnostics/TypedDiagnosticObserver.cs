@@ -12,23 +12,15 @@ namespace Elastic.Transport.Diagnostics;
 /// Provides a base implementation of <see cref="IObserver{T}"/> that makes it easier to consume
 /// the <see cref="DiagnosticSource"/>'s exposed in this library
 /// </summary>
-internal abstract class TypedDiagnosticObserver<TOnNext> : IObserver<KeyValuePair<string, object>>
+internal abstract class TypedDiagnosticObserver<TOnNext>(
+	Action<KeyValuePair<string, TOnNext>> onNext,
+	Action<Exception>? onError = null,
+	Action? onCompleted = null
+	) : IObserver<KeyValuePair<string, object>>
 {
-	private readonly Action<KeyValuePair<string, TOnNext>> _onNext;
-	private readonly Action<Exception>? _onError;
-	private readonly Action? _onCompleted;
-
-	/// <inheritdoc cref="TypedDiagnosticObserver{TOnNext}"/>
-	protected TypedDiagnosticObserver(
-		Action<KeyValuePair<string, TOnNext>> onNext,
-		Action<Exception>? onError = null,
-		Action? onCompleted = null
-	)
-	{
-		_onNext= onNext ?? throw new ArgumentNullException(nameof(onNext));
-		_onError = onError;
-		_onCompleted = onCompleted;
-	}
+	private readonly Action<KeyValuePair<string, TOnNext>> _onNext = onNext ?? throw new ArgumentNullException(nameof(onNext));
+	private readonly Action<Exception>? _onError = onError;
+	private readonly Action? _onCompleted = onCompleted;
 
 	void IObserver<KeyValuePair<string, object>>.OnCompleted() => _onCompleted?.Invoke();
 
@@ -36,35 +28,29 @@ internal abstract class TypedDiagnosticObserver<TOnNext> : IObserver<KeyValuePai
 
 	void IObserver<KeyValuePair<string, object>>.OnNext(KeyValuePair<string, object> value)
 	{
-		if (value.Value is TOnNext next) _onNext.Invoke(new KeyValuePair<string, TOnNext>(value.Key, next));
-		else if (value.Value == null) _onNext.Invoke(new KeyValuePair<string, TOnNext>(value.Key, default));
+		if (value.Value is TOnNext next)
+			_onNext.Invoke(new KeyValuePair<string, TOnNext>(value.Key, next));
+		else if (value.Value == null)
+			_onNext.Invoke(new KeyValuePair<string, TOnNext>(value.Key, default!));
 
-		else throw new Exception($"{value.Key} received unexpected type {value.Value.GetType()}");
+		else
+			throw new Exception($"{value.Key} received unexpected type {value.Value.GetType()}");
 
 	}
 }
 
 /// <inheritdoc cref="TypedDiagnosticObserver{TOnNext}"/>
-public abstract class TypedDiagnosticObserver<TOnNextStart, TOnNextEnd> : IObserver<KeyValuePair<string, object>>
+public abstract class TypedDiagnosticObserver<TOnNextStart, TOnNextEnd>(
+	Action<KeyValuePair<string, TOnNextStart>> onNextStart,
+	Action<KeyValuePair<string, TOnNextEnd>> onNextEnd,
+	Action<Exception>? onError = null,
+	Action? onCompleted = null
+	) : IObserver<KeyValuePair<string, object>>
 {
-	private readonly Action<KeyValuePair<string, TOnNextStart>> _onNextStart;
-	private readonly Action<KeyValuePair<string, TOnNextEnd>> _onNextEnd;
-	private readonly Action<Exception>? _onError;
-	private readonly Action? _onCompleted;
-
-	/// <inheritdoc cref="TypedDiagnosticObserver{TOnNext}"/>
-	protected TypedDiagnosticObserver(
-		Action<KeyValuePair<string, TOnNextStart>> onNextStart,
-		Action<KeyValuePair<string, TOnNextEnd>> onNextEnd,
-		Action<Exception>? onError = null,
-		Action? onCompleted = null
-	)
-	{
-		_onNextStart = onNextStart ?? throw new ArgumentNullException(nameof(onNextStart));
-		_onNextEnd = onNextEnd ?? throw new ArgumentNullException(nameof(onNextEnd));
-		_onError = onError;
-		_onCompleted = onCompleted;
-	}
+	private readonly Action<KeyValuePair<string, TOnNextStart>> _onNextStart = onNextStart ?? throw new ArgumentNullException(nameof(onNextStart));
+	private readonly Action<KeyValuePair<string, TOnNextEnd>> _onNextEnd = onNextEnd ?? throw new ArgumentNullException(nameof(onNextEnd));
+	private readonly Action<Exception>? _onError = onError;
+	private readonly Action? _onCompleted = onCompleted;
 
 	void IObserver<KeyValuePair<string, object>>.OnCompleted() => _onCompleted?.Invoke();
 
@@ -72,13 +58,18 @@ public abstract class TypedDiagnosticObserver<TOnNextStart, TOnNextEnd> : IObser
 
 	void IObserver<KeyValuePair<string, object>>.OnNext(KeyValuePair<string, object> value)
 	{
-		if (value.Value is TOnNextStart nextStart) _onNextStart.Invoke(new KeyValuePair<string, TOnNextStart>(value.Key, nextStart));
-		else if (value.Key.EndsWith(".Start") && value.Value is null) _onNextStart.Invoke(new KeyValuePair<string, TOnNextStart>(value.Key, default));
+		if (value.Value is TOnNextStart nextStart)
+			_onNextStart.Invoke(new KeyValuePair<string, TOnNextStart>(value.Key, nextStart));
+		else if (value.Key.EndsWith(".Start", StringComparison.Ordinal) && value.Value is null)
+			_onNextStart.Invoke(new KeyValuePair<string, TOnNextStart>(value.Key, default!));
 
-		else if (value.Value is TOnNextEnd nextEnd) _onNextEnd.Invoke(new KeyValuePair<string, TOnNextEnd>(value.Key, nextEnd));
-		else if (value.Key.EndsWith(".Stop") && value.Value is null) _onNextEnd.Invoke(new KeyValuePair<string, TOnNextEnd>(value.Key, default));
+		else if (value.Value is TOnNextEnd nextEnd)
+			_onNextEnd.Invoke(new KeyValuePair<string, TOnNextEnd>(value.Key, nextEnd));
+		else if (value.Key.EndsWith(".Stop", StringComparison.Ordinal) && value.Value is null)
+			_onNextEnd.Invoke(new KeyValuePair<string, TOnNextEnd>(value.Key, default!));
 
-		else throw new Exception($"{value.Key} received unexpected type {value.Value.GetType()}");
+		else
+			throw new Exception($"{value.Key} received unexpected type {value.Value.GetType()}");
 
 	}
 }

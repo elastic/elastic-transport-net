@@ -39,7 +39,7 @@ public sealed class CloudNodePool : SingleNodePool
 	/// </param>
 	/// <param name="credentials"></param>
 	public CloudNodePool(string cloudId, AuthorizationHeader credentials) : this(ParseCloudId(cloudId)) =>
-		AuthenticationHeader  = credentials;
+		AuthenticationHeader = credentials;
 
 	/// <summary>
 	/// An <see cref="NodePool"/> implementation that can be seeded with a cloud enpoint
@@ -48,7 +48,7 @@ public sealed class CloudNodePool : SingleNodePool
 	/// <param name="cloudEndpoint">Elastic Cloud endpoint</param>
 	/// <param name="credentials">The credentials to use with cloud</param>
 	public CloudNodePool(Uri cloudEndpoint, AuthorizationHeader credentials) : this(CreateCloudId(cloudEndpoint)) =>
-		AuthenticationHeader  = credentials;
+		AuthenticationHeader = credentials;
 
 	private CloudNodePool(ParsedCloudId parsedCloudId) : base(parsedCloudId.Uri) =>
 		ClusterName = parsedCloudId.ClusterName;
@@ -58,7 +58,8 @@ public sealed class CloudNodePool : SingleNodePool
 	private string ClusterName { get; }
 
 	/// <inheritdoc cref="AuthorizationHeader"/>
-	public AuthorizationHeader AuthenticationHeader { get; }
+	// Initialized by all public constructors after calling the private constructor
+	public AuthorizationHeader AuthenticationHeader { get; } = null!;
 
 	private static ParsedCloudId CreateCloudId(Uri uri)
 	{
@@ -69,13 +70,16 @@ public sealed class CloudNodePool : SingleNodePool
 
 	}
 
+	private static readonly char[] ColonSeparator = [':'];
+	private static readonly char[] DollarSeparator = ['$'];
+
 	private static ParsedCloudId ParseCloudId(string cloudId)
 	{
 		const string exceptionSuffix = "should be a string in the form of cluster_name:base_64_data";
 		if (string.IsNullOrWhiteSpace(cloudId))
 			throw new ArgumentException($"Parameter {nameof(cloudId)} was null or empty but {exceptionSuffix}", nameof(cloudId));
 
-		var tokens = cloudId.Split(new[] { ':' }, 2);
+		var tokens = cloudId.Split(ColonSeparator, 2);
 		if (tokens.Length != 2)
 			throw new ArgumentException($"Parameter {nameof(cloudId)} not in expected format, {exceptionSuffix}", nameof(cloudId));
 
@@ -85,7 +89,7 @@ public sealed class CloudNodePool : SingleNodePool
 			throw new ArgumentException($"Parameter {nameof(cloudId)} base_64_data is empty, {exceptionSuffix}", nameof(cloudId));
 
 		var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
-		var parts = decoded.Split(new[] { '$' });
+		var parts = decoded.Split(DollarSeparator);
 		if (parts.Length < 2)
 			throw new ArgumentException($"Parameter {nameof(cloudId)} decoded base_64_data contains less then 2 tokens, {exceptionSuffix}", nameof(cloudId));
 

@@ -10,12 +10,10 @@
 #if !NETFRAMEWORK
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,7 +42,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		_postData = postData;
 		_token = default;
 
-		Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
+		_ = Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 
 		if (boundConfiguration.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
@@ -60,9 +58,11 @@ internal sealed class BoundConfigurationContent : HttpContent
 			stream.Dispose();
 			return;
 		}
-		if (boundConfiguration.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
+		if (boundConfiguration.HttpCompression)
+			stream = new GZipStream(stream, CompressionMode.Compress, false);
 
-		using (stream) postData.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
+		using (stream)
+			postData.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
 	}
 
 	/// <summary> Constructor used in asynchronous paths. </summary>
@@ -72,12 +72,16 @@ internal sealed class BoundConfigurationContent : HttpContent
 		_postData = postData;
 		_token = token;
 
-		Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
+		_ = Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 
 		if (boundConfiguration.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
 
+#if NET6_0_OR_GREATER
 		_onStreamAvailable = OnStreamAvailable;
+#else
+		_onStreamAvailable = null!;
+#endif
 		_onStreamAvailableAsync = OnStreamAvailableAsync;
 	}
 
@@ -92,14 +96,15 @@ internal sealed class BoundConfigurationContent : HttpContent
 #endif
 			return;
 		}
-		if (boundConfiguration.HttpCompression) stream = new GZipStream(stream, CompressionMode.Compress, false);
+		if (boundConfiguration.HttpCompression)
+			stream = new GZipStream(stream, CompressionMode.Compress, false);
 
 #if NET6_0_OR_GREATER
 		await using (stream.ConfigureAwait(false))
 #else
 		using (stream)
 #endif
-		await postData.WriteAsync(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, ctx).ConfigureAwait(false);
+			await postData.WriteAsync(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, ctx).ConfigureAwait(false);
 	}
 
 	/// <summary>
@@ -111,7 +116,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 	/// <param name="context">The associated <see cref="TransportContext"/>.</param>
 	/// <returns>A <see cref="Task"/> instance that is asynchronously serializing the object's content.</returns>
 	[SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Exception is passed as task result.")]
-	protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+	protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
 		SerializeToStreamAsync(stream, context, default);
 
 
@@ -120,21 +125,21 @@ internal sealed class BoundConfigurationContent : HttpContent
 #else
 	private
 #endif
-		async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+		async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
 	{
 		var source = CancellationTokenSource.CreateLinkedTokenSource(_token, cancellationToken);
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
 		var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask, source);
-		await _onStreamAvailableAsync(_boundConfiguration, _postData, wrappedStream, this, context, source.Token).ConfigureAwait(false);
-		await serializeToStreamTask.Task.ConfigureAwait(false);
+		await _onStreamAvailableAsync(_boundConfiguration, _postData, wrappedStream, this, context!, source.Token).ConfigureAwait(false);
+		_ = await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 
 #if NET6_0_OR_GREATER
-	protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken _)
+	protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken _)
 	{
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
 		using var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask);
-		_onStreamAvailable(_boundConfiguration, _postData, wrappedStream, this, context);
+		_onStreamAvailable(_boundConfiguration, _postData, wrappedStream, this, context!);
 		//await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 #endif
@@ -151,38 +156,28 @@ internal sealed class BoundConfigurationContent : HttpContent
 		return false;
 	}
 
-	internal class CompleteTaskOnCloseStream : DelegatingStream
+	internal class CompleteTaskOnCloseStream(Stream innerStream, TaskCompletionSource<bool>? serializeToStreamTask, CancellationTokenSource? source = null) : DelegatingStream(innerStream)
 	{
-		private readonly TaskCompletionSource<bool> _serializeToStreamTask;
-		private readonly CancellationTokenSource? _source;
-
-		public CompleteTaskOnCloseStream(Stream innerStream, TaskCompletionSource<bool> serializeToStreamTask, CancellationTokenSource? source = null)
-			: base(innerStream)
-		{
-			Contract.Assert(serializeToStreamTask != null);
-			_serializeToStreamTask = serializeToStreamTask;
-			_source = source;
-		}
+		private readonly TaskCompletionSource<bool>? _serializeToStreamTask = serializeToStreamTask;
+		private readonly CancellationTokenSource? _source = source;
 
 		protected override void Dispose(bool disposing)
 		{
-			_serializeToStreamTask.TrySetResult(true);
-			base.Dispose();
+			_ = (_serializeToStreamTask?.TrySetResult(true));
+			base.Dispose(disposing);
 			_source?.Dispose();
 		}
 
-		public override void Close() => _serializeToStreamTask.TrySetResult(true);
+		public override void Close() => _serializeToStreamTask?.TrySetResult(true);
 	}
 
 	/// <summary>
 	/// Stream that delegates to inner stream.
 	/// This is taken from System.Net.Http
 	/// </summary>
-	internal abstract class DelegatingStream : Stream
+	internal abstract class DelegatingStream(Stream innerStream) : Stream
 	{
-		private readonly Stream _innerStream;
-
-		protected DelegatingStream(Stream innerStream) => _innerStream = innerStream ?? throw new ArgumentNullException(nameof(innerStream));
+		private readonly Stream _innerStream = innerStream ?? throw new ArgumentNullException(nameof(innerStream));
 
 		public override bool CanRead => _innerStream.CanRead;
 
@@ -214,7 +209,8 @@ internal sealed class BoundConfigurationContent : HttpContent
 
 		protected override void Dispose(bool disposing)
 		{
-			if (disposing) _innerStream.Dispose();
+			if (disposing)
+				_innerStream.Dispose();
 			base.Dispose(disposing);
 		}
 
@@ -225,8 +221,13 @@ internal sealed class BoundConfigurationContent : HttpContent
 		public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
 			_innerStream.ReadAsync(buffer, offset, count, cancellationToken);
 
-		public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-			_innerStream.BeginRead(buffer, offset, count, callback, state);
+#if NETSTANDARD2_1_OR_GREATER || NET
+		public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+			_innerStream.ReadAsync(buffer, cancellationToken);
+#endif
+
+		public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+			_innerStream.BeginRead(buffer, offset, count, callback!, state);
 
 		public override int EndRead(IAsyncResult asyncResult) => _innerStream.EndRead(asyncResult);
 
@@ -243,8 +244,13 @@ internal sealed class BoundConfigurationContent : HttpContent
 		public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
 			_innerStream.WriteAsync(buffer, offset, count, cancellationToken);
 
-		public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) =>
-			_innerStream.BeginWrite(buffer, offset, count, callback, state);
+#if NETSTANDARD2_1_OR_GREATER || NET
+		public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
+			_innerStream.WriteAsync(buffer, cancellationToken);
+#endif
+
+		public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+			_innerStream.BeginWrite(buffer, offset, count, callback!, state);
 
 		public override void EndWrite(IAsyncResult asyncResult) => _innerStream.EndWrite(asyncResult);
 
