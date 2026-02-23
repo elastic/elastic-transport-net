@@ -16,7 +16,7 @@ public class SingleNodePool : NodePool
 	{
 		var node = new Node(uri);
 		UsingSsl = node.Uri.Scheme == "https";
-		Nodes = new List<Node> { node };
+		Nodes = [node];
 	}
 
 	/// <inheritdoc />
@@ -35,10 +35,7 @@ public class SingleNodePool : NodePool
 	public override bool SupportsReseeding => false;
 
 	/// <inheritdoc />
-	public override bool UsingSsl { get; protected set; }
-
-	/// <inheritdoc />
-	public override IEnumerable<Node> CreateView(Auditor? auditor) => Nodes;
+	public override IEnumerable<Node> CreateView(Auditor? auditor = null) => Nodes;
 
 	/// <inheritdoc />
 	public override void Reseed(IEnumerable<Node> nodes) { } //ignored

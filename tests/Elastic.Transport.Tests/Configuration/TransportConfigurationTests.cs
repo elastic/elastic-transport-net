@@ -21,7 +21,7 @@ public class TransportConfigurationTests
 		var config = new TransportConfiguration();
 		var newConfig = new TransportConfiguration(config);
 
-		config.Should().BeEquivalentTo(newConfig);
+		_ = config.Should().BeEquivalentTo(newConfig);
 	}
 
 	[Fact]
@@ -30,11 +30,11 @@ public class TransportConfigurationTests
 		ITransportConfiguration config = new TransportConfiguration();
 		ITransportConfiguration newConfig = new TransportConfigurationDescriptor();
 
-		config.Should().BeEquivalentTo(newConfig, c => c
-			.Excluding(p=>p.BootstrapLock)
+		_ = config.Should().BeEquivalentTo(newConfig, c => c
+			.Excluding(p => p.BootstrapLock)
 		);
 
-		config.BootstrapLock.CurrentCount.Should().Be(newConfig.BootstrapLock.CurrentCount);
+		_ = config.BootstrapLock.CurrentCount.Should().Be(newConfig.BootstrapLock.CurrentCount);
 	}
 
 #if !NETFRAMEWORK
@@ -42,18 +42,18 @@ public class TransportConfigurationTests
 	public void CopiesAllProperties()
 	{
 		var autoFaker = new AutoFaker<TransportConfiguration>();
-		autoFaker.RuleFor(x => x.BootstrapLock, f => new SemaphoreSlim(1, 1));
-		autoFaker.RuleFor(x => x.ClientCertificates, f => new X509CertificateCollection());
+		_ = autoFaker.RuleFor(x => x.BootstrapLock, f => new SemaphoreSlim(1, 1));
+		_ = autoFaker.RuleFor(x => x.ClientCertificates, f => []);
 
 		var config = autoFaker.Generate();
-		config.Accept.Should().NotBeEmpty();
-		config.ClientCertificates.Should().NotBeNull();
+		_ = config.Accept.Should().NotBeEmpty();
+		_ = config.ClientCertificates.Should().NotBeNull();
 
 		ITransportConfiguration newConfig = new TransportConfiguration(config);
-		config.Should().BeEquivalentTo(newConfig);
+		_ = config.Should().BeEquivalentTo(newConfig);
 
 		ITransportConfiguration newDescriptor = new TransportConfigurationDescriptor(config);
-		config.Should().BeEquivalentTo(newDescriptor);
+		_ = config.Should().BeEquivalentTo(newDescriptor);
 	}
 #endif
 }

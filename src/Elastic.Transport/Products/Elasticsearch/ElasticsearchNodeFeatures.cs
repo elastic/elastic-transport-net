@@ -34,6 +34,6 @@ public static class ElasticsearchNodeFeatures
 	/// <summary> The node has all features EXCEPT <see cref="MasterEligible"/></summary>
 	// ReSharper disable once UnusedMember.Global
 	public static readonly IReadOnlyCollection<string> NotMasterEligible =
-		Default.Except(new[] { MasterEligible }).ToList().AsReadOnly();
+		Default.Except([MasterEligible]).ToList().AsReadOnly();
 
 }

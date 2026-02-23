@@ -58,12 +58,13 @@ public class SniffingNodePool : StaticNodePool
 	/// <inheritdoc />
 	public override void Reseed(IEnumerable<Node> nodes)
 	{
-		if (!nodes.HasAny(out var nodesArray)) return;
+		if (!nodes.HasAny(out var nodesArray))
+			return;
 
 		try
 		{
 			_readerWriter.EnterWriteLock();
-			var sortedNodes = SortNodes(nodesArray)
+			var sortedNodes = SortNodes(nodesArray!)
 				.DistinctByCustom(n => n.Uri)
 				.ToList();
 
@@ -97,9 +98,7 @@ public class SniffingNodePool : StaticNodePool
 		if (!_disposed)
 		{
 			if (disposing)
-			{
-				_readerWriter?.Dispose();
-			}
+				_readerWriter.Dispose();
 
 			_disposed = true;
 		}

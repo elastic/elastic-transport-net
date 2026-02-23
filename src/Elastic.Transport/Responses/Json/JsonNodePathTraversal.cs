@@ -12,21 +12,28 @@ using System.Text.RegularExpressions;
 
 namespace Elastic.Transport;
 
-internal static class JsonNodePathTraversal
+internal static partial class JsonNodePathTraversal
 {
-	private static readonly Regex SplitRegex = new(@"(?<!\\)\.");
+#if NET7_0_OR_GREATER
+	[GeneratedRegex(@"(?<!\\)\.")]
+	private static partial Regex SplitRegexGen();
 
-	public static T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(JsonNode node, string path)
+	private static readonly Regex SplitRegex = SplitRegexGen();
+#else
+	private static readonly Regex SplitRegex = new(@"(?<!\\)\.");
+#endif
+
+	public static T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(JsonNode? node, string? path)
 	{
-		if (path == null || node == null) return default;
+		if (path == null || node == null) return default!;
 
 		var split = SplitRegex.Split(path);
-		if (split.Length == 0) return default;
+		if (split.Length == 0) return default!;
 
-		var current = node;
+		JsonNode? current = node;
 		for (var i = 0; i < split.Length; i++)
 		{
-			if (current == null) return default;
+			if (current == null) return default!;
 
 			var key = split[i].Replace(@"\.", ".");
 			var isLast = i == split.Length - 1;
@@ -36,7 +43,7 @@ internal static class JsonNodePathTraversal
 		return ConvertNode<T>(current);
 	}
 
-	private static JsonNode ResolveSegment(JsonNode current, string key, bool isLast)
+	private static JsonNode? ResolveSegment(JsonNode current, string key, bool isLast)
 	{
 		if (key == "_arbitrary_key_")
 		{
@@ -103,9 +110,9 @@ internal static class JsonNodePathTraversal
 		return null;
 	}
 
-	private static T ConvertNode<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(JsonNode node)
+	private static T ConvertNode<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(JsonNode? node)
 	{
-		if (node == null) return default;
+		if (node == null) return default!;
 
 		var targetType = typeof(T);
 		if (targetType == typeof(JsonNode)) return (T)(object)node;
@@ -124,52 +131,52 @@ internal static class JsonNodePathTraversal
 				if (val.TryGetValue<int>(out var i)) return (T)(object)i;
 				if (val.TryGetValue<long>(out var l)) return (T)(object)(int)l;
 				if (val.TryGetValue<string>(out var s) && int.TryParse(s, out var parsed)) return (T)(object)parsed;
-				return default;
+				return default!;
 			}
 			if (targetType == typeof(long))
 			{
 				if (val.TryGetValue<long>(out var l)) return (T)(object)l;
 				if (val.TryGetValue<int>(out var i)) return (T)(object)(long)i;
-				return default;
+				return default!;
 			}
 			if (targetType == typeof(double))
 			{
 				if (val.TryGetValue<double>(out var d)) return (T)(object)d;
-				return default;
+				return default!;
 			}
 			if (targetType == typeof(float))
 			{
 				if (val.TryGetValue<float>(out var f)) return (T)(object)f;
 				if (val.TryGetValue<double>(out var d)) return (T)(object)(float)d;
-				return default;
+				return default!;
 			}
 			if (targetType == typeof(decimal))
 			{
 				if (val.TryGetValue<decimal>(out var d)) return (T)(object)d;
-				return default;
+				return default!;
 			}
 			if (targetType == typeof(bool))
 			{
 				if (val.TryGetValue<bool>(out var b)) return (T)(object)b;
-				return default;
+				return default!;
 			}
 			if (targetType == typeof(DateTime))
 			{
 				if (val.TryGetValue<DateTime>(out var dt)) return (T)(object)dt;
 				if (val.TryGetValue<string>(out var s) && DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
 					return (T)(object)parsed;
-				return default;
+				return default!;
 			}
 			if (targetType == typeof(DateTimeOffset))
 			{
 				if (val.TryGetValue<DateTimeOffset>(out var dto)) return (T)(object)dto;
-				return default;
+				return default!;
 			}
 			if (targetType == typeof(Guid))
 			{
 				if (val.TryGetValue<Guid>(out var g)) return (T)(object)g;
 				if (val.TryGetValue<string>(out var s) && Guid.TryParse(s, out var parsed)) return (T)(object)parsed;
-				return default;
+				return default!;
 			}
 
 			// Fallback: try GetValue<T>
@@ -179,13 +186,13 @@ internal static class JsonNodePathTraversal
 			}
 			catch
 			{
-				return default;
+				return default!;
 			}
 		}
 
 		// For JsonObject/JsonArray, if T is object just return as-is
 		if (targetType == typeof(object)) return (T)(object)node;
 
-		return default;
+		return default!;
 	}
 }

@@ -17,11 +17,11 @@ namespace Elastic.Transport;
 public sealed class StickySniffingNodePool : SniffingNodePool
 {
 	/// <inheritdoc cref="StickySniffingNodePool"/>
-	public StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float> nodeScorer)
+	public StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float>? nodeScorer = null)
 		: base(uris.Select(uri => new Node(uri)), nodeScorer ?? DefaultNodeScore) { }
 
 	/// <inheritdoc cref="StickySniffingNodePool"/>
-	public StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer)
+	public StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float>? nodeScorer = null)
 		: base(nodes, nodeScorer ?? DefaultNodeScore) { }
 
 	/// <inheritdoc cref="NodePool.SupportsPinging"/>
@@ -48,7 +48,7 @@ public sealed class StickySniffingNodePool : SniffingNodePool
 		// If the cursor is greater than the default then it's been
 		// set already but we now have a live node so we should reset it
 		if (GlobalCursor > -1)
-			Interlocked.Exchange(ref GlobalCursor, -1);
+			_ = Interlocked.Exchange(ref GlobalCursor, -1);
 
 		var localCursor = 0;
 		foreach (var aliveNode in SelectAliveNodes(localCursor, nodes, auditor))
@@ -56,5 +56,5 @@ public sealed class StickySniffingNodePool : SniffingNodePool
 	}
 
 	/// <summary> Allows subclasses to hook into the parents dispose </summary>
-	private static float DefaultNodeScore(Node node) => 0f;
+	internal static float DefaultNodeScore(Node node) => 0f;
 }

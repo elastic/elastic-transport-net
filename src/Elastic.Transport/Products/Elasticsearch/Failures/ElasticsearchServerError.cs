@@ -28,7 +28,7 @@ public sealed class ElasticsearchServerError : ErrorResponse
 	/// <summary> an <see cref="Error"/> object that represents the server exception that occurred</summary>
 	[DataMember(Name = "error")]
 	[JsonPropertyName("error")]
-	public Error Error { get; init; }
+	public Error? Error { get; init; }
 
 	/// <summary> The HTTP status code returned from the server </summary>
 	[DataMember(Name = "status")]
@@ -39,7 +39,7 @@ public sealed class ElasticsearchServerError : ErrorResponse
 	/// Try and create an instance of <see cref="ElasticsearchServerError"/> from <paramref name="stream"/>
 	/// </summary>
 	/// <returns>Whether a an instance of <see cref="ElasticsearchServerError"/> was created successfully</returns>
-	public static bool TryCreate(Stream stream, out ElasticsearchServerError serverError)
+	public static bool TryCreate(Stream stream, out ElasticsearchServerError? serverError)
 	{
 		try
 		{
@@ -69,9 +69,9 @@ public sealed class ElasticsearchServerError : ErrorResponse
 	public override string ToString()
 	{
 		var sb = new StringBuilder();
-		sb.Append($"ServerError: {Status}");
+		_ = sb.Append($"ServerError: {Status}");
 		if (Error != null)
-			sb.Append(Error);
+			_ = sb.Append(Error);
 		return sb.ToString();
 	}
 

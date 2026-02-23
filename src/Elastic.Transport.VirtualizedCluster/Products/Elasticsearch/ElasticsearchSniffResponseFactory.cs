@@ -22,11 +22,9 @@ public static class ElasticsearchSniffResponseFactory
 			cluster_name = ClusterName,
 			nodes = SniffResponseNodes(nodes, elasticsearchVersion, publishAddressOverride, randomFqdn)
 		};
-		using (var ms = TransportConfiguration.DefaultMemoryStreamFactory.Create())
-		{
-			LowLevelRequestResponseSerializer.Instance.Serialize(response, ms);
-			return ms.ToArray();
-		}
+		using var ms = TransportConfiguration.DefaultMemoryStreamFactory.Create();
+		LowLevelRequestResponseSerializer.Instance.Serialize(response, ms);
+		return ms.ToArray();
 	}
 
 	private static IDictionary<string, object> SniffResponseNodes(
@@ -52,7 +50,8 @@ public static class ElasticsearchSniffResponseFactory
 				{ "cluster.name", ClusterName },
 				{ "node.name", name }
 			};
-		foreach (var kv in node.Settings) settings[kv.Key] = kv.Value;
+		foreach (var kv in node.Settings)
+			settings[kv.Key] = kv.Value;
 
 		var httpEnabled = node.HasFeature(ElasticsearchNodeFeatures.HttpEnabled);
 
@@ -78,9 +77,12 @@ public static class ElasticsearchSniffResponseFactory
 				}
 				: null
 		};
-		if (node.HasFeature(ElasticsearchNodeFeatures.MasterEligible)) nodeResponse.roles.Add("master");
-		if (node.HasFeature(ElasticsearchNodeFeatures.HoldsData)) nodeResponse.roles.Add("data");
-		if (node.HasFeature(ElasticsearchNodeFeatures.IngestEnabled)) nodeResponse.roles.Add("ingest");
+		if (node.HasFeature(ElasticsearchNodeFeatures.MasterEligible))
+			nodeResponse.roles.Add("master");
+		if (node.HasFeature(ElasticsearchNodeFeatures.HoldsData))
+			nodeResponse.roles.Add("data");
+		if (node.HasFeature(ElasticsearchNodeFeatures.IngestEnabled))
+			nodeResponse.roles.Add("ingest");
 		if (!httpEnabled)
 			nodeResponse.settings.Add("http.enabled", false);
 		return nodeResponse;

@@ -72,7 +72,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 
 #endif
 
-		if (!SemVersion.TryParse(version, out var result))
+		if (version is null || !SemVersion.TryParse(version, out var result))
 			return Empty;
 
 		// 5.0.1 FrameworkDescription returns .NET 5.0.1-servicing.20575.16, so we special case servicing as
@@ -91,8 +91,8 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 		if (Environment.Version.Major >= 5)
 		{
 			const string dotNet = ".NET ";
-			var index = RuntimeInformation.FrameworkDescription.IndexOf(dotNet, StringComparison.OrdinalIgnoreCase);
-			if (index >= 0) return RuntimeInformation.FrameworkDescription.Substring(dotNet.Length);
+			if (RuntimeInformation.FrameworkDescription.Contains(dotNet, StringComparison.OrdinalIgnoreCase))
+				return RuntimeInformation.FrameworkDescription.Substring(dotNet.Length);
 		}
 		// next, try using file version info
 		//At this point, we can't identify whether this is a prerelease, but a version is better than nothing!
@@ -115,10 +115,10 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 	// sample input:
 	// .NETCoreApp,Version=v2.0
 	// .NETCoreApp,Version=v2.1
-	private static bool TryGetVersionFromFrameworkName(string frameworkName, out string runtimeVersion)
+	private static bool TryGetVersionFromFrameworkName(string frameworkName, out string? runtimeVersion)
 	{
 		const string versionPrefix = ".NETCoreApp,Version=v";
-		if (!string.IsNullOrEmpty(frameworkName) && frameworkName.StartsWith(versionPrefix))
+		if (!string.IsNullOrEmpty(frameworkName) && frameworkName.StartsWith(versionPrefix, StringComparison.Ordinal))
 		{
 			runtimeVersion = frameworkName.Substring(versionPrefix.Length);
 			return true;
@@ -128,7 +128,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 		return false;
 	}
 
-	private static bool IsRunningInContainer => string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true");
+	private static bool IsRunningInContainer => string.Equals(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), "true", StringComparison.Ordinal);
 #endif
 
 #if NETFRAMEWORK
@@ -142,8 +142,9 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 			{
 				var version = CheckFor45PlusVersion((int)ndpKey.GetValue("Release"));
 
-				if (!string.IsNullOrEmpty(version) )
-					return version;
+				if (!string.IsNullOrEmpty(version))
+					// version is guaranteed non-null here due to IsNullOrEmpty check above
+					return version!;
 			}
 		}
 
@@ -171,7 +172,7 @@ internal sealed class RuntimeVersionInfo : VersionInfo
 		}
 
 		// Checking the version using >= enables forward compatibility.
-		static string CheckFor45PlusVersion(int releaseKey)
+		static string? CheckFor45PlusVersion(int releaseKey)
 		{
 			if (releaseKey >= 528040)
 				return "4.8.0";

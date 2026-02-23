@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+#pragma warning disable CA1852
+
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Elastic.Transport;
@@ -67,7 +69,7 @@ static void Assert(bool condition, string message)
 	Console.WriteLine($"  PASS: {message}");
 }
 
-public class MyDocument
+internal sealed class MyDocument
 {
 	[JsonPropertyName("message")]
 	public string Message { init; get; } = null!;

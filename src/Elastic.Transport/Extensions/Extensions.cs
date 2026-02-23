@@ -37,9 +37,9 @@ internal static class EnumExtensions
 internal static class Extensions
 {
 	[Obsolete("Please use the overload placing the enumerated array as out")]
-	internal static bool HasAny<T>(this ICollection<T> list) => list != null && list.Any();
+	internal static bool HasAny<T>(this ICollection<T> list) => list != null && list.Count > 0;
 
-	internal static bool HasAny<T>(this IEnumerable<T> list, out T[] enumerated)
+	internal static bool HasAny<T>(this IEnumerable<T>? list, out T[]? enumerated)
 	{
 		enumerated = list == null ? null : (list as T[] ?? list.ToArray());
 		return enumerated != null && enumerated.Length > 0;
@@ -48,14 +48,13 @@ internal static class Extensions
 	internal static IEnumerable<T> DistinctByCustom<T, TKey>(this IEnumerable<T> items, Func<T, TKey> property) =>
 		items.GroupBy(property).Select(x => x.First());
 
-	internal static void ThrowIfEmpty<T>(this IEnumerable<T> @object, string parameterName)
+	internal static void ThrowIfEmpty<T>(this IEnumerable<T>? @object, string parameterName)
 	{
-		var enumerated = @object == null ? null : (@object as T[] ?? @object.ToArray());
-		enumerated.ThrowIfNull(parameterName);
-		if (!enumerated!.Any())
+		var enumerated = (@object == null ? null : (@object as T[] ?? @object.ToArray())) ?? throw new ArgumentNullException(parameterName);
+		if (enumerated.Length == 0)
 			throw new ArgumentException("Argument can not be an empty collection", parameterName);
 	}
-	internal static void ThrowIfNull<T>(this T value, string name) where T : class
+	internal static void ThrowIfNull<T>(this T? value, string name) where T : class
 	{
 		if (value == null)
 			throw new ArgumentNullException(name);
@@ -63,9 +62,9 @@ internal static class Extensions
 
 	internal static bool IsNullOrEmpty(this string? value) => string.IsNullOrEmpty(value);
 
-	internal static string Utf8String(this byte[] bytes) => bytes == null ? null : Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+	internal static string? Utf8String(this byte[]? bytes) => bytes == null ? null : Encoding.UTF8.GetString(bytes, 0, bytes.Length);
 
-	internal static string Utf8String(this MemoryStream ms)
+	internal static string? Utf8String(this MemoryStream? ms)
 	{
 		if (ms is null)
 			return null;
@@ -76,7 +75,7 @@ internal static class Extensions
 		return Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
 	}
 
-	internal static byte[] Utf8Bytes(this string s) => s.IsNullOrEmpty() ? null : Encoding.UTF8.GetBytes(s);
+	internal static byte[]? Utf8Bytes(this string? s) => s.IsNullOrEmpty() ? null : Encoding.UTF8.GetBytes(s!);
 
 	private const long MillisecondsInAWeek = MillisecondsInADay * 7;
 	private const long MillisecondsInADay = MillisecondsInAnHour * 24;
@@ -124,10 +123,11 @@ internal static class Extensions
 		return factor.ToString("0.##", CultureInfo.InvariantCulture) + interval;
 	}
 
-	internal static Exception AsAggregateOrFirst(this IEnumerable<Exception> exceptions)
+	internal static Exception? AsAggregateOrFirst(this IEnumerable<Exception>? exceptions)
 	{
 		var es = exceptions as Exception[] ?? exceptions?.ToArray();
-		if (es == null || es.Length == 0) return null;
+		if (es == null || es.Length == 0)
+			return null;
 
 		return es.Length == 1 ? es[0] : new AggregateException(es);
 	}

@@ -10,26 +10,24 @@ using static Elastic.Transport.HttpMethod;
 
 namespace Elastic.Elasticsearch.IntegrationTests;
 
-public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
+public class SecurityClusterTests(SecurityCluster cluster, ITestOutputHelper output) : IntegrationTestBase<SecurityCluster>(cluster, output)
 {
-	public SecurityClusterTests(SecurityCluster cluster, ITestOutputHelper output) : base(cluster, output) { }
-
 	private static readonly EndpointPath Root = new(GET, "/");
 
 	[Fact]
 	public async Task AsyncRequestDoesNotThrow()
 	{
 		var response = await RequestHandler.RequestAsync<StringResponse>(Root);
-		response.ApiCallDetails.Should().NotBeNull();
-		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+		_ = response.ApiCallDetails.Should().NotBeNull();
+		_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
 
 	[Fact]
 	public void SyncRequestDoesNotThrow()
 	{
 		var response = RequestHandler.Request<StringResponse>(Root);
-		response.ApiCallDetails.Should().NotBeNull();
-		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
+		_ = response.ApiCallDetails.Should().NotBeNull();
+		_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeTrue();
 	}
 
 	[Fact]
@@ -41,7 +39,7 @@ public class SecurityClusterTests : IntegrationTestBase<SecurityCluster>
 				Authentication = new BasicAuthentication("unknown-user", "bad-password")
 			}
 		);
-		response.ApiCallDetails.Should().NotBeNull();
-		response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeFalse();
+		_ = response.ApiCallDetails.Should().NotBeNull();
+		_ = response.ApiCallDetails.HasSuccessfulStatusCode.Should().BeFalse();
 	}
 }

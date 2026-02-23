@@ -13,7 +13,7 @@ namespace Elastic.Transport.Tests.Responses.Dynamic;
 public class DynamicResponseBuilderTests
 {
 	[Fact]
-	public async Task ReturnsExpectedResponse_ForJsonData()
+	public async Task ReturnsExpectedResponseForJsonData()
 	{
 		IResponseBuilder sut = new DynamicResponseBuilder();
 
@@ -21,20 +21,20 @@ public class DynamicResponseBuilderTests
 		var apiCallDetails = new ApiCallDetails();
 		var boundConfiguration = new BoundConfiguration(config);
 
-		var data = Encoding.UTF8.GetBytes("{\"_index\":\"my-index\",\"_id\":\"pZqC6JIB9RdSpcF8-3lq\",\"_version\":1,\"result\":\"created\",\"_shards\":{\"total\":1,\"successful\":1,\"failed\":0},\"_seq_no\":2,\"_primary_term\":1}");
+		var data = Encoding.UTF8.GetBytes(/*lang=json,strict*/ "{\"_index\":\"my-index\",\"_id\":\"pZqC6JIB9RdSpcF8-3lq\",\"_version\":1,\"result\":\"created\",\"_shards\":{\"total\":1,\"successful\":1,\"failed\":0},\"_seq_no\":2,\"_primary_term\":1}");
 		var stream = new MemoryStream(data);
 
 		var result = await sut.BuildAsync<DynamicResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, data.Length);
-		result.Body.Get<string>("_index").Should().Be("my-index");
+		_ = result.Body.Get<string>("_index").Should().Be("my-index");
 
 		stream.Position = 0;
 
 		result = sut.Build<DynamicResponse>(apiCallDetails, boundConfiguration, stream, BoundConfiguration.DefaultContentType, data.Length);
-		result.Body.Get<string>("_index").Should().Be("my-index");
+		_ = result.Body.Get<string>("_index").Should().Be("my-index");
 	}
 
 	[Fact]
-	public async Task ReturnsExpectedResponse_ForNonJsonData()
+	public async Task ReturnsExpectedResponseForNonJsonData()
 	{
 		IResponseBuilder sut = new DynamicResponseBuilder();
 
@@ -46,11 +46,11 @@ public class DynamicResponseBuilderTests
 		var stream = new MemoryStream(data);
 
 		var result = await sut.BuildAsync<DynamicResponse>(apiCallDetails, boundConfiguration, stream, "text/plain", data.Length);
-		result.Body.Get<string>("body").Should().Be("This is not JSON");
+		_ = result.Body.Get<string>("body").Should().Be("This is not JSON");
 
 		stream.Position = 0;
 
 		result = sut.Build<DynamicResponse>(apiCallDetails, boundConfiguration, stream, "text/plain", data.Length);
-		result.Body.Get<string>("body").Should().Be("This is not JSON");
+		_ = result.Body.Get<string>("body").Should().Be("This is not JSON");
 	}
 }

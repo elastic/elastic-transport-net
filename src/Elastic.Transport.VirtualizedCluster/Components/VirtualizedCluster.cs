@@ -18,7 +18,7 @@ public class VirtualizedCluster
 	private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<TransportResponse>> _asyncCall;
 	private Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> _syncCall;
 
-	private class VirtualResponse : TransportResponse;
+	private sealed class VirtualResponse : TransportResponse;
 
 	private static readonly EndpointPath RootPath = new(HttpMethod.GET, "/");
 
@@ -26,7 +26,7 @@ public class VirtualizedCluster
 	{
 		_settings = settings;
 		_dateTimeProvider = ((ITransportConfiguration)_settings).DateTimeProvider as TestableDateTimeProvider
-			?? throw new ArgumentException("DateTime provider is not a TestableDateTimeProvider", nameof(_dateTimeProvider));
+			?? throw new ArgumentException("DateTime provider is not a TestableDateTimeProvider", nameof(settings));
 		_exposingRequestPipeline = new ExposingPipelineFactory<ITransportConfiguration>(settings);
 
 		_syncCall = (t, r) => t.Request<VirtualResponse>(

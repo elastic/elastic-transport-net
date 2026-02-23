@@ -66,7 +66,7 @@ public abstract class NodePool : IDisposable
 	/// <summary>
 	/// Whether SSL/TLS is being used.
 	/// </summary>
-	public abstract bool UsingSsl { get; protected set; }
+	public bool UsingSsl { get; protected set; }
 
 	/// <summary>
 	///
@@ -83,7 +83,8 @@ public abstract class NodePool : IDisposable
 	/// <param name="disposing"></param>
 	protected virtual void Dispose(bool disposing)
 	{
-		if (!_disposed) _disposed = true;
+		if (!_disposed)
+			_disposed = true;
 	}
 
 	/// <summary>

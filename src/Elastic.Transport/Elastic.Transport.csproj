@@ -8,7 +8,7 @@
       This package is heavily optimized for the Elastic (elastic.co) product suite and Elastic Cloud (cloud.elastic.co) SAAS offering. 
     </Description>
     <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
-    <Nullable>annotations</Nullable>
+    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -19,13 +19,12 @@
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
-    <IsAotCompatible>true</IsAotCompatible>
+  <PropertyGroup>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1' OR '$(TargetFramework)' == 'net462'">
     <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
-    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,7 +47,7 @@
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="10.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1' OR '$(TargetFramework)' == 'net462'">
     <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all"
                       IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive"/>
   </ItemGroup>

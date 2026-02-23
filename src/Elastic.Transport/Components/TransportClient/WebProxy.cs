@@ -8,13 +8,11 @@ using System.Net;
 
 namespace Elastic.Transport;
 
-internal class WebProxy : IWebProxy
+internal class WebProxy(Uri uri) : IWebProxy
 {
-	private readonly Uri _uri;
+	private readonly Uri _uri = uri;
 
-	public WebProxy(Uri uri) => _uri = uri;
-
-	public ICredentials Credentials { get; set; }
+	public ICredentials? Credentials { get; set; }
 
 	public Uri GetProxy(Uri destination) => _uri;
 

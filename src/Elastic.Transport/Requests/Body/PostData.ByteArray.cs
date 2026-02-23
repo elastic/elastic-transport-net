@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +27,8 @@ public abstract partial class PostData
 
 		public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
 		{
-			if (WrittenBytes == null) return;
+			if (WrittenBytes == null)
+				return;
 
 			MemoryStream? buffer = null;
 
@@ -40,13 +42,19 @@ public abstract partial class PostData
 
 		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
 		{
-			if (WrittenBytes == null) return;
+			if (WrittenBytes == null)
+				return;
 
 			MemoryStream? buffer = null;
 
 			if (!disableDirectStreaming)
+#if NETSTANDARD2_1_OR_GREATER || NET
+				await writableStream.WriteAsync(WrittenBytes.AsMemory(), cancellationToken)
+					.ConfigureAwait(false);
+#else
 				await writableStream.WriteAsync(WrittenBytes, 0, WrittenBytes.Length, cancellationToken)
 					.ConfigureAwait(false);
+#endif
 			else
 				buffer = settings.MemoryStreamFactory.Create(WrittenBytes);
 

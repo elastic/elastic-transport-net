@@ -13,11 +13,19 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <para>[fqdn]/ip:port number</para>
 /// This helper parses it to <see cref="Uri"/>
 /// </summary>
-public static class SniffParser
+public static partial class SniffParser
 {
-	/// <summary> A regular expression that captures <c>fqdn</c>, <c>ip</c> and <c>por</c> </summary>
+#if NET7_0_OR_GREATER
+	[GeneratedRegex(@"^((?<fqdn>[^/]+)/)?(?<ip>[^:]+|\[[\da-fA-F:\.]+\]):(?<port>\d+)$")]
+	private static partial Regex AddressRegexGen();
+
+	/// <summary> A regular expression that captures <c>fqdn</c>, <c>ip</c> and <c>port</c> </summary>
+	public static Regex AddressRegex { get; } = AddressRegexGen();
+#else
+	/// <summary> A regular expression that captures <c>fqdn</c>, <c>ip</c> and <c>port</c> </summary>
 	public static Regex AddressRegex { get; } =
 		new Regex(@"^((?<fqdn>[^/]+)/)?(?<ip>[^:]+|\[[\da-fA-F:\.]+\]):(?<port>\d+)$");
+#endif
 
 	/// <summary>
 	/// Elasticsearch returns addresses in the form of
@@ -26,11 +34,13 @@ public static class SniffParser
 	/// </summary>
 	public static Uri ParseToUri(string boundAddress, bool forceHttp)
 	{
-		if (boundAddress == null) throw new ArgumentNullException(nameof(boundAddress));
+		if (boundAddress is null)
+			throw new ArgumentNullException(nameof(boundAddress));
 
 		var suffix = forceHttp ? "s" : string.Empty;
 		var match = AddressRegex.Match(boundAddress);
-		if (!match.Success) throw new Exception($"Can not parse bound_address: {boundAddress} to Uri");
+		if (!match.Success)
+			throw new Exception($"Can not parse bound_address: {boundAddress} to Uri");
 
 		var fqdn = match.Groups["fqdn"].Value.Trim();
 		var ip = match.Groups["ip"].Value.Trim();

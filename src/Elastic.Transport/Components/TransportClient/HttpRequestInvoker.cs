@@ -32,7 +32,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		+ $" please set {nameof(TransportConfigurationDescriptor.ConnectionLimit)} to -1 on your configuration."
 		+ $" this will cause the {nameof(HttpClientHandler.MaxConnectionsPerServer)} not to be set on {nameof(HttpClientHandler)}";
 
-	private string _expectedCertificateFingerprint;
+	private string? _expectedCertificateFingerprint;
 
 	/// <summary>
 	/// Create a new instance of the <see cref="HttpRequestInvoker"/>.
@@ -49,7 +49,8 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// Allows consumers to inject their own HttpMessageHandler, and optionally call our default implementation.
 	/// </summary>
 	public HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler) :
-		this(wrappingHandler, new DefaultResponseFactory()) { }
+		this(wrappingHandler, new DefaultResponseFactory())
+	{ }
 
 	internal HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler, ResponseFactory responseFactory)
 	{
@@ -57,7 +58,7 @@ public class HttpRequestInvoker : IRequestInvoker
 		HttpClientFactory = new BoundConfigurationHttpClientFactory(r =>
 		{
 			var defaultHandler = CreateHttpClientHandler(r);
-			return wrappingHandler(defaultHandler, r) ?? defaultHandler;
+			return wrappingHandler(defaultHandler, r);
 		});
 	}
 
@@ -88,16 +89,16 @@ public class HttpRequestInvoker : IRequestInvoker
 		where TResponse : TransportResponse, new()
 	{
 		var client = GetClient(boundConfiguration);
-		HttpResponseMessage responseMessage;
+		HttpResponseMessage? responseMessage;
 		int? statusCode = null;
-		Stream responseStream = null;
-		Exception ex = null;
-		string contentType = null;
+		Stream? responseStream = null;
+		Exception? ex = null;
+		string? contentType = null;
 		long contentLength = -1;
-		IDisposable receivedResponse = DiagnosticSources.SingletonDisposable;
-		ReadOnlyDictionary<TcpState, int> tcpStats = null;
-		ReadOnlyDictionary<string, ThreadPoolStatistics> threadPoolStats = null;
-		Dictionary<string, IEnumerable<string>> responseHeaders = null;
+		IDisposable? receivedResponse = DiagnosticSources.SingletonDisposable;
+		ReadOnlyDictionary<TcpState, int>? tcpStats = null;
+		ReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats = null;
+		Dictionary<string, IEnumerable<string>>? responseHeaders = null;
 
 		var beforeTicks = Stopwatch.GetTimestamp();
 
@@ -113,7 +114,7 @@ public class HttpRequestInvoker : IRequestInvoker
 					SetContent(requestMessage, boundConfiguration, postData);
 			}
 
-			using (requestMessage?.Content ?? (IDisposable)Stream.Null)
+			using (requestMessage.Content ?? (IDisposable)Stream.Null)
 			{
 				if (boundConfiguration.EnableTcpStats)
 					tcpStats = TcpStats.GetStates();
@@ -127,13 +128,15 @@ public class HttpRequestInvoker : IRequestInvoker
 					Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportPrepareRequestMs, prepareRequestMs);
 
 				if (isAsync)
+				{
 					responseMessage = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
 						.ConfigureAwait(false);
+				}
 				else
 #if NET6_0_OR_GREATER
 					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 #else
-					responseMessage = client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
+					responseMessage = client.SendAsync(requestMessage!, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
 #endif
 
 				receivedResponse = responseMessage;
@@ -160,7 +163,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			}
 
 			// We often won't have the content length as most responses are GZip compressed and the HttpContent ditches this when AutomaticDecompression is enabled.
-			contentLength = responseMessage.Content.Headers.ContentLength ?? -1;
+			contentLength = responseMessage!.Content!.Headers.ContentLength ?? -1;
 		}
 		catch (TaskCanceledException e)
 		{
@@ -175,21 +178,18 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		try
 		{
-			if (isAsync)
-				response = await ResponseFactory.CreateAsync<TResponse>
-					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
-						.ConfigureAwait(false);
-			else
-				response = ResponseFactory.Create<TResponse>
-						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream, contentType, contentLength, threadPoolStats, tcpStats);
+			response = isAsync
+				? await ResponseFactory.CreateAsync<TResponse>
+						(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats, cancellationToken)
+					.ConfigureAwait(false)
+				: ResponseFactory.Create<TResponse>
+					(endpoint, boundConfiguration, postData, ex, statusCode, responseHeaders, responseStream!, contentType, contentLength, threadPoolStats, tcpStats);
 
 			// Unless indicated otherwise by the TransportResponse, we've now handled the response stream, so we can dispose of the HttpResponseMessage
 			// to release the connection. In cases, where the derived response works directly on the stream, it can be left open and additional IDisposable
 			// resources can be linked such that their disposal is deferred.
 			if (response.LeaveOpen)
-			{
-				response.LinkedDisposables = [receivedResponse, responseStream];
-			}
+				response.LinkedDisposables = [receivedResponse!, responseStream!];
 			else
 			{
 				responseStream?.Dispose();
@@ -213,25 +213,33 @@ public class HttpRequestInvoker : IRequestInvoker
 		Dictionary<string, IEnumerable<string>>? responseHeaders = null;
 		var defaultHeadersForProduct = boundConfiguration.ConnectionSettings.ProductRegistration.DefaultHeadersToParse();
 		foreach (var headerToParse in defaultHeadersForProduct)
+		{
 			if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 			{
-				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+				responseHeaders ??= [];
 				responseHeaders.Add(headerToParse, values);
 			}
+		}
 
 		if (boundConfiguration.ParseAllHeaders)
+		{
 			foreach (var header in responseMessage.Headers)
 			{
-				responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+				responseHeaders ??= [];
 				responseHeaders.Add(header.Key, header.Value);
 			}
-		else if (boundConfiguration.ResponseHeadersToParse is { Count:  > 0 })
+		}
+		else if (boundConfiguration.ResponseHeadersToParse is { Count: > 0 })
+		{
 			foreach (var headerToParse in boundConfiguration.ResponseHeadersToParse)
+			{
 				if (responseMessage.Headers.TryGetValues(headerToParse, out var values))
 				{
-					responseHeaders ??= new Dictionary<string, IEnumerable<string>>();
+					responseHeaders ??= [];
 					responseHeaders.Add(headerToParse, values);
 				}
+			}
+		}
 
 		return responseHeaders;
 	}
@@ -281,7 +289,7 @@ public class HttpRequestInvoker : IRequestInvoker
 	{
 		if (!boundConfiguration.ProxyAddress.IsNullOrEmpty())
 		{
-			var uri = new Uri(boundConfiguration.ProxyAddress);
+			var uri = new Uri(boundConfiguration.ProxyAddress!);
 			var proxy = new WebProxy(uri);
 			if (!string.IsNullOrEmpty(boundConfiguration.ProxyUsername))
 				proxy.Credentials = new NetworkCredential(boundConfiguration.ProxyUsername, boundConfiguration.ProxyPassword);
@@ -298,15 +306,15 @@ public class HttpRequestInvoker : IRequestInvoker
 		{
 			handler.SslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) => callback(sender, cert!, chain!, errors);
 		}
-		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings.CertificateFingerprint))
+		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings?.CertificateFingerprint))
 		{
 			handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, chain, _) =>
 			{
 				if (certificate is null && chain is null) return false;
 
-				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings.CertificateFingerprint);
+			_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings!.CertificateFingerprint!);
 
-				if (chain is not null)
+			if (chain is not null)
 				{
 					foreach (var element in chain.ChainElements)
 					{
@@ -314,13 +322,13 @@ public class HttpRequestInvoker : IRequestInvoker
 							return true;
 					}
 				}
-				return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
-			};
-		}
+			return CertificateHelpers.ValidateCertificateFingerprint(certificate!, _expectedCertificateFingerprint);
+		};
+	}
 
-		if (boundConfiguration.ClientCertificates != null)
-		{
-			handler.SslOptions.ClientCertificates ??= new System.Security.Cryptography.X509Certificates.X509CertificateCollection();
+	if (boundConfiguration.ClientCertificates != null)
+	{
+		handler.SslOptions.ClientCertificates ??= new System.Security.Cryptography.X509Certificates.X509CertificateCollection();
 			handler.SslOptions.ClientCertificates.AddRange(boundConfiguration.ClientCertificates);
 		}
 	}
@@ -332,6 +340,7 @@ public class HttpRequestInvoker : IRequestInvoker
 
 		// same limit as desktop clr
 		if (boundConfiguration.ConnectionSettings.ConnectionLimit > 0)
+		{
 			try
 			{
 				handler.MaxConnectionsPerServer = boundConfiguration.ConnectionSettings.ConnectionLimit;
@@ -344,10 +353,11 @@ public class HttpRequestInvoker : IRequestInvoker
 			{
 				throw new Exception(MissingConnectionLimitMethodError, e);
 			}
+		}
 
 		if (!boundConfiguration.ProxyAddress.IsNullOrEmpty())
 		{
-			var uri = new Uri(boundConfiguration.ProxyAddress);
+			var uri = new Uri(boundConfiguration.ProxyAddress!);
 			var proxy = new WebProxy(uri);
 			if (!string.IsNullOrEmpty(boundConfiguration.ProxyUsername))
 			{
@@ -356,20 +366,21 @@ public class HttpRequestInvoker : IRequestInvoker
 			}
 			handler.Proxy = proxy;
 		}
-		else if (boundConfiguration.DisableAutomaticProxyDetection) handler.UseProxy = false;
+		else if (boundConfiguration.DisableAutomaticProxyDetection)
+			handler.UseProxy = false;
 
 		var callback = boundConfiguration.ConnectionSettings?.ServerCertificateValidationCallback;
 		if (callback != null && handler.ServerCertificateCustomValidationCallback == null)
-		{
-			handler.ServerCertificateCustomValidationCallback = callback;
-		}
-		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings.CertificateFingerprint))
+			handler.ServerCertificateCustomValidationCallback = callback!;
+		else if (!string.IsNullOrEmpty(boundConfiguration.ConnectionSettings?.CertificateFingerprint))
 		{
 			handler.ServerCertificateCustomValidationCallback = (request, certificate, chain, policyErrors) =>
 			{
-				if (certificate is null && chain is null) return false;
+				if (certificate is null && chain is null)
+					return false;
 
-				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings.CertificateFingerprint);
+				// The "cleaned", expected fingerprint is cached to avoid repeated cost of converting it to a comparable form.
+				_expectedCertificateFingerprint ??= CertificateHelpers.ComparableFingerprint(boundConfiguration.ConnectionSettings!.CertificateFingerprint!);
 
 				if (chain is not null)
 				{
@@ -380,7 +391,8 @@ public class HttpRequestInvoker : IRequestInvoker
 					}
 				}
 
-				return CertificateHelpers.ValidateCertificateFingerprint(certificate, _expectedCertificateFingerprint);
+				// Otherwise, check the certificate
+				return CertificateHelpers.ValidateCertificateFingerprint(certificate!, _expectedCertificateFingerprint);
 			};
 		}
 
@@ -397,7 +409,7 @@ public class HttpRequestInvoker : IRequestInvoker
 	{
 		var finalFingerprint = fingerprint;
 
-		if (fingerprint.Contains(':'))
+		if (fingerprint.IndexOf(':') >= 0)
 			finalFingerprint = fingerprint.Replace(":", string.Empty);
 
 		return finalFingerprint;
@@ -428,9 +440,9 @@ public class HttpRequestInvoker : IRequestInvoker
 	internal void SetAuthenticationIfNeeded(Endpoint endpoint, BoundConfiguration boundConfiguration, HttpRequestMessage requestMessage)
 	{
 		//If user manually specifies an Authorization Header give it preference
-		if (boundConfiguration.Headers != null && boundConfiguration.Headers.HasKeys() && boundConfiguration.Headers.AllKeys.Contains("Authorization"))
+		if (boundConfiguration.Headers != null && boundConfiguration.Headers.HasKeys() && Enumerable.Contains(boundConfiguration.Headers.AllKeys, "Authorization", StringComparer.OrdinalIgnoreCase))
 		{
-			var header = AuthenticationHeaderValue.Parse(boundConfiguration.Headers["Authorization"]);
+			var header = AuthenticationHeaderValue.Parse(boundConfiguration.Headers["Authorization"]!);
 			requestMessage.Headers.Authorization = header;
 			return;
 		}
@@ -445,8 +457,8 @@ public class HttpRequestInvoker : IRequestInvoker
 		// 2 - Specified on the request
 		// 3 - Specified at the global TransportClientSettings level (lowest precedence)
 
-		string parameters = null;
-		string scheme = null;
+		string? parameters = null;
+		string? scheme = null;
 		if (!endpoint.Uri.UserInfo.IsNullOrEmpty())
 		{
 			parameters = BasicAuthentication.GetBase64String(Uri.UnescapeDataString(endpoint.Uri.UserInfo));
@@ -458,9 +470,10 @@ public class HttpRequestInvoker : IRequestInvoker
 			scheme = boundConfiguration.AuthenticationHeader.AuthScheme;
 		}
 
-		if (parameters.IsNullOrEmpty()) return;
+		if (parameters.IsNullOrEmpty())
+			return;
 
-		requestMessage.Headers.Authorization = new AuthenticationHeaderValue(scheme, parameters);
+		requestMessage.Headers.Authorization = new AuthenticationHeaderValue(scheme!, parameters);
 	}
 
 	private static HttpRequestMessage CreateRequestMessage(Endpoint endpoint, BoundConfiguration boundConfiguration, bool isAsync)
@@ -469,18 +482,20 @@ public class HttpRequestInvoker : IRequestInvoker
 		var requestMessage = new HttpRequestMessage(method, endpoint.Uri);
 
 		if (boundConfiguration.Headers != null)
+		{
 			foreach (string key in boundConfiguration.Headers)
-				requestMessage.Headers.TryAddWithoutValidation(key, boundConfiguration.Headers.GetValues(key));
+				_ = requestMessage.Headers.TryAddWithoutValidation(key, boundConfiguration.Headers.GetValues(key)!);
+		}
 
 		requestMessage.Headers.Connection.Clear();
 		requestMessage.Headers.ConnectionClose = false;
-		requestMessage.Headers.TryAddWithoutValidation("Accept", boundConfiguration.Accept);
+		_ = requestMessage.Headers.TryAddWithoutValidation("Accept", boundConfiguration.Accept);
 
 		var userAgent = boundConfiguration.UserAgent?.ToString();
 		if (!string.IsNullOrWhiteSpace(userAgent))
 		{
 			requestMessage.Headers.UserAgent.Clear();
-			requestMessage.Headers.UserAgent.TryParseAdd(userAgent);
+			_ = requestMessage.Headers.UserAgent.TryParseAdd(userAgent);
 		}
 
 		if (!boundConfiguration.RunAs.IsNullOrEmpty())
@@ -493,7 +508,7 @@ public class HttpRequestInvoker : IRequestInvoker
 				var value = producer.ProduceHeaderValue(boundConfiguration, isAsync);
 
 				if (!string.IsNullOrEmpty(value))
-					requestMessage.Headers.TryAddWithoutValidation(producer.HeaderName, value);
+					_ = requestMessage.Headers.TryAddWithoutValidation(producer.HeaderName, value);
 			}
 		}
 
@@ -518,7 +533,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
 			if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
 			{
-				message.Content = new ByteArrayContent(postData.WrittenBytes);
+				message.Content = new ByteArrayContent(postData.WrittenBytes!);
 				stream.Dispose();
 			}
 			else
@@ -530,7 +545,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (boundConfiguration.HttpCompression)
 				message.Content.Headers.ContentEncoding.Add("gzip");
 
-			message.Content.Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
+			_ = message.Content.Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 		}
 	}
 
@@ -552,7 +567,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			// the written bytes are uncompressed, so can only be used when http compression isn't used
 			if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
 			{
-				message.Content = new ByteArrayContent(postData.WrittenBytes);
+				message.Content = new ByteArrayContent(postData.WrittenBytes!);
 #if DOTNETCORE_2_1_OR_HIGHER
 					await stream.DisposeAsync().ConfigureAwait(false);
 #else
@@ -572,19 +587,15 @@ public class HttpRequestInvoker : IRequestInvoker
 		}
 	}
 
-	private static System.Net.Http.HttpMethod ConvertHttpMethod(HttpMethod httpMethod)
+	private static System.Net.Http.HttpMethod ConvertHttpMethod(HttpMethod httpMethod) => httpMethod switch
 	{
-		switch (httpMethod)
-		{
-			case HttpMethod.GET: return System.Net.Http.HttpMethod.Get;
-			case HttpMethod.POST: return System.Net.Http.HttpMethod.Post;
-			case HttpMethod.PUT: return System.Net.Http.HttpMethod.Put;
-			case HttpMethod.DELETE: return System.Net.Http.HttpMethod.Delete;
-			case HttpMethod.HEAD: return System.Net.Http.HttpMethod.Head;
-			default:
-				throw new ArgumentException("Invalid value for HttpMethod", nameof(httpMethod));
-		}
-	}
+		HttpMethod.GET => System.Net.Http.HttpMethod.Get,
+		HttpMethod.POST => System.Net.Http.HttpMethod.Post,
+		HttpMethod.PUT => System.Net.Http.HttpMethod.Put,
+		HttpMethod.DELETE => System.Net.Http.HttpMethod.Delete,
+		HttpMethod.HEAD => System.Net.Http.HttpMethod.Head,
+		_ => throw new ArgumentException("Invalid value for HttpMethod", nameof(httpMethod)),
+	};
 
 	internal static int GetClientKey(BoundConfiguration boundConfiguration)
 	{
@@ -601,12 +612,13 @@ public class HttpRequestInvoker : IRequestInvoker
 	}
 
 	/// <summary> Allows subclasses to dispose of managed resources </summary>
-	public virtual void DisposeManagedResources() {}
+	public virtual void DisposeManagedResources() { }
 	/// <inheritdoc />
 	public void Dispose()
 	{
 		HttpClientFactory.Dispose();
 		DisposeManagedResources();
+		GC.SuppressFinalize(this);
 	}
 }
 #endif

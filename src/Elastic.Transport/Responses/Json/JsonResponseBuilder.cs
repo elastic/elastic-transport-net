@@ -2,8 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-#if NET8_0_OR_GREATER
 using System;
+#if NET8_0_OR_GREATER
 using System.Buffers;
 #endif
 
@@ -27,7 +27,7 @@ internal class JsonResponseBuilder : TypedResponseBuilder<JsonResponse>
 		string contentType, long contentLength, CancellationToken cancellationToken = default)
 	{
 		// If not JSON, store the result under "body"
-		if (contentType == null || !contentType.StartsWith(BoundConfiguration.DefaultContentType))
+		if (contentType == null || !contentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.Ordinal))
 		{
 			string stringValue;
 
@@ -68,7 +68,7 @@ internal class JsonResponseBuilder : TypedResponseBuilder<JsonResponse>
 		}
 
 		// JSON content: parse into JsonNode
-		JsonNode node;
+		JsonNode? node;
 		if (isAsync)
 		{
 			node = await JsonNode.ParseAsync(responseStream, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -78,6 +78,6 @@ internal class JsonResponseBuilder : TypedResponseBuilder<JsonResponse>
 			node = JsonNode.Parse(responseStream);
 		}
 
-		return new JsonResponse(node);
+		return node is not null ? new JsonResponse(node) : new JsonResponse();
 	}
 }

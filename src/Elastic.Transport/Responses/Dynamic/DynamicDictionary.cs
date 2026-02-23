@@ -26,7 +26,7 @@ namespace Elastic.Transport;
 /// A dictionary that supports dynamic access.
 /// </summary>
 [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
-public sealed class DynamicDictionary
+public sealed partial class DynamicDictionary
 	: DynamicObject,
 		IEquatable<DynamicDictionary>,
 		IDictionary<string, DynamicValue>
@@ -43,14 +43,14 @@ public sealed class DynamicDictionary
 	/// Creates a new instance of Dictionary{String,Object} using the keys and underlying object values of this DynamicDictionary instance's key values.
 	/// </summary>
 	/// <returns></returns>
-	public Dictionary<string, object> ToDictionary() =>
+	public Dictionary<string, object?> ToDictionary() =>
 		_backingDictionary.ToDictionary(kv => kv.Key, kv => kv.Value.Value is JsonElement e ? DynamicValue.ConsumeJsonElement(typeof(object), e) : kv.Value.Value);
 
 	/// <summary>
 	/// Returns an empty dynamic dictionary.
 	/// </summary>
 	/// <value>A <see cref="DynamicDictionary" /> instance.</value>
-	public static DynamicDictionary Empty => new DynamicDictionary();
+	public static DynamicDictionary Empty => new();
 
 	/// <summary>
 	/// Gets a value indicating whether the <see cref="DynamicDictionary" /> is read-only.
@@ -58,7 +58,14 @@ public sealed class DynamicDictionary
 	/// <returns>Always returns <see langword="false" />.</returns>
 	public bool IsReadOnly => false;
 
+#if NET7_0_OR_GREATER
+	[GeneratedRegex(@"(?<!\\)\.")]
+	private static partial Regex SplitRegexGen();
+
+	private static readonly Regex SplitRegex = SplitRegexGen();
+#else
 	private static readonly Regex SplitRegex = new(@"(?<!\\)\.");
+#endif
 
 	/// <summary>
 	/// Traverses data using path notation.
@@ -71,13 +78,14 @@ public sealed class DynamicDictionary
 	/// <param name="path">path into the stored object, keys are separated with a dot and the last key is returned as T</param>
 	/// <typeparam name="T"></typeparam>
 	/// <returns>T or default</returns>
-	public T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string path)
+	public T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string? path)
 	{
-		if (path == null) return default;
+		if (path is null) return default!;
 
 		var split = SplitRegex.Split(path);
 		var queue = new Queue<string>(split);
-		if (queue.Count == 0) return default;
+		if (queue.Count == 0)
+			return default!;
 
 		var d = new DynamicValue(_backingDictionary);
 		while (queue.Count > 0)
@@ -86,7 +94,7 @@ public sealed class DynamicDictionary
 			d = ResolvePathSegment(d, key, queue.Count == 0);
 		}
 
-		return d.TryParse<T>();
+		return d.TryParse<T>()!;
 	}
 
 	internal static DynamicValue ResolvePathSegment(DynamicValue d, string key, bool isLast)
@@ -111,7 +119,11 @@ public sealed class DynamicDictionary
 		}
 
 		// Bracket index: [N]
+#if NETSTANDARD2_0 || NET462
 		if (key.Length > 2 && key[0] == '[' && key[key.Length - 1] == ']' && int.TryParse(key.Substring(1, key.Length - 2), out var bracketIndex))
+#else
+		if (key.Length > 2 && key[0] == '[' && key[key.Length - 1] == ']' && int.TryParse(key.AsSpan(1, key.Length - 2), out var bracketIndex))
+#endif
 			return d[bracketIndex];
 
 		// Plain numeric index
@@ -147,15 +159,15 @@ public sealed class DynamicDictionary
 	}
 
 	/// <summary>
-	/// Gets an <see cref="T:System.Collections.Generic.ICollection`1" /> containing the keys of the <see cref="DynamicDictionary" />.
+	/// Gets an <see cref="ICollection{T}" /> containing the keys of the <see cref="DynamicDictionary" />.
 	/// </summary>
-	/// <returns>An <see cref="T:System.Collections.Generic.ICollection`1" /> containing the keys of the <see cref="DynamicDictionary" />.</returns>
+	/// <returns>An <see cref="ICollection{T}" /> containing the keys of the <see cref="DynamicDictionary" />.</returns>
 	public ICollection<string> Keys => _backingDictionary.Keys;
 
 	/// <summary>
-	/// Gets an <see cref="T:System.Collections.Generic.ICollection`1" /> containing the values in the <see cref="DynamicDictionary" />.
+	/// Gets an <see cref="ICollection{T}" /> containing the values in the <see cref="DynamicDictionary" />.
 	/// </summary>
-	/// <returns>An <see cref="T:System.Collections.Generic.ICollection`1" /> containing the values in the <see cref="DynamicDictionary" />.</returns>
+	/// <returns>An <see cref="ICollection{T}" /> containing the values in the <see cref="DynamicDictionary" />.</returns>
 	public ICollection<DynamicValue> Values => _backingDictionary.Values;
 
 	/// <summary>
@@ -179,12 +191,12 @@ public sealed class DynamicDictionary
 	public bool Contains(KeyValuePair<string, DynamicValue> item) => _backingDictionary.Contains(item);
 
 	/// <summary>
-	/// Copies the elements of the <see cref="DynamicDictionary" /> to an <see cref="T:System.Array" />, starting at a particular
-	/// <see cref="T:System.Array" /> index.
+	/// Copies the elements of the <see cref="DynamicDictionary" /> to an <see cref="System.Array" />, starting at a particular
+	/// <see cref="System.Array" /> index.
 	/// </summary>
 	/// <param name="array">
-	/// The one-dimensional <see cref="T:System.Array" /> that is the destination of the elements copied from the
-	/// <see cref="DynamicDictionary" />. The <see cref="T:System.Array" /> must have zero-based indexing.
+	/// The one-dimensional <see cref="System.Array" /> that is the destination of the elements copied from the
+	/// <see cref="DynamicDictionary" />. The <see cref="System.Array" /> must have zero-based indexing.
 	/// </param>
 	/// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
 	public void CopyTo(KeyValuePair<string, DynamicValue>[] array, int arrayIndex) => _backingDictionary.CopyTo(array, arrayIndex);
@@ -240,8 +252,13 @@ public sealed class DynamicDictionary
 	/// </param>
 	public bool TryGetValue(string key, out DynamicValue value)
 	{
-		if (_backingDictionary.TryGetValue(key, out value)) return true;
+		if (_backingDictionary.TryGetValue(key, out var foundValue))
+		{
+			value = foundValue;
+			return true;
+		}
 
+		value = DynamicValue.NullValue;
 		return false;
 	}
 
@@ -254,7 +271,7 @@ public sealed class DynamicDictionary
 	/// <summary>
 	/// Returns an enumerator that iterates through the collection.
 	/// </summary>
-	/// <returns>A <see cref="T:System.Collections.Generic.IEnumerator`1" /> that can be used to iterate through the collection.</returns>
+	/// <returns>A <see cref="IEnumerator{T}" /> that can be used to iterate through the collection.</returns>
 	IEnumerator<KeyValuePair<string, DynamicValue>> IEnumerable<KeyValuePair<string, DynamicValue>>.GetEnumerator() => _backingDictionary.GetEnumerator();
 
 	/// <summary>
@@ -265,7 +282,7 @@ public sealed class DynamicDictionary
 	/// <see langword="false" />.
 	/// </returns>
 	/// <param name="other">An <see cref="DynamicDictionary" /> instance to compare with this instance.</param>
-	public bool Equals(DynamicDictionary other)
+	public bool Equals(DynamicDictionary? other)
 	{
 		if (ReferenceEquals(null, other))
 		{
@@ -280,7 +297,7 @@ public sealed class DynamicDictionary
 	/// </summary>
 	/// <param name="values">An <see cref="IDictionary{TKey,TValue}" /> instance, that the dynamic dictionary should be created from.</param>
 	/// <returns>An <see cref="DynamicDictionary" /> instance.</returns>
-	public static DynamicDictionary Create(IDictionary<string, object> values)
+	public static DynamicDictionary Create(IDictionary<string, object?> values)
 	{
 		var instance = new DynamicDictionary();
 
@@ -292,6 +309,7 @@ public sealed class DynamicDictionary
 
 		return instance;
 	}
+
 	/// <summary>
 	/// Creates a dynamic dictionary from an <see cref="JsonElement" /> instance.
 	/// </summary>
@@ -302,7 +320,7 @@ public sealed class DynamicDictionary
 	}
 
 	/// <summary>
-	/// Provides the implementation for operations that set member values. Classes derived from the <see cref="T:System.Dynamic.DynamicObject" />
+	/// Provides the implementation for operations that set member values. Classes derived from the <see cref="System.Dynamic.DynamicObject" />
 	/// class can override this method to specify dynamic behavior for operations such as setting a value for a property.
 	/// </summary>
 	/// <returns>
@@ -312,21 +330,21 @@ public sealed class DynamicDictionary
 	/// <param name="binder">
 	/// Provides information about the object that called the dynamic operation. The binder.Name property provides the name of
 	/// the member to which the value is being assigned. For example, for the statement sampleObject.SampleProperty = "Test", where sampleObject is
-	/// an instance of the class derived from the <see cref="T:System.Dynamic.DynamicObject" /> class, binder.Name returns "SampleProperty". The
+	/// an instance of the class derived from the <see cref="System.Dynamic.DynamicObject" /> class, binder.Name returns "SampleProperty". The
 	/// binder.IgnoreCase property specifies whether the member name is case-sensitive.
 	/// </param>
 	/// <param name="value">
 	/// The value to set to the member. For example, for sampleObject.SampleProperty = "Test", where sampleObject is an
-	/// instance of the class derived from the <see cref="T:System.Dynamic.DynamicObject" /> class, the <paramref name="value" /> is "Test".
+	/// instance of the class derived from the <see cref="System.Dynamic.DynamicObject" /> class, the <paramref name="value" /> is "Test".
 	/// </param>
-	public override bool TrySetMember(SetMemberBinder binder, object value)
+	public override bool TrySetMember(SetMemberBinder binder, object? value)
 	{
 		this[binder.Name] = new DynamicValue(value);
 		return true;
 	}
 
 	/// <summary>
-	/// Provides the implementation for operations that get member values. Classes derived from the <see cref="T:System.Dynamic.DynamicObject" />
+	/// Provides the implementation for operations that get member values. Classes derived from the <see cref="System.Dynamic.DynamicObject" />
 	/// class can override this method to specify dynamic behavior for operations such as getting a value for a property.
 	/// </summary>
 	/// <returns>
@@ -336,7 +354,7 @@ public sealed class DynamicDictionary
 	/// <param name="binder">
 	/// Provides information about the object that called the dynamic operation. The binder.Name property provides the name of
 	/// the member on which the dynamic operation is performed. For example, for the Console.WriteLine(sampleObject.SampleProperty) statement,
-	/// where sampleObject is an instance of the class derived from the <see cref="T:System.Dynamic.DynamicObject" /> class, binder.Name returns
+	/// where sampleObject is an instance of the class derived from the <see cref="System.Dynamic.DynamicObject" /> class, binder.Name returns
 	/// "SampleProperty". The binder.IgnoreCase property specifies whether the member name is case-sensitive.
 	/// </param>
 	/// <param name="result">
@@ -349,7 +367,8 @@ public sealed class DynamicDictionary
 		{
 			result = new DynamicValue(null);
 		}
-		else result = v;
+		else
+			result = v;
 
 		return true;
 	}
@@ -368,7 +387,7 @@ public sealed class DynamicDictionary
 	/// <see langword="true" /> if the specified <see cref="object" /> is equal to this instance; otherwise,
 	/// <see langword="false" />.
 	/// </returns>
-	public override bool Equals(object obj)
+	public override bool Equals(object? obj)
 	{
 		if (ReferenceEquals(null, obj))
 		{
