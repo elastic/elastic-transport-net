@@ -15,6 +15,9 @@ public interface IRule
 	/// <summary>This rule is constrain on the node with this port number</summary>
 	int? OnPort { get; set; }
 
+	/// <summary>Optional predicate to constrain this rule to requests matching a specific path</summary>
+	Func<string, bool> PathFilter { get; set; }
+
 	/// <summary> Either a hard exception or soft HTTP error code</summary>
 	RuleOption<Exception, int> Return { get; set; }
 
@@ -46,6 +49,7 @@ public abstract class RuleBase<TRule> : IRule
 	private int _executeCount;
 	RuleOption<Exception, int> IRule.AfterSucceeds { get; set; }
 	int? IRule.OnPort { get; set; }
+	Func<string, bool> IRule.PathFilter { get; set; }
 	RuleOption<Exception, int> IRule.Return { get; set; }
 	string IRule.ReturnContentType { get; set; }
 	byte[] IRule.ReturnResponse { get; set; }
@@ -61,6 +65,20 @@ public abstract class RuleBase<TRule> : IRule
 	public TRule OnPort(int port)
 	{
 		Self.OnPort = port;
+		return (TRule)this;
+	}
+
+	/// <summary>Constrain this rule to requests whose path contains <paramref name="pathContains"/></summary>
+	public TRule OnPath(string pathContains)
+	{
+		Self.PathFilter = p => p.Contains(pathContains, StringComparison.OrdinalIgnoreCase);
+		return (TRule)this;
+	}
+
+	/// <summary>Constrain this rule to requests whose path satisfies <paramref name="pathPredicate"/></summary>
+	public TRule OnPath(Func<string, bool> pathPredicate)
+	{
+		Self.PathFilter = pathPredicate;
 		return (TRule)this;
 	}
 

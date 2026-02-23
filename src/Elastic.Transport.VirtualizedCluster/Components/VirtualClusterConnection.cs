@@ -195,33 +195,53 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		if (rules.Count == 0)
 			throw new Exception($"No {origin} defined for the current VirtualCluster, so we do not know how to respond");
 
-		foreach (var rule in rules.Where(s => s.OnPort.HasValue))
-		{
-			var always = rule.Times.Match(t => true, t => false);
-			var times = rule.Times.Match(t => -1, t => t);
+		if (TryMatchRules<TResponse, TRule>(rules.Where(s => s.OnPort.HasValue && s.PathFilter != null), endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, out var response))
+			return response;
+		if (TryMatchRules<TResponse, TRule>(rules.Where(s => s.OnPort.HasValue && s.PathFilter == null), endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, out response))
+			return response;
+		if (TryMatchRules<TResponse, TRule>(rules.Where(s => !s.OnPort.HasValue && s.PathFilter != null), endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, out response))
+			return response;
+		if (TryMatchRules<TResponse, TRule>(rules.Where(s => !s.OnPort.HasValue && s.PathFilter == null), endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, out response))
+			return response;
 
-			if (rule.OnPort == null || rule.OnPort.Value != endpoint.Uri.Port) continue;
-
-			if (always)
-				return Always<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
-
-			if (rule.ExecuteCount > times) continue;
-
-			return Sometimes<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
-		}
-		foreach (var rule in rules.Where(s => !s.OnPort.HasValue))
-		{
-			var always = rule.Times.Match(t => true, t => false);
-			var times = rule.Times.Match(t => -1, t => t);
-			if (always)
-				return Always<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
-
-			if (rule.ExecuteCount > times) continue;
-
-			return Sometimes<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
-		}
 		var count = _calls.Select(kv => kv.Value.Called).Sum();
 		throw new Exception($@"No global or port specific {origin} rule ({endpoint.Uri.Port}) matches any longer after {count} calls in to the cluster");
+	}
+
+	private bool TryMatchRules<TResponse, TRule>(
+		IEnumerable<TRule> rules,
+		Endpoint endpoint,
+		BoundConfiguration boundConfiguration,
+		PostData? postData,
+		TimeSpan timeout,
+		Action<TRule> beforeReturn,
+		Func<TRule, byte[]?> successResponse,
+		out TResponse response
+	)
+		where TResponse : TransportResponse, new()
+		where TRule : IRule
+	{
+		foreach (var rule in rules)
+		{
+			if (rule.OnPort.HasValue && rule.OnPort.Value != endpoint.Uri.Port) continue;
+			if (rule.PathFilter != null && !rule.PathFilter(endpoint.PathAndQuery)) continue;
+
+			var always = rule.Times.Match(t => true, t => false);
+			var times = rule.Times.Match(t => -1, t => t);
+
+			if (always)
+			{
+				response = Always<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
+				return true;
+			}
+
+			if (rule.ExecuteCount > times) continue;
+
+			response = Sometimes<TResponse, TRule>(endpoint, boundConfiguration, postData, timeout, beforeReturn, successResponse, rule);
+			return true;
+		}
+		response = default!;
+		return false;
 	}
 
 	private TResponse Always<TResponse, TRule>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, TimeSpan timeout, Action<TRule> beforeReturn, Func<TRule, byte[]?> successResponse, TRule rule
