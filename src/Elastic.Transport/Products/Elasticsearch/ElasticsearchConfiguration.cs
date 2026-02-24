@@ -27,10 +27,26 @@ public record ElasticsearchConfiguration : TransportConfiguration
 
 	/// <summary>
 	/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
+	/// targeting the specified <paramref name="service"/>.
+	/// <para><see cref="CloudNodePool"/> documentation for more information on how to get your Cloud ID</para>
+	/// </summary>
+	public ElasticsearchConfiguration(string cloudId, BasicAuthentication credentials, CloudService service)
+		: base(new CloudNodePool(cloudId, credentials, service), productRegistration: ElasticsearchProductRegistration.Default) { }
+
+	/// <summary>
+	/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
 	/// <para><see cref="CloudNodePool"/> documentation for more information on how to get your Cloud ID</para>
 	/// </summary>
 	public ElasticsearchConfiguration(string cloudId, ApiKey credentials)
 		: base(new CloudNodePool(cloudId, credentials), productRegistration: ElasticsearchProductRegistration.Default) { }
+
+	/// <summary>
+	/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
+	/// targeting the specified <paramref name="service"/>.
+	/// <para><see cref="CloudNodePool"/> documentation for more information on how to get your Cloud ID</para>
+	/// </summary>
+	public ElasticsearchConfiguration(string cloudId, ApiKey credentials, CloudService service)
+		: base(new CloudNodePool(cloudId, credentials, service), productRegistration: ElasticsearchProductRegistration.Default) { }
 
 	/// <summary> Sets up the client to communicate to Elastic Cloud.</summary>
 	public ElasticsearchConfiguration(Uri cloudEndpoint, BasicAuthentication credentials)

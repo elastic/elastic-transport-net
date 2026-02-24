@@ -66,10 +66,26 @@ public record TransportConfiguration : ITransportConfiguration
 
 	/// <summary>
 	/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
+	/// targeting the specified <paramref name="service"/>.
+	/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
+	/// </summary>
+	public TransportConfiguration(string cloudId, BasicAuthentication credentials, CloudService service, ProductRegistration? productRegistration = null)
+		: this(new CloudNodePool(cloudId, credentials, service), productRegistration: productRegistration) { }
+
+	/// <summary>
+	/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
 	/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
 	/// </summary>
 	public TransportConfiguration(string cloudId, ApiKey credentials, ProductRegistration? productRegistration = null)
 		: this(new CloudNodePool(cloudId, credentials), productRegistration: productRegistration) { }
+
+	/// <summary>
+	/// Sets up the client to communicate to Elastic Cloud using <paramref name="cloudId"/>,
+	/// targeting the specified <paramref name="service"/>.
+	/// <para><see cref="CloudNodePool"/> documentation for more information on how to obtain your Cloud Id</para>
+	/// </summary>
+	public TransportConfiguration(string cloudId, ApiKey credentials, CloudService service, ProductRegistration? productRegistration = null)
+		: this(new CloudNodePool(cloudId, credentials, service), productRegistration: productRegistration) { }
 
 	/// <summary> Sets up the client to communicate to Elastic Cloud.</summary>
 	public TransportConfiguration(Uri cloudEndpoint, BasicAuthentication credentials, ProductRegistration? productRegistration = null)
