@@ -130,7 +130,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	{
 		var requestParameters = new DefaultRequestParameters();
 		if (requestConfiguration.PingTimeout.HasValue)
-			requestParameters.QueryString.Add("timeout", requestConfiguration.PingTimeout.Value.ToString());
+			requestParameters.QueryString.Add("timeout", requestConfiguration.PingTimeout.Value);
 		requestParameters.QueryString.Add("flat_settings", true);
 		var sniffPath = requestParameters.CreatePathWithQueryStrings(SniffPath, settings);
 		return new Endpoint(new EndpointPath(HttpMethod.GET, sniffPath), node);
