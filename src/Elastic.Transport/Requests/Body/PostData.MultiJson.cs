@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,8 @@ public abstract partial class PostData
 	/// <summary>
 	/// Create a <see cref="PostData"/> instance that will serialize the <paramref name="listOfSerializables"/> as multiline/ndjson.
 	/// </summary>
+	[RequiresUnreferencedCode("JSON serialization may require types that cannot be statically analyzed.")]
+	[RequiresDynamicCode("JSON serialization may require runtime code generation.")]
 	public static PostData MultiJson<T>(IEnumerable<T> listOfSerializables) =>
 		new PostDataMultiJson<T>(listOfSerializables);
 
