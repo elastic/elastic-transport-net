@@ -115,7 +115,16 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason)
 	{
 		reason = null;
-		if (response is StringResponse s && s.TryGetElasticsearchServerError(out var e))
+
+		// Check IElasticsearchResponse first (covers all Elasticsearch response types)
+		if (response is IElasticsearchResponse esResponse && esResponse.ElasticsearchServerError is { } serverError)
+		{
+			reason = serverError.Error?.ToString();
+			return serverError.HasError();
+		}
+
+		ElasticsearchServerError? e;
+		if (response is StringResponse s && s.TryGetElasticsearchServerError(out e))
 			reason = e?.Error?.ToString();
 		else if (response is BytesResponse b && b.TryGetElasticsearchServerError(out e))
 			reason = e?.Error?.ToString();
@@ -228,5 +237,20 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	};
 
 	/// <inheritdoc/>
-	public override IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } = [new ElasticsearchResponseBuilder()];
+	public override IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } =
+	[
+		// Generic builders for types with settable Body, decorated with Elasticsearch error extraction
+		new ElasticsearchErrorDecorator<ElasticsearchStringResponse>(new StringResponseBuilder<ElasticsearchStringResponse>()),
+		new ElasticsearchErrorDecorator<ElasticsearchBytesResponse>(new BytesResponseBuilder<ElasticsearchBytesResponse>()),
+		new ElasticsearchErrorDecorator<ElasticsearchDynamicResponse>(new DynamicResponseBuilder<ElasticsearchDynamicResponse>()),
+		new ElasticsearchErrorDecorator<ElasticsearchJsonResponse>(new JsonResponseBuilder<ElasticsearchJsonResponse>()),
+		// Trivial builders for constructor-injected / singleton types
+		new ElasticsearchErrorDecorator<ElasticsearchStreamResponse>(new ElasticsearchStreamResponseBuilder()),
+		new ElasticsearchErrorDecorator<ElasticsearchVoidResponse>(new ElasticsearchVoidResponseBuilder()),
+#if NET10_0_OR_GREATER
+		new ElasticsearchErrorDecorator<ElasticsearchPipeResponse>(new ElasticsearchPipeResponseBuilder()),
+#endif
+		// Catch-all for ElasticsearchResponse subclasses (JSON deserialization)
+		new ElasticsearchResponseBuilder()
+	];
 }

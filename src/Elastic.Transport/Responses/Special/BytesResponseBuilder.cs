@@ -8,28 +8,22 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport;
 
-internal class BytesResponseBuilder : TypedResponseBuilder<BytesResponse>
+internal class BytesResponseBuilder<T> : TypedResponseBuilder<T> where T : BytesResponseBase, new()
 {
-	protected override BytesResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
+	protected override T Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
 		BuildCoreAsync(false, apiCallDetails, boundConfiguration, responseStream).EnsureCompleted();
 
-	protected override Task<BytesResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
+	protected override Task<T> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
 		BuildCoreAsync(true, apiCallDetails, boundConfiguration, responseStream, cancellationToken).AsTask();
 
-	private static async ValueTask<BytesResponse> BuildCoreAsync(bool isAsync, ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, CancellationToken cancellationToken = default)
+	private static async ValueTask<T> BuildCoreAsync(bool isAsync, ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, CancellationToken cancellationToken = default)
 	{
-		BytesResponse response;
-
 		if (apiCallDetails.ResponseBodyInBytes is not null)
-		{
-			response = new BytesResponse(apiCallDetails.ResponseBodyInBytes);
-			return response;
-		}
+			return new T { Body = apiCallDetails.ResponseBodyInBytes };
 
 		var tempStream = boundConfiguration.MemoryStreamFactory.Create();
 		await responseStream.CopyToAsync(tempStream, BufferedResponseHelpers.BufferSize, cancellationToken).ConfigureAwait(false);
 		apiCallDetails.ResponseBodyInBytes = BufferedResponseHelpers.SwapStreams(ref responseStream, ref tempStream);
-		response = new BytesResponse(apiCallDetails.ResponseBodyInBytes);
 
 #if NET6_0_OR_GREATER
 		await responseStream.DisposeAsync().ConfigureAwait(false);
@@ -37,6 +31,8 @@ internal class BytesResponseBuilder : TypedResponseBuilder<BytesResponse>
 		responseStream.Dispose();
 #endif
 
-		return response;
+		return new T { Body = apiCallDetails.ResponseBodyInBytes };
 	}
 }
+
+internal class BytesResponseBuilder : BytesResponseBuilder<BytesResponse>;
