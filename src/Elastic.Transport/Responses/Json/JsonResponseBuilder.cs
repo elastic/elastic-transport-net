@@ -15,15 +15,15 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport;
 
-internal class JsonResponseBuilder : TypedResponseBuilder<JsonResponse>
+internal class JsonResponseBuilder<T> : TypedResponseBuilder<T> where T : JsonResponseBase, new()
 {
-	protected override JsonResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
+	protected override T Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
 		BuildCoreAsync(false, apiCallDetails, boundConfiguration, responseStream, contentType, contentLength).EnsureCompleted();
 
-	protected override Task<JsonResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
+	protected override Task<T> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
 		BuildCoreAsync(true, apiCallDetails, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).AsTask();
 
-	private static async ValueTask<JsonResponse> BuildCoreAsync(bool isAsync, ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream,
+	private static async ValueTask<T> BuildCoreAsync(bool isAsync, ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream,
 		string contentType, long contentLength, CancellationToken cancellationToken = default)
 	{
 		// If not JSON, store the result under "body"
@@ -34,7 +34,7 @@ internal class JsonResponseBuilder : TypedResponseBuilder<JsonResponse>
 			if (apiCallDetails.ResponseBodyInBytes is not null)
 			{
 				stringValue = Encoding.UTF8.GetString(apiCallDetails.ResponseBodyInBytes);
-				return new JsonResponse(new JsonObject { ["body"] = stringValue });
+				return new T { Body = new JsonObject { ["body"] = stringValue } };
 			}
 
 #if NET8_0_OR_GREATER
@@ -44,7 +44,7 @@ internal class JsonResponseBuilder : TypedResponseBuilder<JsonResponse>
 				responseStream.ReadExactly(buffer, 0, (int)contentLength);
 				stringValue = Encoding.UTF8.GetString(buffer.AsSpan(0, (int)contentLength));
 				ArrayPool<byte>.Shared.Return(buffer);
-				return new JsonResponse(new JsonObject { ["body"] = stringValue });
+				return new T { Body = new JsonObject { ["body"] = stringValue } };
 			}
 #endif
 
@@ -64,7 +64,7 @@ internal class JsonResponseBuilder : TypedResponseBuilder<JsonResponse>
 				stringValue = sr.ReadToEnd();
 			}
 
-			return new JsonResponse(new JsonObject { ["body"] = stringValue });
+			return new T { Body = new JsonObject { ["body"] = stringValue } };
 		}
 
 		// JSON content: parse into JsonNode
@@ -78,6 +78,11 @@ internal class JsonResponseBuilder : TypedResponseBuilder<JsonResponse>
 			node = JsonNode.Parse(responseStream);
 		}
 
-		return node is not null ? new JsonResponse(node) : new JsonResponse();
+		var response = new T();
+		if (node is not null)
+			response.Body = node;
+		return response;
 	}
 }
+
+internal class JsonResponseBuilder : JsonResponseBuilder<JsonResponse>;

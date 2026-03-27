@@ -12,96 +12,30 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <summary>
 /// Base response for Elasticsearch responses.
 /// </summary>
-public abstract class ElasticsearchResponse : TransportResponse
+public abstract class ElasticsearchResponse : TransportResponse, IElasticsearchResponse
 {
-	/// <summary>
-	/// A collection of warnings returned from Elasticsearch.
-	/// <para>Used to provide server warnings, for example, when the request uses an API feature that is marked as deprecated.</para>
-	/// </summary>
+	/// <inheritdoc />
 	[JsonIgnore]
-	public IEnumerable<string> ElasticsearchWarnings
-	{
-		get
-		{
-			if (ApiCallDetails.ParsedHeaders is not null && ApiCallDetails.ParsedHeaders.TryGetValue("warning", out var warnings))
-			{
-				foreach (var warning in warnings)
-					yield return warning;
-			}
-		}
-	}
+	public IEnumerable<string> ElasticsearchWarnings =>
+		ElasticsearchResponseHelper.GetElasticsearchWarnings(ApiCallDetails);
 
-	/// <summary>
-	///
-	/// </summary>
+	/// <inheritdoc />
 	[JsonIgnore]
-	public string DebugInformation
-	{
-		get
-		{
-			var sb = new StringBuilder();
-			_ = sb.Append($"{(!IsValidResponse ? "Inv" : "V")}alid Elasticsearch response built from a ");
-			_ = sb.AppendLine(ApiCallDetails?.ToString().ToCamelCase() ??
-						"null ApiCall which is highly exceptional, please open a bug if you see this");
-			if (!IsValidResponse)
-				DebugIsValid(sb);
+	public string DebugInformation =>
+		ElasticsearchResponseHelper.GetDebugInformation(IsValidResponse, ApiCallDetails, ElasticsearchServerError);
 
-			if (ApiCallDetails?.ParsedHeaders is not null && ApiCallDetails.ParsedHeaders.TryGetValue("warning", out var warnings))
-			{
-				_ = sb.AppendLine($"# Server indicated warnings:");
-
-				foreach (var warning in warnings)
-					_ = sb.AppendLine($"- {warning}");
-			}
-
-			if (ApiCallDetails != null)
-				_ = Diagnostics.ResponseStatics.DebugInformationBuilder(ApiCallDetails, sb);
-
-			return sb.ToString();
-		}
-	}
-
-	/// <summary>
-	/// Shortcut to test if the response is considered successful.
-	/// </summary>
-	/// <returns>A <see cref="bool"/> indicating success or failure.</returns>
+	/// <inheritdoc />
 	[JsonIgnore]
-	public virtual bool IsValidResponse
-	{
-		get
-		{
-			var statusCode = ApiCallDetails?.HttpStatusCode;
+	public virtual bool IsValidResponse =>
+		ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails, ElasticsearchServerError);
 
-			if (statusCode == 404)
-				return false;
-
-			return (ApiCallDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false) && (!ElasticsearchServerError?.HasError() ?? true);
-		}
-	}
-
-	/// <summary>
-	///
-	/// </summary>
+	/// <inheritdoc />
 	[JsonIgnore]
 	public ElasticsearchServerError? ElasticsearchServerError { get; internal set; }
 
-	/// <summary>
-	///
-	/// </summary>
-	/// <param name="exception"></param>
-	/// <returns></returns>
-	// TODO: We need nullable annotations here ideally as exception is not null when the return value is true.
-	public bool TryGetOriginalException(out Exception? exception)
-	{
-		if (ApiCallDetails?.OriginalException is not null)
-		{
-			exception = ApiCallDetails.OriginalException;
-			return true;
-		}
-
-		exception = null;
-		return false;
-	}
+	/// <inheritdoc />
+	public bool TryGetOriginalException(out Exception? exception) =>
+		ElasticsearchResponseHelper.TryGetOriginalException(ApiCallDetails, out exception);
 
 	/// <summary>Subclasses can override this to provide more information on why a call is not valid.</summary>
 	protected virtual void DebugIsValid(StringBuilder sb) { }

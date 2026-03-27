@@ -7,11 +7,11 @@ namespace Elastic.Transport;
 /// <summary>
 /// A response that exposes the response <see cref="TransportResponse{T}.Body"/> as <see cref="string"/>.
 /// </summary>
-public sealed class StringResponse : TransportResponse<string>
+public sealed class StringResponse : StringResponseBase
 {
 	/// <inheritdoc cref="StringResponse"/>
-	public StringResponse() => Body = string.Empty;
+	public StringResponse() { }
 
 	/// <inheritdoc cref="StringResponse"/>
-	public StringResponse(string body) => Body = body;
+	public StringResponse(string body) : base(body) { }
 }

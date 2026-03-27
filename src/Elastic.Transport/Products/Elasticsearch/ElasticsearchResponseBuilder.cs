@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -13,6 +12,15 @@ using Elastic.Transport.Diagnostics;
 
 namespace Elastic.Transport.Products.Elasticsearch;
 
+/// <summary>
+/// Catch-all builder for <see cref="ElasticsearchResponse"/> subclasses.
+/// Handles error extraction and JSON deserialization for strongly-typed response types.
+/// <para>
+/// The individual <see cref="IElasticsearchResponse"/> native types (e.g. <see cref="ElasticsearchStringResponse"/>)
+/// are handled by their own builders registered in <see cref="ElasticsearchProductRegistration.ResponseBuilders"/>
+/// via <see cref="ElasticsearchErrorDecorator{T}"/>.
+/// </para>
+/// </summary>
 internal sealed class ElasticsearchResponseBuilder : IResponseBuilder
 {
 	bool IResponseBuilder.CanBuild<TResponse>() => true;
@@ -20,15 +28,16 @@ internal sealed class ElasticsearchResponseBuilder : IResponseBuilder
 	public TResponse? Build<TResponse>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration,
 		Stream responseStream, string contentType, long contentLength)
 		where TResponse : TransportResponse, new() =>
-			SetBodyCoreAsync<TResponse>(false, apiCallDetails, boundConfiguration, responseStream).EnsureCompleted();
+			SetBodyCoreAsync<TResponse>(false, apiCallDetails, boundConfiguration, responseStream, contentType, contentLength).EnsureCompleted();
 
 	public Task<TResponse?> BuildAsync<TResponse>(
 		ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength,
 		CancellationToken cancellationToken) where TResponse : TransportResponse, new() =>
-			SetBodyCoreAsync<TResponse>(true, apiCallDetails, boundConfiguration, responseStream, cancellationToken).AsTask();
+			SetBodyCoreAsync<TResponse>(true, apiCallDetails, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).AsTask();
 
 	private static async ValueTask<TResponse?> SetBodyCoreAsync<TResponse>(bool isAsync,
 		ApiCallDetails details, BoundConfiguration boundConfiguration, Stream responseStream,
+		string contentType, long contentLength,
 		CancellationToken cancellationToken = default)
 		where TResponse : TransportResponse, new()
 	{
@@ -42,10 +51,11 @@ internal sealed class ElasticsearchResponseBuilder : IResponseBuilder
 
 		try
 		{
+			ElasticsearchServerError? error = null;
+			var ownsStream = false;
+
 			if (details.HttpStatusCode > 399)
 			{
-				var ownsStream = false;
-
 				if (!responseStream.CanSeek)
 				{
 					var inMemoryStream = boundConfiguration.MemoryStreamFactory.Create();
@@ -54,20 +64,21 @@ internal sealed class ElasticsearchResponseBuilder : IResponseBuilder
 					ownsStream = true;
 				}
 
-				if (TryGetError(boundConfiguration, responseStream, out var error) && error?.HasError() == true)
-				{
-					response = new TResponse();
-
-					if (response is ElasticsearchResponse elasticResponse)
-						elasticResponse.ElasticsearchServerError = error;
-
-					if (ownsStream)
-						responseStream.Dispose();
-
-					return response;
-				}
-
+				ElasticsearchErrorHelper.TryGetError(boundConfiguration, responseStream, out error);
 				responseStream.Position = 0;
+			}
+
+			if (error?.HasError() == true)
+			{
+				response = new TResponse();
+
+				if (response is ElasticsearchResponse elasticResponse)
+					elasticResponse.ElasticsearchServerError = error;
+
+				if (ownsStream)
+					responseStream.Dispose();
+
+				return response;
 			}
 
 			var beforeTicks = Stopwatch.GetTimestamp();
@@ -81,30 +92,14 @@ internal sealed class ElasticsearchResponseBuilder : IResponseBuilder
 			if (deserializeResponseMs > OpenTelemetry.MinimumMillisecondsToEmitTimingSpanAttribute && OpenTelemetry.CurrentSpanIsElasticTransportOwnedHasListenersAndAllDataRequested)
 				_ = (Activity.Current?.SetTag(OpenTelemetryAttributes.ElasticTransportDeserializeResponseMs, deserializeResponseMs));
 
+			if (ownsStream)
+				responseStream.Dispose();
+
 			return response;
 		}
 		catch (JsonException ex) when (ex.Message.Contains("The input does not contain any JSON tokens"))
 		{
 			return response;
 		}
-	}
-
-	private static bool TryGetError(BoundConfiguration boundConfiguration, Stream responseStream, out ElasticsearchServerError? error)
-	{
-		Debug.Assert(responseStream.CanSeek);
-
-		error = null;
-
-		try
-		{
-			error = boundConfiguration.ConnectionSettings.RequestResponseSerializer.Deserialize<ElasticsearchServerError>(responseStream);
-			return error is not null;
-		}
-		catch (JsonException)
-		{
-			// Empty catch as we'll try the original response type if the error serialization fails
-		}
-
-		return false;
 	}
 }
