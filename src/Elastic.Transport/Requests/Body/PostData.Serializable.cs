@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -20,11 +19,9 @@ public abstract partial class PostData
 	/// </summary>
 	/// <remarks>
 	/// In AOT/trimmed applications, <typeparamref name="T"/> must be registered in the configured
-	/// <c>JsonSerializerContext</c>; otherwise serialization will silently produce empty JSON.
+	/// <c>JsonSerializerContext</c>; otherwise serialization will throw at runtime.
 	/// Prefer the <see cref="Serializable{T}(T, JsonTypeInfo{T})"/> overload for guaranteed AOT safety.
 	/// </remarks>
-	[RequiresUnreferencedCode("JSON serialization may require types that cannot be statically analyzed. Use the overload accepting JsonTypeInfo<T> for AOT-safe serialization.")]
-	[RequiresDynamicCode("JSON serialization may require runtime code generation. Use the overload accepting JsonTypeInfo<T> for AOT-safe serialization.")]
 	public static PostData Serializable<T>(T data) => new SerializableData<T>(data);
 
 	/// <summary>
