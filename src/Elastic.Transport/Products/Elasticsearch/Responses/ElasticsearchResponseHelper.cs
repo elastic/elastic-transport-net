@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Elastic.Transport.Diagnostics;
 
@@ -16,28 +15,39 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// </summary>
 internal static class ElasticsearchResponseHelper
 {
-	public static bool IsValidResponse(ApiCallDetails? apiCallDetails, ElasticsearchServerError? serverError)
+	public static bool IsValidResponse(ApiCallDetails? apiCallDetails)
 	{
-		var statusCode = apiCallDetails?.HttpStatusCode;
-
-		if (statusCode == 404)
+		if (apiCallDetails is null || !apiCallDetails.HasExpectedContentType)
 			return false;
 
-		return (apiCallDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false)
-			&& (!serverError?.HasError() ?? true);
+		// Elasticsearch returns 404 for valid responses in some cases (e.g. `GET /my-index/_doc/missing-doc-id`) but also for actual error cases like
+		// missing endpoints, missing indices (e.g. `GET /missing-index/_mapping`), etc.
+		// We consider all status codes >= 200 and < 300 valid by default. For 404, we assume "invalid" and try to parse the Elasticsearch
+		// error response from the body.
+		// A 404 status code without an error body indicates a valid response.
+
+		var serverError = GetElasticsearchError(apiCallDetails);
+		if (apiCallDetails.HttpStatusCode is 404)
+			return !serverError?.HasError() ?? true;
+
+		return apiCallDetails.HasSuccessfulStatusCode;
 	}
+
+	public static ElasticsearchServerError? GetElasticsearchError(ApiCallDetails? apiCallDetails) =>
+		apiCallDetails?.ProductError as ElasticsearchServerError;
 
 	public static IEnumerable<string> GetElasticsearchWarnings(ApiCallDetails? apiCallDetails)
 	{
-		if (apiCallDetails?.ParsedHeaders is not null && apiCallDetails.ParsedHeaders.TryGetValue("warning", out var warnings))
-		{
-			foreach (var warning in warnings)
-				yield return warning;
-		}
+		if (apiCallDetails?.ParsedHeaders is null || !apiCallDetails.ParsedHeaders.TryGetValue("warning", out var warnings))
+			yield break;
+
+		foreach (var warning in warnings)
+			yield return warning;
 	}
 
-	public static string GetDebugInformation(bool isValidResponse, ApiCallDetails? apiCallDetails, ElasticsearchServerError? serverError)
+	public static string GetDebugInformation(bool isValidResponse, ApiCallDetails? apiCallDetails)
 	{
+		var serverError = GetElasticsearchError(apiCallDetails);
 		var sb = new StringBuilder();
 		_ = sb.Append($"{(!isValidResponse ? "Inv" : "V")}alid Elasticsearch response built from a ");
 		_ = sb.AppendLine(apiCallDetails?.ToString().ToCamelCase() ??
@@ -47,7 +57,7 @@ internal static class ElasticsearchResponseHelper
 
 		if (apiCallDetails?.ParsedHeaders is not null && apiCallDetails.ParsedHeaders.TryGetValue("warning", out var warnings))
 		{
-			_ = sb.AppendLine($"# Server indicated warnings:");
+			_ = sb.AppendLine("# Server indicated warnings:");
 
 			foreach (var warning in warnings)
 				_ = sb.AppendLine($"- {warning}");

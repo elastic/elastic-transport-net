@@ -35,7 +35,7 @@ public abstract class StreamResponseBase : TransportResponse, IDisposable
 	protected bool Disposed { get; private set; }
 
 	/// <inheritdoc cref="StreamResponseBase"/>
-	public StreamResponseBase(Stream responseStream, string? contentType = null)
+	protected StreamResponseBase(Stream responseStream, string? contentType = null)
 	{
 		responseStream.ThrowIfNull(nameof(responseStream));
 		Stream = responseStream;

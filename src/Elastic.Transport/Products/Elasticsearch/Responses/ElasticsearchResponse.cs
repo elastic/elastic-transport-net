@@ -12,7 +12,7 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <summary>
 /// Base response for Elasticsearch responses.
 /// </summary>
-public abstract class ElasticsearchResponse : TransportResponse, IElasticsearchResponse, IElasticsearchResponseSetter
+public abstract class ElasticsearchResponse : TransportResponse, IElasticsearchResponse
 {
 	/// <inheritdoc />
 	[JsonIgnore]
@@ -22,19 +22,17 @@ public abstract class ElasticsearchResponse : TransportResponse, IElasticsearchR
 	/// <inheritdoc />
 	[JsonIgnore]
 	public string DebugInformation =>
-		ElasticsearchResponseHelper.GetDebugInformation(IsValidResponse, ApiCallDetails, ElasticsearchServerError);
+		ElasticsearchResponseHelper.GetDebugInformation(IsValidResponse, ApiCallDetails);
 
 	/// <inheritdoc />
 	[JsonIgnore]
 	public virtual bool IsValidResponse =>
-		ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails, ElasticsearchServerError);
+		ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails);
 
 	/// <inheritdoc />
 	[JsonIgnore]
-	public ElasticsearchServerError? ElasticsearchServerError { get; internal set; }
-
-	/// <inheritdoc />
-	ElasticsearchServerError? IElasticsearchResponseSetter.ElasticsearchServerError { set => ElasticsearchServerError = value; }
+	public ElasticsearchServerError? ElasticsearchServerError =>
+		ElasticsearchResponseHelper.GetElasticsearchError(ApiCallDetails);
 
 	/// <inheritdoc />
 	public bool TryGetOriginalException(out Exception? exception) =>

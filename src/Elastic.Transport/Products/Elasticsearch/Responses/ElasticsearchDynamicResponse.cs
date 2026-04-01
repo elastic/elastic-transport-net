@@ -12,7 +12,7 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <para>Provides <see cref="IsValidResponse"/>, <see cref="ElasticsearchWarnings"/>,
 /// and <see cref="ElasticsearchServerError"/> in addition to dynamic JSON traversal.</para>
 /// </summary>
-public sealed class ElasticsearchDynamicResponse : DynamicResponseBase, IElasticsearchResponse, IElasticsearchResponseSetter
+public sealed class ElasticsearchDynamicResponse : DynamicResponseBase, IElasticsearchResponse
 {
 	/// <inheritdoc cref="ElasticsearchDynamicResponse"/>
 	public ElasticsearchDynamicResponse() { }
@@ -21,17 +21,16 @@ public sealed class ElasticsearchDynamicResponse : DynamicResponseBase, IElastic
 	public ElasticsearchDynamicResponse(DynamicDictionary dictionary) : base(dictionary) { }
 
 	/// <inheritdoc />
-	public ElasticsearchServerError? ElasticsearchServerError { get; internal set; }
-	ElasticsearchServerError? IElasticsearchResponseSetter.ElasticsearchServerError { set => ElasticsearchServerError = value; }
+	public ElasticsearchServerError? ElasticsearchServerError => ElasticsearchResponseHelper.GetElasticsearchError(ApiCallDetails);
 
 	/// <inheritdoc />
-	public bool IsValidResponse => ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails, ElasticsearchServerError);
+	public bool IsValidResponse => ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails);
 
 	/// <inheritdoc />
 	public IEnumerable<string> ElasticsearchWarnings => ElasticsearchResponseHelper.GetElasticsearchWarnings(ApiCallDetails);
 
 	/// <inheritdoc />
-	public string DebugInformation => ElasticsearchResponseHelper.GetDebugInformation(IsValidResponse, ApiCallDetails, ElasticsearchServerError);
+	public string DebugInformation => ElasticsearchResponseHelper.GetDebugInformation(IsValidResponse, ApiCallDetails);
 
 	/// <inheritdoc />
 	public bool TryGetOriginalException(out Exception? exception) =>

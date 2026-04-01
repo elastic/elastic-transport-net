@@ -16,20 +16,10 @@ namespace Elastic.Transport;
 public abstract class DynamicResponseBase : TransportResponse<DynamicDictionary>
 {
 	/// <inheritdoc cref="DynamicResponseBase"/>
-	protected DynamicResponseBase()
-	{
-		Body = DynamicDictionary.Empty;
-		Dictionary = DynamicDictionary.Empty;
-	}
+	protected DynamicResponseBase() => Body = DynamicDictionary.Empty;
 
 	/// <inheritdoc cref="DynamicResponseBase"/>
-	protected DynamicResponseBase(DynamicDictionary dictionary)
-	{
-		Body = dictionary;
-		Dictionary = dictionary;
-	}
-
-	private DynamicDictionary Dictionary { get; }
+	protected DynamicResponseBase(DynamicDictionary dictionary) => Body = dictionary;
 
 	/// <summary>
 	/// Traverses data using path notation.
@@ -39,5 +29,5 @@ public abstract class DynamicResponseBase : TransportResponse<DynamicDictionary>
 	/// <param name="path">path into the stored object, keys are separated with a dot and the last key is returned as T</param>
 	/// <typeparam name="T"></typeparam>
 	/// <returns>T or default</returns>
-	public T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string path) => Dictionary.Get<T>(path);
+	public T Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(string path) => Body.Get<T>(path);
 }
