@@ -22,19 +22,6 @@ internal sealed class ElasticsearchStreamResponseBuilder : TypedResponseBuilder<
 		Task.FromResult(new ElasticsearchStreamResponse(responseStream, contentType));
 }
 
-/// <summary>
-/// Builds <see cref="ElasticsearchVoidResponse"/> without reading the response body.
-/// </summary>
-internal sealed class ElasticsearchVoidResponseBuilder : TypedResponseBuilder<ElasticsearchVoidResponse>
-{
-	protected override ElasticsearchVoidResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration,
-		Stream responseStream, string contentType, long contentLength) => new();
-
-	protected override Task<ElasticsearchVoidResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration,
-		Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
-		Task.FromResult(new ElasticsearchVoidResponse());
-}
-
 #if NET10_0_OR_GREATER
 /// <summary>
 /// Builds <see cref="ElasticsearchPipeResponse"/> from a raw response stream.

@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
-using static Elastic.Transport.VoidResponseBase;
+using static Elastic.Transport.VoidResponse;
 
 namespace Elastic.Transport.Tests.Responses.Special;
 

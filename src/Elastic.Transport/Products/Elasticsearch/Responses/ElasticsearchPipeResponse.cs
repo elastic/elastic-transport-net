@@ -18,7 +18,7 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <para>Provides <see cref="IsValidResponse"/>, <see cref="ElasticsearchWarnings"/>,
 /// and <see cref="ElasticsearchServerError"/> in addition to the pipe reader body.</para>
 /// </summary>
-public sealed class ElasticsearchPipeResponse : PipeResponseBase, IElasticsearchResponse
+public sealed class ElasticsearchPipeResponse : PipeResponseBase, IElasticsearchResponse, IElasticsearchResponseSetter
 {
 	/// <inheritdoc cref="ElasticsearchPipeResponse"/>
 	public ElasticsearchPipeResponse() : this(Stream.Null, string.Empty) { }
@@ -33,6 +33,7 @@ public sealed class ElasticsearchPipeResponse : PipeResponseBase, IElasticsearch
 
 	/// <inheritdoc />
 	public ElasticsearchServerError? ElasticsearchServerError { get; internal set; }
+	ElasticsearchServerError? IElasticsearchResponseSetter.ElasticsearchServerError { set => ElasticsearchServerError = value; }
 
 	/// <inheritdoc />
 	public bool IsValidResponse => ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails, ElasticsearchServerError);

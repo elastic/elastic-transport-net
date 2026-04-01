@@ -12,7 +12,7 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <para>Provides <see cref="IsValidResponse"/>, <see cref="ElasticsearchWarnings"/>,
 /// and <see cref="ElasticsearchServerError"/> in addition to dynamic JSON traversal.</para>
 /// </summary>
-public sealed class ElasticsearchDynamicResponse : DynamicResponseBase, IElasticsearchResponse
+public sealed class ElasticsearchDynamicResponse : DynamicResponseBase, IElasticsearchResponse, IElasticsearchResponseSetter
 {
 	/// <inheritdoc cref="ElasticsearchDynamicResponse"/>
 	public ElasticsearchDynamicResponse() { }
@@ -22,6 +22,7 @@ public sealed class ElasticsearchDynamicResponse : DynamicResponseBase, IElastic
 
 	/// <inheritdoc />
 	public ElasticsearchServerError? ElasticsearchServerError { get; internal set; }
+	ElasticsearchServerError? IElasticsearchResponseSetter.ElasticsearchServerError { set => ElasticsearchServerError = value; }
 
 	/// <inheritdoc />
 	public bool IsValidResponse => ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails, ElasticsearchServerError);

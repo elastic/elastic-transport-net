@@ -62,8 +62,8 @@ internal sealed class ElasticsearchErrorDecorator<T> : IResponseBuilder
 
 		response ??= new T();
 
-		if (error is not null)
-			ElasticsearchResponseHelper.SetServerError(response, error);
+		if (error is not null && response is IElasticsearchResponseSetter setter)
+			setter.ElasticsearchServerError = error;
 
 		if (ownsStream && !response.LeaveOpen)
 			responseStream.Dispose();

@@ -241,12 +241,10 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	[
 		// Generic builders for types with settable Body, decorated with Elasticsearch error extraction
 		new ElasticsearchErrorDecorator<ElasticsearchStringResponse>(new StringResponseBuilder<ElasticsearchStringResponse>()),
-		new ElasticsearchErrorDecorator<ElasticsearchBytesResponse>(new BytesResponseBuilder<ElasticsearchBytesResponse>()),
 		new ElasticsearchErrorDecorator<ElasticsearchDynamicResponse>(new DynamicResponseBuilder<ElasticsearchDynamicResponse>()),
 		new ElasticsearchErrorDecorator<ElasticsearchJsonResponse>(new JsonResponseBuilder<ElasticsearchJsonResponse>()),
-		// Trivial builders for constructor-injected / singleton types
+		// Trivial builders for constructor-injected types
 		new ElasticsearchErrorDecorator<ElasticsearchStreamResponse>(new ElasticsearchStreamResponseBuilder()),
-		new ElasticsearchErrorDecorator<ElasticsearchVoidResponse>(new ElasticsearchVoidResponseBuilder()),
 #if NET10_0_OR_GREATER
 		new ElasticsearchErrorDecorator<ElasticsearchPipeResponse>(new ElasticsearchPipeResponseBuilder()),
 #endif

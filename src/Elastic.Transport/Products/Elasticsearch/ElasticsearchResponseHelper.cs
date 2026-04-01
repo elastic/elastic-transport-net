@@ -59,28 +59,6 @@ internal static class ElasticsearchResponseHelper
 		return sb.ToString();
 	}
 
-	/// <summary>
-	/// Sets <see cref="ElasticsearchServerError"/> on a response via pattern matching on the concrete type.
-	/// Needed because <see cref="IElasticsearchResponse.ElasticsearchServerError"/> only exposes a getter;
-	/// the internal setter is on each concrete type.
-	/// </summary>
-	public static void SetServerError(TransportResponse response, ElasticsearchServerError error)
-	{
-		switch (response)
-		{
-			case ElasticsearchResponse r: r.ElasticsearchServerError = error; break;
-			case ElasticsearchStringResponse r: r.ElasticsearchServerError = error; break;
-			case ElasticsearchBytesResponse r: r.ElasticsearchServerError = error; break;
-			case ElasticsearchStreamResponse r: r.ElasticsearchServerError = error; break;
-			case ElasticsearchVoidResponse r: r.ElasticsearchServerError = error; break;
-			case ElasticsearchDynamicResponse r: r.ElasticsearchServerError = error; break;
-			case ElasticsearchJsonResponse r: r.ElasticsearchServerError = error; break;
-#if NET10_0_OR_GREATER
-			case ElasticsearchPipeResponse r: r.ElasticsearchServerError = error; break;
-#endif
-		}
-	}
-
 	public static bool TryGetOriginalException(ApiCallDetails? apiCallDetails, out Exception? exception)
 	{
 		if (apiCallDetails?.OriginalException is not null)

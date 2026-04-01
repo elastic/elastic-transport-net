@@ -12,7 +12,7 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <para>Provides <see cref="IsValidResponse"/>, <see cref="ElasticsearchWarnings"/>,
 /// and <see cref="ElasticsearchServerError"/> in addition to the string body.</para>
 /// </summary>
-public sealed class ElasticsearchStringResponse : StringResponseBase, IElasticsearchResponse
+public sealed class ElasticsearchStringResponse : StringResponseBase, IElasticsearchResponse, IElasticsearchResponseSetter
 {
 	/// <inheritdoc cref="ElasticsearchStringResponse"/>
 	public ElasticsearchStringResponse() { }
@@ -22,6 +22,7 @@ public sealed class ElasticsearchStringResponse : StringResponseBase, IElasticse
 
 	/// <inheritdoc />
 	public ElasticsearchServerError? ElasticsearchServerError { get; internal set; }
+	ElasticsearchServerError? IElasticsearchResponseSetter.ElasticsearchServerError { set => ElasticsearchServerError = value; }
 
 	/// <inheritdoc />
 	public bool IsValidResponse => ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails, ElasticsearchServerError);

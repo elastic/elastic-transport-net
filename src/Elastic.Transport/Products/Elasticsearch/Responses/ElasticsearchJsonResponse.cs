@@ -13,7 +13,7 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <para>Provides <see cref="IsValidResponse"/>, <see cref="ElasticsearchWarnings"/>,
 /// and <see cref="ElasticsearchServerError"/> in addition to JSON DOM access.</para>
 /// </summary>
-public sealed class ElasticsearchJsonResponse : JsonResponseBase, IElasticsearchResponse
+public sealed class ElasticsearchJsonResponse : JsonResponseBase, IElasticsearchResponse, IElasticsearchResponseSetter
 {
 	/// <inheritdoc cref="ElasticsearchJsonResponse"/>
 	public ElasticsearchJsonResponse() { }
@@ -23,6 +23,7 @@ public sealed class ElasticsearchJsonResponse : JsonResponseBase, IElasticsearch
 
 	/// <inheritdoc />
 	public ElasticsearchServerError? ElasticsearchServerError { get; internal set; }
+	ElasticsearchServerError? IElasticsearchResponseSetter.ElasticsearchServerError { set => ElasticsearchServerError = value; }
 
 	/// <inheritdoc />
 	public bool IsValidResponse => ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails, ElasticsearchServerError);

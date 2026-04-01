@@ -12,7 +12,7 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// <summary>
 /// Base response for Elasticsearch responses.
 /// </summary>
-public abstract class ElasticsearchResponse : TransportResponse, IElasticsearchResponse
+public abstract class ElasticsearchResponse : TransportResponse, IElasticsearchResponse, IElasticsearchResponseSetter
 {
 	/// <inheritdoc />
 	[JsonIgnore]
@@ -32,6 +32,9 @@ public abstract class ElasticsearchResponse : TransportResponse, IElasticsearchR
 	/// <inheritdoc />
 	[JsonIgnore]
 	public ElasticsearchServerError? ElasticsearchServerError { get; internal set; }
+
+	/// <inheritdoc />
+	ElasticsearchServerError? IElasticsearchResponseSetter.ElasticsearchServerError { set => ElasticsearchServerError = value; }
 
 	/// <inheritdoc />
 	public bool TryGetOriginalException(out Exception? exception) =>
