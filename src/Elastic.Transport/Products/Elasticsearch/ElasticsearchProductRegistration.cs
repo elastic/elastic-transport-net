@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -24,8 +25,6 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	internal const string XFoundHandlingClusterHeader = "X-Found-Handling-Cluster";
 	internal const string XFoundHandlingInstanceHeader = "X-Found-Handling-Instance";
 
-	private readonly HeadersList _headers;
-	private readonly MetaHeaderProvider _metaHeaderProvider;
 	private readonly int? _clientMajorVersion;
 
 	private static string? _clusterName;
@@ -37,8 +36,8 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	/// </summary>
 	internal ElasticsearchProductRegistration()
 	{
-		_headers = new HeadersList("warning");
-		_metaHeaderProvider = null!;
+		ResponseHeadersToParse = new HeadersList("warning");
+		MetaHeaderProvider = null!;
 		ProductAssemblyVersion = null!;
 	}
 
@@ -52,7 +51,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 		var identifier = ServiceIdentifier;
 		if (!string.IsNullOrEmpty(identifier))
-			_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, identifier!);
+			MetaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, identifier!);
 
 		// Only set this if we have a version.
 		// If we don't have a version we won't apply the vendor-based REST API compatibility Accept header.
@@ -71,7 +70,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	public override string Name { get; } = "elasticsearch-net";
 
 	/// <inheritdoc cref="ProductRegistration.ServiceIdentifier"/>
-	public override string? ServiceIdentifier => "es";
+	public sealed override string ServiceIdentifier => "es";
 
 	/// <inheritdoc cref="ProductRegistration.SupportsPing"/>
 	public override bool SupportsPing { get; } = true;
@@ -80,10 +79,10 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	public override bool SupportsSniff { get; } = true;
 
 	/// <inheritdoc cref="ProductRegistration.ResponseHeadersToParse"/>
-	public override HeadersList ResponseHeadersToParse => _headers;
+	public override HeadersList ResponseHeadersToParse { get; }
 
 	/// <inheritdoc cref="ProductRegistration.MetaHeaderProvider"/>
-	public override MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
+	public override MetaHeaderProvider MetaHeaderProvider { get; }
 
 	/// <inheritdoc cref="ProductRegistration.DefaultContentType"/>
 	public override string? DefaultContentType => _clientMajorVersion.HasValue ? $"application/vnd.elasticsearch+json;compatible-with={_clientMajorVersion.Value}" : null;
@@ -103,11 +102,17 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	/// API calls. They are considered for ping and sniff requests.
 	/// </summary>
 	public override bool NodePredicate(Node node) =>
-		// skip master only nodes (holds no data and is master eligible)
+		// Skip master only nodes (holds no data and is master eligible)
 		!(node.HasFeature(ElasticsearchNodeFeatures.MasterEligible) &&
 		  !node.HasFeature(ElasticsearchNodeFeatures.HoldsData));
 
 	/// <inheritdoc cref="ProductRegistration.HttpStatusCodeClassifier"/>
+	/// <remarks>
+	/// We consider all status codes &gt;= 200 and &lt; 300 valid by default.
+	/// Elasticsearch might return 404 for valid responses in some cases (e.g. `GET /my-index/_doc/missing-doc-id`) but also for actual error cases like
+	/// missing endpoints, missing indices (e.g. `GET /missing-index/_mapping`), etc.
+	/// The 404 case is handled on a per-request basis (see <see cref="ElasticsearchResponseHelper.IsValidResponse"/> for details).
+	/// </remarks>
 	public override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
 		statusCode is >= 200 and < 300;
 
@@ -115,13 +120,14 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason)
 	{
 		reason = null;
-		if (response is StringResponse s && s.TryGetElasticsearchServerError(out var e))
-			reason = e?.Error?.ToString();
-		else if (response is BytesResponse b && b.TryGetElasticsearchServerError(out e))
-			reason = e?.Error?.ToString();
-		else if (response.TryGetElasticsearchServerError(out e))
-			reason = e?.Error?.ToString();
-		return e != null;
+
+		if (response.ApiCallDetails?.ProductError is ElasticsearchServerError error && error.HasError())
+		{
+			reason = error.Error?.ToString();
+			return true;
+		}
+
+		return false;
 	}
 
 	//TODO remove settings dependency
@@ -228,5 +234,40 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	};
 
 	/// <inheritdoc/>
-	public override IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } = [new ElasticsearchResponseBuilder()];
+	public override IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } =
+	[
+		new StringResponseBuilder<ElasticsearchStringResponse>(),
+		new DynamicResponseBuilder<ElasticsearchDynamicResponse>(),
+		new JsonResponseBuilder<ElasticsearchJsonResponse>(),
+		new ElasticsearchStreamResponseBuilder(),
+#if NET10_0_OR_GREATER
+		new ElasticsearchPipeResponseBuilder(),
+#endif
+		new ElasticsearchResponseBuilder()
+	];
+
+	/// <inheritdoc />
+	public override bool IsErrorContentType(string? contentType) =>
+		contentType is not null && (
+			contentType.StartsWith("application/json", StringComparison.OrdinalIgnoreCase) ||
+			contentType.StartsWith("application/vnd.elasticsearch+json", StringComparison.OrdinalIgnoreCase));
+
+	/// <inheritdoc />
+	public override ErrorResponse? TryExtractError(BoundConfiguration boundConfiguration, Stream responseStream)
+	{
+		try
+		{
+			var error = boundConfiguration.ConnectionSettings.RequestResponseSerializer
+				.Deserialize<ElasticsearchServerError>(responseStream);
+
+			if (error?.HasError() == true)
+				return error;
+		}
+		catch (System.Text.Json.JsonException)
+		{
+			// If the error deserialization fails, we'll let the builder try the original response type.
+		}
+
+		return null;
+	}
 }
