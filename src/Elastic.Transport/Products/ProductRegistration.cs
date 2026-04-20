@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -138,7 +139,27 @@ public abstract class ProductRegistration
 	public abstract Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails);
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public virtual IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } = [new DefaultResponseBuilder()];
+
+	/// <summary>
+	/// Determines whether the given response content-type indicates a product-specific error body
+	/// that can be deserialized by <see cref="TryExtractError"/>.
+	/// <para>This is checked before attempting error extraction to avoid parsing non-error content
+	/// (e.g., HTML from a reverse proxy, or binary responses from non-JSON endpoints).</para>
+	/// </summary>
+	/// <param name="contentType">The value of the Content-Type header from the response.</param>
+	/// <returns><c>true</c> if the content-type represents a parseable error response.</returns>
+	public virtual bool IsErrorContentType(string? contentType) => false;
+
+	/// <summary>
+	/// Attempts to extract a product-specific error from the response stream for error status codes.
+	/// <para>Called by the response factory when the HTTP status code indicates an error (&gt; 399).
+	/// The factory guarantees the stream is seekable and resets its position after this call.</para>
+	/// </summary>
+	/// <param name="boundConfiguration">The bound configuration for the request.</param>
+	/// <param name="responseStream">A seekable stream containing the response body.</param>
+	/// <returns>An <see cref="ErrorResponse"/> if one was successfully extracted; otherwise <c>null</c>.</returns>
+	public virtual ErrorResponse? TryExtractError(BoundConfiguration boundConfiguration, Stream responseStream) => null;
 }

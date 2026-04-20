@@ -83,6 +83,12 @@ public sealed class ApiCallDetails
 	public byte[]? ResponseBodyInBytes { get; internal set; }
 
 	/// <summary>
+	/// A product-specific error extracted from the response body, if any.
+	/// <para>Populated by the <see cref="Products.ProductRegistration"/> for error status codes.</para>
+	/// </summary>
+	public ErrorResponse? ProductError { get; internal set; }
+
+	/// <summary>
 	/// The value of the Content-Type header in the response.
 	/// </summary>
 	[Obsolete("This property has been retired and replaced by ResponseContentType. " +
@@ -112,10 +118,9 @@ public sealed class ApiCallDetails
 
 	internal bool SuccessOrKnownError =>
 		HasSuccessfulStatusCodeAndExpectedContentType
-			|| (HttpStatusCode >= 400
-				&& HttpStatusCode < 599
-				&& HttpStatusCode != 504 //Gateway timeout needs to be retried
-				&& HttpStatusCode != 503 //service unavailable needs to be retried
+			|| (HttpStatusCode is >= 400 and < 599
+				&& HttpStatusCode != 504 // Gateway timeout needs to be retried
+				&& HttpStatusCode != 503 // Service unavailable needs to be retried
 				&& HttpStatusCode != 502
 				&& HasExpectedContentType);
 

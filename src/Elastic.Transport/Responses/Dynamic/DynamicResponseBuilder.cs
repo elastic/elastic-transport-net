@@ -13,19 +13,17 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport;
 
-internal class DynamicResponseBuilder : TypedResponseBuilder<DynamicResponse>
+internal class DynamicResponseBuilder<T> : TypedResponseBuilder<T> where T : DynamicResponseBase, new()
 {
-	protected override DynamicResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
+	protected override T Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) =>
 		BuildCoreAsync(false, apiCallDetails, boundConfiguration, responseStream, contentType, contentLength).EnsureCompleted();
 
-	protected override Task<DynamicResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
+	protected override Task<T> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) =>
 		BuildCoreAsync(true, apiCallDetails, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).AsTask();
 
-	private static async ValueTask<DynamicResponse> BuildCoreAsync(bool isAsync, ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream,
+	private static async ValueTask<T> BuildCoreAsync(bool isAsync, ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream,
 		string contentType, long contentLength, CancellationToken cancellationToken = default)
 	{
-		DynamicResponse response;
-
 		//if not json store the result under "body"
 		if (contentType == null || !contentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.Ordinal))
 		{
@@ -41,7 +39,7 @@ internal class DynamicResponseBuilder : TypedResponseBuilder<DynamicResponse>
 					["body"] = new DynamicValue(stringValue)
 				};
 
-				return new DynamicResponse(dictionary);
+				return new T { Body = dictionary };
 			}
 
 #if NET8_0_OR_GREATER
@@ -57,7 +55,7 @@ internal class DynamicResponseBuilder : TypedResponseBuilder<DynamicResponse>
 					["body"] = new DynamicValue(stringValue)
 				};
 
-				return new DynamicResponse(dictionary);
+				return new T { Body = dictionary };
 			}
 #endif
 
@@ -82,14 +80,12 @@ internal class DynamicResponseBuilder : TypedResponseBuilder<DynamicResponse>
 				["body"] = new DynamicValue(stringValue)
 			};
 
-			response = new DynamicResponse(dictionary);
-		}
-		else
-		{
-			var body = LowLevelRequestResponseSerializer.Instance.Deserialize<DynamicDictionary>(responseStream);
-			response = new DynamicResponse(body);
+			return new T { Body = dictionary };
 		}
 
-		return response;
+		var body = LowLevelRequestResponseSerializer.Instance.Deserialize<DynamicDictionary>(responseStream);
+		return new T { Body = body };
 	}
 }
+
+internal class DynamicResponseBuilder : DynamicResponseBuilder<DynamicResponse>;

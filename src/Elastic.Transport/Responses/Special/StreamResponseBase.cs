@@ -25,15 +25,21 @@ public abstract class StreamResponseBase : TransportResponse, IDisposable
 	protected Stream Stream { get; }
 
 	/// <summary>
+	/// The MIME type of the response, if present.
+	/// </summary>
+	public string ContentType { get; }
+
+	/// <summary>
 	/// Indicates that the response has been disposed and it is not longer safe to access the stream.
 	/// </summary>
 	protected bool Disposed { get; private set; }
 
 	/// <inheritdoc cref="StreamResponseBase"/>
-	public StreamResponseBase(Stream responseStream)
+	protected StreamResponseBase(Stream responseStream, string? contentType = null)
 	{
 		responseStream.ThrowIfNull(nameof(responseStream));
 		Stream = responseStream;
+		ContentType = contentType ?? string.Empty;
 	}
 
 	/// <summary>

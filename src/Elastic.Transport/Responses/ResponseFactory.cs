@@ -29,7 +29,7 @@ public abstract class ResponseFactory
 		Exception? ex,
 		int? statusCode,
 		Dictionary<string, IEnumerable<string>>? headers,
-		Stream responseStream,
+		Stream? responseStream,
 		string? contentType,
 		long contentLength,
 		IReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats,
