@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -20,12 +22,24 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// for Elasticsearch so that <see cref="RequestPipeline"/> knows how to ping and sniff if we setup
 /// <see cref="ITransport{TConfiguration}"/> to talk to Elasticsearch
 /// </summary>
-public class ElasticsearchProductRegistration : ProductRegistration
+public partial class ElasticsearchProductRegistration : ProductRegistration
 {
 	internal const string XFoundHandlingClusterHeader = "X-Found-Handling-Cluster";
 	internal const string XFoundHandlingInstanceHeader = "X-Found-Handling-Instance";
 
+#if NET7_0_OR_GREATER
+	[GeneratedRegex(@"application/vnd\.elasticsearch\+(json|x-ndjson|vnd\.mapbox-vector-tile)", RegexOptions.IgnoreCase)]
+	private static partial Regex VendorMimeRegex();
+
+	private static readonly Regex _vendorMimeRegex = VendorMimeRegex();
+#else
+	private static readonly Regex _vendorMimeRegex = new(
+		@"application/vnd\.elasticsearch\+(json|x-ndjson|vnd\.mapbox-vector-tile)",
+		RegexOptions.Compiled | RegexOptions.IgnoreCase);
+#endif
+
 	private readonly int? _clientMajorVersion;
+	private readonly ConcurrentDictionary<string, string>? _contentTypeCache;
 
 	private static string? _clusterName;
 	private static readonly string[] _all = [XFoundHandlingClusterHeader, XFoundHandlingInstanceHeader];
@@ -56,7 +70,10 @@ public class ElasticsearchProductRegistration : ProductRegistration
 		// Only set this if we have a version.
 		// If we don't have a version we won't apply the vendor-based REST API compatibility Accept header.
 		if (clientVersionInfo.Major > 0)
+		{
 			_clientMajorVersion = clientVersionInfo.Major;
+			_contentTypeCache = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+		}
 
 		ProductAssemblyVersion = markerType.Assembly
 			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
@@ -85,7 +102,43 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	public override MetaHeaderProvider MetaHeaderProvider { get; }
 
 	/// <inheritdoc cref="ProductRegistration.DefaultContentType"/>
-	public override string? DefaultContentType => _clientMajorVersion.HasValue ? $"application/vnd.elasticsearch+json;compatible-with={_clientMajorVersion.Value}" : null;
+	/// <remarks>
+	/// Always returns the bare vendor MIME type. The <c>;compatible-with=N</c>
+	/// suffix is appended by <see cref="TransformContentType"/> when the value is
+	/// bound onto a request — but only when a client major version is known, so
+	/// the suffix is omitted for the parameterless registration.
+	/// </remarks>
+	public override string? DefaultContentType => "application/vnd.elasticsearch+json";
+
+	/// <inheritdoc cref="ProductRegistration.TransformContentType"/>
+	/// <remarks>
+	/// Appends <c>;compatible-with=N</c> to a supported vendor MIME type
+	/// (<c>application/vnd.elasticsearch+json</c>, <c>+x-ndjson</c>, or
+	/// <c>+vnd.mapbox-vector-tile</c>) when the parameter is not already present.
+	/// Plain MIME types like <c>application/json</c> are returned unchanged so the
+	/// caller stays in control of the value they explicitly provided.
+	/// </remarks>
+	public override string? TransformContentType(string? contentType)
+	{
+		if (string.IsNullOrEmpty(contentType) || !_clientMajorVersion.HasValue)
+			return contentType;
+
+		return _contentTypeCache!.GetOrAdd(contentType!, AppendCompatibleWithAnnotation);
+	}
+
+	private string AppendCompatibleWithAnnotation(string input)
+	{
+		// If a compatible-with parameter is already present anywhere in the
+		// value, treat it as user-controlled and leave it alone.
+		if (input.IndexOf("compatible-with=", StringComparison.OrdinalIgnoreCase) >= 0)
+			return input;
+
+		// If no supported vendor MIME type is present, nothing to do.
+		if (!_vendorMimeRegex.IsMatch(input))
+			return input;
+
+		return _vendorMimeRegex.Replace(input, $"$0;compatible-with={_clientMajorVersion!.Value}");
+	}
 
 	/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 	public const string SniffPath = "_nodes/http,settings";

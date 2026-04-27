@@ -30,6 +30,15 @@ public abstract class ProductRegistration
 	public abstract string? DefaultContentType { get; }
 
 	/// <summary>
+	/// Allows the product registration to rewrite the MIME type used in the
+	/// <c>Accept</c> and <c>Content-Type</c> request headers. The default
+	/// implementation returns the input unchanged. Products such as Elasticsearch
+	/// override this to append a REST API compatibility annotation
+	/// (<c>;compatible-with=N</c>) to supported vendor MIME types when missing.
+	/// </summary>
+	public virtual string? TransformContentType(string? contentType) => contentType;
+
+	/// <summary>
 	/// The name of the current product utilizing <see cref="ITransport{TConfiguration}"/>
 	/// <para>This name makes its way into the transport diagnostics sources and the default user agent string</para>
 	/// </summary>
