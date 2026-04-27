@@ -15,24 +15,6 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// </summary>
 internal static class ElasticsearchResponseHelper
 {
-	public static bool IsValidResponse(ApiCallDetails? apiCallDetails)
-	{
-		if (apiCallDetails is null || !apiCallDetails.HasExpectedContentType)
-			return false;
-
-		// Elasticsearch returns 404 for valid responses in some cases (e.g. `GET /my-index/_doc/missing-doc-id`) but also for actual error cases like
-		// missing endpoints, missing indices (e.g. `GET /missing-index/_mapping`), etc.
-		// We consider all status codes >= 200 and < 300 valid by default. For 404, we assume "invalid" and try to parse the Elasticsearch
-		// error response from the body.
-		// A 404 status code without an error body indicates a valid response.
-
-		var serverError = GetElasticsearchError(apiCallDetails);
-		if (apiCallDetails.HttpStatusCode is 404)
-			return !serverError?.HasError() ?? true;
-
-		return apiCallDetails.HasSuccessfulStatusCode;
-	}
-
 	public static ElasticsearchServerError? GetElasticsearchError(ApiCallDetails? apiCallDetails) =>
 		apiCallDetails?.ProductError as ElasticsearchServerError;
 

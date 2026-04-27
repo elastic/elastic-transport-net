@@ -164,10 +164,34 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 	/// We consider all status codes &gt;= 200 and &lt; 300 valid by default.
 	/// Elasticsearch might return 404 for valid responses in some cases (e.g. `GET /my-index/_doc/missing-doc-id`) but also for actual error cases like
 	/// missing endpoints, missing indices (e.g. `GET /missing-index/_mapping`), etc.
-	/// The 404 case is handled on a per-request basis (see <see cref="ElasticsearchResponseHelper.IsValidResponse"/> for details).
+	/// The 404 case is handled on a per-request basis (see <see cref="IsValidResponse(ApiCallDetails)"/> for details).
 	/// </remarks>
 	public override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
 		statusCode is >= 200 and < 300;
+
+	/// <inheritdoc cref="ProductRegistration.IsValidResponse(ApiCallDetails)"/>
+	/// <remarks>
+	/// A response is valid when:
+	/// <list type="bullet">
+	/// <item>The content-type matches what the caller asked for.</item>
+	/// <item>For 404 responses: there is no extracted Elasticsearch server error
+	/// (404s without an error body — e.g. <c>GET /my-index/_doc/missing-doc-id</c> — represent
+	/// a legitimate "missing entity" rather than a failure).</item>
+	/// <item>Otherwise: the status code is in the success range (or explicitly allowed via
+	/// <see cref="IRequestConfiguration.AllowedStatusCodes"/>).</item>
+	/// </list>
+	/// </remarks>
+	public override bool IsValidResponse(ApiCallDetails? details)
+	{
+		if (details is null || !details.HasExpectedContentType)
+			return false;
+
+		var serverError = details.ProductError as ElasticsearchServerError;
+		if (details.HttpStatusCode is 404)
+			return !serverError?.HasError() ?? true;
+
+		return details.HasSuccessfulStatusCode;
+	}
 
 	/// <inheritdoc cref="ProductRegistration.TryGetServerErrorReason{TResponse}"/>>
 	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason)

@@ -27,7 +27,7 @@ public abstract class ElasticsearchResponse : TransportResponse, IElasticsearchR
 	/// <inheritdoc />
 	[JsonIgnore]
 	public virtual bool IsValidResponse =>
-		ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails);
+		ApiCallDetails?.TransportConfiguration?.ProductRegistration?.IsValidResponse(ApiCallDetails) ?? false;
 
 	/// <inheritdoc />
 	[JsonIgnore]
