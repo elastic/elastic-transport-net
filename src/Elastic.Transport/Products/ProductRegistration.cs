@@ -162,4 +162,16 @@ public abstract class ProductRegistration
 	/// <param name="responseStream">A seekable stream containing the response body.</param>
 	/// <returns>An <see cref="ErrorResponse"/> if one was successfully extracted; otherwise <c>null</c>.</returns>
 	public virtual ErrorResponse? TryExtractError(BoundConfiguration boundConfiguration, Stream responseStream) => null;
+
+	/// <summary>
+	/// Whether the response should be treated as valid for the caller — meaning no exception is
+	/// raised under <see cref="IRequestConfiguration.ThrowExceptions"/>, and the product-level
+	/// <c>IsValidResponse</c> reads <c>true</c>.
+	/// <para>Default: a successful HTTP status code with the expected content type. Products override
+	/// to encode their own semantics (e.g. Elasticsearch treats a 404 with no extracted server error
+	/// as valid because it represents a missing entity rather than a true failure).</para>
+	/// </summary>
+	/// <param name="details">The <see cref="ApiCallDetails"/> for the response.</param>
+	public virtual bool IsValidResponse(ApiCallDetails? details) =>
+		details?.HasSuccessfulStatusCodeAndExpectedContentType ?? false;
 }

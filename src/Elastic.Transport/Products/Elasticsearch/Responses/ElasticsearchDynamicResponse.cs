@@ -24,7 +24,8 @@ public sealed class ElasticsearchDynamicResponse : DynamicResponseBase, IElastic
 	public ElasticsearchServerError? ElasticsearchServerError => ElasticsearchResponseHelper.GetElasticsearchError(ApiCallDetails);
 
 	/// <inheritdoc />
-	public bool IsValidResponse => ElasticsearchResponseHelper.IsValidResponse(ApiCallDetails);
+	public bool IsValidResponse =>
+		ApiCallDetails?.TransportConfiguration?.ProductRegistration?.IsValidResponse(ApiCallDetails) ?? false;
 
 	/// <inheritdoc />
 	public IEnumerable<string> ElasticsearchWarnings => ElasticsearchResponseHelper.GetElasticsearchWarnings(ApiCallDetails);
