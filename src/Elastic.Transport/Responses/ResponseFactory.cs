@@ -77,7 +77,8 @@ public abstract class ResponseFactory
 
 		// We don't validate the content-type (MIME type) for HEAD requests or responses that have no content (204 status code).
 		// Elastic Cloud responses to HEAD requests strip the content-type header so we want to avoid validation in that case.
-		var hasExpectedContentType = !MayHaveBody(statusCode, endpoint.Method, contentLength) || ValidateResponseContentType(boundConfiguration.Accept, contentType);
+		var hasExpectedContentType = !MayHaveBody(statusCode, endpoint.Method, contentLength)
+			|| boundConfiguration.ConnectionSettings.ProductRegistration.IsExpectedResponseContentType(boundConfiguration.Accept, contentType);
 
 		var details = new ApiCallDetails
 		{
@@ -108,27 +109,4 @@ public abstract class ResponseFactory
 	protected static bool MayHaveBody(int? statusCode, HttpMethod httpMethod, long contentLength) =>
 		contentLength != 0 && (!statusCode.HasValue || (statusCode.Value != 204 && httpMethod != HttpMethod.HEAD));
 
-	internal static bool ValidateResponseContentType(string accept, string? responseContentType)
-	{
-		if (string.IsNullOrEmpty(responseContentType))
-			return false;
-
-		if (accept == responseContentType)
-			return true;
-
-		// TODO - Performance: Review options to avoid the replace here and compare more efficiently.
-		// At this point, responseContentType is guaranteed to be non-null due to the check at line 116
-		var trimmedAccept = accept.Replace(" ", "");
-		var normalizedResponseContentType = responseContentType!.Replace(" ", "");
-
-		return normalizedResponseContentType.Equals(trimmedAccept, StringComparison.OrdinalIgnoreCase)
-			|| normalizedResponseContentType.StartsWith(trimmedAccept, StringComparison.OrdinalIgnoreCase)
-
-			// ES specific fallback required because:
-			// - 404 responses from ES8 don't include the vendored header
-			// - ES8 EQL responses don't include vendored type
-
-			|| (trimmedAccept.Contains("application/vnd.elasticsearch+json")
-			&& normalizedResponseContentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.OrdinalIgnoreCase));
-	}
 }

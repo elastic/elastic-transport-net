@@ -39,6 +39,31 @@ public abstract class ProductRegistration
 	public virtual string? TransformContentType(string? contentType) => contentType;
 
 	/// <summary>
+	/// Decides whether a response <c>Content-Type</c> is acceptable given the
+	/// request's <c>Accept</c>. The default accepts an exact (case-insensitive)
+	/// match or a response Content-Type that starts with the Accept (so
+	/// <c>application/json</c> matches <c>application/json;charset=utf-8</c>).
+	/// Products override this to add their own equivalence rules — for example,
+	/// translating between a vendor MIME type and its bare form.
+	/// </summary>
+	/// <param name="accept">The <c>Accept</c> header sent on the request.</param>
+	/// <param name="responseContentType">The <c>Content-Type</c> returned by the server, if any.</param>
+	public virtual bool IsExpectedResponseContentType(string accept, string? responseContentType)
+	{
+		if (string.IsNullOrEmpty(responseContentType))
+			return false;
+
+		if (accept == responseContentType)
+			return true;
+
+		var trimmedAccept = accept.Replace(" ", "");
+		var normalized = responseContentType!.Replace(" ", "");
+
+		return normalized.Equals(trimmedAccept, StringComparison.OrdinalIgnoreCase)
+			|| normalized.StartsWith(trimmedAccept, StringComparison.OrdinalIgnoreCase);
+	}
+
+	/// <summary>
 	/// The name of the current product utilizing <see cref="ITransport{TConfiguration}"/>
 	/// <para>This name makes its way into the transport diagnostics sources and the default user agent string</para>
 	/// </summary>
