@@ -129,7 +129,7 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		}
 
 		// We only attempt to build a response when the Content-Type matches the accepted type.
-		if (builder is not null && ValidateResponseContentType(boundConfiguration.Accept, contentType) && contentType is not null)
+		if (builder is not null && productRegistration.IsExpectedResponseContentType(boundConfiguration.Accept, contentType) && contentType is not null)
 		{
 			response = isAsync
 				? await builder.BuildAsync<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false)

@@ -28,13 +28,13 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 	internal const string XFoundHandlingInstanceHeader = "X-Found-Handling-Instance";
 
 #if NET7_0_OR_GREATER
-	[GeneratedRegex(@"application/vnd\.elasticsearch\+(json|x-ndjson|vnd\.mapbox-vector-tile)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"application/vnd\.elasticsearch\+([A-Za-z0-9.\-+]+)", RegexOptions.IgnoreCase)]
 	private static partial Regex VendorMimeRegex();
 
 	private static readonly Regex _vendorMimeRegex = VendorMimeRegex();
 #else
 	private static readonly Regex _vendorMimeRegex = new(
-		@"application/vnd\.elasticsearch\+(json|x-ndjson|vnd\.mapbox-vector-tile)",
+		@"application/vnd\.elasticsearch\+([A-Za-z0-9.\-+]+)",
 		RegexOptions.Compiled | RegexOptions.IgnoreCase);
 #endif
 
@@ -112,11 +112,12 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 
 	/// <inheritdoc cref="ProductRegistration.TransformContentType"/>
 	/// <remarks>
-	/// Appends <c>;compatible-with=N</c> to a supported vendor MIME type
-	/// (<c>application/vnd.elasticsearch+json</c>, <c>+x-ndjson</c>, or
-	/// <c>+vnd.mapbox-vector-tile</c>) when the parameter is not already present.
-	/// Plain MIME types like <c>application/json</c> are returned unchanged so the
-	/// caller stays in control of the value they explicitly provided.
+	/// Appends <c>;compatible-with=N</c> to any <c>application/vnd.elasticsearch+SUBTYPE</c>
+	/// MIME type (e.g. <c>+json</c>, <c>+x-ndjson</c>, <c>+vnd.mapbox-vector-tile</c>)
+	/// when the parameter is not already present. Plain or third-party vendor MIME
+	/// types (<c>application/json</c>, <c>application/vnd.mapbox-vector-tile</c>, …)
+	/// are returned unchanged — appending a compatibility annotation to them is the
+	/// caller's responsibility.
 	/// </remarks>
 	public override string? TransformContentType(string? contentType)
 	{
@@ -138,6 +139,70 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 			return input;
 
 		return _vendorMimeRegex.Replace(input, $"$0;compatible-with={_clientMajorVersion!.Value}");
+	}
+
+	/// <inheritdoc cref="ProductRegistration.IsExpectedResponseContentType"/>
+	/// <remarks>
+	/// Extends the default rule with vendor-MIME equivalence: when the request's
+	/// <c>Accept</c> is <c>application/vnd.elasticsearch+SUBTYPE[;…]</c>, a response
+	/// is also accepted if its <c>Content-Type</c> matches the bare vendor form
+	/// (<c>application/vnd.elasticsearch+SUBTYPE</c>) or the bare form
+	/// (<c>application/SUBTYPE</c>) — Elasticsearch frequently omits the
+	/// <c>;compatible-with=N</c> annotation in responses (e.g. on 404, EQL, MVT)
+	/// and may strip the <c>vnd.elasticsearch+</c> wrapper too. Multi-value
+	/// <c>Accept</c> lists are checked entry-by-entry.
+	/// </remarks>
+	public override bool IsExpectedResponseContentType(string accept, string? responseContentType)
+	{
+		if (base.IsExpectedResponseContentType(accept, responseContentType))
+			return true;
+
+		if (string.IsNullOrEmpty(responseContentType))
+			return false;
+
+		var normalized = responseContentType!.Replace(" ", "");
+
+		foreach (var entry in accept.Split(','))
+		{
+			var trimmedEntry = entry.Replace(" ", "");
+			if (!TryParseElasticsearchVendorMime(trimmedEntry, out var bareVendor, out var bareForm))
+				continue;
+
+			if (normalized.Equals(bareVendor, StringComparison.OrdinalIgnoreCase)
+				|| normalized.StartsWith(bareVendor, StringComparison.OrdinalIgnoreCase)
+				|| normalized.Equals(bareForm, StringComparison.OrdinalIgnoreCase)
+				|| normalized.StartsWith(bareForm, StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+
+		return false;
+	}
+
+	private static bool TryParseElasticsearchVendorMime(string mime, out string bareVendor, out string bareForm)
+	{
+		const string prefix = "application/vnd.elasticsearch+";
+		if (!mime.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+		{
+			bareVendor = string.Empty;
+			bareForm = string.Empty;
+			return false;
+		}
+
+		var afterPlus = mime.AsSpan(prefix.Length);
+		var endIdx = afterPlus.IndexOfAny(';', ',');
+		var subtypeSpan = endIdx < 0 ? afterPlus : afterPlus[..endIdx];
+
+		if (subtypeSpan.Length == 0)
+		{
+			bareVendor = string.Empty;
+			bareForm = string.Empty;
+			return false;
+		}
+
+		var subtype = subtypeSpan.ToString();
+		bareVendor = prefix + subtype;
+		bareForm = "application/" + subtype;
+		return true;
 	}
 
 	/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
