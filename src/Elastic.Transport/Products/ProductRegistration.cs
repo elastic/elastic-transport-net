@@ -178,6 +178,17 @@ public abstract class ProductRegistration
 	public virtual IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } = [new DefaultResponseBuilder()];
 
 	/// <summary>
+	/// Determines whether the response <c>Content-Type</c> indicates that the body should be
+	/// parsed as a JSON document. The default accepts any <c>application/json</c> type
+	/// (including those with parameters such as <c>;charset=utf-8</c>). Products that use
+	/// vendor MIME types for JSON payloads (e.g. <c>application/vnd.elasticsearch+json</c>)
+	/// should override this to return <c>true</c> for those types too.
+	/// </summary>
+	/// <param name="contentType">The <c>Content-Type</c> header value from the response.</param>
+	public virtual bool IsJsonContentType(string? contentType) =>
+		contentType != null && contentType.StartsWith("application/json", StringComparison.OrdinalIgnoreCase);
+
+	/// <summary>
 	/// Determines whether the given response content-type indicates a product-specific error body
 	/// that can be deserialized by <see cref="TryExtractError"/>.
 	/// <para>This is checked before attempting error extraction to avoid parsing non-error content

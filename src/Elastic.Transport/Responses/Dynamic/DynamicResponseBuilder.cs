@@ -25,7 +25,7 @@ internal class DynamicResponseBuilder<T> : TypedResponseBuilder<T> where T : Dyn
 		string contentType, long contentLength, CancellationToken cancellationToken = default)
 	{
 		//if not json store the result under "body"
-		if (contentType == null || !contentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.Ordinal))
+		if (!boundConfiguration.ConnectionSettings.ProductRegistration.IsJsonContentType(contentType))
 		{
 			DynamicDictionary dictionary;
 			string stringValue;

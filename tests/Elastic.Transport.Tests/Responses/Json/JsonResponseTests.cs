@@ -7,6 +7,7 @@ using System.IO;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Elastic.Transport.Products.Elasticsearch;
 using FluentAssertions;
 using Xunit;
 
@@ -55,6 +56,46 @@ public class JsonResponseTests
 
 		result = sut.Build<JsonResponse>(apiCallDetails, boundConfiguration, stream, "text/plain", data.Length);
 		result.Get<string>("body").Should().Be("This is not JSON");
+	}
+
+	[Theory]
+	[InlineData("application/vnd.elasticsearch+json")]
+	[InlineData("application/vnd.elasticsearch+json;compatible-with=8")]
+	[InlineData("application/vnd.elasticsearch+json; compatible-with=8")]
+	public async Task BuilderElasticsearchVendorJsonContentType(string vendorContentType)
+	{
+		IResponseBuilder sut = new JsonResponseBuilder();
+		var config = new TransportConfiguration(productRegistration: ElasticsearchProductRegistration.Default);
+		var apiCallDetails = new ApiCallDetails();
+		var boundConfiguration = new BoundConfiguration(config);
+
+		var data = Encoding.UTF8.GetBytes("""{"task":"abc123:1"}""");
+		var stream = new MemoryStream(data);
+
+		var result = await sut.BuildAsync<JsonResponse>(apiCallDetails, boundConfiguration, stream, vendorContentType, data.Length);
+		result.Get<string>("task").Should().Be("abc123:1");
+
+		stream.Position = 0;
+
+		result = sut.Build<JsonResponse>(apiCallDetails, boundConfiguration, stream, vendorContentType, data.Length);
+		result.Get<string>("task").Should().Be("abc123:1");
+	}
+
+	[Theory]
+	[InlineData("application/vnd.elasticsearch+x-ndjson")]
+	[InlineData("application/vnd.elasticsearch+vnd.mapbox-vector-tile")]
+	public async Task BuilderElasticsearchVendorNonJsonContentType(string vendorContentType)
+	{
+		IResponseBuilder sut = new JsonResponseBuilder();
+		var config = new TransportConfiguration(productRegistration: ElasticsearchProductRegistration.Default);
+		var apiCallDetails = new ApiCallDetails();
+		var boundConfiguration = new BoundConfiguration(config);
+
+		var data = Encoding.UTF8.GetBytes("raw body");
+		var stream = new MemoryStream(data);
+
+		var result = await sut.BuildAsync<JsonResponse>(apiCallDetails, boundConfiguration, stream, vendorContentType, data.Length);
+		result.Get<string>("body").Should().Be("raw body");
 	}
 
 	// --- Direct DOM access ---
