@@ -400,10 +400,7 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 	];
 
 	/// <inheritdoc />
-	public override bool IsErrorContentType(string? contentType) =>
-		contentType is not null && (
-			contentType.StartsWith("application/json", StringComparison.OrdinalIgnoreCase) ||
-			contentType.StartsWith("application/vnd.elasticsearch+json", StringComparison.OrdinalIgnoreCase));
+	public override bool IsErrorContentType(string? contentType) => IsJsonContentType(contentType);
 
 	/// <inheritdoc />
 	public override ErrorResponse? TryExtractError(BoundConfiguration boundConfiguration, Stream responseStream)
