@@ -178,6 +178,17 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 		return false;
 	}
 
+	/// <inheritdoc cref="ProductRegistration.IsJsonContentType"/>
+	/// <remarks>
+	/// In addition to the base <c>application/json</c> check, accepts
+	/// <c>application/vnd.elasticsearch+json</c> (and any <c>;compatible-with=N</c>
+	/// suffix variant), which Elasticsearch returns when the client sends
+	/// <c>Accept: application/vnd.elasticsearch+json</c>.
+	/// </remarks>
+	public override bool IsJsonContentType(string? contentType) =>
+		base.IsJsonContentType(contentType) ||
+		(contentType != null && contentType.StartsWith("application/vnd.elasticsearch+json", StringComparison.OrdinalIgnoreCase));
+
 	private static bool TryParseElasticsearchVendorMime(string mime, out string bareVendor, out string bareForm)
 	{
 		const string prefix = "application/vnd.elasticsearch+";

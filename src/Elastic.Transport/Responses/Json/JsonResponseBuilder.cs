@@ -27,7 +27,7 @@ internal class JsonResponseBuilder<T> : TypedResponseBuilder<T> where T : JsonRe
 		string contentType, long contentLength, CancellationToken cancellationToken = default)
 	{
 		// If not JSON, store the result under "body"
-		if (contentType == null || !contentType.StartsWith(BoundConfiguration.DefaultContentType, StringComparison.Ordinal))
+		if (!boundConfiguration.ConnectionSettings.ProductRegistration.IsJsonContentType(contentType))
 		{
 			string stringValue;
 
