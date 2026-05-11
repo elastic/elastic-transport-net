@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Extensions;
@@ -24,6 +26,69 @@ public abstract partial class PostData
 	/// </summary>
 	public static PostData MultiJson<T>(IEnumerable<T> listOfSerializables) =>
 		new PostDataMultiJson<T>(listOfSerializables);
+
+	/// <summary>
+	/// Create a <see cref="PostData"/> instance that will serialize the <paramref name="listOfSerializables"/> as multiline/ndjson
+	/// using the provided <paramref name="typeInfo"/>. This overload is AOT-safe and does not require reflection.
+	/// </summary>
+	public static PostData MultiJson<T>(IEnumerable<T> listOfSerializables, JsonTypeInfo<T> typeInfo) =>
+		new TypeInfoPostDataMultiJson<T>(listOfSerializables, typeInfo);
+
+	private class TypeInfoPostDataMultiJson<T> : PostData
+	{
+		private readonly IEnumerable<T> _enumerable;
+		private readonly JsonTypeInfo<T> _typeInfo;
+
+		public TypeInfoPostDataMultiJson(IEnumerable<T> items, JsonTypeInfo<T> typeInfo)
+		{
+			_enumerable = items;
+			_typeInfo = typeInfo;
+			Type = PostType.EnumerableOfObject;
+		}
+
+		public override void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
+		{
+			using var enumerator = _enumerable.GetEnumerator();
+			if (!enumerator.MoveNext())
+				return;
+
+			MemoryStream? buffer = null;
+			var stream = writableStream;
+			BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
+
+			do
+			{
+				JsonSerializer.Serialize(stream, enumerator.Current, _typeInfo);
+				stream.Write(NewLineByteArray, 0, 1);
+			} while (enumerator.MoveNext());
+
+			FinishStream(writableStream, buffer, disableDirectStreaming);
+		}
+
+		public override async Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
+		{
+			using var enumerator = _enumerable.GetEnumerator();
+			if (!enumerator.MoveNext())
+				return;
+
+			MemoryStream? buffer = null;
+			var stream = writableStream;
+			BufferIfNeeded(settings.MemoryStreamFactory, disableDirectStreaming, ref buffer, ref stream);
+
+			do
+			{
+				await JsonSerializer.SerializeAsync(stream, enumerator.Current, _typeInfo, cancellationToken)
+					.ConfigureAwait(false);
+#if NETSTANDARD2_1_OR_GREATER || NET
+				await stream.WriteAsync(NewLineByteArray.AsMemory(), cancellationToken).ConfigureAwait(false);
+#else
+				await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
+#endif
+			} while (enumerator.MoveNext());
+
+			await FinishStreamAsync(writableStream, buffer, disableDirectStreaming, cancellationToken).ConfigureAwait(false);
+		}
+	}
 
 	private class PostDataMultiJson<T> : PostData
 	{
