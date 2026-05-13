@@ -167,8 +167,6 @@ internal sealed class BoundConfigurationContent : HttpContent
 			base.Dispose(disposing);
 			_source?.Dispose();
 		}
-
-		public override void Close() => _serializeToStreamTask?.TrySetResult(true);
 	}
 
 	/// <summary>
@@ -205,13 +203,6 @@ internal sealed class BoundConfigurationContent : HttpContent
 		{
 			get => _innerStream.WriteTimeout;
 			set => _innerStream.WriteTimeout = value;
-		}
-
-		protected override void Dispose(bool disposing)
-		{
-			if (disposing)
-				_innerStream.Dispose();
-			base.Dispose(disposing);
 		}
 
 		public override long Seek(long offset, SeekOrigin origin) => _innerStream.Seek(offset, origin);
@@ -255,8 +246,6 @@ internal sealed class BoundConfigurationContent : HttpContent
 		public override void EndWrite(IAsyncResult asyncResult) => _innerStream.EndWrite(asyncResult);
 
 		public override void WriteByte(byte value) => _innerStream.WriteByte(value);
-
-		public override void Close() => _innerStream.Close();
 	}
 }
 #endif
