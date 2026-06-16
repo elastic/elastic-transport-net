@@ -2,7 +2,7 @@ name: Always be deploying
 
 on:
   pull_request:
-    paths-ignore: 
+    paths-ignore:
       - 'README.md'
       - '.editorconfig'
   push:
@@ -10,9 +10,13 @@ on:
       - 'README.md'
       - '.editorconfig'
     branches:
-      - main 
+      - main
     tags:
       - "*.*.*"
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   aot-validate:
