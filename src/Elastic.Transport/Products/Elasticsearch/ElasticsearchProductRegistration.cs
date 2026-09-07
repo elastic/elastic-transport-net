@@ -26,6 +26,7 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 {
 	internal const string XFoundHandlingClusterHeader = "X-Found-Handling-Cluster";
 	internal const string XFoundHandlingInstanceHeader = "X-Found-Handling-Instance";
+	internal const string ElasticClusterNameHeader = "Elastic-Cluster-Name";
 
 #if NET7_0_OR_GREATER
 	[GeneratedRegex(@"application/vnd\.elasticsearch\+([A-Za-z0-9.\-+]+)", RegexOptions.IgnoreCase)]
@@ -41,8 +42,10 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 	private readonly int? _clientMajorVersion;
 	private readonly ConcurrentDictionary<string, string>? _contentTypeCache;
 
-	private static string? _clusterName;
-	private static readonly string[] _all = [XFoundHandlingClusterHeader, XFoundHandlingInstanceHeader];
+	// Cached per registration, and therefore per client, so clients talking to different clusters
+	// within one process do not report each other's cluster name.
+	private string? _clusterName;
+	private static readonly string[] _all = [XFoundHandlingClusterHeader, ElasticClusterNameHeader, XFoundHandlingInstanceHeader];
 	private static readonly string[] _instanceHeader = [XFoundHandlingInstanceHeader];
 
 	/// <summary>
@@ -335,6 +338,11 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// Until a cluster name has been resolved, both <c>X-Found-Handling-Cluster</c> (added by the Elastic Cloud proxy)
+	/// and <c>Elastic-Cluster-Name</c> (emitted by Elasticsearch 9.6+ when <c>http.headers.cluster_name.enabled</c>
+	/// is set) are requested alongside <c>X-Found-Handling-Instance</c>. Afterwards only the instance header is requested.
+	/// </remarks>
 	public override IReadOnlyCollection<string> DefaultHeadersToParse()
 	{
 		if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
@@ -349,14 +357,18 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// The cluster name is resolved once per registration and reused for subsequent responses.
+	/// <c>X-Found-Handling-Cluster</c> takes precedence over <c>Elastic-Cluster-Name</c>: its presence indicates an
+	/// Elastic Cloud deployment, and it carries the globally unique cluster id rather than the operator-chosen
+	/// <c>cluster.name</c>.
+	/// </remarks>
 	public override Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails)
 	{
 		Dictionary<string, object>? attributes = null;
 
-		if (string.IsNullOrEmpty(_clusterName) && callDetails.TryGetHeader(XFoundHandlingClusterHeader, out var clusterValues))
-		{
-			_clusterName = clusterValues.FirstOrDefault();
-		}
+		if (string.IsNullOrEmpty(_clusterName))
+			_clusterName = ResolveClusterName(callDetails);
 
 		if (!string.IsNullOrEmpty(_clusterName))
 		{
@@ -364,18 +376,28 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 			attributes.Add(OpenTelemetryAttributes.DbElasticsearchClusterName, _clusterName!);
 		}
 
-		if (callDetails.TryGetHeader(XFoundHandlingInstanceHeader, out var instanceValues))
+		var instance = FirstHeaderValue(callDetails, XFoundHandlingInstanceHeader);
+		if (!string.IsNullOrEmpty(instance))
 		{
-			var instance = instanceValues.FirstOrDefault();
-			if (!string.IsNullOrEmpty(instance))
-			{
-				attributes ??= [];
-				attributes.Add(OpenTelemetryAttributes.DbElasticsearchNodeName, instance);
-			}
+			attributes ??= [];
+			attributes.Add(OpenTelemetryAttributes.DbElasticsearchNodeName, instance!);
 		}
 
 		return attributes;
 	}
+
+	private static string? ResolveClusterName(ApiCallDetails callDetails)
+	{
+		var cloudCluster = FirstHeaderValue(callDetails, XFoundHandlingClusterHeader);
+		if (!string.IsNullOrEmpty(cloudCluster))
+			return cloudCluster;
+
+		var clusterName = FirstHeaderValue(callDetails, ElasticClusterNameHeader);
+		return string.IsNullOrEmpty(clusterName) ? null : clusterName;
+	}
+
+	private static string? FirstHeaderValue(ApiCallDetails callDetails, string header) =>
+		callDetails.TryGetHeader(header, out var values) ? values.FirstOrDefault() : null;
 
 	/// <inheritdoc/>
 	public override string ProductAssemblyVersion { get; }
