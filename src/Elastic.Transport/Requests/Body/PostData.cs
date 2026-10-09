@@ -15,7 +15,7 @@ namespace Elastic.Transport;
 /// <para></para>
 /// <para>For raw bytes use <see cref="Bytes"/></para>
 /// <para>For raw string use <see cref="String"/></para>
-/// <para>To serialize an object use <see cref="Serializable{T}"/></para>
+/// <para>To serialize an object use <see cref="Serializable{T}(T)"/></para>
 /// <para>For <see cref="ReadOnlyMemory{T}"/> use <see cref="ReadOnlyMemory{T}"/></para>
 /// <para>To write your object directly to <see cref="Stream"/> using a handler use <see cref="StreamHandler{T}"/></para>
 /// <para>Multiline json is supported to using  <see cref="MultiJson{T}(System.Collections.Generic.IEnumerable{T})"/></para>

@@ -31,7 +31,7 @@ public enum PostType
 
 	/// <summary>
 	/// An instance of a user provided value to be serialized by <see cref="Serializer"/>
-	/// <para>Instantiate using <see cref="PostData.Serializable{T}"/></para>
+	/// <para>Instantiate using <see cref="PostData.Serializable{T}(T)"/></para>
 	/// </summary>
 	Serializable,
 

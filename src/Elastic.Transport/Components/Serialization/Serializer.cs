@@ -13,7 +13,7 @@ namespace Elastic.Transport;
 /// When the <see cref="ITransport{TConfiguration}"/> needs to (de)serialize anything it will call into the
 /// <see cref="ITransportConfiguration.RequestResponseSerializer"/> implementation of this base class.
 ///
-/// <para>e.g: Whenever the <see cref="ITransport{TConfiguration}"/> receives <see cref="PostData.Serializable{T}"/>
+/// <para>e.g: Whenever the <see cref="ITransport{TConfiguration}"/> receives <see cref="PostData.Serializable{T}(T)"/>
 /// to serialize that data.</para>
 /// </summary>
 public abstract class Serializer
