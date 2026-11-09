@@ -18,6 +18,8 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3" />
     <PackageVersion Include="MinVer" Version="6.0.0" />
+    <PackageVersion Include="Nullean.Entities" Version="0.3.0" />
+    <PackageVersion Include="Nullean.Entities.CsCheck" Version="0.3.0" />
     <PackageVersion Include="Nullean.VsTest.Pretty.TestLogger" Version="0.10.0" />
     <PackageVersion Include="PolySharp" Version="1.15.0" />
     <PackageVersion Include="Proc" Version="0.11.0" />
