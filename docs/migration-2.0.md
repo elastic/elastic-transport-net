@@ -24,9 +24,14 @@ will not touch you, but the behaviour fixes can change results, so read that sec
   the key was a hash that could collide across different proxy credentials, ignored several of those settings, and
   included `RequestTimeout`, so each distinct per-request timeout opened its own pool.
 - **Byte-array bodies are not copied when nothing transforms them** (`PostData.Bytes` with request compression off).
+- **The default `MemoryStreamFactory` is pooled.** `TransportConfiguration.DefaultMemoryStreamFactory` used to be a plain
+  `MemoryStream`. A request body that is serialized and not compressed grew a `MemoryStream` by doubling (about 204 KB
+  allocated, with gen 2 collections, for a 64 KB body); the pooled default allocates about 7 KB. With compression on, the
+  default, the two are about equal. The pool uses 16 KB blocks, so a request in flight holds at least 16 KB (the package's
+  own default is 128 KB). To keep the old behaviour: `MemoryStreamFactory = DefaultMemoryStreamFactory.Default`.
 - **Pooled streams come from `Microsoft.IO.RecyclableMemoryStream`.** `RecyclableMemoryStreamFactory` is unchanged, but its
   ETW event source is now the package's (`Microsoft-IO-RecyclableMemoryStream`) and the package depends on `System.Memory`
-  below net8.0. The default `MemoryStreamFactory` is still a plain `MemoryStream`.
+  below net8.0. 
 
 ## API changes
 
