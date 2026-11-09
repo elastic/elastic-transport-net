@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Property-based and model-based tests for the request pipeline. Nullean.Entities and CsCheck
+       are test-only dependencies: nothing in src/ references them. -->
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
+    <IsTestProject>True</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CS8002;CA1707</NoWarn>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GitHubActionsTestLogger">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" />
+    <!-- The [Constraints] source generator ships inside Nullean.Entities (analyzers/dotnet/cs). -->
+    <PackageReference Include="Nullean.Entities" />
+    <PackageReference Include="Nullean.Entities.CsCheck" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Transport.VirtualizedCluster\Elastic.Transport.VirtualizedCluster.csproj" />
+  </ItemGroup>
+
+</Project>
