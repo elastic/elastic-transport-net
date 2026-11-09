@@ -31,9 +31,10 @@ public record TransportConfiguration : ITransportConfiguration, IHasPipelineProv
 	/// The default memory stream factory if none is configured on <see cref="ITransportConfiguration.MemoryStreamFactory"/>
 	/// </summary>
 	public static MemoryStreamFactory DefaultMemoryStreamFactory { get; } =
-		// 16 KB blocks, not the package's 128 KB: every concurrent request holds at least one block, and a request body is
-		// usually small. Larger bodies take several blocks, so nothing is allocated or copied to grow.
-		new RecyclableMemoryStreamFactory(blockSize: 16 * 1024);
+		// A plain MemoryStream on purpose: it is the least surprising. A pool keeps memory for reuse, which is exactly what
+		// a memory dump of a healthy application then shows, and people read that as the library leaking. Opt in to pooling
+		// with RecyclableMemoryStreamFactory when large bodies make it worth it.
+		Transport.DefaultMemoryStreamFactory.Default;
 
 	/// <summary>
 	/// The default timeout before a TCP connection is forcefully recycled so that DNS updates come through
