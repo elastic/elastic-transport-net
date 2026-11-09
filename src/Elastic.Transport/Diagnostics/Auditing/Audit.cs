@@ -8,7 +8,7 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport.Diagnostics.Auditing;
 
 /// <summary> An audit of the request made </summary>
-public sealed class Audit
+public sealed record Audit
 {
 	internal Audit(AuditEvent type, DateTimeOffset started)
 	{
