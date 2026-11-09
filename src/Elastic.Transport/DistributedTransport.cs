@@ -61,6 +61,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		Configuration = configuration;
 		var transportBoundConfiguration = new BoundConfiguration(Configuration);
 		_transportBound = new Bound(transportBoundConfiguration, CreatePipeline(transportBoundConfiguration));
+		_createPipeline = CreatePipeline;
 		_createBound = rc =>
 		{
 			var bound = new BoundConfiguration(Configuration, rc);
@@ -69,6 +70,8 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	}
 
 	private readonly Bound _transportBound;
+	private ConditionalWeakTable<BoundConfiguration, RequestPipeline>? _pipelinesForBound;
+	private readonly ConditionalWeakTable<BoundConfiguration, RequestPipeline>.CreateValueCallback _createPipeline;
 	private readonly ConditionalWeakTable<RequestConfiguration, Bound>.CreateValueCallback _createBound;
 
 	private RequestPipeline CreatePipeline(BoundConfiguration boundConfiguration) =>
@@ -414,6 +417,11 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		{
 			case null:
 				return (_transportBound.Configuration, _transportBound.Pipeline);
+			case BoundConfiguration bc:
+				// Already resolved (see BoundConfiguration.Create): use it as it is, and its pipeline from the cache.
+				if (ReferenceEquals(bc, _transportBound.Configuration))
+					return (bc, _transportBound.Pipeline);
+				return (bc, (_pipelinesForBound ?? InitializePipelineCache()).GetValue(bc, _createPipeline));
 			case RequestConfiguration rc:
 				// Since `IRequestConfiguration` might be implemented as mutable class, we only cache for the
 				// immutable `RequestConfiguration` record.
@@ -425,6 +433,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				return (bindWithoutCache, CreatePipeline(bindWithoutCache));
 		}
 	}
+
+	private ConditionalWeakTable<BoundConfiguration, RequestPipeline> InitializePipelineCache() =>
+		Interlocked.CompareExchange(ref _pipelinesForBound, new ConditionalWeakTable<BoundConfiguration, RequestPipeline>(), null)
+		?? _pipelinesForBound!;
 
 	// Only allocated once a request actually carries its own configuration; creating the table eagerly as an argument
 	// to Interlocked.CompareExchange built (and threw away) a new one on every such request.

@@ -11,15 +11,14 @@ using Elastic.Transport.Extensions;
 namespace Elastic.Transport;
 
 /// <summary>
-/// The configuration of one request, resolved: every setting has exactly one value, taken from the request's
-/// <see cref="IRequestConfiguration" /> if it set one, else from the <see cref="ITransportConfiguration" />, else the default.
+/// Represents the cumulative configuration from <see cref="ITransportConfiguration" />
+/// and <see cref="IRequestConfiguration" />.
 /// </summary>
 /// <remarks>
-/// A snapshot, built once by the constructor and never changed. It deliberately is not an
-/// <see cref="IRequestConfiguration" />: that interface describes optional overrides, and this has none. It is a class
-/// and not a record so it does not carry value equality over its ~45 properties.
+/// It is itself an <see cref="IRequestConfiguration" />, so an instance made once with <see cref="Create"/> can be passed
+/// as a request's configuration and is then used as it is, without being bound again: the way to avoid that cost per call.
 /// </remarks>
-public sealed class BoundConfiguration
+public sealed record BoundConfiguration : IRequestConfiguration
 {
 	private const string OpaqueIdHeader = "X-Opaque-Id";
 
@@ -198,4 +197,41 @@ public sealed class BoundConfiguration
 	public bool DisableAuditTrail { get; }
 	/// <inheritdoc cref="IRequestConfiguration.OpaqueId"/>
 	public string? OpaqueId { get; }
+
+	string IRequestConfiguration.Accept => Accept;
+	IReadOnlyCollection<int> IRequestConfiguration.AllowedStatusCodes => AllowedStatusCodes;
+	AuthorizationHeader? IRequestConfiguration.Authentication => AuthenticationHeader;
+	X509CertificateCollection? IRequestConfiguration.ClientCertificates => ClientCertificates;
+	string IRequestConfiguration.ContentType => ContentType;
+	bool? IRequestConfiguration.DisableDirectStreaming => DisableDirectStreaming;
+	bool? IRequestConfiguration.DisableAuditTrail => DisableAuditTrail;
+	bool? IRequestConfiguration.DisablePings => DisablePings;
+	bool? IRequestConfiguration.DisableSniff => DisableSniff;
+	bool? IRequestConfiguration.HttpPipeliningEnabled => HttpPipeliningEnabled;
+	bool? IRequestConfiguration.EnableHttpCompression => HttpCompression;
+	Uri? IRequestConfiguration.ForceNode => ForceNode;
+	int? IRequestConfiguration.MaxRetries => MaxRetries;
+	TimeSpan? IRequestConfiguration.MaxRetryTimeout => MaxRetryTimeout;
+	string? IRequestConfiguration.OpaqueId => OpaqueId;
+	bool? IRequestConfiguration.ParseAllHeaders => ParseAllHeaders;
+	TimeSpan? IRequestConfiguration.PingTimeout => PingTimeout;
+	TimeSpan? IRequestConfiguration.RequestTimeout => RequestTimeout;
+	IReadOnlyCollection<IResponseBuilder> IRequestConfiguration.ResponseBuilders => ResponseBuilders;
+	HeadersList? IRequestConfiguration.ResponseHeadersToParse => ResponseHeadersToParse;
+	string? IRequestConfiguration.RunAs => RunAs;
+	bool? IRequestConfiguration.ThrowExceptions => ThrowExceptions;
+	bool? IRequestConfiguration.TransferEncodingChunked => TransferEncodingChunked;
+	NameValueCollection? IRequestConfiguration.Headers => Headers;
+	bool? IRequestConfiguration.EnableTcpStats => EnableTcpStats;
+	bool? IRequestConfiguration.EnableThreadPoolStats => EnableThreadPoolStats;
+	RequestMetaData? IRequestConfiguration.RequestMetaData => RequestMetaData;
+
+	/// <summary>
+	/// Create a cachable instance of <see cref="BoundConfiguration"/> for use in high-performance scenarios.
+	/// </summary>
+	/// <param name="transport">An existing <see cref="ITransport{TConfiguration}"/> from which to bind transport configuration.</param>
+	/// <param name="requestConfiguration">A request specific <see cref="IRequestConfiguration"/>.</param>
+	/// <returns></returns>
+	public static BoundConfiguration Create(ITransport<ITransportConfiguration> transport, IRequestConfiguration requestConfiguration) =>
+		new(transport.Configuration, requestConfiguration);
 }

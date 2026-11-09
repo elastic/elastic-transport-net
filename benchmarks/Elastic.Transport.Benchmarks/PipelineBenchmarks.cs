@@ -18,6 +18,7 @@ public class PipelineBenchmarks : IDisposable
 	private ITransport _single = null!;
 	private ITransport _staticPool = null!;
 	private RequestConfiguration _cachedLocal = null!;
+	private BoundConfiguration _preBound = null!;
 	private BoundConfigurationHttpClientFactory _factory = null!;
 	private BoundConfiguration _bound = null!;
 	private static readonly int[] Ports = [9200, 9201, 9202];
@@ -34,6 +35,7 @@ public class PipelineBenchmarks : IDisposable
 		_staticPool = new DistributedTransport(new TransportConfiguration(new StaticNodePool(nodes, randomize: false), invoker));
 
 		_cachedLocal = new RequestConfiguration { MaxRetries = 2 };
+		_preBound = BoundConfiguration.Create((ITransport<ITransportConfiguration>)_staticPool, new RequestConfiguration { MaxRetries = 2 });
 
 		var settings = new TransportConfiguration(new Uri("http://localhost:9200"));
 		_bound = new BoundConfiguration(settings);
@@ -58,6 +60,10 @@ public class PipelineBenchmarks : IDisposable
 	/// <summary>Per-request configuration that is reused: the bound configuration is cached.</summary>
 	[Benchmark]
 	public TransportResponse StaticPoolReusedRequestConfig() => _staticPool.Request<VoidResponse>(Root, null, null, _cachedLocal);
+
+	/// <summary>The purpose of BoundConfiguration.Create: resolve the request configuration once, pass it on every call.</summary>
+	[Benchmark]
+	public TransportResponse StaticPoolPreBoundRequestConfig() => _staticPool.Request<VoidResponse>(Root, null, null, _preBound);
 
 	/// <summary>Per-request configuration built on every call: it is bound (merged with the transport's) every time.</summary>
 	[Benchmark]
