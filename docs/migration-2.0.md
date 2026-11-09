@@ -28,8 +28,6 @@ will not touch you, but the behaviour fixes can change results, so read that sec
   extension point (the factory's constructor was already internal), and nothing in this organisation's repositories
   referenced them. `ITransportConfiguration.PipelineProvider` and `TransportConfigurationDescriptor.PipelineProvider()`
   are gone with them.
-- `BoundConfiguration` is a sealed class, no longer a record, and no longer an `IRequestConfiguration`. It is the resolved
-  configuration of one request, so it has no optional overrides to describe; `BoundConfiguration.Create` is removed.
 - `RuleOption<TFirst, TSecond>` (VirtualizedCluster) is a C# 15 union, so an absent option is `RuleOption<...>?` rather than
   `null`. Rules still read `Fails(Times(2), 503)` and `FailAlways(new Exception())`.
 - `Audit` is a record.
