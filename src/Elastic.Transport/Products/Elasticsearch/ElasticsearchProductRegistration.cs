@@ -64,7 +64,7 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 	/// <param name="markerType"></param>
 	public ElasticsearchProductRegistration(Type markerType) : this()
 	{
-		var clientVersionInfo = ReflectionVersionInfo.Create(markerType);
+		var clientVersionInfo = ReflectedVersionInfo.Create(markerType);
 
 		var identifier = ServiceIdentifier;
 		if (!string.IsNullOrEmpty(identifier))

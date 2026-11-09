@@ -12,7 +12,7 @@ namespace Elastic.Transport.Extensions;
 /// <summary>
 /// A semver2 compatible version.
 /// </summary>
-public sealed partial class SemVersion :
+internal sealed partial class SemVersion :
 	IEquatable<SemVersion>,
 	IComparable<SemVersion>,
 	IComparable

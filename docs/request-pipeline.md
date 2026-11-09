@@ -41,7 +41,8 @@ flowchart TD
     stale -- yes --> sniffStale["Sniff (SniffOnStaleCluster)"] --> ping
     stale -- no --> ping{"Pinging enabled and<br/>node IsResurrected?"}
     ping -- yes --> doPing["Ping (separate, short timeout)"]
-    doPing -- "fails (including a 401)" --> failed
+    doPing -- "401" --> stop
+    doPing -- fails --> failed
     doPing -- ok --> call
     ping -- no --> call["Call the product endpoint"]
     call -- "401" --> stop
@@ -60,12 +61,8 @@ In code the turn is a walk over `NodeStep` (`SniffIfStale`, `PingIfDue`, `Call`,
 the failure edges above leave through exceptions that `RequestCoreAsync` classifies. The single-node path is a separate,
 shorter loop on purpose: it never pings, sniffs, marks a node dead or alive, and has the one stale-connection retry.
 
-`Stop` is for failures another node cannot fix: bad credentials on the call itself, an unrecoverable pipeline failure,
-and cancellation.
-
-Known mismatch: `PipelineFailure.BadAuthentication` is documented as short-circuiting during a ping, but `PingCoreAsync`
-rethrows every ping failure, a 401 included, as a recoverable `PingFailure`, so a ping 401 moves on to the next node.
-The diagram shows what the code does.
+`Stop` is for failures another node cannot fix: bad credentials (on the ping or on the call), an unrecoverable
+pipeline failure, and cancellation.
 
 ## One node's health
 

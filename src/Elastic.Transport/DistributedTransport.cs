@@ -144,7 +144,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 				activity.SetTag(OpenTelemetryAttributes.ElasticTransportProductName, Configuration.ProductRegistration.Name);
 				activity.SetTag(OpenTelemetryAttributes.ElasticTransportProductVersion, Configuration.ProductRegistration.ProductAssemblyVersion);
-				activity.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, ReflectionVersionInfo.TransportVersion);
+				activity.SetTag(OpenTelemetryAttributes.ElasticTransportVersion, ReflectedVersionInfo.TransportVersion);
 				activity.SetTag(SemanticConventions.UserAgentOriginal, Configuration.UserAgent?.ToString());
 				activity.SetTag(SemanticConventions.HttpRequestMethod, endpoint.Method.GetStringValue());
 			}
