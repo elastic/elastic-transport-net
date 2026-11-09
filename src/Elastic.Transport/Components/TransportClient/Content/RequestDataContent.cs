@@ -127,10 +127,24 @@ internal sealed class BoundConfigurationContent : HttpContent
 #endif
 		async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
 	{
-		var source = CancellationTokenSource.CreateLinkedTokenSource(_token, cancellationToken);
+		// A linked source keeps a callback registered on each parent token until it is disposed (the leak behind
+		// CompleteTaskOnCloseStream owning it), so make one only when both tokens can actually be cancelled. With one
+		// of them it is the other that decides, and there is nothing to link or dispose.
+		CancellationTokenSource? source = null;
+		CancellationToken token;
+		if (!_token.CanBeCanceled)
+			token = cancellationToken;
+		else if (!cancellationToken.CanBeCanceled)
+			token = _token;
+		else
+		{
+			source = CancellationTokenSource.CreateLinkedTokenSource(_token, cancellationToken);
+			token = source.Token;
+		}
+
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
 		var wrappedStream = new CompleteTaskOnCloseStream(stream, serializeToStreamTask, source);
-		await _onStreamAvailableAsync(_boundConfiguration, _postData, wrappedStream, this, context!, source.Token).ConfigureAwait(false);
+		await _onStreamAvailableAsync(_boundConfiguration, _postData, wrappedStream, this, context!, token).ConfigureAwait(false);
 		_ = await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 
