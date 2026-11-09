@@ -281,6 +281,11 @@ public class HttpRequestInvoker : IRequestInvoker
 		if (boundConfiguration.ConnectionSettings.ConnectionLimit > 0)
 			handler.MaxConnectionsPerServer = boundConfiguration.ConnectionSettings.ConnectionLimit;
 
+		// Keep idle connections alive through load balancers that drop silent ones, and notice a dead peer.
+		var keepAliveTime = TimeSpan.FromMilliseconds(boundConfiguration.KeepAliveTime);
+		var keepAliveInterval = TimeSpan.FromMilliseconds(boundConfiguration.KeepAliveInterval);
+		handler.ConnectCallback = (context, cancellationToken) => KeepAliveSockets.ConnectAsync(context, keepAliveTime, keepAliveInterval, cancellationToken);
+
 		ConfigureProxy(handler, boundConfiguration);
 		ConfigureSslOptions(handler, boundConfiguration);
 
