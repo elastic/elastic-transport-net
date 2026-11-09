@@ -95,7 +95,16 @@ public class InMemoryRequestInvoker : IRequestInvoker
 		var sc = statusCode ?? _statusCode;
 		Stream responseStream = body != null ? ReadOnlyStreams.Over(boundConfiguration.MemoryStreamFactory, body) : ReadOnlyStreams.Over(boundConfiguration.MemoryStreamFactory, EmptyBody);
 
-		return ResponseFactory.Create<TResponse>(endpoint, boundConfiguration, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? BoundConfiguration.DefaultContentType, body?.Length ?? 0, null, null);
+		try
+		{
+			var response = ResponseFactory.Create<TResponse>(endpoint, boundConfiguration, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? BoundConfiguration.DefaultContentType, body?.Length ?? 0, null, null);
+			return ReleaseOrLink(response, responseStream);
+		}
+		catch
+		{
+			responseStream.Dispose();
+			throw;
+		}
 	}
 
 	/// <inheritdoc cref="BuildResponse{TResponse}"/>>
@@ -124,8 +133,28 @@ public class InMemoryRequestInvoker : IRequestInvoker
 
 		Stream responseStream = body != null ? ReadOnlyStreams.Over(boundConfiguration.MemoryStreamFactory, body) : ReadOnlyStreams.Over(boundConfiguration.MemoryStreamFactory, EmptyBody);
 
-		return await ResponseFactory
-			.CreateAsync<TResponse>(endpoint, boundConfiguration, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? BoundConfiguration.DefaultContentType, body?.Length ?? 0, null, null, cancellationToken)
-			.ConfigureAwait(false);
+		try
+		{
+			var response = await ResponseFactory
+				.CreateAsync<TResponse>(endpoint, boundConfiguration, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? BoundConfiguration.DefaultContentType, body?.Length ?? 0, null, null, cancellationToken)
+				.ConfigureAwait(false);
+			return ReleaseOrLink(response, responseStream);
+		}
+		catch
+		{
+			responseStream.Dispose();
+			throw;
+		}
+	}
+
+	// As HttpRequestInvoker does: the response stream is ours to release unless the response reads from it later,
+	// in which case disposing the response disposes the stream.
+	private static TResponse ReleaseOrLink<TResponse>(TResponse response, Stream responseStream) where TResponse : TransportResponse
+	{
+		if (response.LeaveOpen)
+			response.LinkedDisposables = [responseStream];
+		else
+			responseStream.Dispose();
+		return response;
 	}
 }
