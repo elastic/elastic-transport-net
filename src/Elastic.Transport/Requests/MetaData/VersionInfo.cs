@@ -13,7 +13,7 @@ namespace Elastic.Transport;
 ///
 /// </remarks>
 /// <param name="version"></param>
-public abstract class VersionInfo(SemVersion version)
+internal abstract class VersionInfo(SemVersion version)
 {
 	private readonly SemVersion _version = version;
 

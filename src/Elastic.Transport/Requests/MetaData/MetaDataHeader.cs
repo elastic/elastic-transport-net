@@ -21,10 +21,10 @@ public sealed class MetaDataHeader
 	/// <param name="version"></param>
 	/// <param name="serviceIdentifier"></param>
 	/// <param name="isAsync"></param>
-	public MetaDataHeader(VersionInfo version, string serviceIdentifier, bool isAsync)
+	internal MetaDataHeader(VersionInfo version, string serviceIdentifier, bool isAsync)
 	{
 		if (serviceIdentifier != "et")
-			TransportVersion = ReflectionVersionInfo.Create<ITransport>().ToString();
+			TransportVersion = ReflectedVersionInfo.Create<ITransport>().ToString();
 
 		ClientVersion = version.ToMetadataHeaderValue();
 		RuntimeVersion = new RuntimeVersionInfo().ToString();

@@ -13,6 +13,8 @@ will not touch you, but the behaviour fixes can change results, so read that sec
   first four, and the request's value was ignored for the last two. A transport-level `ContentType` is also honoured.
 - **`MaxRetryTimeout` is honoured.** It was accepted and ignored. It now bounds the whole request including retries,
   and defaults to `RequestTimeout` as documented.
+- **Bad credentials on a ping stop the request.** A 401 on a ping was rethrown as a recoverable ping failure, so every
+  node was pinged in turn until retries ran out. It now surfaces as `PipelineFailure.BadAuthentication`, as documented.
 - **Sniffing tries every node.** It used to give up after the first node that failed.
 - **Stale-cluster sniffing can fire.** `NodePool.LastUpdate` starts at the pool's creation time instead of `null`.
 - **Error bodies.** `ApiCallDetails.ResponseBodyInBytes` holds the body of every non-success response, including HTML
@@ -55,6 +57,15 @@ will not touch you, but the behaviour fixes can change results, so read that sec
 - `RuleOption<TFirst, TSecond>` (VirtualizedCluster) is a C# 15 union, so an absent option is `RuleOption<...>?` rather than
   `null`. Rules still read `Fails(Times(2), 503)` and `FailAlways(new Exception())`.
 - `Audit` is a record.
+- `SemVersion` and `VersionInfo` are internal. They were a vendored semver parser and the base of the version objects in the client
+  meta header; nothing in the Elastic .NET repositories derives `VersionInfo` or uses `SemVersion`. `ReflectionVersionInfo` stays
+  public with the same members (`Major`, `Minor`, `Patch`, `Prerelease`, `Metadata`, `IsPrerelease`, `ToMetadataHeaderValue()`,
+  `ToString()`, `Create<T>()`, `Create(Type)`, `TransportVersion`) but no longer derives from `VersionInfo`, because
+  `elastic-ingest-dotnet` exposes one. The constructors of `DefaultMetaHeaderProvider`, `DefaultMetaHeaderProducer` and
+  `MetaDataHeader` that took a `VersionInfo` are internal; the ones taking a `Type` are unchanged.
+- Fixed before it went internal: `SemVersion.CompareByPrecedence` and `CompareTo`. Precedence used to end by comparing the pre-release with the
+  other version's build metadata, so two equal pre-release versions compared as different. Precedence now ignores build
+  metadata (semver 2.0), and `CompareTo` uses it only to break a tie, so it is zero exactly when `Equals` is true.
 - `SniffingNodePool` no longer overrides `CreateView` (it held a lock around a lazy iterator, which guarded nothing).
 - `netstandard2.1` is no longer a separate target. `netstandard2.0` consumers are unaffected, as are `net8.0` and later.
 - `Elastic.Transport.VirtualizedCluster`: `SingleNodeConnection()` works, `ClientThrows()` applies per request, and a
