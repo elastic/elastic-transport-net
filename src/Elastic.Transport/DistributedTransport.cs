@@ -351,14 +351,11 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	private (BoundConfiguration Configuration, RequestPipeline Pipeline) BindConfiguration(IRequestConfiguration? localConfiguration)
 	{
 		// Unless per request configuration is provided, we can reuse the BoundConfiguration and pipeline
-		// that are specific to this transport. If the IRequestConfiguration is an instance
-		// of BoundConfiguration we use that instance directly without rebinding.
+		// that are specific to this transport.
 		switch (localConfiguration)
 		{
 			case null:
 				return (_transportBound.Configuration, _transportBound.Pipeline);
-			case BoundConfiguration bc:
-				return (bc, bc == _transportBound.Configuration ? _transportBound.Pipeline : CreatePipeline(bc));
 			case RequestConfiguration rc:
 				// Since `IRequestConfiguration` might be implemented as mutable class, we only cache for the
 				// immutable `RequestConfiguration` record.
