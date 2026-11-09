@@ -56,6 +56,10 @@ flowchart TD
     stop([NodeOutcome.Stop])
 ```
 
+In code the turn is a walk over `NodeStep` (`SniffIfStale`, `PingIfDue`, `Call`, `TakeOutOfRotation`, `Settle`, `Done`);
+the failure edges above leave through exceptions that `RequestCoreAsync` classifies. The single-node path is a separate,
+shorter loop on purpose: it never pings, sniffs, marks a node dead or alive, and has the one stale-connection retry.
+
 `Stop` is for failures another node cannot fix: bad credentials on the call itself, an unrecoverable pipeline failure,
 and cancellation.
 

@@ -208,47 +208,72 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 					// Each physical node attempt in CallProductEndpoint will also record these attributes.
 					SetServerTags(activity, endpoint);
 
-					// One node's turn: keep the topology fresh, make sure the node is up, call it, then Settle on what
-					// that means. The awaits stay here, in the one state machine, on purpose: moving them into a helper
-					// method added a state machine box (about 200 B) to every request that really does I/O.
-					NodeOutcome outcome;
+					// One node's turn, as an explicit walk over NodeStep: keep the topology fresh, make sure the node is up,
+					// call it, take it out of rotation if that failed, then Settle on what it all means. The awaits stay in
+					// this method, in the one state machine, on purpose: moving them into helper methods added a state
+					// machine box (about 200 B) to every request that really does I/O.
+					NodeOutcome outcome = NodeOutcome.TryNextNode;
 					try
 					{
-						if (_productRegistration.SupportsSniff)
+						var step = NodeStep.SniffIfStale;
+						while (step != NodeStep.Done)
 						{
-							if (isAsync)
-								await pipeline.SniffOnStaleClusterAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
-							else
-								pipeline.SniffOnStaleCluster(auditor, attempt);
-						}
-						if (_productRegistration.SupportsPing)
-						{
-							if (isAsync)
-								await PingAsync(pipeline, node, auditor, attempt, cancellationToken).ConfigureAwait(false);
-							else
-								Ping(pipeline, node, auditor, attempt);
-						}
-
-						if (isAsync)
-							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
-								.ConfigureAwait(false);
-						else
-							response = pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
-
-						if (!response.ApiCallDetails.SuccessOrKnownError)
-						{
-							pipeline.MarkDead(node);
-
-							if (_productRegistration.SupportsSniff)
+							switch (step)
 							{
-								if (isAsync)
-									await pipeline.SniffOnConnectionFailureAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
-								else
-									pipeline.SniffOnConnectionFailure(auditor, attempt);
+								case NodeStep.SniffIfStale:
+									if (_productRegistration.SupportsSniff)
+									{
+										if (isAsync)
+											await pipeline.SniffOnStaleClusterAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
+										else
+											pipeline.SniffOnStaleCluster(auditor, attempt);
+									}
+									step = NodeStep.PingIfDue;
+									break;
+
+								case NodeStep.PingIfDue:
+									if (_productRegistration.SupportsPing)
+									{
+										if (isAsync)
+											await PingAsync(pipeline, node, auditor, attempt, cancellationToken).ConfigureAwait(false);
+										else
+											Ping(pipeline, node, auditor, attempt);
+									}
+									step = NodeStep.Call;
+									break;
+
+								case NodeStep.Call:
+									if (isAsync)
+										response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
+											.ConfigureAwait(false);
+									else
+										response = pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
+
+									step = response.ApiCallDetails.SuccessOrKnownError ? NodeStep.Settle : NodeStep.TakeOutOfRotation;
+									break;
+
+								case NodeStep.TakeOutOfRotation:
+									pipeline.MarkDead(node);
+
+									if (_productRegistration.SupportsSniff)
+									{
+										if (isAsync)
+											await pipeline.SniffOnConnectionFailureAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
+										else
+											pipeline.SniffOnConnectionFailure(auditor, attempt);
+									}
+									step = NodeStep.Settle;
+									break;
+
+								case NodeStep.Settle:
+									outcome = Settle(pipeline, node, response, auditor, cancellationToken);
+									step = NodeStep.Done;
+									break;
+
+								default:
+									throw new InvalidOperationException($"Unhandled step {step}.");
 							}
 						}
-
-						outcome = Settle(pipeline, node, response, auditor, cancellationToken);
 					}
 					catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
 					{
@@ -316,6 +341,31 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 		/// <summary>The request cannot continue, whatever the other nodes might say (bad credentials, cancellation).</summary>
 		Stop,
+	}
+
+	/// <summary>
+	/// The stages of one node's turn, in the order they can happen. Every failure leaves the walk through an exception
+	/// that <see cref="RequestCoreAsync{TResponse}"/> classifies; this is the path when nothing throws.
+	/// </summary>
+	private enum NodeStep
+	{
+		/// <summary>The cluster information is older than <c>SniffInformationLifeSpan</c>: sniff before using the node.</summary>
+		SniffIfStale,
+
+		/// <summary>The node is untested or resurrected and pinging is on: ping it before using it.</summary>
+		PingIfDue,
+
+		/// <summary>Make the request.</summary>
+		Call,
+
+		/// <summary>The call got neither success nor a known error: mark the node dead and sniff if that is configured.</summary>
+		TakeOutOfRotation,
+
+		/// <summary>Decide what the turn means for the walk: see <see cref="NodeOutcome"/>.</summary>
+		Settle,
+
+		/// <summary>The turn is over.</summary>
+		Done,
 	}
 
 	private static void SetServerTags(Activity? activity, Endpoint endpoint)
