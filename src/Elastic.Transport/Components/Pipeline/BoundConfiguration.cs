@@ -36,22 +36,23 @@ public sealed record BoundConfiguration : IRequestConfiguration
 		ProxyUsername = global.ProxyUsername;
 		ProxyPassword = global.ProxyPassword;
 		DisableAutomaticProxyDetection = global.DisableAutomaticProxyDetection;
-		UserAgent = global.UserAgent ?? local?.UserAgent ?? RequestConfiguration.DefaultUserAgent;
+		UserAgent = local?.UserAgent ?? global.UserAgent ?? RequestConfiguration.DefaultUserAgent;
 		KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
 		KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
 		RunAs = local?.RunAs ?? global.RunAs;
 		DisableDirectStreaming = local?.DisableDirectStreaming ?? global.DisableDirectStreaming ?? false;
-		ForceNode = global.ForceNode ?? local?.ForceNode;
+		ForceNode = local?.ForceNode ?? global.ForceNode;
 		MaxRetries = ForceNode != null ? 0
-			: Math.Min(global.MaxRetries.GetValueOrDefault(int.MaxValue), global.NodePool.MaxRetries);
-		DisableSniff = global.DisableSniff ?? local?.DisableSniff ?? false;
-		DisablePings = global.DisablePings ?? !global.NodePool.SupportsPinging;
+			: Math.Min(local?.MaxRetries ?? global.MaxRetries ?? int.MaxValue, global.NodePool.MaxRetries);
+		DisableSniff = local?.DisableSniff ?? global.DisableSniff ?? false;
+		DisablePings = local?.DisablePings ?? global.DisablePings ?? !global.NodePool.SupportsPinging;
 		HttpPipeliningEnabled = local?.HttpPipeliningEnabled ?? global.HttpPipeliningEnabled ?? true;
-		HttpCompression = global.EnableHttpCompression ?? local?.EnableHttpCompression ?? true;
-		ContentType = global.ProductRegistration.TransformContentType(local?.ContentType ?? global.Accept ?? DefaultContentType)!;
+		HttpCompression = local?.EnableHttpCompression ?? global.EnableHttpCompression ?? true;
+		ContentType = global.ProductRegistration.TransformContentType(local?.ContentType ?? global.ContentType ?? global.Accept ?? DefaultContentType)!;
 		Accept = global.ProductRegistration.TransformContentType(local?.Accept ?? global.Accept ?? DefaultContentType)!;
 		ThrowExceptions = local?.ThrowExceptions ?? global.ThrowExceptions ?? false;
 		RequestTimeout = local?.RequestTimeout ?? global.RequestTimeout ?? RequestConfiguration.DefaultRequestTimeout;
+		MaxRetryTimeout = local?.MaxRetryTimeout ?? global.MaxRetryTimeout ?? RequestTimeout;
 		RequestMetaData = local?.RequestMetaData;
 		AuthenticationHeader = local?.Authentication ?? global.Authentication;
 		AllowedStatusCodes = local?.AllowedStatusCodes ?? EmptyReadOnly<int>.Collection;
@@ -166,6 +167,8 @@ public sealed record BoundConfiguration : IRequestConfiguration
 	public string ContentType { get; }
 	/// <inheritdoc cref="IRequestConfiguration.RequestTimeout"/>
 	public TimeSpan RequestTimeout { get; }
+	/// <inheritdoc cref="IRequestConfiguration.MaxRetryTimeout"/>
+	public TimeSpan MaxRetryTimeout { get; }
 	/// <inheritdoc cref="IRequestConfiguration.RunAs"/>
 	public string? RunAs { get; }
 	/// <inheritdoc cref="IRequestConfiguration.ThrowExceptions"/>
@@ -204,7 +207,7 @@ public sealed record BoundConfiguration : IRequestConfiguration
 	bool? IRequestConfiguration.EnableHttpCompression => HttpCompression;
 	Uri? IRequestConfiguration.ForceNode => ForceNode;
 	int? IRequestConfiguration.MaxRetries => MaxRetries;
-	TimeSpan? IRequestConfiguration.MaxRetryTimeout => RequestTimeout;
+	TimeSpan? IRequestConfiguration.MaxRetryTimeout => MaxRetryTimeout;
 	string? IRequestConfiguration.OpaqueId => OpaqueId;
 	bool? IRequestConfiguration.ParseAllHeaders => ParseAllHeaders;
 	TimeSpan? IRequestConfiguration.PingTimeout => PingTimeout;

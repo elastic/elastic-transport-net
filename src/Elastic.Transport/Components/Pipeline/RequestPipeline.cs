@@ -73,7 +73,8 @@ public class RequestPipeline
 
 	private bool IsTakingTooLong(DateTimeOffset startedOn)
 	{
-		var timeout = RequestTimeout;
+		// The whole request, retries included, gets MaxRetryTimeout (which defaults to RequestTimeout).
+		var timeout = _boundConfiguration.MaxRetryTimeout;
 		var now = _dateTimeProvider.Now();
 
 		//we apply a soft margin so that if a request times out at 59 seconds when the maximum is 60 we also abort.
@@ -86,7 +87,6 @@ public class RequestPipeline
 
 	private int MaxRetries => _boundConfiguration.MaxRetries;
 
-	private bool Refresh { get; set; }
 
 	private IEnumerable<Node> SniffNodes(Auditor? auditor) => _nodePool
 		.CreateView(auditor)
@@ -323,7 +323,7 @@ public class RequestPipeline
 		{
 			using (auditor?.Add(SniffOnStartup, _dateTimeProvider))
 			{
-				await SniffAsync(auditor, cancellationToken).ConfigureAwait(false);
+				await SniffAsync(auditor, null, cancellationToken).ConfigureAwait(false);
 				_nodePool.MarkAsSniffed();
 			}
 		}
@@ -360,7 +360,7 @@ public class RequestPipeline
 	}
 
 	/// returns a consistent enumerable view into the available nodes
-	public IEnumerable<Node> NextNode(DateTimeOffset startedOn, int attemptedNodes, Auditor? auditor)
+	public IEnumerable<Node> NextNode(DateTimeOffset startedOn, RequestAttempt attempt, Auditor? auditor)
 	{
 		if (_boundConfiguration.ForceNode != null)
 		{
@@ -371,15 +371,17 @@ public class RequestPipeline
 		//This for loop allows to break out of the view state machine if we need to
 		//force a refresh (after reseeding node pool). We have a hardcoded limit of only
 		//allowing 100 of these refreshes per call
-		var refreshed = false;
 		for (var i = 0; i < 100; i++)
 		{
-			if (DepletedRetries(startedOn, attemptedNodes))
+			// The budget is read from the request's own state at every step. It used to be passed by value into
+			// this iterator, so it always saw the count from the time of the call (0) and never ran out.
+			if (DepletedRetries(startedOn, attempt.AttemptedNodes))
 				yield break;
 
+			var refreshed = false;
 			foreach (var node in _nodePool.CreateView(auditor))
 			{
-				if (DepletedRetries(startedOn, attemptedNodes))
+				if (DepletedRetries(startedOn, attempt.AttemptedNodes))
 					break;
 
 				if (!_nodePredicate(node))
@@ -387,10 +389,10 @@ public class RequestPipeline
 
 				yield return node;
 
-				if (!Refresh)
+				if (!attempt.RefreshRequested)
 					continue;
 
-				Refresh = false;
+				attempt.RefreshRequested = false;
 				refreshed = true;
 				break;
 			}
@@ -450,13 +452,13 @@ public class RequestPipeline
 	}
 
 	/// Discover the products network topology to yield all available nodes
-	public void Sniff(Auditor? auditor) => SniffCoreAsync(false, auditor).EnsureCompleted();
+	public void Sniff(Auditor? auditor, RequestAttempt? attempt = null) => SniffCoreAsync(false, auditor, attempt).EnsureCompleted();
 
 	/// Discover the products network topology to yield all available nodes
-	public Task SniffAsync(Auditor? auditor, CancellationToken cancellationToken = default)
-		=> SniffCoreAsync(true, auditor, cancellationToken).AsTask();
+	public Task SniffAsync(Auditor? auditor, RequestAttempt? attempt = null, CancellationToken cancellationToken = default)
+		=> SniffCoreAsync(true, auditor, attempt, cancellationToken).AsTask();
 
-	private async ValueTask SniffCoreAsync(bool isAsync, Auditor? auditor, CancellationToken cancellationToken = default)
+	private async ValueTask SniffCoreAsync(bool isAsync, Auditor? auditor, RequestAttempt? attempt, CancellationToken cancellationToken = default)
 	{
 		if (!_productRegistration.SupportsSniff)
 			return;
@@ -489,66 +491,73 @@ public class RequestPipeline
 				}
 
 				_nodePool.Reseed(result.Item2);
-				Refresh = true;
+				if (attempt is not null)
+					attempt.RefreshRequested = true;
 
 				return;
-			}
-			catch (Exception e)
-			{
-				if (audit is not null)
-				{
-					audit.Event = SniffFailure;
-					audit.Exception = e;
 				}
-				exceptions.Add(e);
-			}
+				catch (Exception e)
+				{
+					if (audit is not null)
+					{
+						audit.Event = SniffFailure;
+						audit.Exception = e;
+					}
+					exceptions.Add(e);
 
-			throw new PipelineException(PipelineFailure.SniffFailure, exceptions.AsAggregateOrFirst());
-		}
-	}
+					// Bad credentials will not get better on the next node.
+					if (e is PipelineException { FailureReason: PipelineFailure.BadAuthentication })
+						break;
+				}
+				}
+
+				// Only give up once every node has had its chance.
+				if (exceptions.Count > 0)
+					throw new PipelineException(PipelineFailure.SniffFailure, exceptions.AsAggregateOrFirst());
+				}
 
 	/// sniff the topology when a connection failure happens
-	public void SniffOnConnectionFailure(Auditor? auditor)
+	public void SniffOnConnectionFailure(Auditor? auditor, RequestAttempt? attempt = null)
 	{
 		if (!SniffsOnConnectionFailure)
 			return;
 
 		using (auditor?.Add(SniffOnFail, _dateTimeProvider))
-			Sniff(auditor);
+			Sniff(auditor, attempt);
 	}
 
 	/// sniff the topology when a connection failure happens
-	public async Task SniffOnConnectionFailureAsync(Auditor? auditor, CancellationToken cancellationToken)
+	public async Task SniffOnConnectionFailureAsync(Auditor? auditor, RequestAttempt? attempt, CancellationToken cancellationToken)
 	{
 		if (!SniffsOnConnectionFailure)
 			return;
 
 		using (auditor?.Add(SniffOnFail, _dateTimeProvider))
-			await SniffAsync(auditor, cancellationToken).ConfigureAwait(false);
+			await SniffAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
 	}
 
 	/// sniff the topology after a set period to ensure it's up to date
-	public void SniffOnStaleCluster(Auditor? auditor)
+	public void SniffOnStaleCluster(Auditor? auditor, RequestAttempt? attempt = null)
 	{
 		if (!StaleClusterState)
 			return;
 
 		using (auditor?.Add(AuditEvent.SniffOnStaleCluster, _dateTimeProvider))
 		{
-			Sniff(auditor);
+			Sniff(auditor, attempt);
 			_nodePool.MarkAsSniffed();
 		}
 	}
 
 	/// sniff the topology after a set period to ensure its up to date
-	public async Task SniffOnStaleClusterAsync(Auditor? auditor, CancellationToken cancellationToken)
+	public async Task SniffOnStaleClusterAsync(Auditor? auditor, RequestAttempt? attempt, CancellationToken cancellationToken)
 	{
 		if (!StaleClusterState)
 			return;
 
 		using (auditor?.Add(AuditEvent.SniffOnStaleCluster, _dateTimeProvider))
 		{
-			await SniffAsync(auditor, cancellationToken).ConfigureAwait(false);
+			await SniffAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
 			_nodePool.MarkAsSniffed();
 		}
 	}

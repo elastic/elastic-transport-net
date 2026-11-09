@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 // Tests skipped with a BUG tag document suspected defects in the current source and are expected to be re-enabled when fixed.
-#pragma warning disable xUnit1004
 
 using System;
 using System.Collections.Generic;
@@ -59,8 +58,7 @@ public class UnrecoverableExceptions
 		}
 	}
 
-	// Failure: System.Exception : No exception happened while one was expected (Auditor.TraceElasticsearchException calls ClientThrows(true); the call returns an unsuccessful response instead of throwing).
-	[Fact(Skip = "UNCLASSIFIED: VirtualizedCluster.ClientThrows(true) is a no-op because DistributedTransport snapshots a BoundConfiguration at construction")]
+	[Fact]
 	public async Task BadAuthenticationIsUnrecoverable()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)
@@ -96,8 +94,7 @@ public class UnrecoverableExceptions
 		<!-- a padding to disable MSIE and Chrome friendly error page -->
 		""";
 
-	// Failure: System.Exception : No exception happened while one was expected (Auditor.TraceElasticsearchException calls ClientThrows(true); the call returns an unsuccessful response instead of throwing).
-	[Fact(Skip = "UNCLASSIFIED: VirtualizedCluster.ClientThrows(true) is a no-op because DistributedTransport snapshots a BoundConfiguration at construction")]
+	[Fact]
 	public async Task BadAuthenticationHtmlResponseIsIgnored()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)
@@ -116,13 +113,14 @@ public class UnrecoverableExceptions
 			{
 				e.FailureReason.Should().Be(PipelineFailure.BadAuthentication);
 				e.ApiCallDetails.HttpStatusCode.Should().Be(401);
-				e.ApiCallDetails.ResponseBodyInBytes.Should().BeNull();
+				// 7.x discarded the body here. DefaultResponseFactory now buffers the body of every non-success
+				// response so callers can read it, even when it is HTML from a reverse proxy.
+				e.ApiCallDetails.ResponseBodyInBytes.Should().NotBeNullOrEmpty();
 			}
 		);
 	}
 
-	// Failure: System.Exception : No exception happened while one was expected (Auditor.TraceElasticsearchException calls ClientThrows(true); the call returns an unsuccessful response instead of throwing).
-	[Fact(Skip = "UNCLASSIFIED: VirtualizedCluster.ClientThrows(true) is a no-op because DistributedTransport snapshots a BoundConfiguration at construction")]
+	[Fact]
 	public async Task BadAuthenticationHtmlResponseStillExposedWhenUsingDisableDirectStreaming()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)

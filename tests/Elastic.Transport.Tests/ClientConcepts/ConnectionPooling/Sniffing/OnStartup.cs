@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 // Tests skipped with a BUG tag document suspected defects in the current source and are expected to be re-enabled when fixed.
-#pragma warning disable xUnit1004
 
 using System;
 using System.Collections.Generic;
@@ -26,8 +25,7 @@ namespace Elastic.Transport.Tests.ClientConcepts.ConnectionPooling.Sniffing;
 public class OnStartupSniffing
 {
 
-	// Failure: Elastic.Transport.PipelineException : Failed sniffing cluster state. ---- PipelineException BadRequest ---- HttpRequestException (first node's sniff failure; the remaining nodes are never tried).
-	[Fact(Skip = "BUG 3: Sniff throws after the first failing node instead of trying the remaining nodes")]
+	[Fact]
 	public async Task ASniffOnStartupHappens()
 	{
 
@@ -53,8 +51,7 @@ public class OnStartupSniffing
 		 );
 	}
 
-	// Failure: Elastic.Transport.PipelineException : Failed sniffing cluster state. ---- PipelineException BadRequest ---- HttpRequestException (first node's sniff failure; the remaining nodes are never tried).
-	[Fact(Skip = "BUG 3: Sniff throws after the first failing node instead of trying the remaining nodes")]
+	[Fact]
 	public async Task ASniffOnStartupHappensOnce()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)
@@ -84,8 +81,7 @@ public class OnStartupSniffing
 		);
 	}
 
-	// Failure: Elastic.Transport.PipelineException : Failed sniffing cluster state. ---- PipelineException BadRequest ---- HttpRequestException (first node's sniff failure; the remaining nodes are never tried).
-	[Fact(Skip = "BUG 3: Sniff throws after the first failing node instead of trying the remaining nodes")]
+	[Fact]
 	public async Task SniffOnStartUpTakesNewClusterState()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)
@@ -112,8 +108,7 @@ public class OnStartupSniffing
 		});
 	}
 
-	// Failure: Elastic.Transport.PipelineException : Failed sniffing cluster state. ---- PipelineException BadRequest ---- HttpRequestException (first node's sniff failure; the remaining nodes are never tried).
-	[Fact(Skip = "BUG 3: Sniff throws after the first failing node instead of trying the remaining nodes")]
+	[Fact]
 	public async Task SniffTriesAllNodes()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)
@@ -142,8 +137,7 @@ public class OnStartupSniffing
 		});
 	}
 
-	// Failure: Elastic.Transport.PipelineException : Failed sniffing cluster state. ---- System.NullReferenceException at VirtualClusterRequestInvoker.UpdateCluster (Sniff(s => s.Succeeds(Always)) without a cluster).
-	[Fact(Skip = "UNCLASSIFIED: VirtualClusterRequestInvoker.UpdateCluster throws NullReferenceException when a Sniff rule has no NewClusterState (old code returned on null)")]
+	[Fact]
 	public async Task SniffPrefersMasterNodes()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(new[] {
@@ -166,8 +160,7 @@ public class OnStartupSniffing
 		});
 	}
 
-	// Failure: Elastic.Transport.PipelineException : Failed sniffing cluster state. ---- PipelineException BadRequest ---- HttpRequestException (first node's sniff failure; the remaining nodes are never tried).
-	[Fact(Skip = "BUG 3: Sniff throws after the first failing node instead of trying the remaining nodes")]
+	[Fact]
 	public async Task SniffPrefersMasterNodesButStillFailsOver()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(new[] {

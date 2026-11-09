@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 // Tests skipped with a BUG tag document suspected defects in the current source and are expected to be re-enabled when fixed.
-#pragma warning disable xUnit1004
 
 using System;
 using System.Collections.Generic;
@@ -27,8 +26,7 @@ public class RespectsMaxRetryOverrides
 
 	// Request override MaxRetries(2) ignored: BadRequest on 9200..9208 then HealthyResponse 9209.
 	// Expected: BadRequest 9200, 9201, 9202 then MaxRetriesReached.
-	// Failure: the 1st client call's synchronous audit trail should assert ALL audit trail items
-	[Fact(Skip = "BUG 6: BoundConfiguration ignores the request-level MaxRetries (Math.Min(global, NodePool.MaxRetries) only)")]
+	[Fact]
 	public async Task DefaultMaxIsNumberOfNodes()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)
@@ -50,8 +48,7 @@ public class RespectsMaxRetryOverrides
 
 	// Request override MaxRetries(2) ignored: BadRequest on 9200..9208 then HealthyResponse 9209.
 	// Expected: BadRequest 9200, 9201, 9202 then MaxRetriesReached.
-	// Failure: the 1st client call's synchronous audit trail should assert ALL audit trail items
-	[Fact(Skip = "BUG 6: BoundConfiguration ignores the request-level MaxRetries (Math.Min(global, NodePool.MaxRetries) only)")]
+	[Fact]
 	public async Task FixedMaximumNumberOfRetries()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)
@@ -71,9 +68,8 @@ public class RespectsMaxRetryOverrides
 		);
 	}
 
-	// Failure: System.ArgumentException : DateTime provider is not a TestableDateTimeProvider (Parameter 'settings')
 	// thrown from the VirtualizedCluster ctor; VirtualCluster.SingleNodeConnection does not set DateTimeProvider on the pool.
-	[Fact(Skip = "UNCLASSIFIED: VirtualCluster.SingleNodeConnection() builds a SingleNodePool without the TestableDateTimeProvider")]
+	[Fact]
 	public async Task DoesNotRetryOnSingleNodeConnectionPool()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)

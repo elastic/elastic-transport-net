@@ -46,6 +46,7 @@ public class StaticNodePool : NodePool
 			: new Random(randomizeSeed.Value);
 
 		InternalNodes = Initialize(nodes);
+		LastUpdate = DateTimeProvider.Now();
 	}
 
 	//this constructor is protected because nodeScorer only makes sense on subclasses that support reseeding otherwise just manually sort `nodes` before instantiating.
@@ -54,6 +55,7 @@ public class StaticNodePool : NodePool
 	{
 		_nodeScorer = nodeScorer;
 		InternalNodes = Initialize(nodes);
+		LastUpdate = DateTimeProvider.Now();
 	}
 
 	private List<Node> Initialize(IEnumerable<Node> nodes)
@@ -113,7 +115,15 @@ public class StaticNodePool : NodePool
 	/// The list of nodes we are operating over. This is protected so that subclasses that DO implement <see cref="SupportsReseeding"/>
 	/// can update this list. Its up to subclasses to make this thread safe.
 	/// </summary>
-	protected List<Node> InternalNodes { get; set; }
+	// Reseeding swaps in a whole new list and never mutates one in place, so a reader that takes a single snapshot
+	// of this property sees a consistent set of nodes without any lock.
+	protected List<Node> InternalNodes
+	{
+		get => Volatile.Read(ref _internalNodes);
+		set => Volatile.Write(ref _internalNodes, value);
+	}
+
+	private List<Node> _internalNodes = null!;
 
 	/// <summary>
 	/// If <see cref="Randomize"/> is set sub classes that support reseeding will have to use this instance since it might be based of an
@@ -163,7 +173,8 @@ public class StaticNodePool : NodePool
 	protected Node RetryInternalNodes(int globalCursor, Auditor? auditor = null)
 	{
 		auditor?.Emit(AuditEvent.AllNodesDead);
-		var node = InternalNodes[globalCursor % InternalNodes.Count];
+		var internalNodes = InternalNodes;
+		var node = internalNodes[globalCursor % internalNodes.Count];
 		node.IsResurrected = true;
 		auditor?.Emit(AuditEvent.Resurrection, node);
 		return node;
