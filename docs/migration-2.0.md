@@ -86,3 +86,7 @@ To take whatever the server sends, set the request's `Accept` to `*/*`. That ski
 ## TCP keep-alive is on by default
 
 Connections send TCP keep-alive probes after 5 minutes of silence, then every second, and drop the connection after 5 unanswered probes. `KeepAliveTime` and `KeepAliveInterval` now default to 5 minutes and 1 second on every target (they were 2 seconds each, and only reached .NET Framework). On .NET, the transport connects the socket for `SocketsHttpHandler` through a `ConnectCallback` to set them. A deployment that wants other values sets `KeepAliveTime` and `KeepAliveInterval` on the transport configuration; the probe count is fixed at 5.
+
+## A configuration is locked once a transport uses it
+
+A `TransportConfigurationDescriptor` (or a subclass built on `TransportConfigurationDescriptorBase<T>`) can no longer be changed after a transport is created from it. The descriptor methods throw an `InvalidOperationException`. Before, such a change was half applied: the transport had copied its own settings, while a request with its own configuration read the live values. Finish configuring before you create the transport, or create a copy with `new TransportConfigurationDescriptor(configuration)` and change that. Two transports can still share one configuration, and the `TransportConfiguration` record is unaffected: it was already immutable and copies with `with`.
