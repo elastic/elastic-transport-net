@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 // Tests skipped with a BUG tag document suspected defects in the current source and are expected to be re-enabled when fixed.
-#pragma warning disable xUnit1004
 
 using System;
 using System.Collections.Generic;
@@ -26,8 +25,7 @@ namespace Elastic.Transport.Tests.ClientConcepts.ConnectionPooling.Sniffing;
 public class RoleDetection
 {
 
-	// Failure: Elastic.Transport.PipelineException : Failed sniffing cluster state. ---- PipelineException BadRequest ---- HttpRequestException (Sniff(s => s.Fails(Always)) on 9200 aborts the sniff; 9202 is never tried).
-	[Fact(Skip = "BUG 3: Sniff throws after the first failing node instead of trying the remaining nodes")]
+	[Fact]
 	public async Task DetectsMasterNodes()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)
@@ -56,8 +54,7 @@ public class RoleDetection
 		await audit.TraceStartup();
 	}
 
-	// Failure: Elastic.Transport.PipelineException : Failed sniffing cluster state. ---- PipelineException BadRequest ---- HttpRequestException (Sniff(s => s.Fails(Always)) on 9200 aborts the sniff; 9202 is never tried).
-	[Fact(Skip = "BUG 3: Sniff throws after the first failing node instead of trying the remaining nodes")]
+	[Fact]
 	public async Task DetectsDataNodes()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)

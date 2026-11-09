@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 // Tests skipped with a BUG tag document suspected defects in the current source and are expected to be re-enabled when fixed.
-#pragma warning disable xUnit1004
 
 using System;
 using System.Collections.Generic;
@@ -27,9 +26,7 @@ public class OnStaleClusterState
 {
 
 	// After ChangeTime(+31min) expected SniffOnStaleCluster, SniffSuccess 9202, HealthyResponse 9201.
-	// Observed: only HealthyResponse 9201 (StaleClusterState is false while LastUpdate is null; old pools set LastUpdate = Now at construction).
-	// Failure: the 1st client call's synchronous audit trail should assert ALL audit trail items
-	[Fact(Skip = "UNCLASSIFIED: NodePool.LastUpdate is never initialised, so SniffOnStaleCluster never fires before the first reseed")]
+	[Fact]
 	public async Task ASniffOnStartupHappens()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)

@@ -13,13 +13,12 @@ namespace Elastic.Transport.Properties.Tests;
 
 public class StaticPoolRetryTests
 {
-	// BUG 1: RequestPipeline.NextNode receives attemptedNodes by value into an iterator, so the retry budget is never
-	// consulted while walking the nodes. Shrunk witness: nodes=[xH] maxRetries=0 -> the model expects 1 attempt and
-	// a failure, the pipeline goes on to node 2 and succeeds. Un-skipped by the Stage 3 fix.
-	private const string Bug1 = "BUG 1: MaxRetries is not enforced while iterating nodes";
+	// Regression guard for the retry budget. RequestPipeline.NextNode used to receive attemptedNodes by value into
+	// an iterator, so the budget was never consulted while walking nodes. Shrunk witness: nodes=[xH] maxRetries=0
+	// made 2 attempts and succeeded, where the diagram allows 1 attempt and a failure.
 
 	/// <summary>The pipeline and the diagram agree, for every generated scenario.</summary>
-	[Fact(Skip = Bug1)]
+	[Fact]
 	public void PipelineMatchesTheModel() =>
 		Scenario.Generator.Sample(scenario =>
 		{
@@ -49,7 +48,7 @@ public class StaticPoolRetryTests
 			.For(RequestOutcomeConstraints.Instance, Scenario.Generator.Select(RequestOutcome.Run))
 			.RunAsync();
 
-	[Fact(Skip = Bug1)]
+	[Fact]
 	public async Task NoRequestExceedsItsRetryBudget() =>
 		await AutoTest
 			.For(RetryBudgetConstraints.Instance, Scenario.Generator.Select(RequestOutcome.Run))

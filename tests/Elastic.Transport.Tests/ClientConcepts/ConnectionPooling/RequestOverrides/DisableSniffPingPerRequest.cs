@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 // Tests skipped with a BUG tag document suspected defects in the current source and are expected to be re-enabled when fixed.
-#pragma warning disable xUnit1004
 
 using System;
 using System.Collections.Generic;
@@ -25,9 +24,8 @@ namespace Elastic.Transport.Tests.ClientConcepts.ConnectionPooling.RequestOverri
 public class DisableSniffPingPerRequest
 {
 
-	// Failure: Elastic.Transport.PipelineException : Failed sniffing cluster state. ---- System.NullReferenceException at VirtualClusterRequestInvoker.UpdateCluster (VirtualClusterConnection.cs:111)
 	// The first call (DisableSniffing) behaves correctly; the second call (SniffOnStartup) hits the NRE.
-	[Fact(Skip = "UNCLASSIFIED: VirtualClusterRequestInvoker.UpdateCluster throws NullReferenceException when a Sniff rule has no NewClusterState (old code returned on null)")]
+	[Fact]
 	public async Task DisableSniff()
 	{
 
@@ -60,9 +58,7 @@ public class DisableSniffPingPerRequest
 		);
 	}
 
-	// Failure: Elastic.Transport.PipelineException : Failed sniffing cluster state. ---- System.NullReferenceException at VirtualClusterRequestInvoker.UpdateCluster
-	// Would likely also hit BUG 6 (request-level DisablePing ignored) once past the sniff.
-	[Fact(Skip = "UNCLASSIFIED: VirtualClusterRequestInvoker.UpdateCluster throws NullReferenceException when a Sniff rule has no NewClusterState (old code returned on null)")]
+	[Fact]
 	public async Task DisablePing()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)
@@ -84,8 +80,7 @@ public class DisableSniffPingPerRequest
 
 	// Request override DisablePing() ignored: audit trail shows PingFailure on 9200, 9201, 9202, ...
 	// Expected: only HealthyResponse 9200.
-	// Failure: the 1st client call's synchronous audit trail should assert ALL audit trail items
-	[Fact(Skip = "BUG 6: BoundConfiguration.DisablePings ignores the request-level value (global.DisablePings ?? !SupportsPinging)")]
+	[Fact]
 	public async Task DisableSniffAndPing()
 	{
 		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)

@@ -17,6 +17,9 @@ using Elastic.Transport.Products;
 #if NETFRAMEWORK
 using System.Net;
 #endif
+#if NET8_0_OR_GREATER
+using System.Net.Http;
+#endif
 
 namespace Elastic.Transport;
 
@@ -133,18 +136,18 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			}
 
 			List<PipelineException>? seenExceptions = null;
-			var attemptedNodes = 0;
+			var attempt = new RequestAttempt();
 
 			if (pipeline.TryGetSingleNode(out var singleNode) && singleNode is not null)
 			{
 				endpoint = endpoint with { Node = singleNode };
 				// No value in marking a single node as dead. We have no other options!
-				attemptedNodes = 1;
+				attempt.AttemptedNodes = 1;
 				activity?.SetTag(SemanticConventions.UrlFull, endpoint.Uri?.AbsoluteUri);
 				activity?.SetTag(SemanticConventions.ServerAddress, endpoint.Uri?.Host);
 				activity?.SetTag(SemanticConventions.ServerPort, endpoint.Uri?.Port);
 
-				for (var attempt = 0; attempt < 2; attempt++)
+				for (var retry = 0; retry < 2; retry++)
 				{
 					try
 					{
@@ -174,9 +177,9 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 					// rather than a connection error, so it does not auto-retry internally.
 					// The stale connection is purged after the first failure; the retry
 					// succeeds on a fresh connection.
-					if (attempt == 0 && IsStaleConnectionException(response))
+					if (retry == 0 && IsStaleConnectionException(response))
 					{
-						attemptedNodes++;
+						attempt.AttemptedNodes++;
 						continue;
 					}
 
@@ -185,9 +188,9 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			}
 			else
 			{
-				foreach (var node in pipeline.NextNode(startedOn, attemptedNodes, auditor))
+				foreach (var node in pipeline.NextNode(startedOn, attempt, auditor))
 				{
-					attemptedNodes++;
+					attempt.AttemptedNodes++;
 					endpoint = endpoint with { Node = node };
 
 					// If multiple nodes are attempted, the final node attempted will be used to set the operation span attributes.
@@ -201,16 +204,16 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 						if (_productRegistration.SupportsSniff)
 						{
 							if (isAsync)
-								await pipeline.SniffOnStaleClusterAsync(auditor, cancellationToken).ConfigureAwait(false);
+								await pipeline.SniffOnStaleClusterAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
 							else
-								pipeline.SniffOnStaleCluster(auditor);
+								pipeline.SniffOnStaleCluster(auditor, attempt);
 						}
 						if (_productRegistration.SupportsPing)
 						{
 							if (isAsync)
-								await PingAsync(pipeline, node, auditor, cancellationToken).ConfigureAwait(false);
+								await PingAsync(pipeline, node, auditor, attempt, cancellationToken).ConfigureAwait(false);
 							else
-								Ping(pipeline, node, auditor);
+								Ping(pipeline, node, auditor, attempt);
 						}
 
 						if (isAsync)
@@ -226,9 +229,9 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 							if (_productRegistration.SupportsSniff)
 							{
 								if (isAsync)
-									await pipeline.SniffOnConnectionFailureAsync(auditor, cancellationToken).ConfigureAwait(false);
-								else
-									pipeline.SniffOnConnectionFailure(auditor);
+									await pipeline.SniffOnConnectionFailureAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
+																	else
+																		pipeline.SniffOnConnectionFailure(auditor, attempt);
 							}
 						}
 					}
@@ -275,7 +278,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 #endif
 				activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
 			}
-			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportAttemptedNodes, attemptedNodes);
+			activity?.SetTag(OpenTelemetryAttributes.ElasticTransportAttemptedNodes, attempt.AttemptedNodes);
 
 			// We don't check IsAllDataRequested here as that's left to the consumer.
 			if (configureActivity is not null && activity is not null)
@@ -284,7 +287,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			if (activity is { IsAllDataRequested: true })
 				OpenTelemetry.SetCommonAttributes(activity, Configuration);
 
-			return FinalizeResponse(endpoint, boundConfiguration, data, pipeline, startedOn, attemptedNodes, auditor, seenExceptions, response);
+			return FinalizeResponse(endpoint, boundConfiguration, data, pipeline, startedOn, attempt.AttemptedNodes, auditor, seenExceptions, response);
 		}
 		finally
 		{
@@ -386,6 +389,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		var ex = response?.ApiCallDetails?.OriginalException;
 		while (ex is not null)
 		{
+		#if NET8_0_OR_GREATER
+			if (ex is HttpRequestException { HttpRequestError: HttpRequestError.InvalidResponse })
+				return true;
+		#endif
 			if (ex.Message.Contains("Received an invalid status line:"))
 				return true;
 			ex = ex.InnerException;
@@ -452,7 +459,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			throw clientException;
 	}
 
-	private void Ping(RequestPipeline pipeline, Node node, Auditor? auditor)
+	private void Ping(RequestPipeline pipeline, Node node, Auditor? auditor, RequestAttempt attempt)
 	{
 		try
 		{
@@ -461,12 +468,12 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		catch (PipelineException e) when (e.Recoverable)
 		{
 			if (_productRegistration.SupportsSniff)
-				pipeline.SniffOnConnectionFailure(auditor);
+				pipeline.SniffOnConnectionFailure(auditor, attempt);
 			throw;
 		}
 	}
 
-	private async Task PingAsync(RequestPipeline pipeline, Node node, Auditor? auditor, CancellationToken cancellationToken)
+	private async Task PingAsync(RequestPipeline pipeline, Node node, Auditor? auditor, RequestAttempt attempt, CancellationToken cancellationToken)
 	{
 		try
 		{
@@ -475,7 +482,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		catch (PipelineException e) when (e.Recoverable)
 		{
 			if (_productRegistration.SupportsSniff)
-				await pipeline.SniffOnConnectionFailureAsync(auditor, cancellationToken).ConfigureAwait(false);
+				await pipeline.SniffOnConnectionFailureAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
 			throw;
 		}
 	}
