@@ -199,8 +199,11 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			{
 				attempt = new RequestAttempt();
 
-				foreach (var node in pipeline.NextNode(startedOn, attempt, auditor))
+				try
 				{
+				while (pipeline.MoveNext(attempt, startedOn, auditor))
+				{
+					var node = attempt.Current!;
 					attempt.AttemptedNodes++;
 					endpoint = endpoint with { Node = node };
 
@@ -300,6 +303,11 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 					if (outcome != NodeOutcome.TryNextNode)
 						break;
+				}
+				}
+				finally
+				{
+					attempt.EndView();
 				}
 			}
 

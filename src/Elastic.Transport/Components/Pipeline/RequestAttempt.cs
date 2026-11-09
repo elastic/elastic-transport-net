@@ -20,4 +20,26 @@ internal sealed class RequestAttempt
 
 	/// <summary>The recoverable failures seen so far, in order. Null until the first one, so a clean request allocates nothing.</summary>
 	public System.Collections.Generic.List<PipelineException>? SeenExceptions { get; set; }
+
+	// The walk over the nodes (see RequestPipeline.MoveNext). It used to be a compiler-generated iterator, a second
+	// object per request next to this one; holding its state here makes it one.
+
+	/// <summary>The node offered by the last successful <c>MoveNext</c>.</summary>
+	public Node? Current { get; set; }
+
+	/// <summary>The enumerator over the current view of the pool, or null between views.</summary>
+	public System.Collections.Generic.IEnumerator<Node>? View { get; set; }
+
+	/// <summary>How many views of the pool this request has walked; a reseed starts another, up to a limit.</summary>
+	public int Views { get; set; }
+
+	/// <summary>True once the one node of a forced request has been offered.</summary>
+	public bool ForcedNodeOffered { get; set; }
+
+	/// <summary>Ends the current view, if there is one.</summary>
+	public void EndView()
+	{
+		View?.Dispose();
+		View = null;
+	}
 }
