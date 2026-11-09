@@ -15,7 +15,7 @@ namespace Elastic.Transport;
 /// <summary>
 /// Allows you to control how <see cref="ITransport{TConfiguration}"/> behaves and where/how it connects to Elastic Stack products
 /// </summary>
-public record TransportConfiguration : ITransportConfiguration
+public record TransportConfiguration : ITransportConfiguration, IHasPipelineProvider
 {
 	/// <summary>
 	/// Detects whether we are running on .NET Core with CurlHandler.
@@ -187,7 +187,7 @@ public record TransportConfiguration : ITransportConfiguration
 		OpaqueId = config.OpaqueId;
 		ParseAllHeaders = config.ParseAllHeaders;
 		PingTimeout = config.PingTimeout;
-		PipelineProvider = config.PipelineProvider ?? DefaultRequestPipelineFactory.Default;
+		PipelineProvider = (config as IHasPipelineProvider)?.PipelineProvider ?? DefaultRequestPipelineFactory.Default;
 		PrettyJson = config.PrettyJson;
 		ProductRegistration = config.ProductRegistration;
 		ProxyAddress = config.ProxyAddress;
@@ -240,8 +240,9 @@ public record TransportConfiguration : ITransportConfiguration
 	/// <inheritdoc />
 	public DateTimeProvider DateTimeProvider { get; }
 
-	/// <inheritdoc />
-	public RequestPipelineFactory PipelineProvider { get; init; }
+	internal RequestPipelineFactory PipelineProvider { get; init; }
+
+	RequestPipelineFactory? IHasPipelineProvider.PipelineProvider => PipelineProvider;
 
 	/// <inheritdoc />
 	// ReSharper disable UnusedAutoPropertyAccessor.Global

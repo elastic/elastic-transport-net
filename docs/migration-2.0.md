@@ -24,9 +24,10 @@ will not touch you, but the behaviour fixes can change results, so read that sec
 - `Node.IsResurrected` is read-only. The pool is the only thing that decides a node is due a ping.
 - `Node` health is exposed through `IsAlive`, `IsResurrected`, `DeadUntil` and `FailedAttempts` as before, but they are
   now read from one atomic state, so you can no longer observe a half-updated node.
-- `RequestPipeline.NextNode`, `Sniff`, `SniffAsync`, `SniffOnConnectionFailure[Async]` and `SniffOnStaleCluster[Async]`
-  take a `RequestAttempt`, which is the per-request state that used to be shared on the pipeline. Only code that
-  subclasses or drives `RequestPipeline` directly is affected.
+- `RequestPipeline` and `RequestPipelineFactory` are internal, and so is `RequestAttempt`. They were never a usable
+  extension point (the factory's constructor was already internal), and nothing in this organisation's repositories
+  referenced them. `ITransportConfiguration.PipelineProvider` and `TransportConfigurationDescriptor.PipelineProvider()`
+  are gone with them.
 - `SniffingNodePool` no longer overrides `CreateView` (it held a lock around a lazy iterator, which guarded nothing).
 - `netstandard2.1` is no longer a separate target. `netstandard2.0` consumers are unaffected, as are `net8.0` and later.
 - `Elastic.Transport.VirtualizedCluster`: `SingleNodeConnection()` works, `ClientThrows()` applies per request, and a

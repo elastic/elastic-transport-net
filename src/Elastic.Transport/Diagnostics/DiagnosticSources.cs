@@ -84,14 +84,14 @@ internal static class DiagnosticSources
 		public string SourceName { get; } = "RequestPipeline";
 
 		/// <summary>
-		/// Start and stop event around <see cref="RequestPipeline.CallProductEndpoint{TResponse}"/> invocations
+		/// Start and stop event around <c>RequestPipeline.CallProductEndpoint</c> invocations
 		/// </summary>
 		public string CallProductEndpoint { get; } = nameof(CallProductEndpoint);
 
-		/// <summary> Start and stop event around <see cref="RequestPipeline.Ping"/> invocations</summary>
+		/// <summary> Start and stop event around <c>RequestPipeline.Ping</c> invocations</summary>
 		public string Ping { get; } = nameof(Ping);
 
-		/// <summary> Start and stop event around <see cref="RequestPipeline.Sniff"/> invocations</summary>
+		/// <summary> Start and stop event around <c>RequestPipeline.Sniff</c> invocations</summary>
 		public string Sniff { get; } = nameof(Sniff);
 	}
 

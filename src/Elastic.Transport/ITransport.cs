@@ -15,7 +15,7 @@ namespace Elastic.Transport;
 public interface ITransport
 {
 	/// <summary>
-	/// Orchestrate a request synchronously into a <see cref="NodePool"/> using the workflow defined in the <see cref="RequestPipeline"/>.
+	/// Orchestrate a request synchronously into a <see cref="NodePool"/> using the workflow defined in the <c>RequestPipeline</c>.
 	/// </summary>
 	/// <remarks>NOTE: It is highly recommended to prefer the asynchronous version of this method instead of this synchronous API.</remarks>
 	/// <typeparam name="TResponse">The type to deserialize the response body into.</typeparam>
@@ -35,7 +35,7 @@ public interface ITransport
 		where TResponse : TransportResponse, new();
 
 	/// <summary>
-	/// Orchestrate a request asynchronously into a <see cref="NodePool"/> using the workflow defined in the <see cref="RequestPipeline"/>.
+	/// Orchestrate a request asynchronously into a <see cref="NodePool"/> using the workflow defined in the <c>RequestPipeline</c>.
 	/// </summary>
 	/// <typeparam name="TResponse">The type to deserialize the response body into.</typeparam>
 	/// <param name="path">The path of the request.</param>

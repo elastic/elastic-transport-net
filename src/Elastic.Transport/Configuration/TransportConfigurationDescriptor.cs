@@ -84,7 +84,7 @@ public class TransportConfigurationDescriptor : TransportConfigurationDescriptor
 /// <inheritdoc cref="TransportConfigurationDescriptor"/>>
 [Browsable(false)]
 [EditorBrowsable(EditorBrowsableState.Never)]
-public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfiguration
+public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfiguration, IHasPipelineProvider
 	where T : TransportConfigurationDescriptorBase<T>
 {
 	/// <summary>
@@ -174,7 +174,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 		_opaqueId = config.OpaqueId;
 		_parseAllHeaders = config.ParseAllHeaders;
 		_pingTimeout = config.PingTimeout;
-		_pipelineProvider = config.PipelineProvider ?? DefaultRequestPipelineFactory.Default;
+		_pipelineProvider = (config as IHasPipelineProvider)?.PipelineProvider ?? DefaultRequestPipelineFactory.Default;
 		_prettyJson = config.PrettyJson;
 		_productRegistration = config.ProductRegistration;
 		_proxyAddress = config.ProxyAddress;
@@ -272,7 +272,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	ProductRegistration ITransportConfiguration.ProductRegistration => _productRegistration;
 
 	DateTimeProvider? ITransportConfiguration.DateTimeProvider => _dateTimeProvider;
-	RequestPipelineFactory? ITransportConfiguration.PipelineProvider => _pipelineProvider;
+	RequestPipelineFactory? IHasPipelineProvider.PipelineProvider => _pipelineProvider;
 
 	TimeSpan? ITransportConfiguration.DeadTimeout => _deadTimeout;
 	bool ITransportConfiguration.DisableAutomaticProxyDetection => _disableAutomaticProxyDetection;
@@ -538,8 +538,7 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 	/// <inheritdoc cref="ITransportConfiguration.MemoryStreamFactory"/>
 	public T MemoryStreamFactory(MemoryStreamFactory memoryStreamFactory) => Assign(memoryStreamFactory, static (a, v) => a._memoryStreamFactory = v);
 
-	/// <inheritdoc cref="ITransportConfiguration.PipelineProvider"/>>
-	public T PipelineProvider(RequestPipelineFactory provider) => Assign(provider, static (a, v) => a._pipelineProvider = v);
+	internal T PipelineProvider(RequestPipelineFactory provider) => Assign(provider, static (a, v) => a._pipelineProvider = v);
 
 	/// <inheritdoc cref="IRequestConfiguration.EnableTcpStats"/>>
 	public T EnableTcpStats(bool enableTcpStats = true) => Assign(enableTcpStats, static (a, v) => a._enableTcpStats = v);

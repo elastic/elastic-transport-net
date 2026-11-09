@@ -72,7 +72,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 	private readonly ConditionalWeakTable<RequestConfiguration, Bound>.CreateValueCallback _createBound;
 
 	private RequestPipeline CreatePipeline(BoundConfiguration boundConfiguration) =>
-		(Configuration.PipelineProvider ?? DefaultRequestPipelineFactory.Default).Create(boundConfiguration);
+		((Configuration as IHasPipelineProvider)?.PipelineProvider ?? DefaultRequestPipelineFactory.Default).Create(boundConfiguration);
 
 	/// <inheritdoc cref="ITransport{TConfiguration}.Configuration"/>
 	public TConfiguration Configuration { get; }
