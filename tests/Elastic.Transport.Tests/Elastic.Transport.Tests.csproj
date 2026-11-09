@@ -28,4 +28,13 @@
     <ProjectReference Include="..\Elastic.Transport.Tests.SharedComponents\Elastic.Transport.Tests.SharedComponents.csproj" />
   </ItemGroup>
 
+  <!-- Opt-in: test the library's netstandard2.0 (or net462) asset on a modern runtime, e.g.
+       dotnet test -p:TransportAssetTfm=netstandard2.0 -f net10.0
+       That executes the code net462 consumers share, where no .NET Framework runtime is available. -->
+  <ItemGroup Condition="'$(TransportAssetTfm)' != ''">
+    <ProjectReference Update="..\..\src\Elastic.Transport.VirtualizedCluster\Elastic.Transport.VirtualizedCluster.csproj" SetTargetFramework="TargetFramework=$(TransportAssetTfm)" />
+    <!-- Direct, so this asset wins over the one NuGet's restore graph carries in transitively (net10.0). -->
+    <ProjectReference Include="..\..\src\Elastic.Transport\Elastic.Transport.csproj" SetTargetFramework="TargetFramework=$(TransportAssetTfm)" />
+  </ItemGroup>
+
 </Project>
