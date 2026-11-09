@@ -31,6 +31,7 @@ public class HttpInvokerBenchmarks : IDisposable
 	private TcpListener _listener = null!;
 	private ITransport _plain = null!;
 	private ITransport _withAuthAndHeaders = null!;
+	private ITransport _pooled = null!;
 	private static readonly RequestConfiguration NoCompression = new() { EnableHttpCompression = false };
 	private static readonly RequestConfiguration Chunked = new() { TransferEncodingChunked = true, EnableHttpCompression = false };
 	private static readonly RequestConfiguration ChunkedCompressed = new() { TransferEncodingChunked = true };
@@ -46,6 +47,7 @@ public class HttpInvokerBenchmarks : IDisposable
 
 		var uri = new Uri($"http://127.0.0.1:{port}");
 		_plain = new DistributedTransport(new TransportConfiguration(uri));
+		_pooled = new DistributedTransport(new TransportConfiguration(uri) { MemoryStreamFactory = new RecyclableMemoryStreamFactory(blockSize: 16 * 1024, maximumFreeBytes: 50L * 1024 * 1024) });
 		_withAuthAndHeaders = new DistributedTransport(new TransportConfiguration(uri) { Authentication = new BasicAuthentication("u", "p") });
 	}
 
@@ -171,6 +173,15 @@ public class HttpInvokerBenchmarks : IDisposable
 	[Benchmark]
 	public Task<VoidResponse> PostLargeSerializable() =>
 		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Serializable(LargeObject), null, null);
+
+	/// <summary>The same two bodies through an opt-in pool bounded to 50 MB idle (16 KB blocks).</summary>
+	[Benchmark]
+	public Task<VoidResponse> PostLargeSerializableNoCompressionBoundedPool() =>
+		_pooled.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Serializable(LargeObject), null, NoCompression);
+
+	[Benchmark]
+	public Task<VoidResponse> PostSmallBodyDirectStreamingOffBoundedPool() =>
+		_pooled.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_search"), PostData.Bytes(CannedBody), null, NoDirectStreaming);
 
 	[Benchmark]
 	public Task<VoidResponse> PostLargeBody() =>

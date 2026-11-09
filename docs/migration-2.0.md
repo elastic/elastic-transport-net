@@ -31,6 +31,11 @@ will not touch you, but the behaviour fixes can change results, so read that sec
   (`MemoryStreamFactory = new RecyclableMemoryStreamFactory(blockSize: 16 * 1024)`), and worth it for large bodies that are
   serialized and not compressed: for a 64 KB body that is about 7 KB allocated per request against about 204 KB, with
   gen 2 collections, for a plain stream. With compression on, the default, the two are about equal.
+  `RecyclableMemoryStreamFactory` is now **bounded**: by default it keeps at most 50 MB idle
+  (`RecyclableMemoryStreamFactory.DefaultMaximumFreeBytes`), and buffers returned beyond that are left to the garbage
+  collector, so what a memory dump shows as pooled has a ceiling. Before, the pool kept its high-water mark forever. Choose
+  your own with `new RecyclableMemoryStreamFactory(blockSize, maximumFreeBytes)`. Memory held by streams that are in use is
+  not counted. The pool helps large buffers and does nothing for small ones.
 
 ## API changes
 

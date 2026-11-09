@@ -8,6 +8,7 @@
     <IsPackable>false</IsPackable>
     <NoWarn>$(NoWarn);CS8002;CA1707</NoWarn>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
