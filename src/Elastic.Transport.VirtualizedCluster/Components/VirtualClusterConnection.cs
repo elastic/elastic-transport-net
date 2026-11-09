@@ -346,10 +346,10 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		var ret = returnOverride ?? rule.Return;
 		rule.RecordExecuted();
 
-		if (ret == null)
+		if (ret is not { } returned)
 			throw new TheException();
 
-		return ret.Match(
+		return returned.Match(
 			e => throw e,
 			statusCode => _inMemoryRequestInvoker.BuildResponse<TResponse>(endpoint, boundConfiguration, postData, CallResponse(rule),
 				//make sure we never return a valid status code in Fail responses because of a bad rule.
@@ -482,10 +482,10 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 		var ret = returnOverride ?? rule.Return;
 		rule.RecordExecuted();
 
-		if (ret == null)
+		if (ret is not { } returned)
 			throw new TheException();
 
-		return await ret.Match<Task<TResponse>>(
+		return await returned.Match<Task<TResponse>>(
 			e => throw e,
 			async statusCode => await _inMemoryRequestInvoker.BuildResponseAsync<TResponse>(endpoint, boundConfiguration, postData, cancellationToken, CallResponse(rule),
 				statusCode is >= 200 and < 300 ? 502 : statusCode, rule.ReturnContentType).ConfigureAwait(false)

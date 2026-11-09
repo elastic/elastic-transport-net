@@ -18,11 +18,11 @@ public sealed class ClientCallRule : RuleBase<ClientCallRule>, IClientCallRule
 {
 	private IClientCallRule Self => this;
 
-	public ClientCallRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int> errorState = null)
+	public ClientCallRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int>? errorState = null)
 	{
 		Self.Times = times;
 		Self.Succeeds = false;
-		Self.Return = errorState ?? new TheException();
+		Self.Return = errorState ?? new RuleOption<Exception, int>(new TheException());
 		return this;
 	}
 
@@ -30,11 +30,11 @@ public sealed class ClientCallRule : RuleBase<ClientCallRule>, IClientCallRule
 	{
 		Self.Times = times;
 		Self.Succeeds = true;
-		Self.Return = validResponseCode;
+		Self.Return = validResponseCode is { } code ? new RuleOption<Exception, int>(code) : null;
 		return this;
 	}
 
-	public ClientCallRule AfterSucceeds(RuleOption<Exception, int> errorState = null)
+	public ClientCallRule AfterSucceeds(RuleOption<Exception, int>? errorState = null)
 	{
 		Self.AfterSucceeds = errorState;
 		return this;
@@ -48,5 +48,5 @@ public sealed class ClientCallRule : RuleBase<ClientCallRule>, IClientCallRule
 
 	public ClientCallRule SucceedAlways(int? validResponseCode = 200) => Succeeds(TimesHelper.Always, validResponseCode);
 
-	public ClientCallRule FailAlways(RuleOption<Exception, int> errorState = null) => Fails(TimesHelper.Always, errorState);
+	public ClientCallRule FailAlways(RuleOption<Exception, int>? errorState = null) => Fails(TimesHelper.Always, errorState);
 }

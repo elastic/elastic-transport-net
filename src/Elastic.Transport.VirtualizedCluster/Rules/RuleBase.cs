@@ -11,7 +11,7 @@ namespace Elastic.Transport.VirtualizedCluster.Rules;
 public interface IRule
 {
 	/// <summary>The value or exception to return after the call succeeds</summary>
-	RuleOption<Exception, int> AfterSucceeds { get; set; }
+	RuleOption<Exception, int>? AfterSucceeds { get; set; }
 
 	/// <summary>This rule is constrain on the node with this port number</summary>
 	int? OnPort { get; set; }
@@ -21,7 +21,7 @@ public interface IRule
 
 	/// <summary> Either a hard exception or soft HTTP error code</summary>
 	[SuppressMessage("Naming", "CA1716:Identifiers should not match keywords")]
-	RuleOption<Exception, int> Return { get; set; }
+	RuleOption<Exception, int>? Return { get; set; }
 
 	/// <summary>Set an explicit return content type for the API call</summary>
 	string ReturnContentType { get; set; }
@@ -49,10 +49,10 @@ public abstract class RuleBase<TRule> : IRule
 	where TRule : RuleBase<TRule>, IRule
 {
 	private int _executeCount;
-	RuleOption<Exception, int> IRule.AfterSucceeds { get; set; }
+	RuleOption<Exception, int>? IRule.AfterSucceeds { get; set; }
 	int? IRule.OnPort { get; set; }
 	Func<string, bool> IRule.PathFilter { get; set; }
-	RuleOption<Exception, int> IRule.Return { get; set; }
+	RuleOption<Exception, int>? IRule.Return { get; set; }
 	string IRule.ReturnContentType { get; set; }
 	byte[] IRule.ReturnResponse { get; set; }
 	private IRule Self => this;

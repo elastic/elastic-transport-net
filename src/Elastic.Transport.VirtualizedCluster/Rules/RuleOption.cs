@@ -7,70 +7,33 @@ using System;
 namespace Elastic.Transport.VirtualizedCluster.Rules;
 
 /// <summary>
-/// Represents the union of two types, <typeparamref name="TFirst" /> and <typeparamref name="TSecond" />.
-/// Used to represent a rule with multiple return states
+/// One of two values, for rule arguments that may be given either way: a number of times or <see cref="TimesHelper.Always"/>,
+/// an exception or an HTTP status code. Conversions from either case are implicit, so rules read
+/// <c>Fails(Times(2), 503)</c> and <c>FailAlways(new Exception())</c>.
 /// </summary>
-/// <typeparam name="TFirst">The first type</typeparam>
-/// <typeparam name="TSecond">The second type</typeparam>
-public sealed class RuleOption<TFirst, TSecond>
+public union RuleOption<TFirst, TSecond>(TFirst, TSecond)
 {
-	internal readonly int Tag;
-	internal readonly TFirst Item1;
-	internal readonly TSecond Item2;
-
-	/// <summary>
-	/// Creates an new instance of <see cref="RuleOption{TFirst,TSecond}" /> that encapsulates <paramref name="item" /> value
-	/// </summary>
-	/// <param name="item">The value to encapsulate</param>
-	public RuleOption(TFirst item)
-	{
-		Item1 = item;
-		Tag = 0;
-	}
-
-	/// <summary>
-	/// Creates an new instance of <see cref="RuleOption{TFirst,TSecond}" /> that encapsulates <paramref name="item" /> value
-	/// </summary>
-	/// <param name="item">The value to encapsulate</param>
-	public RuleOption(TSecond item)
-	{
-		Item2 = item;
-		Tag = 1;
-	}
-
-	/// <summary>
-	/// Runs an <see cref="Action{T}" /> delegate against the encapsulated value
-	/// </summary>
-	/// <param name="first">The delegate to run when this instance encapsulates an instance of <typeparamref name="TFirst" /></param>
-	/// <param name="second">The delegate to run when this instance encapsulates an instance of <typeparamref name="TSecond" /></param>
+	/// <summary>Runs <paramref name="first"/> or <paramref name="second"/> depending on which case this holds.</summary>
 	public void Match(Action<TFirst> first, Action<TSecond> second)
 	{
-		switch (Tag)
+		switch (this)
 		{
-			case 0:
-				first(Item1);
+			case TFirst f:
+				first(f);
 				break;
-			case 1:
-				second(Item2);
+			case TSecond s:
+				second(s);
 				break;
 			default:
-				throw new Exception($"Unrecognized tag value: {Tag}");
+				throw new InvalidOperationException("A RuleOption holds neither of its cases.");
 		}
 	}
 
-	/// <summary>
-	/// Runs a <see cref="Func{T,TResult}" /> delegate against the encapsulated value
-	/// </summary>
-	/// <param name="first">The delegate to run when this instance encapsulates an instance of <typeparamref name="TFirst" /></param>
-	/// <param name="second">The delegate to run when this instance encapsulates an instance of <typeparamref name="TSecond" /></param>
-	public T Match<T>(Func<TFirst, T> first, Func<TSecond, T> second) => Tag switch
+	/// <summary>Returns the result of <paramref name="first"/> or <paramref name="second"/> depending on which case this holds.</summary>
+	public T Match<T>(Func<TFirst, T> first, Func<TSecond, T> second) => this switch
 	{
-		0 => first(Item1),
-		1 => second(Item2),
-		_ => throw new Exception($"Unrecognized tag value: {Tag}"),
+		TFirst f => first(f),
+		TSecond s => second(s),
+		_ => throw new InvalidOperationException("A RuleOption holds neither of its cases."),
 	};
-
-	public static implicit operator RuleOption<TFirst, TSecond>(TFirst first) => new(first);
-
-	public static implicit operator RuleOption<TFirst, TSecond>(TSecond second) => new(second);
 }
