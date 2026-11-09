@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.12.0" />
+    <PackageReference Include="Elastic.Clients.Elasticsearch" VersionOverride="8.12.0" />
   </ItemGroup>
 
   <ItemGroup>
