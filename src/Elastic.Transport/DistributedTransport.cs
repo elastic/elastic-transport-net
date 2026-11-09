@@ -57,6 +57,9 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		configuration.RequestInvoker.ThrowIfNull(nameof(configuration.RequestInvoker));
 		configuration.RequestResponseSerializer.ThrowIfNull(nameof(configuration.RequestResponseSerializer));
 
+		// from here on the configuration is the transport's: a later change would reach some requests and not others
+		(configuration as ILockableConfiguration)?.Lock();
+
 		_productRegistration = configuration.ProductRegistration;
 		Configuration = configuration;
 		var transportBoundConfiguration = new BoundConfiguration(Configuration);
