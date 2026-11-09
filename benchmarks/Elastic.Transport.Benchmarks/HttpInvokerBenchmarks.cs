@@ -32,6 +32,8 @@ public class HttpInvokerBenchmarks : IDisposable
 	private ITransport _plain = null!;
 	private ITransport _withAuthAndHeaders = null!;
 	private static readonly RequestConfiguration NoCompression = new() { EnableHttpCompression = false };
+	private static readonly RequestConfiguration Chunked = new() { TransferEncodingChunked = true, EnableHttpCompression = false };
+	private static readonly RequestConfiguration ChunkedCompressed = new() { TransferEncodingChunked = true };
 	private static readonly RequestConfiguration NoDirectStreaming = new() { DisableDirectStreaming = true };
 
 	[GlobalSetup]
@@ -61,6 +63,17 @@ public class HttpInvokerBenchmarks : IDisposable
 		}
 	}
 
+	private static void Track(byte[] last, byte[] buffer, int offset, int count)
+	{
+		for (var i = Math.Max(0, count - 5); i < count; i++)
+		{
+			Array.Copy(last, 1, last, 0, 4);
+			last[4] = buffer[offset + i];
+		}
+	}
+
+	private static bool IsTerminator(byte[] last) => last.AsSpan().SequenceEqual("0\r\n\r\n"u8);
+
 	private static async Task Serve(TcpClient client)
 	{
 		using var _ = client;
@@ -83,6 +96,21 @@ public class HttpInvokerBenchmarks : IDisposable
 				// allocate tens of KB per request, which MemoryDiagnoser counts against the client.
 				var headerEnd = buffer.AsSpan(0, read).IndexOf("\r\n\r\n"u8) + 4;
 				var headers = Encoding.ASCII.GetString(buffer, 0, headerEnd);
+				if (headers.Contains("Transfer-Encoding: chunked", StringComparison.OrdinalIgnoreCase))
+				{
+					// Read until the terminating zero-length chunk. The bodies here never contain that byte sequence.
+					var last = new byte[5];
+					Track(last, buffer, headerEnd, read - headerEnd);
+					while (!IsTerminator(last))
+					{
+						var n = await stream.ReadAsync(buffer.AsMemory(0)).ConfigureAwait(false);
+						if (n == 0) return;
+						Track(last, buffer, 0, n);
+					}
+					await stream.WriteAsync(Response).ConfigureAwait(false);
+					continue;
+				}
+
 				var marker = headers.IndexOf("Content-Length: ", StringComparison.OrdinalIgnoreCase);
 				if (marker >= 0)
 				{
@@ -123,6 +151,15 @@ public class HttpInvokerBenchmarks : IDisposable
 	public Task<VoidResponse> PostLargeBodyNoCompression() =>
 		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Bytes(LargeBody), null,
 			NoCompression);
+
+	/// <summary>Chunked transfer encoding (RequestDataContent), uncompressed.</summary>
+	[Benchmark]
+	public Task<VoidResponse> PostLargeBodyChunked() =>
+		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Bytes(LargeBody), null, Chunked);
+
+	[Benchmark]
+	public Task<VoidResponse> PostLargeBodyChunkedCompressed() =>
+		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Bytes(LargeBody), null, ChunkedCompressed);
 
 	[Benchmark]
 	public Task<VoidResponse> PostLargeBody() =>

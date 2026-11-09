@@ -14,28 +14,48 @@ public class Auditor : IReadOnlyCollection<Audit>
 #pragma warning restore CA1710 // Identifiers should have correct suffix
 {
 	private readonly DateTimeProvider _dateTimeProvider;
-	private List<Audit>? _audits;
+	// Most requests record a single audit (the healthy response), so the first one lives in a field and the list, with
+	// its backing array, is only created for the second: about 90 B saved on the common path.
+	private Audit? _first;
+	private List<Audit>? _more;
 
 	internal Auditor(DateTimeProvider dateTimeProvider) => _dateTimeProvider = dateTimeProvider;
 
 	/// <inheritdoc cref="IEnumerable{T}.GetEnumerator"/>
 	public IEnumerator<Audit> GetEnumerator() =>
-		_audits?.GetEnumerator() ?? (IEnumerator<Audit>)new EmptyEnumerator<Audit>();
+		_first is null ? new EmptyEnumerator<Audit>() : Enumerate();
+
+	private IEnumerator<Audit> Enumerate()
+	{
+		yield return _first!;
+
+		if (_more is null)
+			yield break;
+
+		foreach (var audit in _more)
+			yield return audit;
+	}
+
+	private void Append(Audit audit)
+	{
+		if (_first is null)
+			_first = audit;
+		else
+			(_more ??= []).Add(audit);
+	}
 
 	IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
 	internal Auditable Add(Auditable auditable)
 	{
-		_audits ??= [];
-		_audits.Add(auditable.Audit);
+		Append(auditable.Audit);
 		return auditable;
 	}
 
 	internal Auditable Add(AuditEvent type, DateTimeProvider dateTimeProvider, Node? node = null)
 	{
-		_audits ??= [];
 		var auditable = new Auditable(type, dateTimeProvider, node);
-		_audits.Add(auditable.Audit);
+		Append(auditable.Audit);
 		return auditable;
 	}
 
@@ -46,5 +66,5 @@ public class Auditor : IReadOnlyCollection<Audit>
 	public void Emit(AuditEvent type, Node node) => Add(type, _dateTimeProvider, node).Dispose();
 
 	/// <inheritdoc cref="IReadOnlyCollection{T}.Count"/>
-	public int Count => _audits?.Count ?? 0;
+	public int Count => (_first is null ? 0 : 1) + (_more?.Count ?? 0);
 }

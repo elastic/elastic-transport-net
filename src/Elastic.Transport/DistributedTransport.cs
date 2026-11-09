@@ -64,7 +64,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		_createPipeline = CreatePipeline;
 		_createBound = rc =>
 		{
-			var bound = new BoundConfiguration(Configuration, rc);
+			var bound = new BoundConfiguration(Configuration, rc, transportBoundConfiguration.Headers);
 			return new Bound(bound, CreatePipeline(bound));
 		};
 	}
