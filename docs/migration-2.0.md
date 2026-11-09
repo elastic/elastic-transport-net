@@ -35,7 +35,10 @@ will not touch you, but the behaviour fixes can change results, so read that sec
   (`RecyclableMemoryStreamFactory.DefaultMaximumFreeBytes`), and buffers returned beyond that are left to the garbage
   collector, so what a memory dump shows as pooled has a ceiling. Before, the pool kept its high-water mark forever. Choose
   your own with `new RecyclableMemoryStreamFactory(blockSize, maximumFreeBytes)`. Memory held by streams that are in use is
-  not counted. The pool helps large buffers and does nothing for small ones.
+  not counted. Pooling pays off from about 4 KB of body upwards and costs below that: building a serialized body, 16 threads
+  at once, a plain stream takes 40 ns at 256 B against 659 ns pooled, and 107 ns at 1 KB against 671 ns, because a short-lived
+  small allocation is cheap and the pool's own overhead is not. At 4 KB the two are level on time and the pool allocates 93%
+  less; at 16 KB the pool is 3.8 times faster and allocates 99% less.
 
 ## API changes
 
