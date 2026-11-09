@@ -24,10 +24,15 @@ public class HttpInvokerBenchmarks : IDisposable
 
 	private static readonly byte[] CannedBody = Encoding.UTF8.GetBytes("{\"query\":{\"match_all\":{}}}");
 
+	// A realistic bulk-ish payload: big enough that the request body spills past one pooled block.
+	private static readonly byte[] LargeBody = Encoding.UTF8.GetBytes("{\"doc\":\"" + new string('x', 64 * 1024) + "\"}");
+
 	private readonly CancellationTokenSource _stop = new();
 	private TcpListener _listener = null!;
 	private ITransport _plain = null!;
 	private ITransport _withAuthAndHeaders = null!;
+	private static readonly RequestConfiguration NoCompression = new() { EnableHttpCompression = false };
+	private static readonly RequestConfiguration NoDirectStreaming = new() { DisableDirectStreaming = true };
 
 	[GlobalSetup]
 	public void Setup()
@@ -74,14 +79,15 @@ public class HttpInvokerBenchmarks : IDisposable
 					read += n;
 					if (read >= 4 && buffer.AsSpan(0, read).IndexOf("\r\n\r\n"u8) >= 0) break;
 				}
-				// A POST body follows the headers: drain what Content-Length announced, if it is not already in the buffer.
-				var text = Encoding.ASCII.GetString(buffer, 0, read);
-				var headerEnd = text.IndexOf("\r\n\r\n", StringComparison.Ordinal) + 4;
-				var marker = text.IndexOf("Content-Length: ", StringComparison.OrdinalIgnoreCase);
+				// Decode only the headers, never the body bytes that may share the buffer: decoding them made this server
+				// allocate tens of KB per request, which MemoryDiagnoser counts against the client.
+				var headerEnd = buffer.AsSpan(0, read).IndexOf("\r\n\r\n"u8) + 4;
+				var headers = Encoding.ASCII.GetString(buffer, 0, headerEnd);
+				var marker = headers.IndexOf("Content-Length: ", StringComparison.OrdinalIgnoreCase);
 				if (marker >= 0)
 				{
-					var end = text.IndexOf("\r\n", marker, StringComparison.Ordinal);
-					var length = int.Parse(text.AsSpan(marker + 16, end - marker - 16));
+					var end = headers.IndexOf("\r\n", marker, StringComparison.Ordinal);
+					var length = int.Parse(headers.AsSpan(marker + 16, end - marker - 16));
 					var have = read - headerEnd;
 					while (have < length)
 					{
@@ -107,10 +113,25 @@ public class HttpInvokerBenchmarks : IDisposable
 	public Task<VoidResponse> PostSmallBody() =>
 		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_search"), PostData.Bytes(CannedBody), null, null);
 
+	/// <summary>The same body without request compression, to separate the gzip step from our own handling.</summary>
+	[Benchmark]
+	public Task<VoidResponse> PostSmallBodyNoCompression() =>
+		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_search"), PostData.Bytes(CannedBody), null,
+			NoCompression);
+
+	[Benchmark]
+	public Task<VoidResponse> PostLargeBodyNoCompression() =>
+		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Bytes(LargeBody), null,
+			NoCompression);
+
+	[Benchmark]
+	public Task<VoidResponse> PostLargeBody() =>
+		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Bytes(LargeBody), null, null);
+
 	[Benchmark]
 	public Task<VoidResponse> PostSmallBodyDirectStreamingOff() =>
 		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_search"), PostData.Bytes(CannedBody), null,
-			new RequestConfiguration { DisableDirectStreaming = true });
+			NoDirectStreaming);
 
 	public void Dispose()
 	{
