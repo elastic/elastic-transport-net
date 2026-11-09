@@ -19,6 +19,15 @@ will not touch you, but the behaviour fixes can change results, so read that sec
   from a proxy, even when `SkipDeserializationForStatusCodes` applies. (This was already the behaviour of 1.x; the old
   7.x tests asserted otherwise.)
 
+- **Connection pools are keyed on what a handler is built from.** Two requests share an HTTP handler (and so a connection
+  pool) exactly when their compression, proxy, DNS refresh, certificates and transport settings are the same. Before,
+  the key was a hash that could collide across different proxy credentials, ignored several of those settings, and
+  included `RequestTimeout`, so each distinct per-request timeout opened its own pool.
+- **Byte-array bodies are not copied when nothing transforms them** (`PostData.Bytes` with request compression off).
+- **Pooled streams come from `Microsoft.IO.RecyclableMemoryStream`.** `RecyclableMemoryStreamFactory` is unchanged, but its
+  ETW event source is now the package's (`Microsoft-IO-RecyclableMemoryStream`) and the package depends on `System.Memory`
+  below net8.0. The default `MemoryStreamFactory` is still a plain `MemoryStream`.
+
 ## API changes
 
 - `Node.IsResurrected` is read-only. The pool is the only thing that decides a node is due a ping.
