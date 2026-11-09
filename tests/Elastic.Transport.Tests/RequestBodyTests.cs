@@ -46,24 +46,67 @@ public sealed class RequestBodyTests : IDisposable
 		var headers = lines.Skip(1).Select(l => l.Split([": "], 2, StringSplitOptions.None))
 			.ToDictionary(p => p[0], p => p[1], StringComparer.OrdinalIgnoreCase);
 
-		var body = new byte[headers.TryGetValue("Content-Length", out var length) ? int.Parse(length) : 0];
-		var read = 0;
-		while (read < body.Length)
+		byte[] body;
+		if (headers.TryGetValue("Transfer-Encoding", out var encoding) && encoding.Contains("chunked"))
+			body = await ReadChunked(stream);
+		else
 		{
-			var n = await stream.ReadAsync(body.AsMemory(read));
-			if (n == 0) break;
-			read += n;
+			body = new byte[headers.TryGetValue("Content-Length", out var length) ? int.Parse(length) : 0];
+			var read = 0;
+			while (read < body.Length)
+			{
+				var n = await stream.ReadAsync(body.AsMemory(read));
+				if (n == 0) break;
+				read += n;
+			}
 		}
 
 		await stream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n{}"));
 		return new Received(headers, body);
 	});
 
-	private async Task<Received> Post(PostData body, bool compress)
+	private static async Task<string> ReadLine(Stream stream)
+	{
+		var line = new List<byte>();
+		var one = new byte[1];
+		while (await stream.ReadAsync(one) == 1)
+		{
+			if (one[0] == '\n') break;
+			if (one[0] != '\r') line.Add(one[0]);
+		}
+		return Encoding.ASCII.GetString(line.ToArray());
+	}
+
+	/// <summary>Decode a chunked body: hex size, data, CRLF, until a zero-size chunk.</summary>
+	private static async Task<byte[]> ReadChunked(Stream stream)
+	{
+		using var body = new MemoryStream();
+		while (true)
+		{
+			var size = Convert.ToInt32((await ReadLine(stream)).Split(';')[0], 16);
+			if (size == 0)
+			{
+				_ = await ReadLine(stream);
+				return body.ToArray();
+			}
+			var chunk = new byte[size];
+			var read = 0;
+			while (read < size)
+			{
+				var n = await stream.ReadAsync(chunk.AsMemory(read));
+				if (n == 0) break;
+				read += n;
+			}
+			body.Write(chunk, 0, read);
+			_ = await ReadLine(stream);
+		}
+	}
+
+	private async Task<Received> Post(PostData body, bool compress, bool chunked = false)
 	{
 		var received = ServeOnce();
 		var port = ((IPEndPoint)_listener.LocalEndpoint).Port;
-		using var settings = new TransportConfiguration(new Uri($"http://127.0.0.1:{port}")) { EnableHttpCompression = compress };
+		using var settings = new TransportConfiguration(new Uri($"http://127.0.0.1:{port}")) { EnableHttpCompression = compress, TransferEncodingChunked = chunked };
 		var transport = new DistributedTransport(settings);
 
 		_ = await transport.RequestAsync<VoidResponse>(new EndpointPath(HttpMethod.POST, "/_bulk"), body, null, null);
@@ -111,6 +154,37 @@ public sealed class RequestBodyTests : IDisposable
 
 		_ = Encoding.UTF8.GetString(received.Body).Should().Be("{\"a\":1}");
 		_ = received.Headers["Content-Type"].Should().Be("application/json");
+	}
+
+	[Fact]
+	public async Task ChunkedBytesArriveIntact()
+	{
+		var payload = Encoding.UTF8.GetBytes("{\"doc\":\"" + new string('x', 100_000) + "\"}");
+
+		var received = await Post(PostData.Bytes(payload), compress: false, chunked: true);
+
+		_ = received.Headers["Transfer-Encoding"].Should().Be("chunked");
+		_ = received.Body.Should().Equal(payload);
+		_ = received.Headers["Content-Type"].Should().Be("application/json");
+	}
+
+	[Fact]
+	public async Task ChunkedCompressedBytesAreGzipped()
+	{
+		var payload = Encoding.UTF8.GetBytes("{\"doc\":\"" + new string('x', 50_000) + "\"}");
+
+		var received = await Post(PostData.Bytes(payload), compress: true, chunked: true);
+
+		_ = received.Headers["Content-Encoding"].Should().Be("gzip");
+		_ = Gunzip(received.Body).Should().Equal(payload);
+	}
+
+	[Fact]
+	public async Task ChunkedStringBodiesArriveIntact()
+	{
+		var received = await Post(PostData.String("{\"a\":\"é😀\"}"), compress: false, chunked: true);
+
+		_ = Encoding.UTF8.GetString(received.Body).Should().Be("{\"a\":\"é😀\"}");
 	}
 }
 #endif
