@@ -27,7 +27,7 @@ internal sealed class ActiveHandlerTrackingEntry
 	private TimerCallback? _callback;
 
 	public ActiveHandlerTrackingEntry(
-		int key,
+		HandlerKey key,
 		LifetimeTrackingHttpMessageHandler handler,
 		TimeSpan lifetime)
 	{
@@ -42,7 +42,7 @@ internal sealed class ActiveHandlerTrackingEntry
 
 	public TimeSpan Lifetime { get; }
 
-	public int Key { get; }
+	public HandlerKey Key { get; }
 
 	public void StartExpiryTimer(TimerCallback callback)
 	{
