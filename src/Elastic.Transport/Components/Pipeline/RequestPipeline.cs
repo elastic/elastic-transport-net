@@ -447,6 +447,11 @@ public class RequestPipeline
 				audit.Event = PingFailure;
 				audit.Exception = e;
 			}
+			// Bad credentials will not be better on the next node: let it through as it is (it is not recoverable), as
+			// PipelineFailure.BadAuthentication promises, instead of wrapping it as a ping failure that moves on to the next node.
+			if (pipelineException is { FailureReason: PipelineFailure.BadAuthentication })
+				throw;
+
 			throw new PipelineException(PipelineFailure.PingFailure, e) { Response = response };
 		}
 	}

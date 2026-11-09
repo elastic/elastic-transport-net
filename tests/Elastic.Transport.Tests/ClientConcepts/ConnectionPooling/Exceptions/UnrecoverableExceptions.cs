@@ -81,6 +81,30 @@ public class UnrecoverableExceptions
 		);
 	}
 
+	// PipelineFailure.BadAuthentication is documented as short-circuiting during a ping: bad credentials on one node
+	// will not be better on the next, so the request stops after the first ping instead of pinging every node.
+	[Fact]
+	public async Task BadAuthenticationOnPingIsUnrecoverable()
+	{
+		var audit = new Auditor(() => Virtual.Elasticsearch.Bootstrap(10)
+			.Ping(r => r.FailAlways(401))
+			.ClientCalls(r => r.SucceedAlways())
+			.StaticNodePool()
+			.AllDefaults()
+		);
+
+		audit = await audit.TraceElasticsearchException(
+			new ClientCall {
+				{ PingFailure, 9200 },
+			},
+			exception =>
+			{
+				exception.FailureReason
+					.Should().Be(PipelineFailure.BadAuthentication);
+			}
+		);
+	}
+
 	private static readonly byte[] HtmlNginx401Response = Encoding.UTF8.GetBytes(NginxHtml401Response);
 
 	private const string NginxHtml401Response = """
