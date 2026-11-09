@@ -17,4 +17,7 @@ public sealed class RequestAttempt
 	/// Set when a sniff during this request reseeded the node pool, so the node walk must start again from a fresh view.
 	/// </summary>
 	public bool RefreshRequested { get; set; }
+
+	/// <summary>The recoverable failures seen so far, in order. Null until the first one, so a clean request allocates nothing.</summary>
+	public System.Collections.Generic.List<PipelineException>? SeenExceptions { get; set; }
 }

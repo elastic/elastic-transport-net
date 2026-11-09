@@ -135,7 +135,6 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				activity.SetTag(SemanticConventions.HttpRequestMethod, endpoint.Method.GetStringValue());
 			}
 
-			List<PipelineException>? seenExceptions = null;
 			var attempt = new RequestAttempt();
 
 			if (pipeline.TryGetSingleNode(out var singleNode) && singleNode is not null)
@@ -143,48 +142,10 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 				endpoint = endpoint with { Node = singleNode };
 				// No value in marking a single node as dead. We have no other options!
 				attempt.AttemptedNodes = 1;
-				activity?.SetTag(SemanticConventions.UrlFull, endpoint.Uri?.AbsoluteUri);
-				activity?.SetTag(SemanticConventions.ServerAddress, endpoint.Uri?.Host);
-				activity?.SetTag(SemanticConventions.ServerPort, endpoint.Uri?.Port);
+				SetServerTags(activity, endpoint);
 
-				for (var retry = 0; retry < 2; retry++)
-				{
-					try
-					{
-						if (isAsync)
-							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
-								.ConfigureAwait(false);
-						else
-							response = pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
-					}
-					catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
-					{
-						HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
-						break;
-					}
-					catch (PipelineException pipelineException)
-					{
-						HandlePipelineException(ref response, pipelineException, pipeline, singleNode, ref seenExceptions);
-						break;
-					}
-					catch (Exception killerException)
-					{
-						ThrowUnexpectedTransportException(killerException, seenExceptions, endpoint, response, auditor);
-					}
-
-					// Retry once when a pooled connection was closed by the server/LB
-					// before we used it. SocketsHttpHandler classifies this as InvalidResponse
-					// rather than a connection error, so it does not auto-retry internally.
-					// The stale connection is purged after the first failure; the retry
-					// succeeds on a fresh connection.
-					if (retry == 0 && IsStaleConnectionException(response))
-					{
-						attempt.AttemptedNodes++;
-						continue;
-					}
-
-					break;
-				}
+				response = await CallSingleNodeAsync<TResponse>(isAsync, pipeline, singleNode, endpoint, boundConfiguration, data, attempt, auditor, cancellationToken)
+					.ConfigureAwait(false);
 			}
 			else
 			{
@@ -195,79 +156,14 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 					// If multiple nodes are attempted, the final node attempted will be used to set the operation span attributes.
 					// Each physical node attempt in CallProductEndpoint will also record these attributes.
-					activity?.SetTag(SemanticConventions.UrlFull, endpoint.Uri?.AbsoluteUri);
-					activity?.SetTag(SemanticConventions.ServerAddress, endpoint.Uri?.Host);
-					activity?.SetTag(SemanticConventions.ServerPort, endpoint.Uri?.Port);
+					SetServerTags(activity, endpoint);
 
-					try
-					{
-						if (_productRegistration.SupportsSniff)
-						{
-							if (isAsync)
-								await pipeline.SniffOnStaleClusterAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
-							else
-								pipeline.SniffOnStaleCluster(auditor, attempt);
-						}
-						if (_productRegistration.SupportsPing)
-						{
-							if (isAsync)
-								await PingAsync(pipeline, node, auditor, attempt, cancellationToken).ConfigureAwait(false);
-							else
-								Ping(pipeline, node, auditor, attempt);
-						}
+					NodeOutcome outcome;
+					(outcome, response) = await TryNodeAsync(isAsync, pipeline, node, endpoint, boundConfiguration, data, attempt, auditor, response, cancellationToken)
+						.ConfigureAwait(false);
 
-						if (isAsync)
-							response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
-								.ConfigureAwait(false);
-						else
-							response = pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
-
-						if (!response.ApiCallDetails.SuccessOrKnownError)
-						{
-							pipeline.MarkDead(node);
-
-							if (_productRegistration.SupportsSniff)
-							{
-								if (isAsync)
-									await pipeline.SniffOnConnectionFailureAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
-																	else
-																		pipeline.SniffOnConnectionFailure(auditor, attempt);
-							}
-						}
-					}
-					catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
-					{
-						HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
+					if (outcome != NodeOutcome.TryNextNode)
 						break;
-					}
-					catch (PipelineException pipelineException)
-					{
-						HandlePipelineException(ref response, pipelineException, pipeline, node, ref seenExceptions);
-					}
-					catch (Exception killerException)
-					{
-						if (killerException is OperationCanceledException && cancellationToken.IsCancellationRequested)
-							pipeline.AuditCancellationRequested(auditor);
-
-						throw new UnexpectedTransportException(killerException, seenExceptions)
-						{
-							Endpoint = endpoint,
-							ApiCallDetails = response?.ApiCallDetails,
-							AuditTrail = auditor
-						};
-					}
-
-					if (cancellationToken.IsCancellationRequested)
-					{
-						pipeline.AuditCancellationRequested(auditor);
-						break;
-					}
-
-					if (response == null || !response.ApiCallDetails.SuccessOrKnownError)
-						continue;
-
-					pipeline.MarkAlive(node);
-					break;
 				}
 			}
 
@@ -287,12 +183,163 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 			if (activity is { IsAllDataRequested: true })
 				OpenTelemetry.SetCommonAttributes(activity, Configuration);
 
-			return FinalizeResponse(endpoint, boundConfiguration, data, pipeline, startedOn, attempt.AttemptedNodes, auditor, seenExceptions, response);
+			return FinalizeResponse(endpoint, boundConfiguration, data, pipeline, startedOn, attempt.AttemptedNodes, auditor, attempt.SeenExceptions, response);
 		}
 		finally
 		{
 			activity?.Dispose();
 		}
+	}
+
+	/// <summary>
+	/// What happened to a request on one node, and so what the walk over the nodes does next. This is the whole of the
+	/// "per node" part of the request diagram: everything else is the order in which nodes are offered.
+	/// </summary>
+	private enum NodeOutcome
+	{
+		/// <summary>The node gave a usable answer: it is marked alive and the request is done.</summary>
+		Succeeded,
+
+		/// <summary>The node failed in a way another node may not: it is marked dead and the next node is tried.</summary>
+		TryNextNode,
+
+		/// <summary>The request cannot continue, whatever the other nodes might say (bad credentials, cancellation).</summary>
+		Stop,
+	}
+
+	private static void SetServerTags(Activity? activity, Endpoint endpoint)
+	{
+		if (activity is null)
+			return;
+
+		activity.SetTag(SemanticConventions.UrlFull, endpoint.Uri?.AbsoluteUri);
+		activity.SetTag(SemanticConventions.ServerAddress, endpoint.Uri?.Host);
+		activity.SetTag(SemanticConventions.ServerPort, endpoint.Uri?.Port);
+	}
+
+	/// <summary>
+	/// The one-node pool: nothing to fail over to, nothing to ping or sniff, nothing to mark dead. The only second
+	/// chance is the connection a server or load balancer closed behind our back.
+	/// </summary>
+	private async ValueTask<TResponse?> CallSingleNodeAsync<TResponse>(
+		bool isAsync, RequestPipeline pipeline, Node node, Endpoint endpoint, BoundConfiguration boundConfiguration,
+		PostData? data, RequestAttempt attempt, Auditor? auditor, CancellationToken cancellationToken
+	) where TResponse : TransportResponse, new()
+	{
+		TResponse? response = null;
+
+		for (var retry = 0; retry < 2; retry++)
+		{
+			try
+			{
+				if (isAsync)
+					response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
+						.ConfigureAwait(false);
+				else
+					response = pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
+			}
+			catch (PipelineException pipelineException)
+			{
+				HandlePipelineException(ref response, pipelineException, pipeline, node, attempt);
+				break;
+			}
+			catch (Exception killerException)
+			{
+				ThrowUnexpectedTransportException(killerException, attempt.SeenExceptions, endpoint, response, auditor);
+			}
+
+			// Retry once when a pooled connection was closed by the server/LB
+			// before we used it. SocketsHttpHandler classifies this as InvalidResponse
+			// rather than a connection error, so it does not auto-retry internally.
+			// The stale connection is purged after the first failure; the retry
+			// succeeds on a fresh connection.
+			if (retry == 0 && IsStaleConnectionException(response))
+			{
+				attempt.AttemptedNodes++;
+				continue;
+			}
+
+			break;
+		}
+
+		return response;
+	}
+
+	/// <summary>One node's turn: keep the topology fresh, make sure the node is up, call it, and say what that means.</summary>
+	private async ValueTask<(NodeOutcome Outcome, TResponse? Response)> TryNodeAsync<TResponse>(
+		bool isAsync, RequestPipeline pipeline, Node node, Endpoint endpoint, BoundConfiguration boundConfiguration,
+		PostData? data, RequestAttempt attempt, Auditor? auditor, TResponse? response, CancellationToken cancellationToken
+	) where TResponse : TransportResponse, new()
+	{
+		try
+		{
+			if (_productRegistration.SupportsSniff)
+			{
+				if (isAsync)
+					await pipeline.SniffOnStaleClusterAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
+				else
+					pipeline.SniffOnStaleCluster(auditor, attempt);
+			}
+			if (_productRegistration.SupportsPing)
+			{
+				if (isAsync)
+					await PingAsync(pipeline, node, auditor, attempt, cancellationToken).ConfigureAwait(false);
+				else
+					Ping(pipeline, node, auditor, attempt);
+			}
+
+			if (isAsync)
+				response = await pipeline.CallProductEndpointAsync<TResponse>(endpoint, boundConfiguration, data, auditor, cancellationToken)
+					.ConfigureAwait(false);
+			else
+				response = pipeline.CallProductEndpoint<TResponse>(endpoint, boundConfiguration, data, auditor);
+
+			if (!response.ApiCallDetails.SuccessOrKnownError)
+			{
+				pipeline.MarkDead(node);
+
+				if (_productRegistration.SupportsSniff)
+				{
+					if (isAsync)
+						await pipeline.SniffOnConnectionFailureAsync(auditor, attempt, cancellationToken).ConfigureAwait(false);
+					else
+						pipeline.SniffOnConnectionFailure(auditor, attempt);
+				}
+			}
+		}
+		catch (PipelineException pipelineException) when (!pipelineException.Recoverable)
+		{
+			HandlePipelineException(ref response, pipelineException, pipeline, node, attempt);
+			return (NodeOutcome.Stop, response);
+		}
+		catch (PipelineException pipelineException)
+		{
+			HandlePipelineException(ref response, pipelineException, pipeline, node, attempt);
+		}
+		catch (Exception killerException)
+		{
+			if (killerException is OperationCanceledException && cancellationToken.IsCancellationRequested)
+				pipeline.AuditCancellationRequested(auditor);
+
+			throw new UnexpectedTransportException(killerException, attempt.SeenExceptions)
+			{
+				Endpoint = endpoint,
+				ApiCallDetails = response?.ApiCallDetails,
+				AuditTrail = auditor
+			};
+		}
+
+		if (cancellationToken.IsCancellationRequested)
+		{
+			pipeline.AuditCancellationRequested(auditor);
+			return (NodeOutcome.Stop, response);
+		}
+
+		if (response == null || !response.ApiCallDetails.SuccessOrKnownError)
+			return (NodeOutcome.TryNextNode, response);
+
+		pipeline.MarkAlive(node);
+		return (NodeOutcome.Succeeded, response);
 	}
 
 	private BoundConfiguration BindConfiguration(IRequestConfiguration? localConfiguration)
@@ -365,15 +412,13 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		};
 
 	private static void HandlePipelineException<TResponse>(
-		ref TResponse? response, PipelineException ex, RequestPipeline pipeline, Node node,
-		ref List<PipelineException>? seenExceptions
+		ref TResponse? response, PipelineException ex, RequestPipeline pipeline, Node node, RequestAttempt attempt
 	)
 		where TResponse : TransportResponse, new()
 	{
 		response ??= ex.Response as TResponse;
 		pipeline.MarkDead(node);
-		seenExceptions ??= new List<PipelineException>(1);
-		seenExceptions.Add(ex);
+		(attempt.SeenExceptions ??= new List<PipelineException>(1)).Add(ex);
 	}
 
 	/// <summary>
