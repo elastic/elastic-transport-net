@@ -28,6 +28,9 @@ will not touch you, but the behaviour fixes can change results, so read that sec
   extension point (the factory's constructor was already internal), and nothing in this organisation's repositories
   referenced them. `ITransportConfiguration.PipelineProvider` and `TransportConfigurationDescriptor.PipelineProvider()`
   are gone with them.
+- `Elastic.Transport.VirtualizedCluster`: `ExposingPipelineFactory<T>` is internal. It existed to hand out a
+  `RequestPipeline` from the test-support package, and was the only public way to obtain one; it never registered itself
+  with the transport, so it had no effect on how requests ran.
 - `RuleOption<TFirst, TSecond>` (VirtualizedCluster) is a C# 15 union, so an absent option is `RuleOption<...>?` rather than
   `null`. Rules still read `Fails(Times(2), 503)` and `FailAlways(new Exception())`.
 - `Audit` is a record.
