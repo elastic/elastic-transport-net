@@ -87,6 +87,7 @@ public class SerializerOverloadProperties
 			var text = expected.ToJsonString();
 			var bytes = Encoding.UTF8.GetBytes(text);
 			var factory = DefaultMemoryStreamFactory.Default;
+			using var document = JsonDocument.Parse(text);
 
 			foreach (var (name, serializer) in Serializers)
 			{
@@ -95,17 +96,20 @@ public class SerializerOverloadProperties
 				Same(serializer.Deserialize<JsonNode>(bytes.AsSpan()), expected, $"{name}: ReadOnlySpan<byte>");
 				Same(serializer.Deserialize<JsonNode>(text.AsSpan()), expected, $"{name}: ReadOnlySpan<char>");
 				Same(serializer.Deserialize<JsonNode>(JsonNode.Parse(text)!), expected, $"{name}: JsonNode");
-				Same(serializer.Deserialize<JsonNode>(JsonDocument.Parse(text).RootElement), expected, $"{name}: JsonElement");
+				Same(serializer.Deserialize<JsonNode>(document.RootElement), expected, $"{name}: JsonElement");
 
 				var reader = new Utf8JsonReader(bytes);
 				Same(serializer.Deserialize<JsonNode>(ref reader), expected, $"{name}: Utf8JsonReader");
 
-				// The Type flavours are the same operation with the type given at run time.
+				// The Type flavours are the same operation with the type given at run time. They are what is being tested, so the
+				// analyzer's advice to use the generic overload instead is exactly what must not happen here.
+#pragma warning disable CA2263
 				Same((JsonNode?)serializer.Deserialize(text, typeof(JsonNode)), expected, $"{name}: string, Type");
 				Same((JsonNode?)serializer.Deserialize(bytes.AsSpan(), typeof(JsonNode)), expected, $"{name}: ReadOnlySpan<byte>, Type");
 				Same((JsonNode?)serializer.Deserialize(text.AsSpan(), typeof(JsonNode)), expected, $"{name}: ReadOnlySpan<char>, Type");
 				Same((JsonNode?)serializer.Deserialize(JsonNode.Parse(text)!, typeof(JsonNode)), expected, $"{name}: JsonNode, Type");
-				Same((JsonNode?)serializer.Deserialize(JsonDocument.Parse(text).RootElement, typeof(JsonNode)), expected, $"{name}: JsonElement, Type");
+				Same((JsonNode?)serializer.Deserialize(document.RootElement, typeof(JsonNode)), expected, $"{name}: JsonElement, Type");
+#pragma warning restore CA2263
 			}
 		}, iter: 300);
 
