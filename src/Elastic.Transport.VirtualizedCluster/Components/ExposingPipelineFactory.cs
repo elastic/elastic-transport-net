@@ -7,7 +7,7 @@ namespace Elastic.Transport.VirtualizedCluster.Components;
 /// <summary>
 /// An implementation that exposes all the components so that <see cref="VirtualCluster"/> can reference them directly.
 /// </summary>
-public sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFactory
+internal sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFactory
 	where TConfiguration : class, ITransportConfiguration
 {
 	public ExposingPipelineFactory(TConfiguration configuration)

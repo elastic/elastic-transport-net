@@ -17,7 +17,7 @@ using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
 namespace Elastic.Transport;
 
 /// Models the workflow of a request to multiple nodes
-public class RequestPipeline
+internal sealed class RequestPipeline
 {
 	private readonly IRequestInvoker _requestInvoker;
 	private readonly NodePool _nodePool;

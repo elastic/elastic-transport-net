@@ -30,12 +30,12 @@ public interface IRequestInvoker : IDisposable
 	/// <param name="cancellationToken"></param>
 	/// <typeparam name="TResponse">
 	/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-	/// for <see cref="RequestPipeline"/> and <see cref="ITransport{TConfiguration}"/> to determine what to
+	/// for <c>RequestPipeline</c> and <see cref="ITransport{TConfiguration}"/> to determine what to
 	/// do with the response
 	/// </typeparam>
 	/// <returns>
 	/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-	/// for <see cref="RequestPipeline"/> and <see cref="ITransport{TConfiguration}"/> to determine what to
+	/// for <c>RequestPipeline</c> and <see cref="ITransport{TConfiguration}"/> to determine what to
 	/// do with the response
 	/// </returns>
 	Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken)
@@ -49,12 +49,12 @@ public interface IRequestInvoker : IDisposable
 	/// <param name="postData">Optional data to post</param>
 	/// <typeparam name="TResponse">
 	/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-	/// for <see cref="RequestPipeline"/> and <see cref="ITransport{TConfiguration}"/> to determine what to
+	/// for <c>RequestPipeline</c> and <see cref="ITransport{TConfiguration}"/> to determine what to
 	/// do with the response
 	/// </typeparam>
 	/// <returns>
 	/// An implementation of <see cref="TransportResponse"/> ensuring enough information is available
-	/// for <see cref="RequestPipeline"/> and <see cref="ITransport{TConfiguration}"/> to determine what to
+	/// for <c>RequestPipeline</c> and <see cref="ITransport{TConfiguration}"/> to determine what to
 	/// do with the response
 	/// </returns>
 	TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData)

@@ -8,7 +8,7 @@ namespace Elastic.Transport;
 /// The state of one request as it walks the nodes. It belongs to the request, never to the (shared) pipeline:
 /// two concurrent requests must not see each other's attempts or reseeds.
 /// </summary>
-public sealed class RequestAttempt
+internal sealed class RequestAttempt
 {
 	/// <summary>The number of nodes this request has attempted so far. Counts against <see cref="IRequestConfiguration.MaxRetries"/>.</summary>
 	public int AttemptedNodes { get; set; }
