@@ -17,7 +17,7 @@ using Elastic.Transport.Products;
 #if NETFRAMEWORK
 using System.Net;
 #endif
-#if NET8_0_OR_GREATER
+#if NET
 using System.Net.Http;
 #endif
 
@@ -316,7 +316,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 
 			if (response is not null)
 			{
-#if NET6_0_OR_GREATER
+#if NET
 				activity?.SetStatus(response.ApiCallDetails.HasSuccessfulStatusCodeAndExpectedContentType ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
 #endif
 				activity?.SetTag(SemanticConventions.HttpResponseStatusCode, response.ApiCallDetails.HttpStatusCode);
@@ -479,7 +479,7 @@ public class DistributedTransport<TConfiguration> : ITransport<TConfiguration>
 		var ex = response?.ApiCallDetails?.OriginalException;
 		while (ex is not null)
 		{
-		#if NET8_0_OR_GREATER
+		#if NET
 			if (ex is HttpRequestException { HttpRequestError: HttpRequestError.InvalidResponse })
 				return true;
 		#endif

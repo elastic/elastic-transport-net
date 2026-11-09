@@ -133,7 +133,7 @@ public class HttpRequestInvoker : IRequestInvoker
 						.ConfigureAwait(false);
 				}
 				else
-#if NET6_0_OR_GREATER
+#if NET
 					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 #else
 					responseMessage = client.SendAsync(requestMessage!, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
@@ -149,13 +149,13 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (responseMessage.Content != null)
 			{
 				if (isAsync)
-#if NET6_0_OR_GREATER
+#if NET
 					responseStream = await responseMessage.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 #else
 					responseStream = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
 #endif
 				else
-#if NET6_0_OR_GREATER
+#if NET
 					responseStream = responseMessage.Content.ReadAsStream(cancellationToken);
 #else
 					responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
@@ -259,14 +259,14 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// </exception>
 	protected HttpMessageHandler CreateHttpClientHandler(BoundConfiguration boundConfiguration)
 	{
-#if NET6_0_OR_GREATER
+#if NET
 		return CreateSocketsHttpHandler(boundConfiguration);
 #else
 		return CreateLegacyHttpClientHandler(boundConfiguration);
 #endif
 	}
 
-#if NET6_0_OR_GREATER
+#if NET
 	private HttpMessageHandler CreateSocketsHttpHandler(BoundConfiguration boundConfiguration)
 	{
 		var handler = new System.Net.Http.SocketsHttpHandler
@@ -589,7 +589,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
 			{
 				message.Content = new ByteArrayContent(postData.WrittenBytes!);
-#if NET6_0_OR_GREATER
+#if NET
 					await stream.DisposeAsync().ConfigureAwait(false);
 #else
 				stream.Dispose();

@@ -124,12 +124,12 @@ public abstract partial class PostData
 						{
 							var bytes = enumerator.Current.Utf8Bytes();
 							if (bytes is not null)
-#if NETSTANDARD2_1_OR_GREATER || NET
+#if NET
 								await stream.WriteAsync(bytes.AsMemory(), cancellationToken).ConfigureAwait(false);
 #else
 								await stream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
 #endif
-#if NETSTANDARD2_1_OR_GREATER || NET
+#if NET
 							await stream.WriteAsync(NewLineByteArray.AsMemory(), cancellationToken).ConfigureAwait(false);
 #else
 							await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);
@@ -154,7 +154,7 @@ public abstract partial class PostData
 							await settings.RequestResponseSerializer.SerializeAsync(o, stream,
 									SerializationFormatting.None, cancellationToken)
 								.ConfigureAwait(false);
-#if NETSTANDARD2_1_OR_GREATER || NET
+#if NET
 							await stream.WriteAsync(NewLineByteArray.AsMemory(), cancellationToken).ConfigureAwait(false);
 #else
 							await stream.WriteAsync(NewLineByteArray, 0, 1, cancellationToken).ConfigureAwait(false);

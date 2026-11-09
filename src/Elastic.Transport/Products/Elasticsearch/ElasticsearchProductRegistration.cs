@@ -28,7 +28,7 @@ public partial class ElasticsearchProductRegistration : ProductRegistration
 	internal const string XFoundHandlingInstanceHeader = "X-Found-Handling-Instance";
 	internal const string ElasticClusterNameHeader = "Elastic-Cluster-Name";
 
-#if NET7_0_OR_GREATER
+#if NET
 	[GeneratedRegex(@"application/vnd\.elasticsearch\+([A-Za-z0-9.\-+]+)", RegexOptions.IgnoreCase)]
 	private static partial Regex VendorMimeRegex();
 

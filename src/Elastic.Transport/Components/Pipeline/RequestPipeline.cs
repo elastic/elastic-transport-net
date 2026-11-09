@@ -245,7 +245,7 @@ internal sealed class RequestPipeline
 			}
 		}
 
-#if NET6_0_OR_GREATER
+#if NET
 		exceptionMessage += !exceptionMessage.EndsWith('.') ? $". Call: {resource}" : $" Call: {resource}";
 #else
 		exceptionMessage += !exceptionMessage.EndsWith(".", StringComparison.Ordinal) ? $". Call: {resource}" : $" Call: {resource}";
