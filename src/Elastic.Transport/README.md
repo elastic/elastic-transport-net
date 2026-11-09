@@ -130,7 +130,7 @@ var transport = new DistributedTransport(settings);
 
 The transport models a request pipeline that handles node failover, sniffing, and pinging:
 
-![Request Pipeline](https://raw.githubusercontent.com/elastic/elastic-transport-net/main/request-pipeline.png)
+The state diagrams for a request, a node and a node's health are in the [repository docs](https://github.com/elastic/elastic-transport-net/blob/main/docs/request-pipeline.md).
 
 The pipeline introduces two special API calls:
 

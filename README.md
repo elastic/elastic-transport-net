@@ -72,7 +72,7 @@ See [docs/pipe-streaming.md](docs/pipe-streaming.md) for detailed `PipeResponse`
 
 The `HttpTransport` implementation that this library ships models a request pipeline that can deal with a large variety of topologies:
 
-![request-pipeline.png](request-pipeline.png)
+See [docs/request-pipeline.md](docs/request-pipeline.md) for the request, node and node-health state diagrams.
 
 Whilst complex, every effort is made to only walk paths if we are certain they provide value.
 

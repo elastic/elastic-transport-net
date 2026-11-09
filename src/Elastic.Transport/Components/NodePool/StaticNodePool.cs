@@ -175,7 +175,7 @@ public class StaticNodePool : NodePool
 		auditor?.Emit(AuditEvent.AllNodesDead);
 		var internalNodes = InternalNodes;
 		var node = internalNodes[globalCursor % internalNodes.Count];
-		node.IsResurrected = true;
+		node.Resurrect();
 		auditor?.Emit(AuditEvent.Resurrection, node);
 		return node;
 	}
@@ -198,7 +198,7 @@ public class StaticNodePool : NodePool
 			if (!node.IsAlive)
 			{
 				auditor?.Emit(AuditEvent.Resurrection, node);
-				node.IsResurrected = true;
+				node.Resurrect();
 			}
 
 			yield return node;
