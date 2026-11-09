@@ -212,11 +212,9 @@ public sealed partial class SemVersion :
 		if (result != 0)
 			return result;
 
-		result = CompareComponent(Prerelease, other.Prerelease, true);
-		if (result != 0)
-			return result;
-
-		return CompareComponent(Prerelease, other.Metadata, true);
+		// Build metadata takes no part in precedence (semver 2.0, section 10). This used to end with a second comparison of
+		// this.Prerelease against other.Metadata, so two equal pre-release versions compared as different.
+		return CompareComponent(Prerelease, other.Prerelease, true);
 	}
 
 	/// <inheritdoc cref="IComparable{T}.CompareTo"/>
@@ -225,7 +223,10 @@ public sealed partial class SemVersion :
 		if (ReferenceEquals(other, null))
 			return 1;
 
-		return CompareByPrecedence(other);
+		// Versions that differ only in build metadata have equal precedence; metadata then only breaks the tie, so that
+		// CompareTo is zero exactly when Equals is true.
+		var precedence = CompareByPrecedence(other);
+		return precedence != 0 ? precedence : CompareComponent(Metadata, other.Metadata);
 	}
 
 	/// <inheritdoc cref="IComparable.CompareTo"/>
