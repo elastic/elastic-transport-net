@@ -23,7 +23,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 {
 	private readonly Func<BoundConfiguration, HttpMessageHandler> _createHttpClientHandler;
 	private static readonly TimerCallback CleanupCallback = (s) => ((BoundConfigurationHttpClientFactory)s!).CleanupTimer_Tick();
-	private readonly Func<int, BoundConfiguration, Lazy<ActiveHandlerTrackingEntry>> _entryFactory;
+	private readonly Func<HandlerKey, BoundConfiguration, Lazy<ActiveHandlerTrackingEntry>> _entryFactory;
 
 	// Default time of 10s for cleanup seems reasonable.
 	// Quick math:
@@ -46,7 +46,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 	// Using lazy for synchronization to ensure that only one instance of HttpMessageHandler is created
 	// for each name.
 	//
-	private readonly ConcurrentDictionary<int, Lazy<ActiveHandlerTrackingEntry>> _activeHandlers;
+	private readonly ConcurrentDictionary<HandlerKey, Lazy<ActiveHandlerTrackingEntry>> _activeHandlers;
 
 	/// <summary>
 	/// The total number if in use message handlers, this number should not exceed the double digits
@@ -73,7 +73,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 	{
 		_createHttpClientHandler = createHttpClientHandler;
 		// case-sensitive because named options is.
-		_activeHandlers = new ConcurrentDictionary<int, Lazy<ActiveHandlerTrackingEntry>>();
+		_activeHandlers = new ConcurrentDictionary<HandlerKey, Lazy<ActiveHandlerTrackingEntry>>();
 		_entryFactory = (key, boundConfiguration) =>
 		{
 			return new Lazy<ActiveHandlerTrackingEntry>(() => CreateHandlerEntry(key, boundConfiguration),
@@ -92,7 +92,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		if (boundConfiguration is null)
 			throw new ArgumentNullException(nameof(boundConfiguration));
 
-		var key = HttpRequestInvoker.GetClientKey(boundConfiguration);
+		var key = new HandlerKey(boundConfiguration);
 		var handler = CreateHandler(key, boundConfiguration);
 		var client = new HttpClient(handler, disposeHandler: false)
 		{
@@ -101,13 +101,13 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		return client;
 	}
 
-	private HttpMessageHandler CreateHandler(int key, BoundConfiguration boundConfiguration)
+	private HttpMessageHandler CreateHandler(HandlerKey key, BoundConfiguration boundConfiguration)
 	{
 		if (boundConfiguration is null)
 			throw new ArgumentNullException(nameof(boundConfiguration));
 
 #if !NETSTANDARD2_0 && !NETFRAMEWORK
-		var entry = _activeHandlers.GetOrAdd(key, (k, r) => _entryFactory(k, r), boundConfiguration).Value;
+		var entry = _activeHandlers.GetOrAdd(key, _entryFactory, boundConfiguration).Value;
 #else
 		var entry = _activeHandlers.GetOrAdd(key, (k) => _entryFactory(k, boundConfiguration)).Value;
 #endif
@@ -117,7 +117,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		return entry.Handler;
 	}
 
-	private ActiveHandlerTrackingEntry CreateHandlerEntry(int key, BoundConfiguration boundConfiguration)
+	private ActiveHandlerTrackingEntry CreateHandlerEntry(HandlerKey key, BoundConfiguration boundConfiguration)
 	{
 		// Wrap the handler so we can ensure the inner handler outlives the outer handler.
 		var handler = new LifetimeTrackingHttpMessageHandler(_createHttpClientHandler(boundConfiguration));
