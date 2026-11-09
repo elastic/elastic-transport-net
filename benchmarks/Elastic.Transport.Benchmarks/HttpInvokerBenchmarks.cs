@@ -161,6 +161,17 @@ public class HttpInvokerBenchmarks : IDisposable
 	public Task<VoidResponse> PostLargeBodyChunkedCompressed() =>
 		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Bytes(LargeBody), null, ChunkedCompressed);
 
+	private static readonly object LargeObject = new { doc = new string('x', 64 * 1024), tags = new[] { "a", "b", "c" } };
+
+	/// <summary>The common real body: an object the serializer writes into a stream (so the stream factory matters).</summary>
+	[Benchmark]
+	public Task<VoidResponse> PostLargeSerializableNoCompression() =>
+		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Serializable(LargeObject), null, NoCompression);
+
+	[Benchmark]
+	public Task<VoidResponse> PostLargeSerializable() =>
+		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Serializable(LargeObject), null, null);
+
 	[Benchmark]
 	public Task<VoidResponse> PostLargeBody() =>
 		_plain.RequestAsync<VoidResponse>(new EndpointPath(Elastic.Transport.HttpMethod.POST, "/_bulk"), PostData.Bytes(LargeBody), null, null);

@@ -30,7 +30,10 @@ public record TransportConfiguration : ITransportConfiguration, IHasPipelineProv
 	/// <summary>
 	/// The default memory stream factory if none is configured on <see cref="ITransportConfiguration.MemoryStreamFactory"/>
 	/// </summary>
-	public static MemoryStreamFactory DefaultMemoryStreamFactory { get; } = Transport.DefaultMemoryStreamFactory.Default;
+	public static MemoryStreamFactory DefaultMemoryStreamFactory { get; } =
+		// 16 KB blocks, not the package's 128 KB: every concurrent request holds at least one block, and a request body is
+		// usually small. Larger bodies take several blocks, so nothing is allocated or copied to grow.
+		new RecyclableMemoryStreamFactory(blockSize: 16 * 1024);
 
 	/// <summary>
 	/// The default timeout before a TCP connection is forcefully recycled so that DNS updates come through
