@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport.Products.Elasticsearch;
 
@@ -23,7 +24,7 @@ public static class ElasticsearchErrorExtensions
 			return false;
 
 		var settings = response.ApiCallDetails.TransportConfiguration;
-		using var stream = settings.MemoryStreamFactory.Create(Encoding.UTF8.GetBytes(response.Body));
+		using var stream = ReadOnlyStreams.OverUtf8(settings.MemoryStreamFactory, response.Body);
 		return ElasticsearchServerError.TryCreate(stream, out serverError);
 	}
 
@@ -39,7 +40,7 @@ public static class ElasticsearchErrorExtensions
 			return false;
 
 		var settings = response.ApiCallDetails.TransportConfiguration;
-		using var stream = settings.MemoryStreamFactory.Create(response.Body);
+		using var stream = ReadOnlyStreams.Over(settings.MemoryStreamFactory, response.Body);
 		return ElasticsearchServerError.TryCreate(stream, out serverError);
 	}
 
@@ -59,7 +60,7 @@ public static class ElasticsearchErrorExtensions
 			return false;
 
 		var settings = response.ApiCallDetails.TransportConfiguration;
-		using var stream = settings.MemoryStreamFactory.Create(bytes);
+		using var stream = ReadOnlyStreams.Over(settings.MemoryStreamFactory, bytes);
 		return ElasticsearchServerError.TryCreate(stream, out serverError);
 	}
 

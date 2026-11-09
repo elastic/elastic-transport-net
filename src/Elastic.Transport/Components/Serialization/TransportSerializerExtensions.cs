@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport.Extensions;
 
@@ -354,7 +355,7 @@ public static class TransportSerializerExtensions
 		}
 
 		memoryStreamFactory ??= TransportConfiguration.DefaultMemoryStreamFactory;
-		using var ms = memoryStreamFactory.Create(Encoding.UTF8.GetBytes(input));
+		using var ms = ReadOnlyStreams.OverUtf8(memoryStreamFactory, input);
 
 		return serializer.Deserialize<T>(ms);
 	}
@@ -386,7 +387,7 @@ public static class TransportSerializerExtensions
 		}
 
 		memoryStreamFactory ??= TransportConfiguration.DefaultMemoryStreamFactory;
-		using var ms = memoryStreamFactory.Create(Encoding.UTF8.GetBytes(input));
+		using var ms = ReadOnlyStreams.OverUtf8(memoryStreamFactory, input);
 
 		return serializer.Deserialize(type, ms);
 	}
@@ -480,7 +481,7 @@ public static class TransportSerializerExtensions
 		}
 
 		memoryStreamFactory ??= TransportConfiguration.DefaultMemoryStreamFactory;
-		using var ms = memoryStreamFactory.Create(Encoding.UTF8.GetBytes(span.ToArray()));
+		using var ms = ReadOnlyStreams.OverUtf8(memoryStreamFactory, span);
 
 		return serializer.Deserialize<T>(ms);
 	}
@@ -512,7 +513,7 @@ public static class TransportSerializerExtensions
 		}
 
 		memoryStreamFactory ??= TransportConfiguration.DefaultMemoryStreamFactory;
-		using var ms = memoryStreamFactory.Create(Encoding.UTF8.GetBytes(span.ToArray()));
+		using var ms = ReadOnlyStreams.OverUtf8(memoryStreamFactory, span);
 
 		return serializer.Deserialize(type, ms);
 	}
