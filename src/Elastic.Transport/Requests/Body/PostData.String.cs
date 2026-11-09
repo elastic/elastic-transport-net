@@ -68,7 +68,7 @@ public abstract partial class PostData
 			if (stringBytes is not null)
 			{
 				if (!disableDirectStreaming)
-#if NETSTANDARD2_1_OR_GREATER || NET
+#if NET
 					await writableStream.WriteAsync(stringBytes.AsMemory(), cancellationToken)
 						.ConfigureAwait(false);
 #else

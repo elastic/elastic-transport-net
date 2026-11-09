@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-#if NET8_0_OR_GREATER
+#if NET
 using System;
 using System.Buffers;
 #endif
@@ -26,7 +26,7 @@ internal class StringResponseBuilder<T> : TypedResponseBuilder<T> where T : Stri
 			return new T { Body = responseString };
 		}
 
-#if NET8_0_OR_GREATER
+#if NET
 		if (contentLength is > (-1) and <= 1_048_576)
 		{
 			var buffer = ArrayPool<byte>.Shared.Rent((int)contentLength);
@@ -53,7 +53,7 @@ internal class StringResponseBuilder<T> : TypedResponseBuilder<T> where T : Stri
 			return new T { Body = responseString };
 		}
 
-#if NET8_0_OR_GREATER
+#if NET
 		if (contentLength is > (-1) and < 1_048_576)
 		{
 			var buffer = ArrayPool<byte>.Shared.Rent((int)contentLength);
@@ -65,7 +65,7 @@ internal class StringResponseBuilder<T> : TypedResponseBuilder<T> where T : Stri
 #endif
 
 		var sr = new StreamReader(responseStream);
-#if NET8_0_OR_GREATER
+#if NET
 		responseString = await sr.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
 #else
 		responseString = await sr.ReadToEndAsync().ConfigureAwait(false);

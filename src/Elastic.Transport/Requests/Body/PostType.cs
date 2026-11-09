@@ -16,7 +16,7 @@ public enum PostType
 	/// <para>Instantiate using <see cref="PostData.Bytes"/></para>
 	/// </summary>
 	ByteArray,
-#if !NETSTANDARD2_0 && !NETFRAMEWORK
+#if NET
 	/// <summary>
 	/// An instance of <see cref="ReadOnlyMemory{T}"/> where T is byte
 	/// <para>Instantiate using <see cref="PostData.ReadOnlyMemory"/></para>
@@ -72,7 +72,7 @@ internal static class PostTypeExtensions
 		PostType.EnumerableOfString => nameof(PostType.EnumerableOfString),
 		PostType.EnumerableOfObject => nameof(PostType.EnumerableOfObject),
 		PostType.StreamHandler => nameof(PostType.StreamHandler),
-#if !NETSTANDARD2_0 && !NETFRAMEWORK
+#if NET
 		PostType.ReadOnlyMemory => nameof(PostType.ReadOnlyMemory),
 #endif
 #if NET10_0_OR_GREATER

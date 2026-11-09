@@ -16,7 +16,7 @@ internal static class ConnectionInfo
 		get
 		{
 			// Not available after .NET 5.0
-#if NET6_0_OR_GREATER || NETFRAMEWORK
+#if NET || NETFRAMEWORK
 #pragma warning disable IDE0025 // Use expression body for properties
 			return false;
 #pragma warning restore IDE0025 // Use expression body for properties

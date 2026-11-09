@@ -77,7 +77,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		if (boundConfiguration.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
 
-#if NET6_0_OR_GREATER
+#if NET
 		_onStreamAvailable = OnStreamAvailable;
 #else
 		_onStreamAvailable = null!;
@@ -89,7 +89,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 	{
 		if (postData == null)
 		{
-#if NET6_0_OR_GREATER
+#if NET
 			await stream.DisposeAsync().ConfigureAwait(false);
 #else
 			stream.Dispose();
@@ -99,7 +99,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		if (boundConfiguration.HttpCompression)
 			stream = new GZipStream(stream, CompressionMode.Compress, false);
 
-#if NET6_0_OR_GREATER
+#if NET
 		await using (stream.ConfigureAwait(false))
 #else
 		using (stream)
@@ -120,7 +120,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		SerializeToStreamAsync(stream, context, default);
 
 
-#if NET6_0_OR_GREATER
+#if NET
 	protected override
 #else
 	private
@@ -148,7 +148,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		_ = await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 
-#if NET6_0_OR_GREATER
+#if NET
 	protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken _)
 	{
 		var serializeToStreamTask = new TaskCompletionSource<bool>();
@@ -226,7 +226,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
 			_innerStream.ReadAsync(buffer, offset, count, cancellationToken);
 
-#if NETSTANDARD2_1_OR_GREATER || NET
+#if NET
 		public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
 			_innerStream.ReadAsync(buffer, cancellationToken);
 #endif
@@ -249,7 +249,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
 			_innerStream.WriteAsync(buffer, offset, count, cancellationToken);
 
-#if NETSTANDARD2_1_OR_GREATER || NET
+#if NET
 		public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
 			_innerStream.WriteAsync(buffer, cancellationToken);
 #endif

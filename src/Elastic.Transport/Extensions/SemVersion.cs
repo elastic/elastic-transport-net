@@ -18,7 +18,7 @@ public sealed partial class SemVersion :
 	IComparable
 {
 	// https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-#if NET7_0_OR_GREATER
+#if NET
 	[GeneratedRegex(@"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$")]
 	private static partial Regex SemVerRegex();
 

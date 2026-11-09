@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
-#if NET8_0_OR_GREATER
+#if NET
 using System.Buffers;
 #endif
 using System.IO;
@@ -42,7 +42,7 @@ internal class DynamicResponseBuilder<T> : TypedResponseBuilder<T> where T : Dyn
 				return new T { Body = dictionary };
 			}
 
-#if NET8_0_OR_GREATER
+#if NET
 			if (contentLength is > (-1) and <= 1_048_576)
 			{
 				var buffer = ArrayPool<byte>.Shared.Rent((int)contentLength);
@@ -65,7 +65,7 @@ internal class DynamicResponseBuilder<T> : TypedResponseBuilder<T> where T : Dyn
 			{
 				stringValue = await sr.ReadToEndAsync
 			(
-#if NET8_0_OR_GREATER
+#if NET
 				cancellationToken
 #endif
 			).ConfigureAwait(false);

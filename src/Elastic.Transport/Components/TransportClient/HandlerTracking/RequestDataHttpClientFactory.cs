@@ -103,7 +103,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 		if (boundConfiguration is null)
 			throw new ArgumentNullException(nameof(boundConfiguration));
 
-#if !NETSTANDARD2_0 && !NETFRAMEWORK
+#if NET
 		var entry = _activeHandlers.GetOrAdd(key, _entryFactory, boundConfiguration).Value;
 #else
 		var entry = _activeHandlers.GetOrAdd(key, (k) => _entryFactory(k, boundConfiguration)).Value;

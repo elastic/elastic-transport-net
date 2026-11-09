@@ -101,7 +101,7 @@ public sealed record BoundConfiguration : IRequestConfiguration
 
 			if (!string.IsNullOrEmpty(local?.OpaqueId))
 			{
-#if NETSTANDARD2_0 || NETFRAMEWORK
+#if !NET
 				Headers.Add(OpaqueIdHeader, local!.OpaqueId);
 #else
 				Headers.Add(OpaqueIdHeader, local.OpaqueId);

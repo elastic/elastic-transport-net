@@ -15,7 +15,7 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// </summary>
 public static partial class SniffParser
 {
-#if NET7_0_OR_GREATER
+#if NET
 	[GeneratedRegex(@"^((?<fqdn>[^/]+)/)?(?<ip>[^:]+|\[[\da-fA-F:\.]+\]):(?<port>\d+)$")]
 	private static partial Regex AddressRegexGen();
 

@@ -14,7 +14,7 @@ namespace Elastic.Transport;
 
 internal static partial class JsonNodePathTraversal
 {
-#if NET7_0_OR_GREATER
+#if NET
 	[GeneratedRegex(@"(?<!\\)\.")]
 	private static partial Regex SplitRegexGen();
 
@@ -79,7 +79,7 @@ internal static partial class JsonNodePathTraversal
 		// Bracket index: [N]
 		if (key.Length > 2 && key[0] == '[' && key[key.Length - 1] == ']')
 		{
-#if NETSTANDARD2_0 || NET462
+#if !NET
 			var inner = key.Substring(1, key.Length - 2);
 			if (int.TryParse(inner, out var bracketIndex))
 #else
