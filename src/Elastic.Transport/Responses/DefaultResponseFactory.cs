@@ -128,14 +128,27 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 			}
 		}
 
+		// A stream or pipe response hands the body to the caller. On a mismatch it would be empty, so a 200 with the wrong
+		// Content-Type (an SSE endpoint answering application/octet-stream, say) looks like a success with no data.
+		// Say what happened instead. An Accept of */* turns the check off. Other responses report it through ApiCallDetails.
+		if (builder is not null && details.HasSuccessfulStatusCode && !details.HasExpectedContentType && !string.IsNullOrEmpty(contentType) && IsRawStreamResponse<TResponse>())
+		{
+			if (ownsStream)
+				responseStream.Dispose();
+
+			throw new TransportException(PipelineFailure.BadResponse,
+				$"The server answered with the content type '{contentType}' but the request accepts '{boundConfiguration.Accept}', " +
+				$"so no {typeof(TResponse).Name} body is available. Set the request's Accept to the type the server returns, or to '*/*' to accept any.");
+		}
+
 		// We only attempt to build a response when the Content-Type matches the accepted type.
-		if (builder is not null && productRegistration.IsExpectedResponseContentType(boundConfiguration.Accept, contentType) && contentType is not null)
+		if (builder is not null && productRegistration.IsExpectedResponseContentType(boundConfiguration.Accept, contentType))
 		{
 			try
 			{
 				response = isAsync
-					? await builder.BuildAsync<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false)
-					: builder.Build<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength);
+					? await builder.BuildAsync<TResponse>(details, boundConfiguration, responseStream, contentType ?? string.Empty, contentLength, cancellationToken).ConfigureAwait(false)
+					: builder.Build<TResponse>(details, boundConfiguration, responseStream, contentType ?? string.Empty, contentLength);
 			}
 			catch
 			{
@@ -158,6 +171,12 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 			return response;
 		}
 	}
+
+	private static bool IsRawStreamResponse<TResponse>() =>
+#if NET10_0_OR_GREATER
+		typeof(PipeResponseBase).IsAssignableFrom(typeof(TResponse)) ||
+#endif
+		typeof(StreamResponseBase).IsAssignableFrom(typeof(TResponse));
 
 	/// <summary>
 	/// Buffers the response stream into a seekable in-memory stream and records the bytes in

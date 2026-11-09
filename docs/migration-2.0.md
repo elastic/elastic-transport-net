@@ -76,3 +76,9 @@ will not touch you, but the behaviour fixes can change results, so read that sec
 The repository pins the .NET 11 SDK (`global.json`) and builds the libraries for `netstandard2.0`, `net462`, `net8.0`,
 `net10.0` and `net11.0`. C# 15 `union` types are used internally; a small internal polyfill supplies the two runtime
 types below `net11.0`, so they do not appear in the public API.
+
+## A stream response with the wrong content type throws
+
+`StreamResponse`, `PipeResponse` and the Elasticsearch variants used to return an empty `Stream.Null` body, with a `200` status, when the server answered with another `Content-Type` than the request's `Accept`. They now throw a `TransportException` (`PipelineFailure.BadResponse`) that names both types, for a successful status code only. An error status (for example an HTML `502` from a proxy) is reported through `ApiCallDetails` as before, and typed responses such as `StringResponse` keep reporting a mismatch through `ApiCallDetails.HasExpectedContentType`.
+
+To take whatever the server sends, set the request's `Accept` to `*/*`. That skips the content-type check for the request.
