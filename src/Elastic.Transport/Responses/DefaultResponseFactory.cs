@@ -131,9 +131,19 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		// We only attempt to build a response when the Content-Type matches the accepted type.
 		if (builder is not null && productRegistration.IsExpectedResponseContentType(boundConfiguration.Accept, contentType) && contentType is not null)
 		{
-			response = isAsync
-				? await builder.BuildAsync<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false)
-				: builder.Build<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength);
+			try
+			{
+				response = isAsync
+					? await builder.BuildAsync<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength, cancellationToken).ConfigureAwait(false)
+					: builder.Build<TResponse>(details, boundConfiguration, responseStream, contentType, contentLength);
+			}
+			catch
+			{
+				// a stream we buffered into is ours to release, also when the builder throws
+				if (ownsStream)
+					responseStream.Dispose();
+				throw;
+			}
 		}
 
 		if (ownsStream && (response is null || !response.LeaveOpen))
@@ -159,10 +169,18 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 	{
 		var inMemoryStream = boundConfiguration.MemoryStreamFactory.Create();
 
-		if (isAsync)
-			await responseStream.CopyToAsync(inMemoryStream, BufferedResponseHelpers.BufferSize, cancellationToken).ConfigureAwait(false);
-		else
-			responseStream.CopyTo(inMemoryStream, BufferedResponseHelpers.BufferSize);
+		try
+		{
+			if (isAsync)
+				await responseStream.CopyToAsync(inMemoryStream, BufferedResponseHelpers.BufferSize, cancellationToken).ConfigureAwait(false);
+			else
+				responseStream.CopyTo(inMemoryStream, BufferedResponseHelpers.BufferSize);
+		}
+		catch
+		{
+			inMemoryStream.Dispose();
+			throw;
+		}
 
 		details.ResponseBodyInBytes = BufferedResponseHelpers.SwapStreams(ref responseStream, ref inMemoryStream);
 		return responseStream;
@@ -179,14 +197,20 @@ internal sealed class DefaultResponseFactory : ResponseFactory
 		var position = responseStream.Position;
 		var inMemoryStream = boundConfiguration.MemoryStreamFactory.Create();
 
-		if (isAsync)
-			await responseStream.CopyToAsync(inMemoryStream, BufferedResponseHelpers.BufferSize, cancellationToken).ConfigureAwait(false);
-		else
-			responseStream.CopyTo(inMemoryStream, BufferedResponseHelpers.BufferSize);
+		try
+		{
+			if (isAsync)
+				await responseStream.CopyToAsync(inMemoryStream, BufferedResponseHelpers.BufferSize, cancellationToken).ConfigureAwait(false);
+			else
+				responseStream.CopyTo(inMemoryStream, BufferedResponseHelpers.BufferSize);
 
-		details.ResponseBodyInBytes = inMemoryStream.ToArray();
-		responseStream.Position = position;
-		inMemoryStream.Dispose();
+			details.ResponseBodyInBytes = inMemoryStream.ToArray();
+			responseStream.Position = position;
+		}
+		finally
+		{
+			inMemoryStream.Dispose();
+		}
 	}
 
 	private bool TryResolveBuilder<TResponse>(IReadOnlyCollection<IResponseBuilder> responseBuilders,
