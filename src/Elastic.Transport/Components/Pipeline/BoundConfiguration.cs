@@ -30,6 +30,15 @@ public sealed record BoundConfiguration : IRequestConfiguration
 
 	/// <inheritdoc cref="BoundConfiguration"/>
 	public BoundConfiguration(ITransportConfiguration global, IRequestConfiguration? local = null)
+		: this(global, local, null) { }
+
+	/// <param name="global">The transport configuration.</param>
+	/// <param name="local">The request's own configuration, if it has one.</param>
+	/// <param name="globalHeaders">
+	/// A private snapshot of the transport's headers, taken once by the transport and shared by every configuration it
+	/// binds: a request that adds no headers of its own then needs no copy at all. Null means take a snapshot now.
+	/// </param>
+	internal BoundConfiguration(ITransportConfiguration global, IRequestConfiguration? local, NameValueCollection? globalHeaders)
 	{
 		ConnectionSettings = global;
 		MemoryStreamFactory = global.MemoryStreamFactory;
@@ -73,26 +82,34 @@ public sealed record BoundConfiguration : IRequestConfiguration
 			?? global.PingTimeout
 			?? (global.NodePool.UsingSsl ? RequestConfiguration.DefaultPingTimeoutOnSsl : RequestConfiguration.DefaultPingTimeout);
 
-		if (global.Headers != null)
-			Headers = new NameValueCollection(global.Headers);
-
-		if (local?.Headers != null)
+		var addsHeaders = local?.Headers != null || !string.IsNullOrEmpty(local?.OpaqueId);
+		if (!addsHeaders)
 		{
-			Headers ??= [];
-			foreach (var key in local.Headers.AllKeys)
-				Headers[key] = local.Headers[key];
+			// Nothing to merge: share the snapshot (headers are only ever read after construction).
+			Headers = globalHeaders ?? (global.Headers is null ? null : new NameValueCollection(global.Headers));
+		}
+		else
+		{
+			var inherited = globalHeaders ?? global.Headers;
+			Headers = inherited is null ? [] : new NameValueCollection(inherited);
+
+			if (local?.Headers != null)
+			{
+				foreach (var key in local.Headers.AllKeys)
+					Headers[key] = local.Headers[key];
+			}
+
+			if (!string.IsNullOrEmpty(local?.OpaqueId))
+			{
+#if NETSTANDARD2_0 || NETFRAMEWORK
+				Headers.Add(OpaqueIdHeader, local!.OpaqueId);
+#else
+				Headers.Add(OpaqueIdHeader, local.OpaqueId);
+#endif
+			}
 		}
 
 		OpaqueId = local?.OpaqueId;
-		if (!string.IsNullOrEmpty(local?.OpaqueId))
-		{
-			Headers ??= [];
-#if NETSTANDARD2_0 || NETFRAMEWORK
-			Headers.Add(OpaqueIdHeader, local!.OpaqueId);
-#else
-			Headers.Add(OpaqueIdHeader, local.OpaqueId);
-#endif
-		}
 
 		// If there are builders set at the transport level and on the request config, we combine them,
 		// prioritizing the request config response builders as most specific.
