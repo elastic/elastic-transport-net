@@ -101,7 +101,7 @@ public abstract partial class PostData
 	/// if <see cref="IRequestConfiguration.DisableDirectStreaming"/> requests to buffer the data.
 	/// </summary>
 	protected async
-#if NET
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
 		ValueTask
 #else
 		Task

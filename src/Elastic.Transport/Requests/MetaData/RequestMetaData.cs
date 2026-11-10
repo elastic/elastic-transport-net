@@ -22,7 +22,7 @@ public sealed class RequestMetaData
 	{
 		_metaDataItems ??= [];
 
-#if NET
+#if NETSTANDARD2_1 || NET6_0_OR_GREATER
 		return _metaDataItems.TryAdd(key, value);
 #else
 		if (_metaDataItems.ContainsKey(key))
