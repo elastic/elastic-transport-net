@@ -133,7 +133,7 @@ public class HttpRequestInvoker : IRequestInvoker
 						.ConfigureAwait(false);
 				}
 				else
-#if NET6_0_OR_GREATER
+#if NET
 					responseMessage = client.Send(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 #else
 					responseMessage = client.SendAsync(requestMessage!, HttpCompletionOption.ResponseHeadersRead, cancellationToken).GetAwaiter().GetResult();
@@ -149,13 +149,13 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (responseMessage.Content != null)
 			{
 				if (isAsync)
-#if NET6_0_OR_GREATER
+#if NET
 					responseStream = await responseMessage.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 #else
 					responseStream = await responseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
 #endif
 				else
-#if NET6_0_OR_GREATER
+#if NET
 					responseStream = responseMessage.Content.ReadAsStream(cancellationToken);
 #else
 					responseStream = responseMessage.Content.ReadAsStreamAsync().GetAwaiter().GetResult();
@@ -259,14 +259,14 @@ public class HttpRequestInvoker : IRequestInvoker
 	/// </exception>
 	protected HttpMessageHandler CreateHttpClientHandler(BoundConfiguration boundConfiguration)
 	{
-#if NET6_0_OR_GREATER
+#if NET
 		return CreateSocketsHttpHandler(boundConfiguration);
 #else
 		return CreateLegacyHttpClientHandler(boundConfiguration);
 #endif
 	}
 
-#if NET6_0_OR_GREATER
+#if NET
 	private HttpMessageHandler CreateSocketsHttpHandler(BoundConfiguration boundConfiguration)
 	{
 		var handler = new System.Net.Http.SocketsHttpHandler
@@ -535,77 +535,80 @@ public class HttpRequestInvoker : IRequestInvoker
 	private static void SetContent(HttpRequestMessage message, BoundConfiguration boundConfiguration, PostData postData)
 	{
 		if (boundConfiguration.TransferEncodingChunked)
-			message.Content = new BoundConfigurationContent(boundConfiguration, postData);
-		else if (SendsBytesVerbatim(boundConfiguration, postData))
-			message.Content = ByteContentFor(boundConfiguration, postData);
-		else
 		{
-			var stream = boundConfiguration.MemoryStreamFactory.Create();
-			if (boundConfiguration.HttpCompression)
-			{
-				using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
-				postData.Write(zipStream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
-			}
-			else
-				postData.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
-
-			// the written bytes are uncompressed, so can only be used when http compression isn't used
-			if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
-			{
-				message.Content = new ByteArrayContent(postData.WrittenBytes!);
-				stream.Dispose();
-			}
-			else
-			{
-				stream.Position = 0;
-				message.Content = new StreamContent(stream);
-			}
-
-			if (boundConfiguration.HttpCompression)
-				message.Content.Headers.ContentEncoding.Add("gzip");
-
-			_ = message.Content.Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
+			message.Content = new BoundConfigurationContent(boundConfiguration, postData);
+			return;
 		}
+
+		if (TrySetVerbatimContent(message, boundConfiguration, postData))
+			return;
+
+		var stream = boundConfiguration.MemoryStreamFactory.Create();
+		if (boundConfiguration.HttpCompression)
+		{
+			using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
+			postData.Write(zipStream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
+		}
+		else
+			postData.Write(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming);
+
+		SetBufferedContent(message, boundConfiguration, postData, stream);
 	}
 
+	// The same as SetContent, differing only in the awaits and in handing the cancellation token to chunked content.
+	// Everything that is not a write lives in the two helpers they share, so the two cannot drift apart.
 	private static async Task SetContentAsync(HttpRequestMessage message, BoundConfiguration boundConfiguration, PostData postData, CancellationToken cancellationToken)
 	{
 		if (boundConfiguration.TransferEncodingChunked)
+		{
 			message.Content = new BoundConfigurationContent(boundConfiguration, postData, cancellationToken);
-		else if (SendsBytesVerbatim(boundConfiguration, postData))
-			message.Content = ByteContentFor(boundConfiguration, postData);
+			return;
+		}
+
+		if (TrySetVerbatimContent(message, boundConfiguration, postData))
+			return;
+
+		var stream = boundConfiguration.MemoryStreamFactory.Create();
+		if (boundConfiguration.HttpCompression)
+		{
+			using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
+			await postData.WriteAsync(zipStream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
+		}
+		else
+			await postData.WriteAsync(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
+
+		SetBufferedContent(message, boundConfiguration, postData, stream);
+	}
+
+	/// <summary>Sends a byte-array body as it is when nothing transforms it (see <see cref="SendsBytesVerbatim"/>).</summary>
+	private static bool TrySetVerbatimContent(HttpRequestMessage message, BoundConfiguration boundConfiguration, PostData postData)
+	{
+		if (!SendsBytesVerbatim(boundConfiguration, postData))
+			return false;
+
+		message.Content = ByteContentFor(boundConfiguration, postData);
+		return true;
+	}
+
+	/// <summary>Turns a body that has been written into <paramref name="stream"/> into the request's content and headers.</summary>
+	private static void SetBufferedContent(HttpRequestMessage message, BoundConfiguration boundConfiguration, PostData postData, MemoryStream stream)
+	{
+		// the written bytes are uncompressed, so can only be used when http compression isn't used
+		if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
+		{
+			message.Content = new ByteArrayContent(postData.WrittenBytes!);
+			stream.Dispose();
+		}
 		else
 		{
-			var stream = boundConfiguration.MemoryStreamFactory.Create();
-			if (boundConfiguration.HttpCompression)
-			{
-				using var zipStream = new GZipStream(stream, CompressionMode.Compress, true);
-				await postData.WriteAsync(zipStream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
-			}
-			else
-				await postData.WriteAsync(stream, boundConfiguration.ConnectionSettings, boundConfiguration.DisableDirectStreaming, cancellationToken).ConfigureAwait(false);
-
-			// the written bytes are uncompressed, so can only be used when http compression isn't used
-			if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
-			{
-				message.Content = new ByteArrayContent(postData.WrittenBytes!);
-#if NET6_0_OR_GREATER
-					await stream.DisposeAsync().ConfigureAwait(false);
-#else
-				stream.Dispose();
-#endif
-			}
-			else
-			{
-				stream.Position = 0;
-				message.Content = new StreamContent(stream);
-			}
-
-			if (boundConfiguration.HttpCompression)
-				message.Content.Headers.ContentEncoding.Add("gzip");
-
-			message.Content.Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
+			stream.Position = 0;
+			message.Content = new StreamContent(stream);
 		}
+
+		if (boundConfiguration.HttpCompression)
+			message.Content.Headers.ContentEncoding.Add("gzip");
+
+		_ = message.Content.Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
 	}
 
 	private static System.Net.Http.HttpMethod ConvertHttpMethod(HttpMethod httpMethod) => httpMethod switch

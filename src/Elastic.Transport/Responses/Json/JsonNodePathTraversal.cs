@@ -14,7 +14,7 @@ namespace Elastic.Transport;
 
 internal static partial class JsonNodePathTraversal
 {
-#if NET7_0_OR_GREATER
+#if NET
 	[GeneratedRegex(@"(?<!\\)\.")]
 	private static partial Regex SplitRegexGen();
 

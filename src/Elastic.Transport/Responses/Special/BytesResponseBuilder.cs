@@ -31,7 +31,7 @@ internal class BytesResponseBuilder : TypedResponseBuilder<BytesResponse>
 		apiCallDetails.ResponseBodyInBytes = BufferedResponseHelpers.SwapStreams(ref responseStream, ref tempStream);
 		response = new BytesResponse(apiCallDetails.ResponseBodyInBytes);
 
-#if NET6_0_OR_GREATER
+#if NET
 		await responseStream.DisposeAsync().ConfigureAwait(false);
 #else
 		responseStream.Dispose();

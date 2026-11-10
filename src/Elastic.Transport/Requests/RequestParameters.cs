@@ -91,7 +91,7 @@ public abstract class RequestParameters
 	public virtual string CreatePathWithQueryStrings(string? path, ITransportConfiguration? globalConfig)
 	{
 		path ??= string.Empty;
-#if NET6_0_OR_GREATER
+#if NET
 		if (path.Contains('?'))
 #else
 		if (path.Contains("?"))

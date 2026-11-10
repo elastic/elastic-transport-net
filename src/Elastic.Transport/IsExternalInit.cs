@@ -5,7 +5,7 @@
 
 using System.ComponentModel;
 
-#if !NET6_0_OR_GREATER
+#if !NET
 
 namespace System.Runtime.CompilerServices;
 /// <summary>
