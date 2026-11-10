@@ -67,7 +67,7 @@ will not touch you, but the behaviour fixes can change results, so read that sec
   other version's build metadata, so two equal pre-release versions compared as different. Precedence now ignores build
   metadata (semver 2.0), and `CompareTo` uses it only to break a tie, so it is zero exactly when `Equals` is true.
 - `SniffingNodePool` no longer overrides `CreateView` (it held a lock around a lazy iterator, which guarded nothing).
-- `netstandard2.1` is no longer a separate target. `netstandard2.0` consumers are unaffected, as are `net8.0` and later.
+- `netstandard2.1` stays a target, with the same public and protected API as in 1.x.
 - `Elastic.Transport.VirtualizedCluster`: `SingleNodeConnection()` works, `ClientThrows()` applies per request, and a
   sniff rule without a new cluster state no longer throws.
 
