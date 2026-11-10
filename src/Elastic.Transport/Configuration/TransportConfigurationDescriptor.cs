@@ -84,7 +84,7 @@ public class TransportConfigurationDescriptor : TransportConfigurationDescriptor
 /// <inheritdoc cref="TransportConfigurationDescriptor"/>>
 [Browsable(false)]
 [EditorBrowsable(EditorBrowsableState.Never)]
-public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfiguration, IHasPipelineProvider
+public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfiguration, IHasPipelineProvider, ILockableConfiguration
 	where T : TransportConfigurationDescriptorBase<T>
 {
 	/// <summary>
@@ -342,9 +342,25 @@ public abstract class TransportConfigurationDescriptorBase<T> : ITransportConfig
 
 	private static void DefaultBoundConfigurationCreated(BoundConfiguration boundConfiguration) { }
 
-	/// <summary> Assign a private value and return the current <typeparamref name="T"/> </summary>
+	private volatile bool _locked;
+
+	void ILockableConfiguration.Lock() => _locked = true;
+
+	/// <summary>
+	/// Assign a private value and return the current <typeparamref name="T"/>
+	/// </summary>
+	/// <exception cref="InvalidOperationException">A transport already uses this configuration. Create a copy with
+	/// the constructor that takes an <see cref="ITransportConfiguration"/> and change that.</exception>
 	// ReSharper disable once MemberCanBePrivate.Global
-	protected T Assign<TValue>(TValue value, Action<T, TValue> assigner) => Fluent.Assign((T)this, value, assigner);
+	protected T Assign<TValue>(TValue value, Action<T, TValue> assigner)
+	{
+		if (_locked)
+			throw new InvalidOperationException(
+				"This transport configuration is in use by a transport and can no longer be changed. " +
+				"Finish configuring it before you create the transport, or create a copy with new TransportConfigurationDescriptor(configuration) and change that.");
+
+		return Fluent.Assign((T)this, value, assigner);
+	}
 
 	/// <summary>
 	/// Sets the keep-alive option on a TCP connection.
