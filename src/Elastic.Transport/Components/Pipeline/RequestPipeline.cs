@@ -17,7 +17,7 @@ using static Elastic.Transport.Diagnostics.Auditing.AuditEvent;
 namespace Elastic.Transport;
 
 /// Models the workflow of a request to multiple nodes
-public class RequestPipeline
+internal sealed class RequestPipeline
 {
 	private readonly IRequestInvoker _requestInvoker;
 	private readonly NodePool _nodePool;
@@ -343,7 +343,7 @@ public class RequestPipeline
 		node.MarkDead(deadUntil);
 	}
 
-	/// Fast path for <see cref="NextNode"/> if only a single node could ever be yielded this save an IEnumerator allocation
+	/// Fast path for <see cref="MoveNext"/> if only a single node could ever be yielded this save an IEnumerator allocation
 	public bool TryGetSingleNode(out Node? node)
 	{
 		if (_nodePool.Nodes.Count <= 1 && _nodePool.MaxRetries <= _nodePool.Nodes.Count &&
@@ -359,47 +359,56 @@ public class RequestPipeline
 		return false;
 	}
 
-	/// returns a consistent enumerable view into the available nodes
-	public IEnumerable<Node> NextNode(DateTimeOffset startedOn, RequestAttempt attempt, Auditor? auditor)
+	/// <summary>
+	/// Offers the next node to try, in <see cref="RequestAttempt.Current"/>, or returns false when the request is out of
+	/// nodes, retries or time. The walk's state is the request's own (<paramref name="attempt"/>), never the pipeline's.
+	/// </summary>
+	public bool MoveNext(RequestAttempt attempt, DateTimeOffset startedOn, Auditor? auditor)
 	{
 		if (_boundConfiguration.ForceNode != null)
 		{
-			yield return new Node(_boundConfiguration.ForceNode);
-			yield break;
+			if (attempt.ForcedNodeOffered)
+				return false;
+
+			attempt.ForcedNodeOffered = true;
+			attempt.Current = new Node(_boundConfiguration.ForceNode);
+			return true;
 		}
 
-		//This for loop allows to break out of the view state machine if we need to
-		//force a refresh (after reseeding node pool). We have a hardcoded limit of only
-		//allowing 100 of these refreshes per call
-		for (var i = 0; i < 100; i++)
+		while (true)
 		{
-			// The budget is read from the request's own state at every step. It used to be passed by value into
-			// this iterator, so it always saw the count from the time of the call (0) and never ran out.
-			if (DepletedRetries(startedOn, attempt.AttemptedNodes))
-				yield break;
-
-			var refreshed = false;
-			foreach (var node in _nodePool.CreateView(auditor))
+			if (attempt.View is null)
 			{
-				if (DepletedRetries(startedOn, attempt.AttemptedNodes))
-					break;
+				// A reseed (after a sniff) makes the walk start again from a fresh view. We allow only 100 of these per
+				// call, and they are still bound to the overall max retry count and timeout.
+				if (attempt.Views >= 100 || DepletedRetries(startedOn, attempt.AttemptedNodes))
+					return false;
 
-				if (!_nodePredicate(node))
-					continue;
-
-				yield return node;
-
-				if (!attempt.RefreshRequested)
-					continue;
-
-				attempt.RefreshRequested = false;
-				refreshed = true;
-				break;
+				attempt.Views++;
+				attempt.View = _nodePool.CreateView(auditor).GetEnumerator();
 			}
-			//unless a refresh was requested we will not iterate over more then a single view.
-			//keep in mind refreshes are also still bound to overall maxretry count/timeout.
-			if (!refreshed)
-				break;
+			else if (attempt.RefreshRequested)
+			{
+				// A sniff during the last node's turn reseeded the pool.
+				attempt.RefreshRequested = false;
+				attempt.EndView();
+				continue;
+			}
+
+			// The budget is read from the request's own state at every step.
+			if (!attempt.View.MoveNext() || DepletedRetries(startedOn, attempt.AttemptedNodes))
+			{
+				// Unless a refresh was requested we do not walk more than a single view.
+				attempt.EndView();
+				return false;
+			}
+
+			var node = attempt.View.Current;
+			if (!_nodePredicate(node))
+				continue;
+
+			attempt.Current = node;
+			return true;
 		}
 	}
 

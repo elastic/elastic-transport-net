@@ -570,7 +570,7 @@ public class HttpRequestInvoker : IRequestInvoker
 			if (boundConfiguration.DisableDirectStreaming && !boundConfiguration.HttpCompression)
 			{
 				message.Content = new ByteArrayContent(postData.WrittenBytes!);
-#if DOTNETCORE_2_1_OR_HIGHER
+#if NET6_0_OR_GREATER
 					await stream.DisposeAsync().ConfigureAwait(false);
 #else
 				stream.Dispose();

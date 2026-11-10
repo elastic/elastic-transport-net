@@ -4,11 +4,17 @@
 
 namespace Elastic.Transport;
 
-/// <summary> A factory that creates instances of <see cref="RequestPipeline"/>, this factory exists so that transport can be tested. </summary>
-public abstract class RequestPipelineFactory
+/// <summary> A factory that creates instances of <c>RequestPipeline</c>, this factory exists so that transport can be tested. </summary>
+internal abstract class RequestPipelineFactory
 {
 	internal RequestPipelineFactory() { }
 
-	/// <summary> Create an instance of <see cref="RequestPipeline"/> </summary>
+	/// <summary> Create an instance of <c>RequestPipeline</c> </summary>
 	public abstract RequestPipeline Create(BoundConfiguration boundConfiguration);
+}
+
+/// <summary>Implemented by configurations that can say how to create pipelines. Internal: the pipeline is not an extension point.</summary>
+internal interface IHasPipelineProvider
+{
+	RequestPipelineFactory? PipelineProvider { get; }
 }

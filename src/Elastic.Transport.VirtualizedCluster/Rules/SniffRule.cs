@@ -18,7 +18,7 @@ public sealed class SniffRule : RuleBase<SniffRule>, ISniffRule
 	VirtualCluster ISniffRule.NewClusterState { get; set; }
 	private ISniffRule Self => this;
 
-	public SniffRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int> errorState = null)
+	public SniffRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int>? errorState = null)
 	{
 		Self.Times = times;
 		Self.Succeeds = false;
@@ -37,5 +37,5 @@ public sealed class SniffRule : RuleBase<SniffRule>, ISniffRule
 
 	public SniffRule SucceedAlways(VirtualCluster cluster = null) => Succeeds(TimesHelper.Always, cluster);
 
-	public SniffRule FailAlways(RuleOption<Exception, int> errorState = null) => Fails(TimesHelper.Always, errorState);
+	public SniffRule FailAlways(RuleOption<Exception, int>? errorState = null) => Fails(TimesHelper.Always, errorState);
 }
