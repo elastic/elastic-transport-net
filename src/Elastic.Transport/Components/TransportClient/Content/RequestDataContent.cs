@@ -226,7 +226,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
 			_innerStream.ReadAsync(buffer, offset, count, cancellationToken);
 
-#if NET
+#if NETSTANDARD2_1_OR_GREATER || NET
 		public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
 			_innerStream.ReadAsync(buffer, cancellationToken);
 #endif
@@ -249,7 +249,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
 			_innerStream.WriteAsync(buffer, offset, count, cancellationToken);
 
-#if NET
+#if NETSTANDARD2_1_OR_GREATER || NET
 		public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
 			_innerStream.WriteAsync(buffer, cancellationToken);
 #endif
