@@ -37,7 +37,7 @@ let private restoreTools = lazy(exec "dotnet" ["tool"; "restore"])
 let private currentVersion =
     lazy(
         restoreTools.Value |> ignore
-        let r = Proc.Start("dotnet", "minver", "-p", "canary.0", "-m", "0.1")
+        let r = Proc.Start("dotnet", "minver", "-p", "canary.0", "-m", "2.0")
         let o = r.ConsoleOut |> Seq.find (fun l -> not(l.Line.StartsWith "MinVer:"))
         o.Line
     )
@@ -80,6 +80,11 @@ let private validatePackages (arguments:ParseResults<Arguments>) =
     let jenkinsOnWindowsArgs =
         if Fake.Core.Environment.hasEnvironVar "JENKINS_URL" && Fake.Core.Environment.isWindows then ["-r"; "true"] else []
     
+    // nupkg-validator targets net10.0 and loads every lib/<tfm> assembly of the package, so on a net10.0 runtime it cannot read
+    // the net11.0 one. Let it run on the newest runtime that is installed, the prerelease one the SDK pin brings included.
+    Environment.SetEnvironmentVariable("DOTNET_ROLL_FORWARD", "LatestMajor")
+    Environment.SetEnvironmentVariable("DOTNET_ROLL_FORWARD_TO_PRERELEASE", "1")
+
     let args = ["-v"; currentVersionInformational.Value; "-k"; Paths.SignKey; "-t"; output] @ jenkinsOnWindowsArgs
     nugetPackages |> Seq.iter (fun p -> exec "dotnet" (["nupkg-validator"; p] @ args) |> ignore)
 
