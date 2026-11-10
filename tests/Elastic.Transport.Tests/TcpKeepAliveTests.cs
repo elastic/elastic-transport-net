@@ -5,7 +5,7 @@
 using System;
 using FluentAssertions;
 using Xunit;
-#if NET
+#if NET && !TRANSPORT_LEGACY_ASSET
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
@@ -43,7 +43,7 @@ public class TcpKeepAliveTests
 		_ = bound.KeepAliveInterval.Should().Be(5_000);
 	}
 
-#if NET
+#if NET && !TRANSPORT_LEGACY_ASSET
 	private static async Task<(Socket Client, TcpListener Listener)> ConnectAsync(TimeSpan time, TimeSpan interval)
 	{
 		var listener = new TcpListener(IPAddress.Loopback, 0);
