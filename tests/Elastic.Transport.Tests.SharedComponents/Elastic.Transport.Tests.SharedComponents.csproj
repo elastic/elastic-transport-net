@@ -12,8 +12,12 @@
     <ProjectReference Include="..\..\src\Elastic.Transport\Elastic.Transport.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TransportAssetTfm)' != ''">
+    <ProjectReference Update="..\..\src\Elastic.Transport\Elastic.Transport.csproj" SetTargetFramework="TargetFramework=$(TransportAssetTfm)" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1">
+    <PackageReference Include="GitHubActionsTestLogger">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

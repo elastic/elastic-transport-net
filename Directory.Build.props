@@ -1,27 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
+    <!-- Defined once, before AssemblyOriginatorKeyFile below expands it. -->
+    <SolutionRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), build.sh))</SolutionRoot>
 
-    <SolutionRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), build.bat))</SolutionRoot>
-    
     <MinVerDefaultPreReleaseIdentifiers>canary.0</MinVerDefaultPreReleaseIdentifiers>
-    <MinVerMinimumMajorMinor>0.2</MinVerMinimumMajorMinor>
+    <MinVerMinimumMajorMinor>2.0</MinVerMinimumMajorMinor>
 
-    <LangVersion>latest</LangVersion>
+    <LangVersion>preview</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <IsPackable>False</IsPackable>
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>$(SolutionRoot)\build\keys\keypair.snk</AssemblyOriginatorKeyFile>
     <UseArtifactsOutput>true</UseArtifactsOutput>
-    <SolutionRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), build.sh))</SolutionRoot>
     <ArtifactsPath>$(MSBuildThisFileDirectory).artifacts</ArtifactsPath>
   </PropertyGroup>
-  <PropertyGroup Condition="">
-  </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="all" />
-    <PackageReference Condition="'$(TargetFramework)' != 'net462'" Include="Microsoft.NETFramework.ReferenceAssemblies.net462" Version="1.0.3">
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <PackageReference Condition="'$(TargetFramework)' != 'net462'" Include="Microsoft.NETFramework.ReferenceAssemblies.net462">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
