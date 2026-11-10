@@ -43,6 +43,7 @@ public abstract class ProductRegistration
 	/// request's <c>Accept</c>. The default accepts an exact (case-insensitive)
 	/// match or a response Content-Type that starts with the Accept (so
 	/// <c>application/json</c> matches <c>application/json;charset=utf-8</c>).
+	/// An <c>Accept</c> of <c>*/*</c> accepts any Content-Type, including none: it switches the check off.
 	/// Products override this to add their own equivalence rules — for example,
 	/// translating between a vendor MIME type and its bare form.
 	/// </summary>
@@ -50,6 +51,10 @@ public abstract class ProductRegistration
 	/// <param name="responseContentType">The <c>Content-Type</c> returned by the server, if any.</param>
 	public virtual bool IsExpectedResponseContentType(string accept, string? responseContentType)
 	{
+		// "any type": the caller takes whatever the server sends, so there is nothing to check
+		if (accept.Trim() == "*/*")
+			return true;
+
 		if (string.IsNullOrEmpty(responseContentType))
 			return false;
 
