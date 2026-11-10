@@ -31,6 +31,12 @@
   <!-- Opt-in: test the library's netstandard2.0 (or net462) asset on a modern runtime, e.g.
        dotnet test -p:TransportAssetTfm=netstandard2.0 -f net10.0
        That executes the code net462 consumers share, where no .NET Framework runtime is available. -->
+  <!-- The tests are compiled for the runtime they run on, so code that guards what only the modern assets have (the activity status,
+       sockets, pipes) is compiled in but the asset lacks it. Those tests leave out TRANSPORT_LEGACY_ASSET. -->
+  <PropertyGroup Condition="'$(TransportAssetTfm)' != ''">
+    <DefineConstants>$(DefineConstants);TRANSPORT_LEGACY_ASSET</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(TransportAssetTfm)' != ''">
     <ProjectReference Update="..\..\src\Elastic.Transport.VirtualizedCluster\Elastic.Transport.VirtualizedCluster.csproj" SetTargetFramework="TargetFramework=$(TransportAssetTfm)" />
     <!-- Direct, so this asset wins over the one NuGet's restore graph carries in transitively (net10.0). -->
