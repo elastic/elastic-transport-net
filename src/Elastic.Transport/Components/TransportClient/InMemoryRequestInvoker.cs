@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Elastic.Transport.Extensions;
 
 namespace Elastic.Transport;
 
@@ -92,7 +93,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 		}
 
 		var sc = statusCode ?? _statusCode;
-		Stream responseStream = body != null ? boundConfiguration.MemoryStreamFactory.Create(body) : boundConfiguration.MemoryStreamFactory.Create(EmptyBody);
+		Stream responseStream = body != null ? ReadOnlyStreams.Over(boundConfiguration.MemoryStreamFactory, body) : ReadOnlyStreams.Over(boundConfiguration.MemoryStreamFactory, EmptyBody);
 
 		return ResponseFactory.Create<TResponse>(endpoint, boundConfiguration, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? BoundConfiguration.DefaultContentType, body?.Length ?? 0, null, null);
 	}
@@ -121,7 +122,7 @@ public class InMemoryRequestInvoker : IRequestInvoker
 		}
 		var sc = statusCode ?? _statusCode;
 
-		Stream responseStream = body != null ? boundConfiguration.MemoryStreamFactory.Create(body) : boundConfiguration.MemoryStreamFactory.Create(EmptyBody);
+		Stream responseStream = body != null ? ReadOnlyStreams.Over(boundConfiguration.MemoryStreamFactory, body) : ReadOnlyStreams.Over(boundConfiguration.MemoryStreamFactory, EmptyBody);
 
 		return await ResponseFactory
 			.CreateAsync<TResponse>(endpoint, boundConfiguration, postData, _exception, sc, _headers, responseStream, contentType ?? _contentType ?? BoundConfiguration.DefaultContentType, body?.Length ?? 0, null, null, cancellationToken)
