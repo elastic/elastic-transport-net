@@ -119,7 +119,7 @@ public sealed partial class DynamicDictionary
 		}
 
 		// Bracket index: [N]
-#if !NET
+#if NETSTANDARD2_0 || NET462
 		if (key.Length > 2 && key[0] == '[' && key[key.Length - 1] == ']' && int.TryParse(key.Substring(1, key.Length - 2), out var bracketIndex))
 #else
 		if (key.Length > 2 && key[0] == '[' && key[key.Length - 1] == ']' && int.TryParse(key.AsSpan(1, key.Length - 2), out var bracketIndex))

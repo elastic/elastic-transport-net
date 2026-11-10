@@ -79,7 +79,7 @@ internal static partial class JsonNodePathTraversal
 		// Bracket index: [N]
 		if (key.Length > 2 && key[0] == '[' && key[key.Length - 1] == ']')
 		{
-#if !NET
+#if NETSTANDARD2_0 || NET462
 			var inner = key.Substring(1, key.Length - 2);
 			if (int.TryParse(inner, out var bracketIndex))
 #else

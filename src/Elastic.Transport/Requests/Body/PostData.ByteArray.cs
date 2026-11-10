@@ -48,7 +48,7 @@ public abstract partial class PostData
 			MemoryStream? buffer = null;
 
 			if (!disableDirectStreaming)
-#if NET
+#if NETSTANDARD2_1_OR_GREATER || NET
 				await writableStream.WriteAsync(WrittenBytes.AsMemory(), cancellationToken)
 					.ConfigureAwait(false);
 #else
