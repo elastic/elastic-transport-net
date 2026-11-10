@@ -82,3 +82,7 @@ types below `net11.0`, so they do not appear in the public API.
 `StreamResponse`, `PipeResponse` and the Elasticsearch variants used to return an empty `Stream.Null` body, with a `200` status, when the server answered with another `Content-Type` than the request's `Accept`. They now throw a `TransportException` (`PipelineFailure.BadResponse`) that names both types, for a successful status code only. An error status (for example an HTML `502` from a proxy) is reported through `ApiCallDetails` as before, and typed responses such as `StringResponse` keep reporting a mismatch through `ApiCallDetails.HasExpectedContentType`.
 
 To take whatever the server sends, set the request's `Accept` to `*/*`. That skips the content-type check for the request.
+
+## TCP keep-alive is on by default
+
+Connections send TCP keep-alive probes after 5 minutes of silence, then every second, and drop the connection after 5 unanswered probes. `KeepAliveTime` and `KeepAliveInterval` now default to 5 minutes and 1 second on every target (they were 2 seconds each, and only reached .NET Framework). On .NET, the transport connects the socket for `SocketsHttpHandler` through a `ConnectCallback` to set them. A deployment that wants other values sets `KeepAliveTime` and `KeepAliveInterval` on the transport configuration; the probe count is fixed at 5.

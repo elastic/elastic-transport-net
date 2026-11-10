@@ -25,6 +25,12 @@ public sealed record BoundConfiguration : IRequestConfiguration
 	/// The default MIME type used for request and response payloads.
 	public const string DefaultContentType = "application/json";
 
+	/// <summary>Milliseconds of silence before the first TCP keep-alive probe: 5 minutes, below the idle timeout of common load balancers.</summary>
+	internal const int DefaultKeepAliveTime = 300_000;
+
+	/// <summary>Milliseconds between TCP keep-alive probes that go unanswered.</summary>
+	internal const int DefaultKeepAliveInterval = 1_000;
+
 	/// The security header used to run requests as a different user.
 	public const string RunAsSecurityHeader = "es-security-runas-user";
 
@@ -50,8 +56,8 @@ public sealed record BoundConfiguration : IRequestConfiguration
 		ProxyPassword = global.ProxyPassword;
 		DisableAutomaticProxyDetection = global.DisableAutomaticProxyDetection;
 		UserAgent = local?.UserAgent ?? global.UserAgent ?? RequestConfiguration.DefaultUserAgent;
-		KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? 2000);
-		KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? 2000);
+		KeepAliveInterval = (int)(global.KeepAliveInterval?.TotalMilliseconds ?? DefaultKeepAliveInterval);
+		KeepAliveTime = (int)(global.KeepAliveTime?.TotalMilliseconds ?? DefaultKeepAliveTime);
 		RunAs = local?.RunAs ?? global.RunAs;
 		DisableDirectStreaming = local?.DisableDirectStreaming ?? global.DisableDirectStreaming ?? false;
 		ForceNode = local?.ForceNode ?? global.ForceNode;
