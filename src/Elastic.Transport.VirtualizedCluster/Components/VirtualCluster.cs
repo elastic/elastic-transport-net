@@ -73,7 +73,7 @@ public class VirtualCluster
 	public SealedVirtualCluster SingleNodeConnection(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
 	{
 		var nodes = seedNodesSelector?.Invoke(InternalNodes) ?? InternalNodes;
-		return new SealedVirtualCluster(this, new SingleNodePool(nodes.First().Uri), TestDateTimeProvider, ProductRegistration);
+		return new SealedVirtualCluster(this, new SingleNodePool(nodes.First().Uri) { DateTimeProvider = TestDateTimeProvider }, TestDateTimeProvider, ProductRegistration);
 	}
 
 	public SealedVirtualCluster StaticNodePool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)

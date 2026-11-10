@@ -27,6 +27,6 @@ internal sealed class ExpiredHandlerTrackingEntry(ActiveHandlerTrackingEntry oth
 
 	public HttpMessageHandler? InnerHandler { get; } = other.Handler.InnerHandler;
 
-	public int Key { get; } = other.Key;
+	public HandlerKey Key { get; } = other.Key;
 }
 #endif

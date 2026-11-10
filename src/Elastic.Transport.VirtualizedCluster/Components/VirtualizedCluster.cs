@@ -64,12 +64,21 @@ public class VirtualizedCluster
 	}
 
 	public TransportResponse ClientCall(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null) =>
-		_syncCall(RequestHandler, requestOverrides);
+		_syncCall(RequestHandler, WithThrows(requestOverrides));
 
 	public async Task<TransportResponse> ClientCallAsync(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null) =>
-		await _asyncCall(RequestHandler, requestOverrides).ConfigureAwait(false);
+		await _asyncCall(RequestHandler, WithThrows(requestOverrides)).ConfigureAwait(false);
 
 	public void ChangeTime(Func<DateTimeOffset, DateTimeOffset> change) => _dateTimeProvider.ChangeTime(change);
 
-	public void ClientThrows(bool throws) => _settings.ThrowExceptions(throws);
+	// The transport binds its configuration once, when it is created, so changing the settings afterwards has no
+	/// effect. Apply the choice to each request instead; an override the caller passes in still wins.
+	public void ClientThrows(bool throws) => _throws = throws;
+
+	private bool? _throws;
+
+	private Func<RequestConfigurationDescriptor, IRequestConfiguration> WithThrows(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides) =>
+		_throws is not { } throws
+			? requestOverrides
+			: d => requestOverrides is null ? d.ThrowExceptions(throws) : requestOverrides(d.ThrowExceptions(throws));
 }
