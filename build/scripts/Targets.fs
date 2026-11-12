@@ -33,7 +33,14 @@ let execWithTimeout binary args timeout =
 let exec binary args =
     execWithTimeout binary args (Nullable(TimeSpan.FromMinutes 10.))
     
-let private restoreTools = lazy(exec "dotnet" ["tool"; "restore"])
+// https://github.com/dotnet/sdk/issues/53783: with an empty tool resolver cache, as on a fresh CI runner, the
+// restore of a manifest with a RID-specific tool fails with "The command ... is not contained in the package ...".
+// The first attempt fills the cache, so the second one succeeds.
+let private restoreTools =
+    lazy(
+        try exec "dotnet" ["tool"; "restore"]
+        with :? ProcExecException -> exec "dotnet" ["tool"; "restore"]
+    )
 let private currentVersion =
     lazy(
         restoreTools.Value |> ignore
