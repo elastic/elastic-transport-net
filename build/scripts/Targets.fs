@@ -116,11 +116,12 @@ let private generateReleaseNotes (arguments:ParseResults<Arguments>) =
         | None -> []
         | Some token -> ["--token"; token;]
     let releaseNotesArgs =
-        (Paths.Repository.Split("/") |> Seq.toList)
+        ["generate"]
+        @ (Paths.Repository.Split("/") |> Seq.toList)
         @ ["--version"; currentVersion
-           "--label"; "enhancement"; "New Features"
-           "--label"; "bug"; "Bug Fixes"
-           "--label"; "documentation"; "Docs Improvements"
+           "--label"; "enhancement=New Features"
+           "--label"; "bug=Bug Fixes"
+           "--label"; "documentation=Docs Improvements"
         ] @ tokenArgs
         @ ["--output"; output]
         
@@ -140,9 +141,9 @@ let private createReleaseOnGithub (arguments:ParseResults<Arguments>) =
         |> Seq.collect id
         |> Seq.toList
     let releaseArgs =
-        (Paths.Repository.Split("/") |> Seq.toList)
-        @ ["create-release"
-           "--version"; currentVersion
+        ["create-release"]
+        @ (Paths.Repository.Split("/") |> Seq.toList)
+        @ ["--version"; currentVersion
            "--body"; releaseNotes; 
         ] @ breakingChanges @ tokenArgs
         
