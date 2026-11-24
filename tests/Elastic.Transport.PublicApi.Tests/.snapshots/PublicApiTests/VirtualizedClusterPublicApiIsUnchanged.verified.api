@@ -1,0 +1,211 @@
+assembly Elastic.Transport.VirtualizedCluster
+using Elastic.Transport: BoundConfiguration, DateTimeProvider, Endpoint, IRequestConfiguration, ITransport<>, ITransportConfiguration, Node, NodePool, PostData, RequestConfigurationDescriptor, RequestPipeline, RequestPipelineFactory, ResponseFactory, TransportConfigurationDescriptor, TransportException, TransportResponse, UnexpectedTransportException
+using interface Elastic.Transport: IRequestInvoker
+using Elastic.Transport.Diagnostics.Auditing: Audit
+using struct Elastic.Transport.Diagnostics.Auditing: AuditEvent
+using Elastic.Transport.Products: ProductRegistration
+using System: Action<,>, Action<>, Exception, Func<,,>, Func<,>, Func<>
+using struct System: DateTimeOffset, TimeSpan
+using interface System: IDisposable
+using System.Collections.Generic: IEnumerable<>, IList<>, IReadOnlyList<>, List<>
+using struct System.Threading: CancellationToken
+using System.Threading.Tasks: Task<>
+
+namespace Elastic.Transport.VirtualizedCluster
+  static class Virtual
+    static ElasticsearchClusterFactory Elasticsearch { get; }
+
+namespace Elastic.Transport.VirtualizedCluster.Audit
+  sealed class Auditor
+    Auditor(Func<VirtualizedCluster> setup)
+    Action<NodePool> AssertPoolAfterCall { get; set; }
+    Action<NodePool> AssertPoolAfterStartup { get; set; }
+    Action<NodePool> AssertPoolBeforeCall { get; set; }
+    Action<NodePool> AssertPoolBeforeStartup { get; set; }
+    IEnumerable<Audit> AsyncAuditTrail { get; set; }
+    IEnumerable<Audit> AuditTrail { get; set; }
+    Func<VirtualizedCluster> Cluster { get; }
+    TransportResponse Response { get; }
+    TransportResponse ResponseAsync { get; }
+    void ChangeTime(Func<DateTimeOffset, DateTimeOffset> selector)
+    Task<Auditor> TraceCall(ClientCall callTrace, int nthCall = 0)
+    Task<Auditor> TraceCalls(params ClientCall[] audits)
+    Task<Auditor> TraceElasticsearchException(ClientCall callTrace, Action<TransportException> assert)
+    Task<Auditor> TraceElasticsearchExceptionOnResponse(ClientCall callTrace, Action<TransportException> assert)
+    Task<Auditor> TraceStartup(ClientCall callTrace = null)
+    Task<Auditor> TraceUnexpectedException(ClientCall callTrace, Action<UnexpectedTransportException> assert)
+    Task<Auditor> TraceUnexpectedTransportException(ClientCall callTrace, Action<UnexpectedTransportException> assert)
+    void VisualizeCalls(int numberOfCalls)
+
+  sealed class CallTraceState
+    CallTraceState(AuditEvent e)
+    Action<string, Audit> AssertWithBecause { get; set; }
+    AuditEvent Event { get; }
+    int? Port { get; set; }
+    Action<Audit> SimpleAssert { get; set; }
+
+  sealed class ClientCall : List<CallTraceState>
+    ClientCall()
+    ClientCall(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides)
+    Action<NodePool> AssertPoolAfterCall { get; }
+    Action<TransportResponse> AssertResponse { get; }
+    Func<RequestConfigurationDescriptor, IRequestConfiguration> RequestOverrides { get; }
+    void Add(AuditEvent key, Action<Audit> value)
+    void Add(AuditEvent key, int port, Action<TransportResponse> assertResponse)
+    void Add(AuditEvent key, int port)
+    void Add(AuditEvent key)
+    void Add(Action<NodePool> pool)
+
+namespace Elastic.Transport.VirtualizedCluster.Components
+  sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFactory where TConfiguration : class, ITransportConfiguration
+    ExposingPipelineFactory(TConfiguration configuration)
+    ITransport<TConfiguration> Transport { get; }
+    override RequestPipeline Create(BoundConfiguration boundConfiguration)
+
+  sealed class SealedVirtualCluster : IDisposable
+    VirtualizedCluster AllDefaults()
+    void Dispose()
+    VirtualizedCluster Settings(Func<TransportConfigurationDescriptor, TransportConfigurationDescriptor> selector)
+    VirtualClusterRequestInvoker VirtualClusterConnection(Func<TransportConfigurationDescriptor, TransportConfigurationDescriptor> selector = null)
+
+  class VirtualCluster
+    protected VirtualCluster(IEnumerable<Node> nodes, MockProductRegistration productRegistration)
+    List<IClientCallRule> ClientCallRules { get; }
+    protected List<Node> InternalNodes { get; }
+    IReadOnlyList<Node> Nodes { get; }
+    List<IRule> PingingRules { get; }
+    MockProductRegistration ProductRegistration { get; }
+    List<ISniffRule> SniffingRules { get; }
+    VirtualCluster ClientCalls(Func<ClientCallRule, IClientCallRule> selector)
+    VirtualCluster Ping(Func<PingRule, IRule> selector)
+    VirtualCluster PublishAddress(string publishHost)
+    SealedVirtualCluster SingleNodeConnection(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
+    VirtualCluster Sniff(Func<SniffRule, ISniffRule> selector)
+    VirtualCluster SniffElasticsearchVersionNumber(string version)
+    VirtualCluster SniffShouldReturnFqdn()
+    SealedVirtualCluster SniffingNodePool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
+    SealedVirtualCluster StaticNodePool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
+    SealedVirtualCluster StickyNodePool(Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
+    SealedVirtualCluster StickySniffingNodePool(Func<Node, float> sorter = null, Func<IList<Node>, IEnumerable<Node>> seedNodesSelector = null)
+
+  class VirtualClusterRequestInvoker : IRequestInvoker, IDisposable
+    ResponseFactory ResponseFactory { get; }
+    static VirtualClusterRequestInvoker Error()
+    TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData) where TResponse : TransportResponse, new()
+    Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken) where TResponse : TransportResponse, new()
+    static VirtualClusterRequestInvoker Success(byte[] response)
+
+  class VirtualizedCluster
+    VirtualClusterRequestInvoker Connection { get; }
+    NodePool ConnectionPool { get; }
+    ITransport<ITransportConfiguration> RequestHandler { get; }
+    void ChangeTime(Func<DateTimeOffset, DateTimeOffset> change)
+    TransportResponse ClientCall(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null)
+    Task<TransportResponse> ClientCallAsync(Func<RequestConfigurationDescriptor, IRequestConfiguration> requestOverrides = null)
+    void ClientThrows(bool throws)
+    VirtualizedCluster TransportProxiesTo(Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, TransportResponse> sync, Func<ITransport<ITransportConfiguration>, Func<RequestConfigurationDescriptor, IRequestConfiguration>, Task<TransportResponse>> async)
+
+namespace Elastic.Transport.VirtualizedCluster.Products
+  abstract class MockProductRegistration
+    protected MockProductRegistration()
+    abstract ProductRegistration ProductRegistration { get; }
+    abstract byte[] CreateSniffResponseBytes(IReadOnlyList<Node> nodes, string stackVersion, string publishAddressOverride, bool returnFullyQualifiedDomainNames)
+    abstract bool IsPingRequest(Endpoint endpoint)
+    abstract bool IsSniffRequest(Endpoint endpoint)
+
+namespace Elastic.Transport.VirtualizedCluster.Products.Elasticsearch
+  sealed class ElasticsearchClusterFactory
+    ElasticsearchVirtualCluster Bootstrap(IEnumerable<Node> nodes)
+    ElasticsearchVirtualCluster Bootstrap(int numberOfNodes, int startFrom = 9200)
+    ElasticsearchVirtualCluster BootstrapAllMasterEligableOnly(int numberOfNodes, int startFrom = 9200)
+
+  sealed class ElasticsearchMockProductRegistration : MockProductRegistration
+    ElasticsearchMockProductRegistration()
+    static MockProductRegistration Default { get; }
+    override ProductRegistration ProductRegistration { get; }
+    override byte[] CreateSniffResponseBytes(IReadOnlyList<Node> nodes, string stackVersion, string publishAddressOverride, bool returnFullyQualifiedDomainNames)
+    override bool IsPingRequest(Endpoint endpoint)
+    override bool IsSniffRequest(Endpoint endpoint)
+
+  static class ElasticsearchSniffResponseFactory
+    static byte[] Create(IEnumerable<Node> nodes, string elasticsearchVersion, string publishAddressOverride, bool randomFqdn = false)
+
+  class ElasticsearchVirtualCluster : VirtualCluster
+    ElasticsearchVirtualCluster(IEnumerable<Node> nodes)
+    ElasticsearchVirtualCluster HasSetting(string key, string value, params int[] ports)
+    VirtualCluster HttpDisabled(params int[] ports)
+    ElasticsearchVirtualCluster MasterEligible(params int[] ports)
+    ElasticsearchVirtualCluster StoresNoData(params int[] ports)
+
+namespace Elastic.Transport.VirtualizedCluster.Providers
+  sealed class TestableDateTimeProvider : DateTimeProvider
+    TestableDateTimeProvider()
+    void ChangeTime(Func<DateTimeOffset, DateTimeOffset> change)
+    override DateTimeOffset DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout)
+    override DateTimeOffset Now()
+
+namespace Elastic.Transport.VirtualizedCluster.Rules
+  sealed class ClientCallRule : RuleBase<ClientCallRule>, IClientCallRule, IRule
+    ClientCallRule()
+    ClientCallRule AfterSucceeds(RuleOption<Exception, int> errorState = null)
+    ClientCallRule FailAlways(RuleOption<Exception, int> errorState = null)
+    ClientCallRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int> errorState = null)
+    ClientCallRule SucceedAlways(int? validResponseCode = 200)
+    ClientCallRule Succeeds(RuleOption<TimesHelper.AllTimes, int> times, int? validResponseCode = 200)
+    ClientCallRule ThrowsAfterSucceeds()
+
+  interface IClientCallRule : IRule
+
+  interface IRule
+    RuleOption<Exception, int> AfterSucceeds { get; set; }
+    int ExecuteCount { get; }
+    int? OnPort { get; set; }
+    Func<string, bool> PathFilter { get; set; }
+    RuleOption<Exception, int> Return { get; set; }
+    string ReturnContentType { get; set; }
+    byte[] ReturnResponse { get; set; }
+    bool Succeeds { get; set; }
+    TimeSpan? Takes { get; set; }
+    RuleOption<TimesHelper.AllTimes, int> Times { get; set; }
+    void RecordExecuted()
+
+  interface ISniffRule : IRule
+    VirtualCluster NewClusterState { get; set; }
+
+  sealed class PingRule : RuleBase<PingRule>
+    PingRule()
+    PingRule FailAlways(RuleOption<Exception, int> errorState = null)
+    PingRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int> errorState = null)
+    PingRule SucceedAlways(int? validResponseCode = 200)
+    PingRule Succeeds(RuleOption<TimesHelper.AllTimes, int> times, int? validResponseCode = 200)
+
+  abstract class RuleBase<TRule> : IRule where TRule : RuleBase<TRule>, IRule
+    protected RuleBase()
+    TRule OnPath(Func<string, bool> pathPredicate)
+    TRule OnPath(string pathContains)
+    TRule OnPort(int port)
+    TRule ReturnByteResponse(byte[] response, string responseContentType = "application/json")
+    TRule ReturnResponse<T>(T response) where T : class
+    TRule Takes(TimeSpan span)
+
+  sealed class RuleOption<TFirst, TSecond>
+    RuleOption(TFirst item)
+    RuleOption(TSecond item)
+    void Match(Action<TFirst> first, Action<TSecond> second)
+    T Match<T>(Func<TFirst, T> first, Func<TSecond, T> second)
+    static implicit operator RuleOption<TFirst, TSecond>(TFirst first)
+    static implicit operator RuleOption<TFirst, TSecond>(TSecond second)
+
+  sealed class SniffRule : RuleBase<SniffRule>, ISniffRule, IRule
+    SniffRule()
+    SniffRule FailAlways(RuleOption<Exception, int> errorState = null)
+    SniffRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int> errorState = null)
+    SniffRule SucceedAlways(VirtualCluster cluster = null)
+    SniffRule Succeeds(RuleOption<TimesHelper.AllTimes, int> times, VirtualCluster cluster = null)
+
+  static class TimesHelper
+    static readonly TimesHelper.AllTimes Always
+    static readonly int Once
+    static readonly int Twice
+    static int Times(int n)
+    class AllTimes
