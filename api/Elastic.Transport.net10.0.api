@@ -1,0 +1,1605 @@
+assembly Elastic.Transport
+using System: Action, Action<,>, Action<>, CLSCompliantAttribute, Exception, Func<,,,,>, Func<,,,>, Func<,,>, Func<,>, ObsoleteAttribute, Random, Tuple<,>, Type, Uri
+using struct System: DateTime, DateTimeOffset, Guid, ReadOnlyMemory<>, ReadOnlySpan<>, TimeSpan, TypeCode
+using interface System: IAsyncDisposable, IComparable, IComparable<>, IConvertible, ICustomFormatter, IDisposable, IEquatable<>, IFormatProvider, IObserver<>
+using System.CodeDom.Compiler: GeneratedCodeAttribute
+using interface System.Collections: IEnumerable
+using System.Collections.Generic: Dictionary<,>, IEnumerator<>, IReadOnlyDictionary<,>, IReadOnlyList<>, List<>
+using struct System.Collections.Generic: KeyValuePair<,>
+using interface System.Collections.Generic: ICollection<>, IDictionary<,>, IEnumerable<>, IReadOnlyCollection<>
+using System.Collections.ObjectModel: ReadOnlyDictionary<,>
+using System.Collections.Specialized: NameValueCollection
+using System.ComponentModel: BrowsableAttribute, EditorBrowsableAttribute
+using System.Diagnostics: Activity
+using System.Diagnostics.CodeAnalysis: NotNullWhenAttribute, UnconditionalSuppressMessageAttribute
+using System.Dynamic: BinaryOperationBinder, ConvertBinder, DynamicObject, GetMemberBinder, SetMemberBinder
+using System.IO: MemoryStream, Stream
+using System.IO.Pipelines: PipeReader, PipeWriter
+using System.Linq: IOrderedEnumerable<>
+using System.Net: HttpWebRequest, ServicePoint
+using System.Net.Http: HttpMessageHandler
+using struct System.Net.NetworkInformation: TcpState
+using struct System.Net.Security: SslPolicyErrors
+using System.Runtime.Serialization: DataContractAttribute, DataMemberAttribute, EnumMemberAttribute
+using System.Security.Cryptography.X509Certificates: X509Certificate, X509CertificateCollection, X509Chain
+using struct System.Security.Cryptography.X509Certificates: X509RevocationMode
+using System.Text: StringBuilder
+using System.Text.Json: JsonSerializerOptions, Utf8JsonWriter
+using struct System.Text.Json: JsonElement, Utf8JsonReader
+using System.Text.Json.Nodes: JsonNode
+using System.Text.Json.Serialization: JsonConverter, JsonConverter<>, JsonConverterAttribute, JsonIgnoreAttribute, JsonNumberHandlingAttribute, JsonPropertyNameAttribute, JsonSerializableAttribute, JsonSerializerContext, JsonSourceGenerationOptionsAttribute
+using System.Text.Json.Serialization.Metadata: JsonTypeInfo, JsonTypeInfo<>
+using interface System.Text.Json.Serialization.Metadata: IJsonTypeInfoResolver
+using System.Text.RegularExpressions: Regex
+using System.Threading: SemaphoreSlim
+using struct System.Threading: CancellationToken
+using System.Threading.Tasks: Task, Task<>
+using struct System.Threading.Tasks: ValueTask, ValueTask<>
+
+namespace Elastic.Transport
+  sealed class ApiCallDetails
+    IReadOnlyCollection<Audit>? AuditTrail { get; }
+    string DebugInformation { get; }
+    bool HasExpectedContentType { get; }
+    bool HasSuccessfulStatusCode { get; }
+    HttpMethod HttpMethod { get; }
+    int? HttpStatusCode { get; }
+    Exception? OriginalException { get; }
+    ErrorResponse? ProductError { get; }
+    byte[]? RequestBodyInBytes { get; }
+    byte[]? ResponseBodyInBytes { get; }
+    string ResponseContentType { get; set; }
+    [Obsolete("This property has been retired and replaced by ResponseContentType. Prefer using the updated property as this will be removed in a future release.")]
+    string ResponseMimeType { get; set; }
+    Uri? Uri { get; }
+    override string ToString()
+    bool TryGetHeader(string key, [NotNullWhen(true)] out IEnumerable<string>? headerValues)
+
+  class ApiKey : AuthorizationHeader
+    ApiKey(string apiKey)
+    override string AuthScheme { get; }
+    override bool TryGetAuthorizationParameters(out string value)
+
+  abstract class AuthorizationHeader
+    protected AuthorizationHeader()
+    abstract string AuthScheme { get; }
+    abstract bool TryGetAuthorizationParameters(out string value)
+
+  class Base64ApiKey : ApiKey
+    Base64ApiKey(string id, string apiKey)
+    Base64ApiKey(string base64EncodedApiKey)
+
+  sealed class BasicAuthentication : AuthorizationHeader
+    BasicAuthentication(string username, string password)
+    override string AuthScheme { get; }
+    static string BasicAuthenticationScheme { get; }
+    static string GetBase64String(string header)
+    override bool TryGetAuthorizationParameters(out string value)
+
+  sealed record BoundConfiguration : IRequestConfiguration, IEquatable<BoundConfiguration>
+    BoundConfiguration(ITransportConfiguration global, IRequestConfiguration? local = null)
+    const string DefaultContentType = "application/json"
+    const string RunAsSecurityHeader = "es-security-runas-user"
+    string Accept { get; }
+    IReadOnlyCollection<int> AllowedStatusCodes { get; }
+    AuthorizationHeader? AuthenticationHeader { get; }
+    X509CertificateCollection? ClientCertificates { get; }
+    ITransportConfiguration ConnectionSettings { get; }
+    string ContentType { get; }
+    bool DisableAuditTrail { get; }
+    bool DisableAutomaticProxyDetection { get; }
+    bool DisableDirectStreaming { get; }
+    bool DisablePings { get; }
+    bool DisableSniff { get; }
+    TimeSpan DnsRefreshTimeout { get; }
+    bool EnableTcpStats { get; }
+    bool EnableThreadPoolStats { get; }
+    Uri? ForceNode { get; }
+    NameValueCollection? Headers { get; }
+    bool HttpCompression { get; }
+    bool HttpPipeliningEnabled { get; }
+    int KeepAliveInterval { get; }
+    int KeepAliveTime { get; }
+    int MaxRetries { get; }
+    MemoryStreamFactory MemoryStreamFactory { get; }
+    MetaHeaderProvider? MetaHeaderProvider { get; }
+    string? OpaqueId { get; }
+    bool ParseAllHeaders { get; }
+    TimeSpan PingTimeout { get; }
+    IReadOnlyCollection<IResponseBuilder> ProductResponseBuilders { get; }
+    string? ProxyAddress { get; }
+    string? ProxyPassword { get; }
+    string? ProxyUsername { get; }
+    RequestMetaData? RequestMetaData { get; }
+    TimeSpan RequestTimeout { get; }
+    IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; }
+    HeadersList? ResponseHeadersToParse { get; }
+    string? RunAs { get; }
+    IReadOnlyCollection<int> SkipDeserializationForStatusCodes { get; }
+    bool ThrowExceptions { get; }
+    bool TransferEncodingChunked { get; }
+    UserAgent UserAgent { get; }
+    BoundConfiguration <Clone>$()
+    static BoundConfiguration Create(ITransport<ITransportConfiguration> transport, IRequestConfiguration requestConfiguration)
+    bool Equals(BoundConfiguration? other)
+    override bool Equals(object? obj)
+    override int GetHashCode()
+    override string ToString()
+    static bool operator ==(BoundConfiguration? left, BoundConfiguration? right)
+    static bool operator !=(BoundConfiguration? left, BoundConfiguration? right)
+
+  sealed class BytesResponse : TransportResponse<byte[]>
+    BytesResponse()
+    BytesResponse(byte[] body)
+
+  static class CertificateValidations
+    static bool AllowAll(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors)
+    static Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> AuthorityIsRoot(X509Certificate caCertificate, bool trustRoot = true, X509RevocationMode revocationMode = X509RevocationMode.NoCheck)
+    static Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> AuthorityPartOfChain(X509Certificate caCertificate, bool trustRoot = true, X509RevocationMode revocationMode = X509RevocationMode.NoCheck)
+    static bool DenyAll(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors)
+
+  sealed class CloudNodePool : SingleNodePool
+    CloudNodePool(string cloudId, AuthorizationHeader credentials, CloudService service)
+    CloudNodePool(string cloudId, AuthorizationHeader credentials)
+    CloudNodePool(Uri cloudEndpoint, AuthorizationHeader credentials)
+    AuthorizationHeader AuthenticationHeader { get; }
+
+  enum CloudService
+    Elasticsearch = 0
+    Kibana = 1
+
+  abstract class DateTimeProvider
+    abstract DateTimeOffset DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout)
+    abstract DateTimeOffset Now()
+
+  sealed class DefaultDateTimeProvider : DateTimeProvider
+    DefaultDateTimeProvider()
+    static readonly DefaultDateTimeProvider Default
+    override DateTimeOffset DeadTime(int attempts, TimeSpan? minDeadTimeout, TimeSpan? maxDeadTimeout)
+    override DateTimeOffset Now()
+
+  sealed class DefaultMemoryStreamFactory : MemoryStreamFactory
+    DefaultMemoryStreamFactory()
+    static DefaultMemoryStreamFactory Default { get; }
+    override MemoryStream Create()
+    override MemoryStream Create(byte[] bytes, int index, int count)
+    override MemoryStream Create(byte[] bytes)
+
+  sealed class DefaultMetaHeaderProducer : MetaHeaderProducer
+    DefaultMetaHeaderProducer(VersionInfo versionInfo, string serviceIdentifier)
+    DefaultMetaHeaderProducer(Type clientType, string serviceIdentifier)
+    override string HeaderName { get; }
+    override string? ProduceHeaderValue(BoundConfiguration boundConfiguration, bool isAsync)
+
+  sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
+    DefaultMetaHeaderProvider(VersionInfo versionInfo, string serviceIdentifier)
+    DefaultMetaHeaderProvider(Type clientType, string serviceIdentifier)
+    override MetaHeaderProducer[] Producers { get; }
+
+  sealed class DefaultRequestParameters : RequestParameters
+    DefaultRequestParameters()
+
+  sealed class DistributedTransport : DistributedTransport<ITransportConfiguration>
+    DistributedTransport(ITransportConfiguration configuration)
+
+  class DistributedTransport<TConfiguration> : ITransport<TConfiguration>, ITransport where TConfiguration : class, ITransportConfiguration
+    DistributedTransport(TConfiguration configuration)
+    TConfiguration Configuration { get; }
+    TResponse Request<TResponse>(in EndpointPath path, PostData? postData, Action<Activity>? configureActivity, IRequestConfiguration? localConfiguration) where TResponse : TransportResponse, new()
+    Task<TResponse> RequestAsync<TResponse>(in EndpointPath path, PostData? postData, Action<Activity>? configureActivity, IRequestConfiguration? localConfiguration, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+
+  [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
+  sealed class DynamicDictionary : DynamicObject, IEquatable<DynamicDictionary>, IDictionary<string, DynamicValue>, ICollection<KeyValuePair<string, DynamicValue>>, IEnumerable<KeyValuePair<string, DynamicValue>>, IEnumerable
+    DynamicDictionary()
+    int Count { get; }
+    static DynamicDictionary Empty { get; }
+    bool IsReadOnly { get; }
+    DynamicValue this[string name] { get; set; }
+    ICollection<string> Keys { get; }
+    ICollection<DynamicValue> Values { get; }
+    void Add(KeyValuePair<string, DynamicValue> item)
+    void Add(string key, DynamicValue value)
+    void Clear()
+    bool Contains(KeyValuePair<string, DynamicValue> item)
+    bool ContainsKey(string key)
+    void CopyTo(KeyValuePair<string, DynamicValue>[] array, int arrayIndex)
+    static DynamicDictionary Create(IDictionary<string, object?> values)
+    static DynamicDictionary Create(JsonElement e)
+    bool Equals(DynamicDictionary? other)
+    override bool Equals(object? obj)
+    T Get<T>(string? path)
+    override IEnumerable<string> GetDynamicMemberNames()
+    override int GetHashCode()
+    bool Remove(KeyValuePair<string, DynamicValue> item)
+    bool Remove(string key)
+    Dictionary<string, object?> ToDictionary()
+    override bool TryGetMember(GetMemberBinder binder, out object result)
+    bool TryGetValue(string key, out DynamicValue value)
+    override bool TrySetMember(SetMemberBinder binder, object? value)
+
+  sealed class DynamicResponse : DynamicResponseBase
+    DynamicResponse()
+    DynamicResponse(DynamicDictionary dictionary)
+
+  abstract class DynamicResponseBase : TransportResponse<DynamicDictionary>
+    protected DynamicResponseBase()
+    protected DynamicResponseBase(DynamicDictionary dictionary)
+    T Get<T>(string path)
+
+  sealed class DynamicValue : DynamicObject, IEquatable<DynamicValue>, IConvertible, IReadOnlyCollection<DynamicValue>, IEnumerable<DynamicValue>, IEnumerable
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
+    DynamicValue(object? value)
+    int Count { get; }
+    bool HasValue { get; }
+    DynamicValue this[int i] { get; }
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
+    [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
+    DynamicValue this[string name] { get; }
+    static DynamicValue NullValue { get; }
+    object? Value { get; }
+    static object? ConsumeJsonElement(Type targetReturnType, JsonElement e)
+    T? Default<T>(T? defaultValue = null)
+    bool Equals(DynamicValue? compareValue)
+    override bool Equals(object? obj)
+    T? Get<T>(string path)
+    IEnumerator<DynamicValue> GetEnumerator()
+    override int GetHashCode()
+    TypeCode GetTypeCode()
+    static DynamicValue SelfOrNew(object v)
+    bool ToBoolean(IFormatProvider? provider)
+    byte ToByte(IFormatProvider? provider)
+    char ToChar(IFormatProvider? provider)
+    DateTime ToDateTime(IFormatProvider? provider)
+    decimal ToDecimal(IFormatProvider? provider)
+    IDictionary<string, DynamicValue>? ToDictionary()
+    double ToDouble(IFormatProvider? provider)
+    IEnumerable<DynamicValue> ToEnumerable()
+    short ToInt16(IFormatProvider? provider)
+    int ToInt32(IFormatProvider? provider)
+    long ToInt64(IFormatProvider? provider)
+    [CLSCompliant(false)]
+    sbyte ToSByte(IFormatProvider? provider)
+    float ToSingle(IFormatProvider? provider)
+    override string? ToString()
+    string ToString(IFormatProvider? provider)
+    object ToType(Type conversionType, IFormatProvider? provider)
+    [CLSCompliant(false)]
+    ushort ToUInt16(IFormatProvider? provider)
+    [CLSCompliant(false)]
+    uint ToUInt32(IFormatProvider? provider)
+    [CLSCompliant(false)]
+    ulong ToUInt64(IFormatProvider? provider)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
+    override bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object? result)
+    override bool TryConvert(ConvertBinder binder, out object? result)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Manually verified")]
+    [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026:RequiresUnreferencedCode", Justification = "Manually verified")]
+    override bool TryGetMember(GetMemberBinder binder, out object? result)
+    T? TryParse<T>(T? defaultValue = null)
+    static bool operator ==(DynamicValue dynamicValue, object compareValue)
+    static bool operator !=(DynamicValue dynamicValue, object compareValue)
+    static implicit operator bool(DynamicValue dynamicValue)
+    static implicit operator string?(DynamicValue dynamicValue)
+    static implicit operator int(DynamicValue dynamicValue)
+    static implicit operator Guid(DynamicValue dynamicValue)
+    static implicit operator DateTime(DynamicValue dynamicValue)
+    static implicit operator DateTimeOffset(DynamicValue dynamicValue)
+    static implicit operator TimeSpan(DynamicValue dynamicValue)
+    static implicit operator long(DynamicValue dynamicValue)
+    static implicit operator float(DynamicValue dynamicValue)
+    static implicit operator decimal(DynamicValue dynamicValue)
+    static implicit operator double(DynamicValue dynamicValue)
+
+  record Endpoint : IEquatable<Endpoint>
+    Endpoint(in EndpointPath Path, Node Node)
+    protected Endpoint(Endpoint original)
+    protected virtual Type EqualityContract { get; }
+    bool IsEmpty { get; }
+    HttpMethod Method { get; }
+    Node Node { get; init; }
+    EndpointPath Path { get; init; }
+    string PathAndQuery { get; }
+    Uri Uri { get; }
+    virtual Endpoint <Clone>$()
+    void Deconstruct(out EndpointPath Path, out Node Node)
+    static Endpoint Empty(in EndpointPath path)
+    virtual bool Equals(Endpoint? other)
+    override bool Equals(object? obj)
+    override int GetHashCode()
+    protected virtual bool PrintMembers(StringBuilder builder)
+    override string ToString()
+    static bool operator ==(Endpoint? left, Endpoint? right)
+    static bool operator !=(Endpoint? left, Endpoint? right)
+
+  readonly struct EndpointPath : IEquatable<EndpointPath>
+    EndpointPath(HttpMethod Method, string PathAndQuery)
+    HttpMethod Method { get; init; }
+    string PathAndQuery { get; init; }
+    void Deconstruct(out HttpMethod Method, out string PathAndQuery)
+    bool Equals(EndpointPath other)
+    override bool Equals(object obj)
+    override int GetHashCode()
+    override string ToString()
+    static bool operator ==(EndpointPath left, EndpointPath right)
+    static bool operator !=(EndpointPath left, EndpointPath right)
+
+  class ErrorCauseConverter : ErrorCauseConverter<ErrorCause>
+    ErrorCauseConverter()
+
+  abstract class ErrorCauseConverter<TErrorCause> : JsonConverter<TErrorCause> where TErrorCause : ErrorCause, new()
+    protected ErrorCauseConverter()
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    override TErrorCause? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    protected virtual bool ReadMore(ref Utf8JsonReader reader, JsonSerializerOptions options, string propertyName, TErrorCause errorCause)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    override void Write(Utf8JsonWriter writer, TErrorCause value, JsonSerializerOptions options)
+
+  class ErrorConverter : ErrorCauseConverter<Error>
+    ErrorConverter()
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    protected override bool ReadMore(ref Utf8JsonReader reader, JsonSerializerOptions options, string propertyName, Error errorCause)
+
+  abstract class ErrorResponse
+    abstract bool HasError()
+
+  readonly struct HeadersList : IEnumerable<string>, IEnumerable
+    HeadersList(IEnumerable<string> headers, IEnumerable<string> otherHeaders)
+    HeadersList(IEnumerable<string> headers, string additionalHeader)
+    HeadersList(IEnumerable<string> headers)
+    HeadersList(HeadersList? headers, HeadersList? otherHeaders)
+    HeadersList(string header)
+    int Count { get; }
+    IEnumerator<string> GetEnumerator()
+
+  enum HttpMethod
+    [EnumMember(Value = "GET")]
+    GET = 0
+    [EnumMember(Value = "POST")]
+    POST = 1
+    [EnumMember(Value = "PUT")]
+    PUT = 2
+    [EnumMember(Value = "DELETE")]
+    DELETE = 3
+    [EnumMember(Value = "HEAD")]
+    HEAD = 4
+
+  static class HttpMethodExtensions
+    static string GetStringValue(this HttpMethod httpMethod)
+
+  class HttpRequestInvoker : IRequestInvoker, IDisposable
+    HttpRequestInvoker()
+    HttpRequestInvoker(Func<HttpMessageHandler, BoundConfiguration, HttpMessageHandler> wrappingHandler)
+    int InUseHandlers { get; }
+    int RemovedHandlers { get; }
+    ResponseFactory ResponseFactory { get; }
+    protected HttpMessageHandler CreateHttpClientHandler(BoundConfiguration boundConfiguration)
+    void Dispose()
+    virtual void DisposeManagedResources()
+    TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData) where TResponse : TransportResponse, new()
+    Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken) where TResponse : TransportResponse, new()
+
+  [Obsolete("CoreFX HttpWebRequest uses HttpClient under the covers but does not reuse HttpClient instances, do NOT use on .NET core only used as the default on Full Framework")]
+  class HttpWebRequestInvoker : IRequestInvoker, IDisposable
+    HttpWebRequestInvoker()
+    ResponseFactory ResponseFactory { get; }
+    protected virtual void AlterServicePoint(ServicePoint requestServicePoint, BoundConfiguration boundConfiguration)
+    protected virtual HttpWebRequest CreateHttpWebRequest(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, bool isAsync)
+    TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData) where TResponse : TransportResponse, new()
+    Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    protected virtual void SetAuthenticationIfNeeded(Endpoint endpoint, BoundConfiguration boundConfiguration, HttpWebRequest request)
+    protected virtual void SetClientCertificates(HttpWebRequest request, BoundConfiguration boundConfiguration)
+    protected virtual void SetProxyIfNeeded(HttpWebRequest request, BoundConfiguration boundConfiguration)
+    protected virtual void SetServerCertificateValidationCallBackIfNeeded(HttpWebRequest request, BoundConfiguration boundConfiguration)
+
+  interface IJsonSerializerOptionsProvider
+    JsonSerializerOptions CreateJsonSerializerOptions()
+
+  interface IRequestConfiguration
+    string? Accept { get; }
+    IReadOnlyCollection<int>? AllowedStatusCodes { get; }
+    AuthorizationHeader? Authentication { get; }
+    X509CertificateCollection? ClientCertificates { get; }
+    string? ContentType { get; }
+    bool? DisableAuditTrail { get; }
+    bool? DisableDirectStreaming { get; }
+    bool? DisablePings { get; }
+    bool? DisableSniff { get; }
+    bool? EnableHttpCompression { get; }
+    bool? EnableTcpStats { get; }
+    bool? EnableThreadPoolStats { get; }
+    Uri? ForceNode { get; }
+    NameValueCollection? Headers { get; }
+    bool? HttpPipeliningEnabled { get; }
+    int? MaxRetries { get; }
+    TimeSpan? MaxRetryTimeout { get; }
+    string? OpaqueId { get; }
+    bool? ParseAllHeaders { get; }
+    TimeSpan? PingTimeout { get; }
+    RequestMetaData? RequestMetaData { get; }
+    TimeSpan? RequestTimeout { get; }
+    IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; }
+    HeadersList? ResponseHeadersToParse { get; }
+    string? RunAs { get; }
+    bool? ThrowExceptions { get; }
+    bool? TransferEncodingChunked { get; }
+    UserAgent? UserAgent { get; }
+
+  interface IRequestInvoker : IDisposable
+    ResponseFactory ResponseFactory { get; }
+    TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData) where TResponse : TransportResponse, new()
+    Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken) where TResponse : TransportResponse, new()
+
+  interface IResponseBuilder
+    TResponse? Build<TResponse>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength) where TResponse : TransportResponse, new()
+    Task<TResponse?> BuildAsync<TResponse>(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    bool CanBuild<TResponse>() where TResponse : TransportResponse, new()
+
+  interface IStringable
+    string GetString()
+
+  interface ITransport
+    ITransportConfiguration Configuration { get; }
+    TResponse Request<TResponse>(in EndpointPath path, PostData? postData, Action<Activity>? configureActivity, IRequestConfiguration? localConfiguration) where TResponse : TransportResponse, new()
+    Task<TResponse> RequestAsync<TResponse>(in EndpointPath path, PostData? postData, Action<Activity>? configureActivity, IRequestConfiguration? localConfiguration, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+
+  interface ITransportConfiguration : IRequestConfiguration, IDisposable
+    SemaphoreSlim BootstrapLock { get; }
+    string? CertificateFingerprint { get; }
+    int ConnectionLimit { get; }
+    DateTimeProvider? DateTimeProvider { get; }
+    TimeSpan? DeadTimeout { get; }
+    bool DisableAutomaticProxyDetection { get; }
+    bool DisableMetaHeader { get; }
+    TimeSpan DnsRefreshTimeout { get; }
+    TimeSpan? KeepAliveInterval { get; }
+    TimeSpan? KeepAliveTime { get; }
+    TimeSpan? MaxDeadTimeout { get; }
+    MemoryStreamFactory MemoryStreamFactory { get; }
+    MetaHeaderProvider? MetaHeaderProvider { get; }
+    NodePool NodePool { get; }
+    Func<Node, bool>? NodePredicate { get; }
+    Action<BoundConfiguration>? OnConfigurationBound { get; }
+    Action<ApiCallDetails>? OnRequestCompleted { get; }
+    RequestPipelineFactory? PipelineProvider { get; }
+    bool PrettyJson { get; }
+    ProductRegistration ProductRegistration { get; }
+    string? ProxyAddress { get; }
+    string? ProxyPassword { get; }
+    string? ProxyUsername { get; }
+    NameValueCollection? QueryStringParameters { get; }
+    IRequestInvoker RequestInvoker { get; }
+    Serializer RequestResponseSerializer { get; }
+    Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool>? ServerCertificateValidationCallback { get; }
+    IReadOnlyCollection<int>? SkipDeserializationForStatusCodes { get; }
+    TimeSpan? SniffInformationLifeSpan { get; }
+    bool SniffsOnConnectionFault { get; }
+    bool SniffsOnStartup { get; }
+    Func<HttpMethod, int, bool> StatusCodeToResponseSuccess { get; }
+    UrlFormatter UrlFormatter { get; }
+
+  interface ITransport<out TConfiguration> : ITransport where TConfiguration : class, ITransportConfiguration
+    TConfiguration Configuration { get; }
+
+  interface IUrlParameter
+    string GetString(ITransportConfiguration settings)
+
+  class InMemoryRequestInvoker : IRequestInvoker, IDisposable
+    InMemoryRequestInvoker()
+    InMemoryRequestInvoker(byte[]? responseBody, int statusCode = 200, Exception? exception = null, string contentType = "application/json", Dictionary<string, IEnumerable<string>>? headers = null)
+    ResponseFactory ResponseFactory { get; }
+    TResponse BuildResponse<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, byte[]? responseBody = null, int? statusCode = default, string? contentType = null) where TResponse : TransportResponse, new()
+    Task<TResponse> BuildResponseAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken, byte[]? responseBody = null, int? statusCode = default, string? contentType = null) where TResponse : TransportResponse, new()
+    TResponse Request<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData) where TResponse : TransportResponse, new()
+    Task<TResponse> RequestAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, CancellationToken cancellationToken) where TResponse : TransportResponse, new()
+
+  sealed class JsonResponse : JsonResponseBase
+    JsonResponse()
+    JsonResponse(JsonNode node)
+
+  abstract class JsonResponseBase : TransportResponse<JsonNode>
+    protected JsonResponseBase()
+    protected JsonResponseBase(JsonNode node)
+    T Get<T>(string path)
+
+  abstract class MemoryStreamFactory
+    protected MemoryStreamFactory()
+    abstract MemoryStream Create()
+    abstract MemoryStream Create(byte[] bytes, int index, int count)
+    abstract MemoryStream Create(byte[] bytes)
+
+  sealed class MetaDataHeader
+    MetaDataHeader(VersionInfo version, string serviceIdentifier, bool isAsync)
+    string ClientVersion { get; }
+    string RuntimeVersion { get; }
+    string ServiceIdentifier { get; }
+    string? TransportVersion { get; }
+    override string ToString()
+
+  abstract class MetaHeaderProducer
+    protected MetaHeaderProducer()
+    abstract string HeaderName { get; }
+    abstract string? ProduceHeaderValue(BoundConfiguration boundConfiguration, bool isAsync)
+
+  abstract class MetaHeaderProvider
+    protected MetaHeaderProvider()
+    abstract MetaHeaderProducer[] Producers { get; }
+
+  sealed class Node : IEquatable<Node>
+    Node(Uri uri, IEnumerable<string>? features = null)
+    DateTimeOffset DeadUntil { get; }
+    int FailedAttempts { get; }
+    IReadOnlyCollection<string> Features { get; set; }
+    string? Id { get; }
+    bool IsAlive { get; }
+    bool IsResurrected { get; set; }
+    string? Name { get; set; }
+    IReadOnlyDictionary<string, object> Settings { get; set; }
+    Uri Uri { get; }
+    Node Clone()
+    Uri CreatePath(string path)
+    bool Equals(Node? other)
+    override bool Equals(object? obj)
+    override int GetHashCode()
+    bool HasFeature(string feature)
+    void MarkAlive()
+    void MarkDead(DateTimeOffset until)
+    static bool operator ==(Node left, Node right)
+    static bool operator !=(Node left, Node right)
+    static implicit operator Node(Uri uri)
+
+  abstract class NodePool : IDisposable
+    protected NodePool()
+    DateTimeProvider DateTimeProvider { get; set; }
+    abstract DateTimeOffset? LastUpdate { get; protected set; }
+    abstract int MaxRetries { get; }
+    abstract IReadOnlyCollection<Node> Nodes { get; }
+    bool SniffedOnStartup { get; }
+    abstract bool SupportsPinging { get; }
+    abstract bool SupportsReseeding { get; }
+    bool UsingSsl { get; protected set; }
+    abstract IEnumerable<Node> CreateView(Auditor? auditor = null)
+    void Dispose()
+    protected virtual void Dispose(bool disposing)
+    void MarkAsSniffed()
+    abstract void Reseed(IEnumerable<Node> nodes)
+
+  sealed class PipeResponse : PipeResponseBase
+    PipeResponse()
+    PipeResponse(Stream responseStream, string? contentType)
+    PipeReader Body { get; }
+
+  abstract class PipeResponseBase : TransportResponse, IAsyncDisposable, IDisposable
+    protected PipeResponseBase(Stream responseStream, string? contentType)
+    string ContentType { get; }
+    protected internal override bool LeaveOpen { get; }
+    protected PipeReader Pipe { get; }
+    Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
+    void Dispose()
+    ValueTask DisposeAsync()
+
+  class PipelineException : Exception
+    PipelineException(PipelineFailure failure, Exception? innerException)
+    PipelineException(PipelineFailure failure)
+    PipelineFailure FailureReason { get; }
+    bool Recoverable { get; }
+    TransportResponse? Response { get; }
+
+  enum PipelineFailure
+    BadAuthentication = 0
+    BadResponse = 1
+    PingFailure = 2
+    SniffFailure = 3
+    CouldNotStartSniffOnStartup = 4
+    MaxTimeoutReached = 5
+    MaxRetriesReached = 6
+    Unexpected = 7
+    BadRequest = 8
+    NoNodesAttempted = 9
+
+  abstract class PostData
+    protected PostData()
+    protected const int BufferSize = 81920
+    protected static readonly byte[] NewLineByteArray
+    static PostData Empty { get; }
+    PostType Type { get; }
+    byte[]? WrittenBytes { get; }
+    protected void BufferIfNeeded(MemoryStreamFactory memoryStreamFactory, bool disableDirectStreaming, ref MemoryStream? buffer, ref Stream stream)
+    static PostData Bytes(byte[] bytes)
+    protected void FinishStream(Stream writableStream, MemoryStream? buffer, bool disableDirectStreaming)
+    protected ValueTask FinishStreamAsync(Stream writableStream, MemoryStream? buffer, bool disableDirectStreaming, CancellationToken ctx)
+    static PostData MultiJson<T>(IEnumerable<T> listOfSerializables)
+    static PostData MultiJson(IEnumerable<string> listOfString)
+    static PostData PipeReader(PipeReader pipeReader)
+    static PostData PipeWriter<T>(T state, Func<T, PipeWriter, CancellationToken, Task> asyncWriter)
+    static PostData ReadOnlyMemory(ReadOnlyMemory<byte> bytes)
+    static PostData Serializable<T>(T data)
+    static PostData StreamHandler<T>(T state, Action<T, Stream> syncWriter, Func<T, Stream, CancellationToken, Task> asyncWriter)
+    static PostData String(string serializedString)
+    abstract void Write(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming)
+    abstract Task WriteAsync(Stream writableStream, ITransportConfiguration settings, bool disableDirectStreaming, CancellationToken cancellationToken)
+    static implicit operator PostData(byte[] byteArray)
+    static implicit operator PostData(string literalString)
+
+  enum PostType
+    ByteArray = 0
+    ReadOnlyMemory = 1
+    LiteralString = 2
+    Serializable = 3
+    EnumerableOfString = 4
+    EnumerableOfObject = 5
+    StreamHandler = 6
+    Pipe = 7
+
+  sealed class RecyclableMemoryStreamFactory : MemoryStreamFactory
+    RecyclableMemoryStreamFactory()
+    static RecyclableMemoryStreamFactory Default { get; }
+    override MemoryStream Create()
+    override MemoryStream Create(byte[] bytes, int index, int count)
+    override MemoryStream Create(byte[] bytes)
+
+  sealed class ReflectionVersionInfo : VersionInfo
+    static readonly string TransportVersion
+    static ReflectionVersionInfo Create<T>()
+    static ReflectionVersionInfo Create(Type type)
+
+  record RequestConfiguration : IRequestConfiguration, IEquatable<RequestConfiguration>
+    RequestConfiguration()
+    RequestConfiguration(IRequestConfiguration config)
+    protected RequestConfiguration(RequestConfiguration original)
+    static readonly TimeSpan DefaultPingTimeout
+    static readonly TimeSpan DefaultPingTimeoutOnSsl
+    static readonly TimeSpan DefaultRequestTimeout
+    static readonly UserAgent DefaultUserAgent
+    string? Accept { get; init; }
+    IReadOnlyCollection<int>? AllowedStatusCodes { get; init; }
+    AuthorizationHeader? Authentication { get; init; }
+    X509CertificateCollection? ClientCertificates { get; init; }
+    string? ContentType { get; init; }
+    bool? DisableAuditTrail { get; init; }
+    bool? DisableDirectStreaming { get; init; }
+    bool? DisablePings { get; init; }
+    bool? DisableSniff { get; init; }
+    bool? EnableHttpCompression { get; init; }
+    bool? EnableTcpStats { get; init; }
+    bool? EnableThreadPoolStats { get; init; }
+    protected virtual Type EqualityContract { get; }
+    Uri? ForceNode { get; init; }
+    NameValueCollection? Headers { get; init; }
+    bool? HttpPipeliningEnabled { get; init; }
+    int? MaxRetries { get; init; }
+    TimeSpan? MaxRetryTimeout { get; init; }
+    string? OpaqueId { get; init; }
+    bool? ParseAllHeaders { get; init; }
+    TimeSpan? PingTimeout { get; init; }
+    RequestMetaData? RequestMetaData { get; init; }
+    TimeSpan? RequestTimeout { get; init; }
+    IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; init; }
+    HeadersList? ResponseHeadersToParse { get; init; }
+    string? RunAs { get; init; }
+    bool? ThrowExceptions { get; init; }
+    bool? TransferEncodingChunked { get; init; }
+    UserAgent? UserAgent { get; init; }
+    virtual RequestConfiguration <Clone>$()
+    virtual bool Equals(RequestConfiguration? other)
+    override bool Equals(object? obj)
+    override int GetHashCode()
+    protected virtual bool PrintMembers(StringBuilder builder)
+    override string ToString()
+    static bool operator ==(RequestConfiguration? left, RequestConfiguration? right)
+    static bool operator !=(RequestConfiguration? left, RequestConfiguration? right)
+
+  class RequestConfigurationDescriptor : IRequestConfiguration
+    RequestConfigurationDescriptor()
+    RequestConfigurationDescriptor(IRequestConfiguration config)
+    RequestConfigurationDescriptor Accept(string acceptHeader)
+    RequestConfigurationDescriptor AllowedStatusCodes(IEnumerable<int>? codes)
+    RequestConfigurationDescriptor AllowedStatusCodes(params int[] codes)
+    RequestConfigurationDescriptor Authentication(AuthorizationHeader authentication)
+    RequestConfigurationDescriptor ClientCertificate(X509Certificate certificate)
+    RequestConfigurationDescriptor ClientCertificate(string certificatePath)
+    RequestConfigurationDescriptor ClientCertificates(X509CertificateCollection certificates)
+    RequestConfigurationDescriptor ContentType(string contentTypeHeader)
+    RequestConfigurationDescriptor DisableAuditTrail(bool disable = true)
+    RequestConfigurationDescriptor DisableDirectStreaming(bool disable = true)
+    RequestConfigurationDescriptor DisablePing(bool disable = true)
+    RequestConfigurationDescriptor DisableSniffing(bool disable = true)
+    RequestConfigurationDescriptor EnableHttpCompression(bool enable = true)
+    RequestConfigurationDescriptor EnableHttpPipelining(bool enable = true)
+    RequestConfigurationDescriptor EnableTcpStats(bool enableTcpStats = true)
+    RequestConfigurationDescriptor EnableThreadPoolStats(bool enableThreadPoolStats = true)
+    RequestConfigurationDescriptor ForceNode(Uri uri)
+    RequestConfigurationDescriptor GlobalHeaders(NameValueCollection headers)
+    RequestConfigurationDescriptor MaxRetries(int retry)
+    RequestConfigurationDescriptor MaxRetries(TimeSpan? timeout)
+    RequestConfigurationDescriptor OpaqueId(string opaqueId)
+    RequestConfigurationDescriptor ParseAllHeaders(bool enable = true)
+    RequestConfigurationDescriptor PingTimeout(TimeSpan pingTimeout)
+    RequestConfigurationDescriptor RequestMetaData(RequestMetaData metaData)
+    RequestConfigurationDescriptor RequestTimeout(TimeSpan requestTimeout)
+    RequestConfigurationDescriptor ResponseBuilder(IResponseBuilder responseBuilder)
+    RequestConfigurationDescriptor ResponseHeadersToParse(IEnumerable<string> headers)
+    RequestConfigurationDescriptor RunAs(string username)
+    RequestConfigurationDescriptor ThrowExceptions(bool throwExceptions = true)
+    RequestConfigurationDescriptor TransferEncodingChunked(bool transferEncodingChunked = true)
+    RequestConfigurationDescriptor UserAgent(UserAgent userAgent)
+
+  sealed class RequestMetaData
+    RequestMetaData()
+    IReadOnlyDictionary<string, string>? Items { get; }
+
+  static class RequestMetaDataExtensions
+    static void AddHelper(this RequestMetaData metaData, string helperValue)
+
+  abstract class RequestParameters
+    protected RequestParameters()
+    Dictionary<string, object> QueryString { get; }
+    string? AcceptHeaderFromFormat(string? format)
+    bool ContainsQueryString(string name)
+    virtual string CreatePathWithQueryStrings(string? path, ITransportConfiguration? globalConfig)
+    TOut? GetQueryStringValue<TOut>(string name)
+    protected void Q(string name, IStringable value)
+    protected void Q(string name, object value)
+    protected TOut? Q<TOut>(string name)
+    void SetQueryString(string name, object? value)
+
+  class RequestPipeline
+    void AuditCancellationRequested(Auditor? auditor)
+    void BadResponse<TResponse>(ref TResponse? response, ApiCallDetails? callDetails, Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, TransportException exception, IReadOnlyCollection<Audit>? auditTrail) where TResponse : TransportResponse, new()
+    TResponse CallProductEndpoint<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Auditor? auditor) where TResponse : TransportResponse, new()
+    Task<TResponse> CallProductEndpointAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Auditor? auditor, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    TransportException? CreateClientException<TResponse>(TResponse? response, ApiCallDetails? callDetails, Endpoint endpoint, Auditor? auditor, DateTimeOffset startedOn, int attemptedNodes, List<PipelineException>? seenExceptions) where TResponse : TransportResponse, new()
+    void FirstPoolUsage(SemaphoreSlim semaphore, Auditor? auditor)
+    Task FirstPoolUsageAsync(SemaphoreSlim semaphore, Auditor? auditor, CancellationToken cancellationToken)
+    void MarkAlive(Node node)
+    void MarkDead(Node node)
+    IEnumerable<Node> NextNode(DateTimeOffset startedOn, int attemptedNodes, Auditor? auditor)
+    void Ping(Node node, Auditor? auditor)
+    Task PingAsync(Node node, Auditor? auditor, CancellationToken cancellationToken = default)
+    void Sniff(Auditor? auditor)
+    Task SniffAsync(Auditor? auditor, CancellationToken cancellationToken = default)
+    void SniffOnConnectionFailure(Auditor? auditor)
+    Task SniffOnConnectionFailureAsync(Auditor? auditor, CancellationToken cancellationToken)
+    void SniffOnStaleCluster(Auditor? auditor)
+    Task SniffOnStaleClusterAsync(Auditor? auditor, CancellationToken cancellationToken)
+    void ThrowNoNodesAttempted(Endpoint endpoint, Auditor? auditor, List<PipelineException>? seenExceptions)
+    bool TryGetSingleNode(out Node? node)
+
+  abstract class RequestPipelineFactory
+    abstract RequestPipeline Create(BoundConfiguration boundConfiguration)
+
+  abstract class ResponseFactory
+    protected ResponseFactory()
+    abstract TResponse Create<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Exception? ex, int? statusCode, Dictionary<string, IEnumerable<string>>? headers, Stream? responseStream, string? contentType, long contentLength, IReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats, IReadOnlyDictionary<TcpState, int>? tcpStats) where TResponse : TransportResponse, new()
+    abstract Task<TResponse> CreateAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Exception? ex, int? statusCode, Dictionary<string, IEnumerable<string>>? headers, Stream responseStream, string? contentType, long contentLength, IReadOnlyDictionary<string, ThreadPoolStatistics>? threadPoolStats, IReadOnlyDictionary<TcpState, int>? tcpStats, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    protected static bool MayHaveBody(int? statusCode, HttpMethod httpMethod, long contentLength)
+
+  enum SerializationFormatting
+    None = 0
+    Indented = 1
+
+  abstract class Serializer
+    protected Serializer()
+    abstract T Deserialize<T>(Stream stream)
+    abstract object? Deserialize(Type type, Stream stream)
+    abstract ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
+    abstract ValueTask<object?> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
+    abstract void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None)
+    abstract void Serialize(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None, CancellationToken cancellationToken = default)
+    abstract Task SerializeAsync<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None, CancellationToken cancellationToken = default)
+    abstract Task SerializeAsync(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None, CancellationToken cancellationToken = default)
+
+  sealed class SerializerRegistrationInformation
+    SerializerRegistrationInformation(Type type, string purpose)
+    string Purpose { get; }
+    Type TypeInformation { get; }
+    override string ToString()
+
+  class SingleNodePool : NodePool
+    SingleNodePool(Uri uri)
+    override DateTimeOffset? LastUpdate { get; protected set; }
+    override int MaxRetries { get; }
+    override IReadOnlyCollection<Node> Nodes { get; }
+    override bool SupportsPinging { get; }
+    override bool SupportsReseeding { get; }
+    override IEnumerable<Node> CreateView(Auditor? auditor = null)
+    override void Reseed(IEnumerable<Node> nodes)
+
+  class SniffingNodePool : StaticNodePool
+    SniffingNodePool(IEnumerable<Node> nodes, bool randomize = true)
+    SniffingNodePool(IEnumerable<Node> nodes, Func<Node, float> nodeScorer)
+    SniffingNodePool(IEnumerable<Uri> uris, bool randomize = true)
+    override IReadOnlyCollection<Node> Nodes { get; }
+    override bool SupportsPinging { get; }
+    override bool SupportsReseeding { get; }
+    override IEnumerable<Node> CreateView(Auditor? auditor)
+    protected override void Dispose(bool disposing)
+    override void Reseed(IEnumerable<Node> nodes)
+
+  class StaticNodePool : NodePool
+    protected StaticNodePool(IEnumerable<Node> nodes, bool randomize, int? randomizeSeed = default)
+    StaticNodePool(IEnumerable<Node> nodes, bool randomize = true)
+    protected StaticNodePool(IEnumerable<Node> nodes, Func<Node, float>? nodeScorer = null)
+    StaticNodePool(IEnumerable<Uri> uris, bool randomize = true)
+    protected IReadOnlyList<Node> AliveNodes { get; }
+    protected ref int GlobalCursor { get; }
+    protected List<Node> InternalNodes { get; set; }
+    override DateTimeOffset? LastUpdate { get; protected set; }
+    override int MaxRetries { get; }
+    override IReadOnlyCollection<Node> Nodes { get; }
+    protected Random Random { get; }
+    protected bool Randomize { get; }
+    override bool SupportsPinging { get; }
+    override bool SupportsReseeding { get; }
+    override IEnumerable<Node> CreateView(Auditor? auditor = null)
+    override void Reseed(IEnumerable<Node> nodes)
+    protected Node RetryInternalNodes(int globalCursor, Auditor? auditor = null)
+    protected static IEnumerable<Node> SelectAliveNodes(int cursor, IReadOnlyList<Node> aliveNodes, Auditor? auditor = null)
+    protected IOrderedEnumerable<Node> SortNodes(IEnumerable<Node> nodes)
+
+  sealed class StickyNodePool : StaticNodePool
+    StickyNodePool(IEnumerable<Node> nodes)
+    StickyNodePool(IEnumerable<Uri> uris)
+    override IEnumerable<Node> CreateView(Auditor? auditor)
+    override void Reseed(IEnumerable<Node> nodes)
+
+  sealed class StickySniffingNodePool : SniffingNodePool
+    StickySniffingNodePool(IEnumerable<Node> nodes, Func<Node, float>? nodeScorer = null)
+    StickySniffingNodePool(IEnumerable<Uri> uris, Func<Node, float>? nodeScorer = null)
+    override bool SupportsPinging { get; }
+    override bool SupportsReseeding { get; }
+    override IEnumerable<Node> CreateView(Auditor? auditor)
+
+  sealed class StreamResponse : StreamResponseBase, IDisposable
+    StreamResponse()
+    StreamResponse(Stream body, string? contentType)
+    Stream Body { get; }
+
+  abstract class StreamResponseBase : TransportResponse, IDisposable
+    protected StreamResponseBase(Stream responseStream, string? contentType = null)
+    string ContentType { get; }
+    protected bool Disposed { get; }
+    protected internal override bool LeaveOpen { get; }
+    protected Stream Stream { get; }
+    void Dispose()
+    protected virtual void Dispose(bool disposing)
+
+  sealed class StringResponse : StringResponseBase
+    StringResponse()
+    StringResponse(string body)
+
+  abstract class StringResponseBase : TransportResponse<string>
+    protected StringResponseBase()
+    protected StringResponseBase(string body)
+
+  abstract class SystemTextJsonSerializer : Serializer
+    protected SystemTextJsonSerializer(IJsonSerializerOptionsProvider? provider = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    override T Deserialize<T>(Stream stream)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    override object? Deserialize(Type type, Stream stream)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    override ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    override ValueTask<object?> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
+    protected internal JsonSerializerOptions GetJsonSerializerOptions(SerializationFormatting formatting = SerializationFormatting.None)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    override void Serialize<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    override void Serialize(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None, CancellationToken cancellationToken = default)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    override Task SerializeAsync<T>(T data, Stream stream, SerializationFormatting formatting = SerializationFormatting.None, CancellationToken cancellationToken = default)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    override Task SerializeAsync(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None, CancellationToken cancellationToken = default)
+    protected internal virtual bool SupportsFastPath(Type type)
+
+  static class TestableResponseFactory
+    static T CreateResponse<T>(T response, int httpStatusCode, bool statusCodeRepresentsSuccess) where T : TransportResponse
+    static T CreateSuccessfulResponse<T>(T response, int httpStatusCode) where T : TransportResponse
+
+  record TransportConfiguration : ITransportConfiguration, IRequestConfiguration, IDisposable, IEquatable<TransportConfiguration>
+    TransportConfiguration(ITransportConfiguration config)
+    TransportConfiguration(NodePool nodePool, IRequestInvoker? requestInvoker = null, Serializer? serializer = null, ProductRegistration? productRegistration = null)
+    protected TransportConfiguration(TransportConfiguration original)
+    TransportConfiguration(string cloudId, ApiKey credentials, CloudService service, ProductRegistration? productRegistration = null)
+    TransportConfiguration(string cloudId, ApiKey credentials, ProductRegistration? productRegistration = null)
+    TransportConfiguration(string cloudId, BasicAuthentication credentials, CloudService service, ProductRegistration? productRegistration = null)
+    TransportConfiguration(string cloudId, BasicAuthentication credentials, ProductRegistration? productRegistration = null)
+    TransportConfiguration(Uri cloudEndpoint, ApiKey credentials, ProductRegistration? productRegistration = null)
+    TransportConfiguration(Uri cloudEndpoint, BasicAuthentication credentials, ProductRegistration? productRegistration = null)
+    TransportConfiguration(Uri? uri = null, ProductRegistration? productRegistration = null)
+    static readonly int DefaultConnectionLimit
+    static readonly TimeSpan DefaultDnsRefreshTimeout
+    string? Accept { get; }
+    IReadOnlyCollection<int>? AllowedStatusCodes { get; init; }
+    AuthorizationHeader? Authentication { get; init; }
+    SemaphoreSlim BootstrapLock { get; }
+    string? CertificateFingerprint { get; init; }
+    X509CertificateCollection? ClientCertificates { get; init; }
+    int ConnectionLimit { get; init; }
+    string? ContentType { get; init; }
+    DateTimeProvider DateTimeProvider { get; }
+    TimeSpan? DeadTimeout { get; init; }
+    virtual bool DebugMode { get; init; }
+    static MemoryStreamFactory DefaultMemoryStreamFactory { get; }
+    bool? DisableAuditTrail { get; init; }
+    bool DisableAutomaticProxyDetection { get; init; }
+    bool? DisableDirectStreaming { get; init; }
+    bool DisableMetaHeader { get; init; }
+    bool? DisablePings { get; init; }
+    bool? DisableSniff { get; init; }
+    TimeSpan DnsRefreshTimeout { get; init; }
+    bool? EnableHttpCompression { get; init; }
+    bool? EnableTcpStats { get; init; }
+    bool? EnableThreadPoolStats { get; init; }
+    protected virtual Type EqualityContract { get; }
+    Uri? ForceNode { get; init; }
+    NameValueCollection? Headers { get; init; }
+    bool? HttpPipeliningEnabled { get; init; }
+    TimeSpan? KeepAliveInterval { get; init; }
+    TimeSpan? KeepAliveTime { get; init; }
+    TimeSpan? MaxDeadTimeout { get; init; }
+    int? MaxRetries { get; init; }
+    TimeSpan? MaxRetryTimeout { get; init; }
+    MemoryStreamFactory MemoryStreamFactory { get; init; }
+    MetaHeaderProvider? MetaHeaderProvider { get; init; }
+    NodePool NodePool { get; }
+    Func<Node, bool>? NodePredicate { get; init; }
+    Action<BoundConfiguration>? OnConfigurationBound { get; init; }
+    Action<ApiCallDetails>? OnRequestCompleted { get; init; }
+    string? OpaqueId { get; init; }
+    bool? ParseAllHeaders { get; init; }
+    TimeSpan? PingTimeout { get; init; }
+    RequestPipelineFactory PipelineProvider { get; init; }
+    bool PrettyJson { get; init; }
+    ProductRegistration ProductRegistration { get; }
+    string? ProxyAddress { get; init; }
+    string? ProxyPassword { get; init; }
+    string? ProxyUsername { get; init; }
+    NameValueCollection? QueryStringParameters { get; init; }
+    IRequestInvoker RequestInvoker { get; }
+    RequestMetaData? RequestMetaData { get; init; }
+    Serializer RequestResponseSerializer { get; }
+    TimeSpan? RequestTimeout { get; init; }
+    IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; init; }
+    HeadersList? ResponseHeadersToParse { get; init; }
+    string? RunAs { get; init; }
+    Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool>? ServerCertificateValidationCallback { get; init; }
+    IReadOnlyCollection<int>? SkipDeserializationForStatusCodes { get; init; }
+    TimeSpan? SniffInformationLifeSpan { get; init; }
+    bool SniffsOnConnectionFault { get; init; }
+    bool SniffsOnStartup { get; init; }
+    Func<HttpMethod, int, bool> StatusCodeToResponseSuccess { get; init; }
+    bool? ThrowExceptions { get; init; }
+    bool? TransferEncodingChunked { get; init; }
+    UrlFormatter UrlFormatter { get; init; }
+    UserAgent UserAgent { get; init; }
+    virtual TransportConfiguration <Clone>$()
+    void Dispose()
+    virtual bool Equals(TransportConfiguration? other)
+    override bool Equals(object? obj)
+    override int GetHashCode()
+    protected virtual bool PrintMembers(StringBuilder builder)
+    override string ToString()
+    static bool operator ==(TransportConfiguration? left, TransportConfiguration? right)
+    static bool operator !=(TransportConfiguration? left, TransportConfiguration? right)
+
+  class TransportConfigurationDescriptor : TransportConfigurationDescriptorBase<TransportConfigurationDescriptor>
+    TransportConfigurationDescriptor(ITransportConfiguration config)
+    TransportConfigurationDescriptor(NodePool nodePool, IRequestInvoker? invoker = null, Serializer? serializer = null, ProductRegistration? productRegistration = null)
+    TransportConfigurationDescriptor(string cloudId, ApiKey credentials, CloudService service, ProductRegistration? productRegistration = null)
+    TransportConfigurationDescriptor(string cloudId, ApiKey credentials, ProductRegistration? productRegistration = null)
+    TransportConfigurationDescriptor(string cloudId, BasicAuthentication credentials, CloudService service, ProductRegistration? productRegistration = null)
+    TransportConfigurationDescriptor(string cloudId, BasicAuthentication credentials, ProductRegistration? productRegistration = null)
+    TransportConfigurationDescriptor(Uri? uri = null, ProductRegistration? productRegistration = null)
+
+  [Browsable(false)]
+  [EditorBrowsable(EditorBrowsableState.Never)]
+  abstract class TransportConfigurationDescriptorBase<T> : ITransportConfiguration, IRequestConfiguration, IDisposable where T : TransportConfigurationDescriptorBase<T>
+    protected TransportConfigurationDescriptorBase(ITransportConfiguration config)
+    protected TransportConfigurationDescriptorBase(NodePool nodePool, IRequestInvoker? requestInvoker, Serializer? requestResponseSerializer, ProductRegistration? productRegistration)
+    protected Serializer UseThisRequestResponseSerializer { get; set; }
+    protected T Assign<TValue>(TValue value, Action<T, TValue> assigner)
+    T Authentication(AuthorizationHeader header)
+    T CertificateFingerprint(string fingerprint)
+    T ClientCertificate(X509Certificate certificate)
+    T ClientCertificate(string certificatePath)
+    T ClientCertificates(X509CertificateCollection certificates)
+    T ConnectionLimit(int connectionLimit)
+    T DeadTimeout(TimeSpan timeout)
+    T DisableAuditTrail(bool b = true)
+    T DisableAutomaticProxyDetection(bool disable = true)
+    T DisableDirectStreaming(bool b = true)
+    T DisableMetaHeader(bool disable = true)
+    T DisablePing(bool disable = true)
+    protected virtual void DisposeManagedResources()
+    T DnsRefreshTimeout(TimeSpan timeout)
+    virtual T EnableDebugMode(Action<ApiCallDetails>? onRequestCompleted = null)
+    T EnableHttpCompression(bool enabled = true)
+    T EnableHttpPipelining(bool enabled = true)
+    T EnableTcpKeepAlive(TimeSpan keepAliveTime, TimeSpan keepAliveInterval)
+    T EnableTcpStats(bool enableTcpStats = true)
+    T EnableThreadPoolStats(bool enableThreadPoolStats = true)
+    T GlobalHeaders(NameValueCollection headers)
+    T GlobalQueryStringParameters(NameValueCollection queryStringParameters)
+    T MaxDeadTimeout(TimeSpan timeout)
+    T MaxRetryTimeout(TimeSpan maxRetryTimeout)
+    T MaximumRetries(int maxRetries)
+    T MemoryStreamFactory(MemoryStreamFactory memoryStreamFactory)
+    T NodePredicate(Func<Node, bool> predicate)
+    T OnBoundConfigurationCreated(Action<BoundConfiguration> handler)
+    T OnRequestCompleted(Action<ApiCallDetails> handler)
+    virtual T ParseAllHeaders(bool b = true)
+    T PingTimeout(TimeSpan timeout)
+    T PipelineProvider(RequestPipelineFactory provider)
+    virtual T PrettyJson(bool b = true)
+    T Proxy(Uri proxyAddress, string username, string password)
+    T Proxy(Uri proxyAddress)
+    T RequestTimeout(TimeSpan timeout)
+    T ResponseBuilder(IResponseBuilder responseBuilder)
+    virtual T ResponseHeadersToParse(HeadersList headersToParse)
+    T ServerCertificateValidationCallback(Func<object, X509Certificate, X509Chain, SslPolicyErrors, bool> callback)
+    T SkipDeserializationForStatusCodes(params int[] statusCodes)
+    T SniffLifeSpan(TimeSpan? sniffLifeSpan)
+    T SniffOnConnectionFault(bool sniffsOnConnectionFault = true)
+    T SniffOnStartup(bool sniffsOnStartup = true)
+    T ThrowExceptions(bool alwaysThrow = true)
+    T TransferEncodingChunked(bool transferEncodingChunked = true)
+    protected T UpdateGlobalQueryString(string key, string value, bool enabled)
+    T UserAgent(UserAgent userAgent)
+
+  class TransportException : Exception
+    TransportException(PipelineFailure failure, string message, TransportResponse response)
+    TransportException(PipelineFailure failure, string message, Exception? innerException = null)
+    TransportException(string message)
+    ApiCallDetails? ApiCallDetails { get; }
+    IReadOnlyCollection<Audit>? AuditTrail { get; }
+    string DebugInformation { get; }
+    Endpoint? Endpoint { get; }
+    PipelineFailure? FailureReason { get; }
+
+  static class TransportExtensions
+    static TResponse Request<TResponse>(this ITransport transport, in EndpointPath path, PostData? postData, IRequestConfiguration configuration) where TResponse : TransportResponse, new()
+    static TResponse Request<TResponse>(this ITransport transport, in EndpointPath path, PostData? postData) where TResponse : TransportResponse, new()
+    static TResponse Request<TResponse>(this ITransport transport, in EndpointPath path) where TResponse : TransportResponse, new()
+    static TResponse Request<TResponse>(this ITransport transport, HttpMethod method, string path, PostData? postData, IRequestConfiguration localConfiguration) where TResponse : TransportResponse, new()
+    static TResponse Request<TResponse>(this ITransport transport, HttpMethod method, string path, PostData? postData) where TResponse : TransportResponse, new()
+    static TResponse Request<TResponse>(this ITransport transport, HttpMethod method, string path) where TResponse : TransportResponse, new()
+    static Task<TResponse> RequestAsync<TResponse>(this ITransport transport, in EndpointPath path, PostData? postData, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static Task<TResponse> RequestAsync<TResponse>(this ITransport transport, in EndpointPath path, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static Task<TResponse> RequestAsync<TResponse>(this ITransport transport, HttpMethod method, string path, PostData? postData, IRequestConfiguration localConfiguration, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static Task<TResponse> RequestAsync<TResponse>(this ITransport transport, HttpMethod method, string path, PostData? postData, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static Task<TResponse> RequestAsync<TResponse>(this ITransport transport, HttpMethod method, string path, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+
+  static class TransportHttpMethodExtensions
+    static TResponse Delete<TResponse>(this ITransport transport, string pathAndQuery, PostData? data = null, TimeSpan? timeout = default) where TResponse : TransportResponse, new()
+    static TResponse Delete<TResponse>(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters, PostData? data = null) where TResponse : TransportResponse, new()
+    static Task<TResponse> DeleteAsync<TResponse>(this ITransport transport, string pathAndQuery, PostData? data = null, TimeSpan? timeout = default, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static Task<TResponse> DeleteAsync<TResponse>(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters, PostData? data = null, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static TResponse Get<TResponse>(this ITransport transport, string pathAndQuery) where TResponse : TransportResponse, new()
+    static TResponse Get<TResponse>(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters) where TResponse : TransportResponse, new()
+    static Task<TResponse> GetAsync<TResponse>(this ITransport transport, string pathAndQuery, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static Task<TResponse> GetAsync<TResponse>(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static VoidResponse Head(this ITransport transport, string pathAndQuery, TimeSpan timeout)
+    static VoidResponse Head(this ITransport transport, string pathAndQuery)
+    static VoidResponse Head(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters)
+    static Task<VoidResponse> HeadAsync(this ITransport transport, string pathAndQuery, CancellationToken cancellationToken = default)
+    static Task<VoidResponse> HeadAsync(this ITransport transport, string pathAndQuery, TimeSpan timeout, CancellationToken cancellationToken = default)
+    static Task<VoidResponse> HeadAsync(this ITransport<ITransportConfiguration> transport, string path, RequestParameters parameters, CancellationToken cancellationToken = default)
+    static TResponse Post<TResponse>(this ITransport transport, string pathAndQuery, PostData data, TimeSpan timeout) where TResponse : TransportResponse, new()
+    static TResponse Post<TResponse>(this ITransport transport, string pathAndQuery, PostData data) where TResponse : TransportResponse, new()
+    static TResponse Post<TResponse>(this ITransport<ITransportConfiguration> transport, string path, PostData data, RequestParameters parameters) where TResponse : TransportResponse, new()
+    static Task<TResponse> PostAsync<TResponse>(this ITransport transport, string pathAndQuery, PostData data, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static Task<TResponse> PostAsync<TResponse>(this ITransport transport, string pathAndQuery, PostData data, TimeSpan timeout, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static Task<TResponse> PostAsync<TResponse>(this ITransport<ITransportConfiguration> transport, string path, PostData data, RequestParameters parameters, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static TResponse Put<TResponse>(this ITransport transport, string pathAndQuery, PostData data, TimeSpan timeout) where TResponse : TransportResponse, new()
+    static TResponse Put<TResponse>(this ITransport transport, string pathAndQuery, PostData data) where TResponse : TransportResponse, new()
+    static TResponse Put<TResponse>(this ITransport<ITransportConfiguration> transport, string path, PostData data, RequestParameters parameters) where TResponse : TransportResponse, new()
+    static Task<TResponse> PutAsync<TResponse>(this ITransport transport, string pathAndQuery, PostData data, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static Task<TResponse> PutAsync<TResponse>(this ITransport transport, string pathAndQuery, PostData data, TimeSpan timeout, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+    static Task<TResponse> PutAsync<TResponse>(this ITransport<ITransportConfiguration> transport, string path, PostData data, RequestParameters parameters, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
+
+  abstract class TransportResponse
+    protected TransportResponse()
+    [JsonIgnore]
+    ApiCallDetails ApiCallDetails { get; }
+    [JsonIgnore]
+    protected internal virtual bool LeaveOpen { get; }
+    [JsonIgnore]
+    protected internal IEnumerable<IDisposable>? LinkedDisposables { get; }
+    override string ToString()
+
+  abstract class TransportResponse<T> : TransportResponse
+    protected TransportResponse()
+    T Body { get; protected internal set; }
+
+  class TransportSerializerOptionsProvider : IJsonSerializerOptionsProvider
+    TransportSerializerOptionsProvider()
+    TransportSerializerOptionsProvider(IReadOnlyCollection<JsonConverter> bakedInConverters, IReadOnlyCollection<JsonConverter>? userProvidedConverters, Action<JsonSerializerOptions>? mutateOptions = null)
+    JsonSerializerOptions CreateJsonSerializerOptions()
+
+  abstract class TypedResponseBuilder<TResponse> : IResponseBuilder
+    protected TypedResponseBuilder()
+    protected abstract TResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength)
+    protected abstract Task<TResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength, CancellationToken cancellationToken = default)
+
+  class UnexpectedTransportException : TransportException
+    UnexpectedTransportException(Exception killerException, IReadOnlyCollection<PipelineException>? seenExceptions)
+    IReadOnlyCollection<PipelineException> SeenExceptions { get; }
+
+  sealed class UrlFormatter : IFormatProvider, ICustomFormatter
+    UrlFormatter(ITransportConfiguration settings)
+    static string CreateString(object? value, ITransportConfiguration settings)
+    string CreateString(object? value)
+    string Format(string? format, object? arg, IFormatProvider? formatProvider)
+    object? GetFormat(Type? formatType)
+
+  sealed class UserAgent
+    static UserAgent Create(string reposName, Type typeVersionLookup, string[] metadata)
+    static UserAgent Create(string reposName, Type typeVersionLookup)
+    static UserAgent Create(string fullUserAgentString)
+    override string ToString()
+
+  abstract class VersionInfo
+    protected VersionInfo(SemVersion version)
+    bool IsPrerelease { get; }
+    int Major { get; }
+    string? Metadata { get; }
+    int Minor { get; }
+    int Patch { get; }
+    string? Prerelease { get; }
+    string ToMetadataHeaderValue()
+    override string ToString()
+
+  sealed class VoidResponse : TransportResponse<VoidResponse.VoidBody>
+    VoidResponse()
+    static VoidResponse Default { get; }
+    class VoidBody
+      VoidBody()
+
+namespace Elastic.Transport.Diagnostics
+  static class OpenTelemetry
+    const string ElasticTransportActivitySourceName = "Elastic.Transport"
+    static bool ElasticTransportActivitySourceHasListeners { get; }
+
+  class ThreadPoolStatistics
+    ThreadPoolStatistics(int min, int max, int busy, int free)
+    int Busy { get; }
+    int Free { get; }
+    int Max { get; }
+    int Min { get; }
+
+  static class ThreadPoolStats
+    static ReadOnlyDictionary<string, ThreadPoolStatistics> GetStats()
+
+  abstract class TypedDiagnosticObserver<TOnNextStart, TOnNextEnd> : IObserver<KeyValuePair<string, object>>
+    protected TypedDiagnosticObserver(Action<KeyValuePair<string, TOnNextStart>> onNextStart, Action<KeyValuePair<string, TOnNextEnd>> onNextEnd, Action<Exception>? onError = null, Action? onCompleted = null)
+
+namespace Elastic.Transport.Diagnostics.Auditing
+  sealed class Audit
+    DateTimeOffset Ended { get; }
+    AuditEvent Event { get; }
+    Exception? Exception { get; }
+    Node? Node { get; }
+    DateTimeOffset Started { get; }
+    override string ToString()
+
+  enum AuditEvent
+    SniffOnStartup = 0
+    SniffOnFail = 1
+    SniffOnStaleCluster = 2
+    SniffSuccess = 3
+    SniffFailure = 4
+    PingSuccess = 5
+    PingFailure = 6
+    Resurrection = 7
+    AllNodesDead = 8
+    BadResponse = 9
+    HealthyResponse = 10
+    MaxTimeoutReached = 11
+    MaxRetriesReached = 12
+    BadRequest = 13
+    NoNodesAttempted = 14
+    CancellationRequested = 15
+    FailedOverAllNodes = 16
+
+  class Auditor : IReadOnlyCollection<Audit>, IEnumerable<Audit>, IEnumerable
+    int Count { get; }
+    void Emit(AuditEvent type, Node node)
+    void Emit(AuditEvent type)
+    IEnumerator<Audit> GetEnumerator()
+
+namespace Elastic.Transport.Extensions
+  sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>, IComparable
+    SemVersion(int major, int minor, int patch, string? prerelease, string? metadata)
+    SemVersion(int major, int minor, int patch, string? prerelease)
+    SemVersion(int major, int minor, int patch)
+    int Major { get; }
+    string Metadata { get; }
+    int Minor { get; }
+    int Patch { get; }
+    string Prerelease { get; }
+    int CompareByPrecedence(SemVersion? other)
+    int CompareTo(SemVersion? other)
+    int CompareTo(object? obj)
+    bool Equals(SemVersion? other)
+    override bool Equals(object? obj)
+    override int GetHashCode()
+    override string ToString()
+    static bool TryParse(string input, [NotNullWhen(true)] out SemVersion? version)
+    SemVersion Update(int? major = default, int? minor = default, int? patch = default, string? prerelease = null, string? metadata = null)
+    static bool operator ==(SemVersion left, SemVersion right)
+    static bool operator >(SemVersion left, SemVersion right)
+    static bool operator >=(SemVersion left, SemVersion right)
+    static bool operator !=(SemVersion left, SemVersion right)
+    static bool operator <(SemVersion left, SemVersion right)
+    static bool operator <=(SemVersion left, SemVersion right)
+
+  static class TransportSerializerExtensions
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static T? Deserialize<T>(this Serializer serializer, ReadOnlySpan<byte> span, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static object? Deserialize(this Serializer serializer, ReadOnlySpan<byte> span, Type type, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static T? Deserialize<T>(this Serializer serializer, ReadOnlySpan<char> span, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static object? Deserialize(this Serializer serializer, ReadOnlySpan<char> span, Type type, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static T? Deserialize<T>(this Serializer serializer, string input, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static object? Deserialize(this Serializer serializer, string input, Type type, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static T? Deserialize<T>(this Serializer serializer, JsonElement node, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static object? Deserialize(this Serializer serializer, JsonElement node, Type type, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static T? Deserialize<T>(this Serializer serializer, JsonNode node, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static object? Deserialize(this Serializer serializer, JsonNode node, Type type, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static T? Deserialize<T>(this Serializer serializer, ref Utf8JsonReader reader, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static object? Deserialize(this Serializer serializer, ref Utf8JsonReader reader, Type type, MemoryStreamFactory? memoryStreamFactory = null)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static void Serialize<T>(this Serializer serializer, T? data, Utf8JsonWriter writer, MemoryStreamFactory? memoryStreamFactory, SerializationFormatting formatting = SerializationFormatting.None)
+    static void Serialize<T>(this Serializer serializer, T? data, Utf8JsonWriter writer, SerializationFormatting formatting = SerializationFormatting.None)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static void Serialize(this Serializer serializer, object? data, Type type, Utf8JsonWriter writer, MemoryStreamFactory? memoryStreamFactory, SerializationFormatting formatting = SerializationFormatting.None)
+    static void Serialize(this Serializer serializer, object? data, Type type, Utf8JsonWriter writer, SerializationFormatting formatting = SerializationFormatting.None)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static byte[] SerializeToBytes<T>(this Serializer serializer, T? data, MemoryStreamFactory? memoryStreamFactory, SerializationFormatting formatting = SerializationFormatting.None)
+    static byte[] SerializeToBytes<T>(this Serializer serializer, T? data, SerializationFormatting formatting = SerializationFormatting.None)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static byte[] SerializeToBytes(this Serializer serializer, object? data, Type type, MemoryStreamFactory? memoryStreamFactory, SerializationFormatting formatting = SerializationFormatting.None)
+    static byte[] SerializeToBytes(this Serializer serializer, object? data, Type type, SerializationFormatting formatting = SerializationFormatting.None)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static string SerializeToString<T>(this Serializer serializer, T? data, MemoryStreamFactory? memoryStreamFactory, SerializationFormatting formatting = SerializationFormatting.None)
+    static string SerializeToString<T>(this Serializer serializer, T? data, SerializationFormatting formatting = SerializationFormatting.None)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static string SerializeToString(this Serializer serializer, object? data, Type type, MemoryStreamFactory? memoryStreamFactory, SerializationFormatting formatting = SerializationFormatting.None)
+    static string SerializeToString(this Serializer serializer, object? data, Type type, SerializationFormatting formatting = SerializationFormatting.None)
+    [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+    static bool TryGetJsonSerializerOptions(this Serializer serializer, [NotNullWhen(true)] out JsonSerializerOptions? options, SerializationFormatting formatting = SerializationFormatting.None)
+
+namespace Elastic.Transport.Products
+  sealed class DefaultProductRegistration : ProductRegistration
+    DefaultProductRegistration()
+    static DefaultProductRegistration Default { get; }
+    override string? DefaultContentType { get; }
+    override IReadOnlyDictionary<string, object>? DefaultOpenTelemetryAttributes { get; }
+    override MetaHeaderProvider MetaHeaderProvider { get; }
+    override string Name { get; }
+    override string ProductAssemblyVersion { get; }
+    override HeadersList ResponseHeadersToParse { get; }
+    override string? ServiceIdentifier { get; }
+    override bool SupportsPing { get; }
+    override bool SupportsSniff { get; }
+    override Endpoint CreatePingEndpoint(Node node, IRequestConfiguration requestConfiguration)
+    override Endpoint CreateSniffEndpoint(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings)
+    override IReadOnlyCollection<string> DefaultHeadersToParse()
+    override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode)
+    override bool NodePredicate(Node node)
+    override Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails)
+    override TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration)
+    override Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken)
+    override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration)
+    override Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken)
+    override int SniffOrder(Node node)
+    override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason) where TResponse : TransportResponse
+
+  abstract class ProductRegistration
+    protected ProductRegistration()
+    abstract string? DefaultContentType { get; }
+    abstract IReadOnlyDictionary<string, object>? DefaultOpenTelemetryAttributes { get; }
+    abstract MetaHeaderProvider MetaHeaderProvider { get; }
+    abstract string Name { get; }
+    abstract string ProductAssemblyVersion { get; }
+    virtual IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; }
+    abstract HeadersList ResponseHeadersToParse { get; }
+    abstract string? ServiceIdentifier { get; }
+    abstract bool SupportsPing { get; }
+    abstract bool SupportsSniff { get; }
+    abstract Endpoint CreatePingEndpoint(Node node, IRequestConfiguration requestConfiguration)
+    abstract Endpoint CreateSniffEndpoint(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings)
+    abstract IReadOnlyCollection<string> DefaultHeadersToParse()
+    abstract bool HttpStatusCodeClassifier(HttpMethod method, int statusCode)
+    virtual bool IsErrorContentType(string? contentType)
+    virtual bool IsExpectedResponseContentType(string accept, string? responseContentType)
+    virtual bool IsJsonContentType(string? contentType)
+    virtual bool IsValidResponse(ApiCallDetails? details)
+    abstract bool NodePredicate(Node node)
+    abstract Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails)
+    abstract TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration)
+    abstract Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken)
+    abstract Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration)
+    abstract Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken)
+    abstract int SniffOrder(Node node)
+    virtual string? TransformContentType(string? contentType)
+    virtual ErrorResponse? TryExtractError(BoundConfiguration boundConfiguration, Stream responseStream)
+    abstract bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason) where TResponse : TransportResponse
+
+namespace Elastic.Transport.Products.Elasticsearch
+  record ElasticsearchConfiguration : TransportConfiguration, IEquatable<ElasticsearchConfiguration>
+    protected ElasticsearchConfiguration(ElasticsearchConfiguration original)
+    ElasticsearchConfiguration(string cloudId, ApiKey credentials, CloudService service)
+    ElasticsearchConfiguration(string cloudId, ApiKey credentials)
+    ElasticsearchConfiguration(string cloudId, BasicAuthentication credentials, CloudService service)
+    ElasticsearchConfiguration(string cloudId, BasicAuthentication credentials)
+    ElasticsearchConfiguration(Uri cloudEndpoint, ApiKey credentials)
+    ElasticsearchConfiguration(Uri cloudEndpoint, BasicAuthentication credentials)
+    ElasticsearchConfiguration(Uri? uri = null)
+    protected override Type EqualityContract { get; }
+    override ElasticsearchConfiguration <Clone>$()
+    virtual bool Equals(ElasticsearchConfiguration? other)
+    sealed override bool Equals(TransportConfiguration? other)
+    override bool Equals(object? obj)
+    override int GetHashCode()
+    protected override bool PrintMembers(StringBuilder builder)
+    override string ToString()
+    static bool operator ==(ElasticsearchConfiguration? left, ElasticsearchConfiguration? right)
+    static bool operator !=(ElasticsearchConfiguration? left, ElasticsearchConfiguration? right)
+
+  sealed class ElasticsearchDynamicResponse : DynamicResponseBase, IElasticsearchResponse
+    ElasticsearchDynamicResponse()
+    ElasticsearchDynamicResponse(DynamicDictionary dictionary)
+    string DebugInformation { get; }
+    ElasticsearchServerError? ElasticsearchServerError { get; }
+    IEnumerable<string> ElasticsearchWarnings { get; }
+    bool IsValidResponse { get; }
+    override string ToString()
+    bool TryGetOriginalException(out Exception? exception)
+
+  static class ElasticsearchErrorExtensions
+    static bool TryGetElasticsearchServerError(this BytesResponse response, out ElasticsearchServerError? serverError)
+    static bool TryGetElasticsearchServerError(this StringResponse response, out ElasticsearchServerError? serverError)
+    static bool TryGetElasticsearchServerError(this TransportResponse response, out ElasticsearchServerError? serverError)
+
+  sealed class ElasticsearchJsonResponse : JsonResponseBase, IElasticsearchResponse
+    ElasticsearchJsonResponse()
+    ElasticsearchJsonResponse(JsonNode node)
+    string DebugInformation { get; }
+    ElasticsearchServerError? ElasticsearchServerError { get; }
+    IEnumerable<string> ElasticsearchWarnings { get; }
+    bool IsValidResponse { get; }
+    override string ToString()
+    bool TryGetOriginalException(out Exception? exception)
+
+  static class ElasticsearchNodeFeatures
+    static readonly IReadOnlyCollection<string> Default
+    const string HoldsData = "node.data"
+    const string HttpEnabled = "node.http"
+    const string IngestEnabled = "node.ingest"
+    const string MasterEligible = "node.master"
+    static readonly IReadOnlyCollection<string> MasterEligibleOnly
+    static readonly IReadOnlyCollection<string> NotMasterEligible
+
+  sealed class ElasticsearchPipeResponse : PipeResponseBase, IElasticsearchResponse
+    ElasticsearchPipeResponse()
+    ElasticsearchPipeResponse(Stream responseStream, string? contentType)
+    PipeReader Body { get; }
+    string DebugInformation { get; }
+    ElasticsearchServerError? ElasticsearchServerError { get; }
+    IEnumerable<string> ElasticsearchWarnings { get; }
+    bool IsValidResponse { get; }
+    override string ToString()
+    bool TryGetOriginalException(out Exception? exception)
+
+  class ElasticsearchProductRegistration : ProductRegistration
+    ElasticsearchProductRegistration(Type markerType)
+    const string SniffPath = "_nodes/http,settings"
+    static ProductRegistration Default { get; }
+    override string? DefaultContentType { get; }
+    override IReadOnlyDictionary<string, object>? DefaultOpenTelemetryAttributes { get; }
+    override MetaHeaderProvider MetaHeaderProvider { get; }
+    override string Name { get; }
+    override string ProductAssemblyVersion { get; }
+    override IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; }
+    override HeadersList ResponseHeadersToParse { get; }
+    sealed override string ServiceIdentifier { get; }
+    override bool SupportsPing { get; }
+    override bool SupportsSniff { get; }
+    override Endpoint CreatePingEndpoint(Node node, IRequestConfiguration requestConfiguration)
+    override Endpoint CreateSniffEndpoint(Node node, IRequestConfiguration requestConfiguration, ITransportConfiguration settings)
+    override IReadOnlyCollection<string> DefaultHeadersToParse()
+    override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode)
+    override bool IsErrorContentType(string? contentType)
+    override bool IsExpectedResponseContentType(string accept, string? responseContentType)
+    override bool IsJsonContentType(string? contentType)
+    override bool IsValidResponse(ApiCallDetails? details)
+    override bool NodePredicate(Node node)
+    override Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails)
+    override TransportResponse Ping(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration)
+    override Task<TransportResponse> PingAsync(IRequestInvoker requestInvoker, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken)
+    override Tuple<TransportResponse, IReadOnlyCollection<Node>> Sniff(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration)
+    override Task<Tuple<TransportResponse, IReadOnlyCollection<Node>>> SniffAsync(IRequestInvoker requestInvoker, bool forceSsl, Endpoint endpoint, BoundConfiguration boundConfiguration, CancellationToken cancellationToken)
+    override int SniffOrder(Node node)
+    override string? TransformContentType(string? contentType)
+    override ErrorResponse? TryExtractError(BoundConfiguration boundConfiguration, Stream responseStream)
+    override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason) where TResponse : TransportResponse
+
+  abstract class ElasticsearchResponse : TransportResponse, IElasticsearchResponse
+    protected ElasticsearchResponse()
+    [JsonIgnore]
+    string DebugInformation { get; }
+    [JsonIgnore]
+    ElasticsearchServerError? ElasticsearchServerError { get; }
+    [JsonIgnore]
+    IEnumerable<string> ElasticsearchWarnings { get; }
+    [JsonIgnore]
+    virtual bool IsValidResponse { get; }
+    protected virtual void DebugIsValid(StringBuilder sb)
+    override string ToString()
+    bool TryGetOriginalException(out Exception? exception)
+
+  [DataContract]
+  sealed class ElasticsearchServerError : ErrorResponse
+    ElasticsearchServerError()
+    ElasticsearchServerError(Error error, int? statusCode)
+    [DataMember(Name = "error")]
+    [JsonPropertyName("error")]
+    Error? Error { get; init; }
+    [DataMember(Name = "status")]
+    [JsonPropertyName("status")]
+    int Status { get; init; }
+    static ElasticsearchServerError Create(Stream stream)
+    static ValueTask<ElasticsearchServerError> CreateAsync(Stream stream, CancellationToken token = default)
+    override bool HasError()
+    override string ToString()
+    static bool TryCreate(Stream stream, out ElasticsearchServerError? serverError)
+
+  sealed class ElasticsearchStreamResponse : StreamResponseBase, IElasticsearchResponse
+    ElasticsearchStreamResponse()
+    ElasticsearchStreamResponse(Stream body, string? contentType)
+    Stream Body { get; }
+    string DebugInformation { get; }
+    ElasticsearchServerError? ElasticsearchServerError { get; }
+    IEnumerable<string> ElasticsearchWarnings { get; }
+    bool IsValidResponse { get; }
+    override string ToString()
+    bool TryGetOriginalException(out Exception? exception)
+
+  sealed class ElasticsearchStringResponse : StringResponseBase, IElasticsearchResponse
+    ElasticsearchStringResponse()
+    ElasticsearchStringResponse(string body)
+    string DebugInformation { get; }
+    ElasticsearchServerError? ElasticsearchServerError { get; }
+    IEnumerable<string> ElasticsearchWarnings { get; }
+    bool IsValidResponse { get; }
+    override string ToString()
+    bool TryGetOriginalException(out Exception? exception)
+
+  [GeneratedCode("System.Text.Json.SourceGeneration", "10.0.15.2326")]
+  [JsonSerializable(typeof(Elastic.Transport.Products.Elasticsearch.ElasticsearchResponse))]
+  [JsonSerializable(typeof(Elastic.Transport.Products.Elasticsearch.ElasticsearchServerError))]
+  [JsonSerializable(typeof(Elastic.Transport.Products.Elasticsearch.Error))]
+  [JsonSerializable(typeof(Elastic.Transport.Products.Elasticsearch.ErrorCause))]
+  [JsonSerializable(typeof(System.Collections.Generic.Dictionary`2[[System.String, System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a],[System.Object, System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]], System.Collections, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a))]
+  [JsonSerializable(typeof(System.Collections.Generic.IReadOnlyCollection`1[Elastic.Transport.Products.Elasticsearch.ErrorCause], System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a))]
+  [JsonSerializable(typeof(System.Collections.Generic.IReadOnlyDictionary`2[[System.String, System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a],[System.String, System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]], System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a))]
+  [JsonSerializable(typeof(System.Object[], System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a))]
+  [JsonSerializable(typeof(System.String))]
+  [JsonSerializable(typeof(System.Text.Json.JsonElement))]
+  [JsonSourceGenerationOptions(GenerationMode = (JsonSourceGenerationMode)0, UseStringEnumConverter = true)]
+  class ElasticsearchTransportSerializerContext : JsonSerializerContext, IJsonTypeInfoResolver
+    ElasticsearchTransportSerializerContext()
+    ElasticsearchTransportSerializerContext(JsonSerializerOptions options)
+    static ElasticsearchTransportSerializerContext Default { get; }
+    JsonTypeInfo<Dictionary<string, object>> DictionaryStringObject { get; }
+    JsonTypeInfo<ElasticsearchResponse> ElasticsearchResponse { get; }
+    JsonTypeInfo<ElasticsearchServerError> ElasticsearchServerError { get; }
+    JsonTypeInfo<Error> Error { get; }
+    JsonTypeInfo<ErrorCause> ErrorCause { get; }
+    protected override JsonSerializerOptions? GeneratedSerializerOptions { get; }
+    JsonTypeInfo<IReadOnlyCollection<ErrorCause>> IReadOnlyCollectionErrorCause { get; }
+    JsonTypeInfo<IReadOnlyDictionary<string, string>> IReadOnlyDictionaryStringString { get; }
+    JsonTypeInfo<int> Int32 { get; }
+    JsonTypeInfo<JsonElement> JsonElement { get; }
+    JsonTypeInfo<object> Object { get; }
+    JsonTypeInfo<object[]> ObjectArray { get; }
+    JsonTypeInfo<string> String { get; }
+    override JsonTypeInfo? GetTypeInfo(Type type)
+
+  [DataContract]
+  [JsonConverter(typeof(Elastic.Transport.Products.Elasticsearch.ErrorConverter))]
+  sealed class Error : ErrorCause
+    Error()
+    [JsonPropertyName("headers")]
+    IReadOnlyDictionary<string, string> Headers { get; set; }
+    [JsonPropertyName("root_cause")]
+    IReadOnlyCollection<ErrorCause>? RootCause { get; set; }
+    override string ToString()
+
+  [DataContract]
+  [JsonConverter(typeof(Elastic.Transport.ErrorCauseConverter))]
+  class ErrorCause
+    ErrorCause()
+    IReadOnlyDictionary<string, object> AdditionalProperties { get; }
+    ErrorCause? CausedBy { get; }
+    string? Index { get; }
+    string? IndexUUID { get; }
+    string? Reason { get; }
+    [JsonPropertyName("stack_trace")]
+    string? StackTrace { get; }
+    string? Type { get; }
+    override string ToString()
+
+  sealed class ErrorConverter : JsonConverter<Error>
+    ErrorConverter()
+    override Error? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    override void Write(Utf8JsonWriter writer, Error value, JsonSerializerOptions options)
+
+  interface IElasticsearchResponse
+    string DebugInformation { get; }
+    ElasticsearchServerError? ElasticsearchServerError { get; }
+    IEnumerable<string> ElasticsearchWarnings { get; }
+    bool IsValidResponse { get; }
+    bool TryGetOriginalException(out Exception? exception)
+
+  [DataContract]
+  sealed class ShardFailure
+    ShardFailure()
+    [JsonPropertyName("index")]
+    string? Index { get; set; }
+    [JsonPropertyName("node")]
+    string? Node { get; set; }
+    [JsonPropertyName("reason")]
+    ErrorCause? Reason { get; set; }
+    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+    [JsonPropertyName("shard")]
+    int? Shard { get; set; }
+    [JsonPropertyName("status")]
+    string? Status { get; set; }
+
+  static class SniffParser
+    static Regex AddressRegex { get; }
+    static Uri ParseToUri(string boundAddress, bool forceHttp)
