@@ -71,3 +71,19 @@ The `tests` folder contains unit and integration tests.
 ```
 
 ...with no target will run the `build` target, compiling the solution and running unit tests.
+
+## Changing the public API
+
+The public API of `Elastic.Transport` and `Elastic.Transport.VirtualizedCluster` is committed in `api/`, one `.api` file per target framework where they differ. Two checks keep it honest:
+
+- `./build.sh verifyapi` (and the `verify-api` job on every pull request) fails when `api/` no longer matches the Release build.
+- `Elastic.Transport.PublicApi.Tests` checks the net10.0 API against `.snapshots/` and prints each change with the version bump it calls for.
+
+After an intended change, regenerate the files and commit them with the change. The diff of `api/` is the API change a reviewer reads:
+
+```bash
+./build.sh api
+SNAPSHOT_ACCEPT=1 dotnet test tests/Elastic.Transport.PublicApi.Tests -c Release
+```
+
+On a pull request the `api-changes` job comments with what the change does to the API compared with the latest release on nuget.org, and sets the `breaking` label for a major change or `feature` for a minor one. A breaking change fails the check until a maintainer adds the `breaking-allowed` label, which says the break is intended.
