@@ -1,0 +1,52 @@
+name: Public API
+
+on:
+  pull_request:
+    # labeled and unlabeled run the checks again when someone adds or removes breaking-allowed
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    paths-ignore:
+      - 'README.md'
+      - '.editorconfig'
+
+permissions:
+  contents: read
+  pull-requests: write # the comments and the labels
+
+jobs:
+  # What the pull request changes in the public API of the libraries, against their latest release on nuget.org.
+  # A breaking change fails the check until someone adds the breaking-allowed label.
+  api-changes:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: ./global.json
+
+    - run: dotnet build -c Release
+
+    - uses: nullean/assembly-differ@v1
+      with:
+        version: 1.2.1
+
+  # The committed api/*.api files must match the build: an intended change to the public API is committed with it.
+  verify-api:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: ./global.json
+
+    - run: dotnet build -c Release
+
+    - uses: nullean/assembly-differ/verify-api@v1
+      with:
+        version: 1.2.1
+        directory: api
+        projects: |
+          src/Elastic.Transport/Elastic.Transport.csproj
+          src/Elastic.Transport.VirtualizedCluster/Elastic.Transport.VirtualizedCluster.csproj
+        comment: 'true'

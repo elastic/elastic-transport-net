@@ -79,9 +79,6 @@ jobs:
     - run: ./build.sh validatepackages -s true
       name: "validate *.npkg files that were created"
 
-    - run: ./build.sh generateapichanges -s true
-      name: "Inspect public API changes"
-
     - name: publish canary packages github package repository
       if: github.event_name == 'push' && startswith(github.ref, 'refs/heads')
       shell: bash
