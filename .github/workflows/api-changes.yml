@@ -28,7 +28,7 @@ jobs:
 
     - uses: nullean/assembly-differ@v1
       with:
-        version: 1.2.1
+        version: 1.3.0
 
   # The committed api/*.api files must match the build: an intended change to the public API is committed with it.
   verify-api:
@@ -44,7 +44,7 @@ jobs:
 
     - uses: nullean/assembly-differ/verify-api@v1
       with:
-        version: 1.2.1
+        version: 1.3.0
         directory: api
         projects: |
           src/Elastic.Transport/Elastic.Transport.csproj

@@ -2,7 +2,6 @@ assembly Elastic.Transport
 using System: Action, Action<,>, Action<>, CLSCompliantAttribute, Exception, Func<,,,,>, Func<,,,>, Func<,,>, Func<,>, ObsoleteAttribute, Random, Tuple<,>, Type, Uri
 using struct System: DateTime, DateTimeOffset, Guid, ReadOnlySpan<>, TimeSpan, TypeCode
 using interface System: IComparable, IComparable<>, IConvertible, ICustomFormatter, IDisposable, IEquatable<>, IFormatProvider, IObserver<>
-using System.CodeDom.Compiler: GeneratedCodeAttribute
 using interface System.Collections: IEnumerable
 using System.Collections.Generic: Dictionary<,>, IEnumerator<>, IReadOnlyDictionary<,>, IReadOnlyList<>, List<>
 using struct System.Collections.Generic: KeyValuePair<,>
@@ -1419,7 +1418,6 @@ namespace Elastic.Transport.Products.Elasticsearch
     override string ToString()
     bool TryGetOriginalException(out Exception? exception)
 
-  [GeneratedCode("System.Text.Json.SourceGeneration", "10.0.13.2411")]
   [JsonSerializable(typeof(Elastic.Transport.Products.Elasticsearch.ElasticsearchResponse))]
   [JsonSerializable(typeof(Elastic.Transport.Products.Elasticsearch.ElasticsearchServerError))]
   [JsonSerializable(typeof(Elastic.Transport.Products.Elasticsearch.Error))]
