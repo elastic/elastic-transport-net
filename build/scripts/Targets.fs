@@ -90,30 +90,25 @@ let private validatePackages (arguments:ParseResults<Arguments>) =
     let args = ["-v"; currentVersionInformational.Value; "-k"; Paths.SignKey; "-t"; output] @ jenkinsOnWindowsArgs
     nugetPackages |> Seq.iter (fun p -> exec "dotnet" (["nupkg-validator"; p] @ args) |> ignore)
 
-let private generateApiChanges (arguments:ParseResults<Arguments>) =
-    let output = Paths.RootRelative <| Paths.Output.FullName
-    let currentVersion = currentVersion.Value
-    let nugetPackages =
-        Paths.Output.GetFiles("*.nupkg") |> Seq.sortByDescending(fun f -> f.CreationTimeUtc)
-        |> Seq.map (fun p -> Path.GetFileNameWithoutExtension(Paths.RootRelative p.FullName).Replace("." + currentVersion, ""))
-    nugetPackages
-    |> Seq.iter(fun p ->
-        let outputFile =
-            let f = sprintf "breaking-changes-%s.md" p
-            Path.Combine(output, f)
-        let directory = $".artifacts/bin/%s{p}/release_%s{Paths.MainTFM}"
+let private apiArgs (mode:string list) =
+    let projects =
+        [ "src/Elastic.Transport/Elastic.Transport.csproj"
+          "src/Elastic.Transport.VirtualizedCluster/Elastic.Transport.VirtualizedCluster.csproj" ]
+        |> List.collect (fun p -> ["--project"; p])
+    ["assembly-differ"; "api"] @ mode @ projects
 
-        let args =
-            [
-                "assembly-differ"
-                (sprintf "previous-nuget|%s|%s|%s" p currentVersion Paths.MainTFM);
-                (sprintf "directory|%s" directory);
-                "-a"; "true"; "--target"; p; "-f"; "github-comment"; "--output"; outputFile
-            ]
-        
-        exec "dotnet" args |> ignore
-    )
-    
+// writes the public API of the Release build to api/, run it after an intended API change and commit the result
+let private writeApi (arguments:ParseResults<Arguments>) =
+    restoreTools.Value |> ignore
+    exec "dotnet" ["build"; "-c"; "Release"] |> ignore
+    exec "dotnet" (apiArgs ["-o"; "api"]) |> ignore
+
+// fails when api/ no longer matches the Release build
+let private verifyApi (arguments:ParseResults<Arguments>) =
+    restoreTools.Value |> ignore
+    exec "dotnet" ["build"; "-c"; "Release"] |> ignore
+    exec "dotnet" (apiArgs ["--verify"; "api"]) |> ignore
+
 let private generateReleaseNotes (arguments:ParseResults<Arguments>) =
     let currentVersion = currentVersion.Value
     let output =
@@ -182,10 +177,11 @@ let Setup (parsed:ParseResults<Arguments>) (subCommand:Arguments) =
     step GeneratePackages.Name generatePackages 
     step ValidatePackages.Name validatePackages 
     step GenerateReleaseNotes.Name generateReleaseNotes
-    step GenerateApiChanges.Name generateApiChanges
+    step Api.Name writeApi
+    step VerifyApi.Name verifyApi
     cmd Release.Name
         (Some [PristineCheck.Name; Test.Name;])
-        (Some [GeneratePackages.Name; ValidatePackages.Name; GenerateReleaseNotes.Name; GenerateApiChanges.Name])
+        (Some [GeneratePackages.Name; ValidatePackages.Name; GenerateReleaseNotes.Name; VerifyApi.Name])
         <| fun _ -> release parsed
         
     step CreateReleaseOnGithub.Name createReleaseOnGithub 
