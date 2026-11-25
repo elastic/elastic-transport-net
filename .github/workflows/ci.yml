@@ -83,11 +83,11 @@ jobs:
     # What the pull request changes in the public API of the libraries, against their latest release on nuget.org, and
     # whether the committed api/*.api files match the build: one comment, the release label, and a failure on a
     # breaking change until someone adds breaking-allowed, or on files that are out of date.
-    - uses: nullean/assembly-differ@89b7a68a9f34173d57ceef47a73d505f751cb086 # 1.4.0
+    - uses: nullean/assembly-differ@cd590bea648ebebd5e1d10729a3590b0f3ca29da # 1.5.0
       name: Report the public API changes
       if: github.event_name == 'pull_request'
       with:
-        version: 1.4.0
+        version: 1.5.0
         api-files: api
         projects: |
           src/Elastic.Transport/Elastic.Transport.csproj
