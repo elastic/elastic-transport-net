@@ -19,6 +19,7 @@ namespace Elastic.Transport.Tests;
 [Collection(nameof(NonParallelCollection))]
 public class OpenTelemetryTests
 {
+#if !TRANSPORT_LEGACY_ASSET // the activity status is only set by the modern assets
 	[Fact]
 	public async Task DefaultTagsShouldBeSet()
 	{
@@ -85,6 +86,7 @@ public class OpenTelemetryTests
 #endif
 		}
 	}
+#endif
 
 	[Fact]
 	public async Task PreferSpanNameFromOpenTelemetryData()

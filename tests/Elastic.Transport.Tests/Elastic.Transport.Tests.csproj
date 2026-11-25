@@ -8,24 +8,39 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1">
+    <PackageReference Include="GitHubActionsTestLogger">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" VersionOverride="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Nullean.VsTest.Pretty.TestLogger" Version="0.4.0" />
-    <PackageReference Include="FluentAssertions" Version="7.2.0" />
-    <PackageReference Condition="'$(TargetFramework)' != 'net481'" Include="Soenneker.Utils.AutoBogus" Version="2.1.388" />
+    <PackageReference Include="Nullean.VsTest.Pretty.TestLogger" VersionOverride="0.4.0" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Condition="'$(TargetFramework)' != 'net481'" Include="Soenneker.Utils.AutoBogus" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Transport.VirtualizedCluster\Elastic.Transport.VirtualizedCluster.csproj" />
     <ProjectReference Include="..\Elastic.Transport.Tests.SharedComponents\Elastic.Transport.Tests.SharedComponents.csproj" />
+  </ItemGroup>
+
+  <!-- Opt-in: test the library's netstandard2.0 (or net462) asset on a modern runtime, e.g.
+       dotnet test -p:TransportAssetTfm=netstandard2.0 -f net10.0
+       That executes the code net462 consumers share, where no .NET Framework runtime is available. -->
+  <!-- The tests are compiled for the runtime they run on, so code that guards what only the modern assets have (the activity status,
+       sockets, pipes) is compiled in but the asset lacks it. Those tests leave out TRANSPORT_LEGACY_ASSET. -->
+  <PropertyGroup Condition="'$(TransportAssetTfm)' != ''">
+    <DefineConstants>$(DefineConstants);TRANSPORT_LEGACY_ASSET</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TransportAssetTfm)' != ''">
+    <ProjectReference Update="..\..\src\Elastic.Transport.VirtualizedCluster\Elastic.Transport.VirtualizedCluster.csproj" SetTargetFramework="TargetFramework=$(TransportAssetTfm)" />
+    <!-- Direct, so this asset wins over the one NuGet's restore graph carries in transitively (net10.0). -->
+    <ProjectReference Include="..\..\src\Elastic.Transport\Elastic.Transport.csproj" SetTargetFramework="TargetFramework=$(TransportAssetTfm)" />
   </ItemGroup>
 
 </Project>
