@@ -1,5 +1,5 @@
 assembly Elastic.Transport.VirtualizedCluster
-using Elastic.Transport: BoundConfiguration, DateTimeProvider, Endpoint, IRequestConfiguration, ITransport<>, ITransportConfiguration, Node, NodePool, PostData, RequestConfigurationDescriptor, RequestPipeline, RequestPipelineFactory, ResponseFactory, TransportConfigurationDescriptor, TransportException, TransportResponse, UnexpectedTransportException
+using Elastic.Transport: BoundConfiguration, DateTimeProvider, Endpoint, IRequestConfiguration, ITransport<>, ITransportConfiguration, Node, NodePool, PostData, RequestConfigurationDescriptor, ResponseFactory, TransportConfigurationDescriptor, TransportException, TransportResponse, UnexpectedTransportException
 using interface Elastic.Transport: IRequestInvoker
 using Elastic.Transport.Diagnostics.Auditing: Audit
 using struct Elastic.Transport.Diagnostics.Auditing: AuditEvent
@@ -8,6 +8,8 @@ using System: Action<,>, Action<>, Exception, Func<,,>, Func<,>, Func<>
 using struct System: DateTimeOffset, TimeSpan
 using interface System: IDisposable
 using System.Collections.Generic: IEnumerable<>, IList<>, IReadOnlyList<>, List<>
+using System.Runtime.CompilerServices: UnionAttribute
+using interface System.Runtime.CompilerServices: IUnion
 using struct System.Threading: CancellationToken
 using System.Threading.Tasks: Task<>
 
@@ -57,11 +59,6 @@ namespace Elastic.Transport.VirtualizedCluster.Audit
     void Add(Action<NodePool> pool)
 
 namespace Elastic.Transport.VirtualizedCluster.Components
-  sealed class ExposingPipelineFactory<TConfiguration> : RequestPipelineFactory where TConfiguration : class, ITransportConfiguration
-    ExposingPipelineFactory(TConfiguration configuration)
-    ITransport<TConfiguration> Transport { get; }
-    override RequestPipeline Create(BoundConfiguration boundConfiguration)
-
   sealed class SealedVirtualCluster : IDisposable
     VirtualizedCluster AllDefaults()
     void Dispose()
@@ -147,9 +144,9 @@ namespace Elastic.Transport.VirtualizedCluster.Providers
 namespace Elastic.Transport.VirtualizedCluster.Rules
   sealed class ClientCallRule : RuleBase<ClientCallRule>, IClientCallRule, IRule
     ClientCallRule()
-    ClientCallRule AfterSucceeds(RuleOption<Exception, int> errorState = null)
-    ClientCallRule FailAlways(RuleOption<Exception, int> errorState = null)
-    ClientCallRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int> errorState = null)
+    ClientCallRule AfterSucceeds(RuleOption<Exception, int>? errorState = default)
+    ClientCallRule FailAlways(RuleOption<Exception, int>? errorState = default)
+    ClientCallRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int>? errorState = default)
     ClientCallRule SucceedAlways(int? validResponseCode = 200)
     ClientCallRule Succeeds(RuleOption<TimesHelper.AllTimes, int> times, int? validResponseCode = 200)
     ClientCallRule ThrowsAfterSucceeds()
@@ -157,11 +154,11 @@ namespace Elastic.Transport.VirtualizedCluster.Rules
   interface IClientCallRule : IRule
 
   interface IRule
-    RuleOption<Exception, int> AfterSucceeds { get; set; }
+    RuleOption<Exception, int>? AfterSucceeds { get; set; }
     int ExecuteCount { get; }
     int? OnPort { get; set; }
     Func<string, bool> PathFilter { get; set; }
-    RuleOption<Exception, int> Return { get; set; }
+    RuleOption<Exception, int>? Return { get; set; }
     string ReturnContentType { get; set; }
     byte[] ReturnResponse { get; set; }
     bool Succeeds { get; set; }
@@ -174,8 +171,8 @@ namespace Elastic.Transport.VirtualizedCluster.Rules
 
   sealed class PingRule : RuleBase<PingRule>
     PingRule()
-    PingRule FailAlways(RuleOption<Exception, int> errorState = null)
-    PingRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int> errorState = null)
+    PingRule FailAlways(RuleOption<Exception, int>? errorState = default)
+    PingRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int>? errorState = default)
     PingRule SucceedAlways(int? validResponseCode = 200)
     PingRule Succeeds(RuleOption<TimesHelper.AllTimes, int> times, int? validResponseCode = 200)
 
@@ -188,18 +185,18 @@ namespace Elastic.Transport.VirtualizedCluster.Rules
     TRule ReturnResponse<T>(T response) where T : class
     TRule Takes(TimeSpan span)
 
-  sealed class RuleOption<TFirst, TSecond>
-    RuleOption(TFirst item)
-    RuleOption(TSecond item)
+  [Union]
+  struct RuleOption<TFirst, TSecond> : IUnion
+    RuleOption(TFirst value)
+    RuleOption(TSecond value)
+    readonly object? Value { get; }
     void Match(Action<TFirst> first, Action<TSecond> second)
     T Match<T>(Func<TFirst, T> first, Func<TSecond, T> second)
-    static implicit operator RuleOption<TFirst, TSecond>(TFirst first)
-    static implicit operator RuleOption<TFirst, TSecond>(TSecond second)
 
   sealed class SniffRule : RuleBase<SniffRule>, ISniffRule, IRule
     SniffRule()
-    SniffRule FailAlways(RuleOption<Exception, int> errorState = null)
-    SniffRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int> errorState = null)
+    SniffRule FailAlways(RuleOption<Exception, int>? errorState = default)
+    SniffRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int>? errorState = default)
     SniffRule SucceedAlways(VirtualCluster cluster = null)
     SniffRule Succeeds(RuleOption<TimesHelper.AllTimes, int> times, VirtualCluster cluster = null)
 

@@ -30,6 +30,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Elastic.Transport.VirtualizedCluster" Key="$(ExposedPublicKey)" />
     <InternalsVisibleTo Include="Elastic.Transport.Tests" Key="$(ExposedPublicKey)" />
+    <InternalsVisibleTo Include="Elastic.Transport.Properties.Tests" Key="$(ExposedPublicKey)" />
     <InternalsVisibleTo Include="Elastic.Transport.Benchmarks" Key="$(ExposedPublicKey)" />
     <InternalsVisibleTo Include="Elastic.Transport.IntegrationTests" Key="$(ExposedPublicKey)" />
     <InternalsVisibleTo Include="Elastic.Transport.Tests.Shared" Key="$(ExposedPublicKey)" />

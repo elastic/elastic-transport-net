@@ -5,13 +5,13 @@
 namespace Elastic.Transport;
 
 /// <summary>
-/// The default implementation for <see cref="RequestPipeline"/> that returns <see cref="RequestPipeline"/>
+/// The default implementation for <c>RequestPipeline</c> that returns <c>RequestPipeline</c>
 /// </summary>
 internal sealed class DefaultRequestPipelineFactory : RequestPipelineFactory
 {
 	public static readonly DefaultRequestPipelineFactory Default = new();
 	/// <summary>
-	/// returns instances of <see cref="RequestPipeline"/>
+	/// returns instances of <c>RequestPipeline</c>
 	/// </summary>
 	public override RequestPipeline Create(BoundConfiguration boundConfiguration) =>
 			new(boundConfiguration);

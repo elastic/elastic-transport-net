@@ -14,6 +14,10 @@ namespace Elastic.Transport;
 /// Represents the cumulative configuration from <see cref="ITransportConfiguration" />
 /// and <see cref="IRequestConfiguration" />.
 /// </summary>
+/// <remarks>
+/// It is itself an <see cref="IRequestConfiguration" />, so an instance made once with <see cref="Create"/> can be passed
+/// as a request's configuration and is then used as it is, without being bound again: the way to avoid that cost per call.
+/// </remarks>
 public sealed record BoundConfiguration : IRequestConfiguration
 {
 	private const string OpaqueIdHeader = "X-Opaque-Id";

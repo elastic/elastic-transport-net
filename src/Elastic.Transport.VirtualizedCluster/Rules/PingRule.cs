@@ -10,7 +10,7 @@ public sealed class PingRule : RuleBase<PingRule>
 {
 	private IRule Self => this;
 
-	public PingRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int> errorState = null)
+	public PingRule Fails(RuleOption<TimesHelper.AllTimes, int> times, RuleOption<Exception, int>? errorState = null)
 	{
 		Self.Times = times;
 		Self.Succeeds = false;
@@ -22,11 +22,11 @@ public sealed class PingRule : RuleBase<PingRule>
 	{
 		Self.Times = times;
 		Self.Succeeds = true;
-		Self.Return = validResponseCode;
+		Self.Return = validResponseCode is { } code ? new RuleOption<Exception, int>(code) : null;
 		return this;
 	}
 
 	public PingRule SucceedAlways(int? validResponseCode = 200) => Succeeds(TimesHelper.Always, validResponseCode);
 
-	public PingRule FailAlways(RuleOption<Exception, int> errorState = null) => Fails(TimesHelper.Always, errorState);
+	public PingRule FailAlways(RuleOption<Exception, int>? errorState = null) => Fails(TimesHelper.Always, errorState);
 }
