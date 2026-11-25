@@ -517,10 +517,27 @@ public class HttpRequestInvoker : IRequestInvoker
 		return requestMessage;
 	}
 
+	/// <summary>
+	/// True when the request body is a byte array that is sent exactly as it is: nothing has to be written, buffered or
+	/// compressed. The array then is the content; copying it into a pooled (or, by default, a plain growing) stream first
+	/// cost a second copy of the body on every request, about 65 KB for a 64 KB body.
+	/// </summary>
+	private static bool SendsBytesVerbatim(BoundConfiguration boundConfiguration, PostData postData) =>
+		!boundConfiguration.HttpCompression && postData.Type == PostType.ByteArray && postData.WrittenBytes is not null;
+
+	private static ByteArrayContent ByteContentFor(BoundConfiguration boundConfiguration, PostData postData)
+	{
+		var content = new ByteArrayContent(postData.WrittenBytes!);
+		_ = content.Headers.TryAddWithoutValidation("Content-Type", boundConfiguration.ContentType);
+		return content;
+	}
+
 	private static void SetContent(HttpRequestMessage message, BoundConfiguration boundConfiguration, PostData postData)
 	{
 		if (boundConfiguration.TransferEncodingChunked)
 			message.Content = new BoundConfigurationContent(boundConfiguration, postData);
+		else if (SendsBytesVerbatim(boundConfiguration, postData))
+			message.Content = ByteContentFor(boundConfiguration, postData);
 		else
 		{
 			var stream = boundConfiguration.MemoryStreamFactory.Create();
@@ -555,6 +572,8 @@ public class HttpRequestInvoker : IRequestInvoker
 	{
 		if (boundConfiguration.TransferEncodingChunked)
 			message.Content = new BoundConfigurationContent(boundConfiguration, postData, cancellationToken);
+		else if (SendsBytesVerbatim(boundConfiguration, postData))
+			message.Content = ByteContentFor(boundConfiguration, postData);
 		else
 		{
 			var stream = boundConfiguration.MemoryStreamFactory.Create();

@@ -19,6 +19,27 @@ will not touch you, but the behaviour fixes can change results, so read that sec
   from a proxy, even when `SkipDeserializationForStatusCodes` applies. (This was already the behaviour of 1.x; the old
   7.x tests asserted otherwise.)
 
+- **Connection pools are keyed on what a handler is built from.** Two requests share an HTTP handler (and so a connection
+  pool) exactly when their compression, proxy, DNS refresh, certificates and transport settings are the same. Before,
+  the key was a hash that could collide across different proxy credentials, ignored several of those settings, and
+  included `RequestTimeout`, so each distinct per-request timeout opened its own pool.
+- **Byte-array bodies are not copied when nothing transforms them** (`PostData.Bytes` with request compression off).
+- **Pooled streams come from `Microsoft.IO.RecyclableMemoryStream`.** `RecyclableMemoryStreamFactory` is unchanged, but its
+  ETW event source is now the package's (`Microsoft-IO-RecyclableMemoryStream`) and the package depends on `System.Memory`
+  below net8.0. The default `MemoryStreamFactory` is still a plain `MemoryStream`, on purpose: a pool keeps memory for reuse,
+  which a memory dump of a healthy application then shows, and people read that as a leak. Pooling is opt-in
+  (`MemoryStreamFactory = new RecyclableMemoryStreamFactory(blockSize: 16 * 1024)`), and worth it for large bodies that are
+  serialized and not compressed: for a 64 KB body that is about 7 KB allocated per request against about 204 KB, with
+  gen 2 collections, for a plain stream. With compression on, the default, the two are about equal.
+  `RecyclableMemoryStreamFactory` is now **bounded**: by default it keeps at most 50 MB idle
+  (`RecyclableMemoryStreamFactory.DefaultMaximumFreeBytes`), and buffers returned beyond that are left to the garbage
+  collector, so what a memory dump shows as pooled has a ceiling. Before, the pool kept its high-water mark forever. Choose
+  your own with `new RecyclableMemoryStreamFactory(blockSize, maximumFreeBytes)`. Memory held by streams that are in use is
+  not counted. Pooling pays off from about 4 KB of body upwards and costs below that: building a serialized body, 16 threads
+  at once, a plain stream takes 40 ns at 256 B against 659 ns pooled, and 107 ns at 1 KB against 671 ns, because a short-lived
+  small allocation is cheap and the pool's own overhead is not. At 4 KB the two are level on time and the pool allocates 93%
+  less; at 16 KB the pool is 3.8 times faster and allocates 99% less.
+
 ## API changes
 
 - `Node.IsResurrected` is read-only. The pool is the only thing that decides a node is due a ping.

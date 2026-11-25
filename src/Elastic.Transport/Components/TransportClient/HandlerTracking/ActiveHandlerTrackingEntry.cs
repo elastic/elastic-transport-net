@@ -9,6 +9,7 @@
 #if !NETFRAMEWORK
 using System;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Threading;
 
 namespace Elastic.Transport;
@@ -39,6 +40,32 @@ internal sealed class ActiveHandlerTrackingEntry
 	}
 
 	public LifetimeTrackingHttpMessageHandler Handler { get; private set; }
+
+	private sealed class ClientSlot(TimeSpan timeout, HttpClient client)
+	{
+		public TimeSpan Timeout { get; } = timeout;
+		public HttpClient Client { get; } = client;
+	}
+
+	private ClientSlot? _client;
+
+	/// <summary>
+	/// The <see cref="HttpClient"/> over this entry's handler for <paramref name="timeout"/>. A client is a thin, thread-safe
+	/// wrapper whose timeout is fixed, so the first timeout seen is cached with the entry and reused by every request; any
+	/// other timeout gets a fresh client, as every request used to. The handler (the connection pool) is shared either way.
+	/// </summary>
+	public HttpClient GetClient(TimeSpan timeout)
+	{
+		var slot = Volatile.Read(ref _client);
+		if (slot is not null && slot.Timeout == timeout)
+			return slot.Client;
+
+		var client = new HttpClient(Handler, disposeHandler: false) { Timeout = timeout };
+		if (slot is null)
+			_ = Interlocked.CompareExchange(ref _client, new ClientSlot(timeout, client), null);
+
+		return client;
+	}
 
 	public TimeSpan Lifetime { get; }
 

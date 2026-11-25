@@ -617,6 +617,9 @@ namespace Elastic.Transport
 
   sealed class RecyclableMemoryStreamFactory : MemoryStreamFactory
     RecyclableMemoryStreamFactory()
+    RecyclableMemoryStreamFactory(int blockSize, long maximumFreeBytes)
+    RecyclableMemoryStreamFactory(int blockSize)
+    const long DefaultMaximumFreeBytes = 52428800L
     static RecyclableMemoryStreamFactory Default { get; }
     override MemoryStream Create()
     override MemoryStream Create(byte[] bytes, int index, int count)

@@ -30,7 +30,11 @@ public record TransportConfiguration : ITransportConfiguration, IHasPipelineProv
 	/// <summary>
 	/// The default memory stream factory if none is configured on <see cref="ITransportConfiguration.MemoryStreamFactory"/>
 	/// </summary>
-	public static MemoryStreamFactory DefaultMemoryStreamFactory { get; } = Transport.DefaultMemoryStreamFactory.Default;
+	public static MemoryStreamFactory DefaultMemoryStreamFactory { get; } =
+		// A plain MemoryStream on purpose: it is the least surprising. A pool keeps memory for reuse, which is exactly what
+		// a memory dump of a healthy application then shows, and people read that as the library leaking. Opt in to pooling
+		// with RecyclableMemoryStreamFactory when large bodies make it worth it.
+		Transport.DefaultMemoryStreamFactory.Default;
 
 	/// <summary>
 	/// The default timeout before a TCP connection is forcefully recycled so that DNS updates come through

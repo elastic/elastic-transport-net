@@ -93,15 +93,12 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 			throw new ArgumentNullException(nameof(boundConfiguration));
 
 		var key = new HandlerKey(boundConfiguration);
-		var handler = CreateHandler(key, boundConfiguration);
-		var client = new HttpClient(handler, disposeHandler: false)
-		{
-			Timeout = boundConfiguration.RequestTimeout
-		};
-		return client;
+
+		// The client is cached on the handler entry, so it lives and rotates exactly as long as the handler it wraps.
+		return GetEntry(key, boundConfiguration).GetClient(boundConfiguration.RequestTimeout);
 	}
 
-	private HttpMessageHandler CreateHandler(HandlerKey key, BoundConfiguration boundConfiguration)
+	private ActiveHandlerTrackingEntry GetEntry(HandlerKey key, BoundConfiguration boundConfiguration)
 	{
 		if (boundConfiguration is null)
 			throw new ArgumentNullException(nameof(boundConfiguration));
@@ -114,7 +111,7 @@ internal sealed class BoundConfigurationHttpClientFactory : IDisposable
 
 		StartHandlerEntryTimer(entry);
 
-		return entry.Handler;
+		return entry;
 	}
 
 	private ActiveHandlerTrackingEntry CreateHandlerEntry(HandlerKey key, BoundConfiguration boundConfiguration)
