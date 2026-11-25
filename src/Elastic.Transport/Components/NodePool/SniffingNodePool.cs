@@ -79,20 +79,6 @@ public class SniffingNodePool : StaticNodePool
 	}
 
 	/// <inheritdoc />
-	public override IEnumerable<Node> CreateView(Auditor? auditor)
-	{
-		_readerWriter.EnterReadLock();
-		try
-		{
-			return base.CreateView(auditor);
-		}
-		finally
-		{
-			_readerWriter.ExitReadLock();
-		}
-	}
-
-	/// <inheritdoc />
 	protected override void Dispose(bool disposing)
 	{
 		if (!_disposed)

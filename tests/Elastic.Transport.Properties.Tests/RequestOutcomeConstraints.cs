@@ -25,7 +25,7 @@ public static partial class RequestOutcomeConstraints
 		"The response succeeds exactly when some attempt was healthy.");
 }
 
-/// <summary>The retry budget on its own, because it is the rule BUG 1 breaks today.</summary>
+/// <summary>The retry budget on its own, because it is the rule that once failed (see StaticPoolRetryTests).</summary>
 [Constraints<RequestOutcome>]
 public static partial class RetryBudgetConstraints
 {

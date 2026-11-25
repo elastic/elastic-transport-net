@@ -599,20 +599,6 @@ public class HttpRequestInvoker : IRequestInvoker
 		_ => throw new ArgumentException("Invalid value for HttpMethod", nameof(httpMethod)),
 	};
 
-	internal static int GetClientKey(BoundConfiguration boundConfiguration)
-	{
-		unchecked
-		{
-			var hashCode = boundConfiguration.RequestTimeout.GetHashCode();
-			hashCode = (hashCode * 397) ^ boundConfiguration.HttpCompression.GetHashCode();
-			hashCode = (hashCode * 397) ^ (boundConfiguration.ProxyAddress?.GetHashCode() ?? 0);
-			hashCode = (hashCode * 397) ^ (boundConfiguration.ProxyUsername?.GetHashCode() ?? 0);
-			hashCode = (hashCode * 397) ^ (boundConfiguration.ProxyPassword?.GetHashCode() ?? 0);
-			hashCode = (hashCode * 397) ^ boundConfiguration.DisableAutomaticProxyDetection.GetHashCode();
-			return hashCode;
-		}
-	}
-
 	/// <summary> Allows subclasses to dispose of managed resources </summary>
 	public virtual void DisposeManagedResources() { }
 	/// <inheritdoc />

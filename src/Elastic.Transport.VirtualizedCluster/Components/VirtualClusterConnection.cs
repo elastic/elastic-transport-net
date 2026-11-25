@@ -136,7 +136,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 					nameof(VirtualCluster.Sniff),
 					_cluster.SniffingRules,
 					boundConfiguration.RequestTimeout,
-					r => UpdateCluster(r.NewClusterState),
+					r => { if (r.NewClusterState is { } newState) UpdateCluster(newState); },
 					_ => _productRegistration.CreateSniffResponseBytes(_cluster.Nodes, _cluster.ElasticsearchVersion, _cluster.PublishAddressOverride, _cluster.SniffShouldReturnFqnd),
 					cancellationToken
 				).ConfigureAwait(false);
@@ -194,7 +194,7 @@ public class VirtualClusterRequestInvoker : IRequestInvoker
 					nameof(VirtualCluster.Sniff),
 					_cluster.SniffingRules,
 					boundConfiguration.RequestTimeout,
-					r => UpdateCluster(r.NewClusterState),
+					r => { if (r.NewClusterState is { } newState) UpdateCluster(newState); },
 					_ => _productRegistration.CreateSniffResponseBytes(_cluster.Nodes, _cluster.ElasticsearchVersion, _cluster.PublishAddressOverride, _cluster.SniffShouldReturnFqnd)
 				);
 			}
