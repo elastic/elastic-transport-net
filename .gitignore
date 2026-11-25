@@ -84,3 +84,5 @@ BenchmarkDotNet.Artifacts
 .artifacts
 # Claude Code personal settings
 .claude/settings.local.json
+# The [Rr]elease*/ rule above matches this skill directory
+!.claude/skills/release-runbook/
