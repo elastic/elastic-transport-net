@@ -56,9 +56,7 @@ jobs:
 
   build:
     permissions:
-      contents: write # the release for a tag
-      issues: write # as before the permissions moved here
-      packages: write # the canary packages
+      contents: read # builds and runs pull request code: no write token
       pull-requests: write # the API comment and labels on a pull request
     runs-on: ubuntu-latest
     steps:
@@ -111,6 +109,50 @@ jobs:
     - run: ./build.sh validatepackages -s true
       name: "validate *.npkg files that were created"
       if: github.event.action != 'labeled' && github.event.action != 'unlabeled'
+
+    # The packages the publish job pushes: built and validated here, from the commit that was tested, and kept for a day.
+    - uses: actions/upload-artifact@v4
+      name: Keep the packages for the publish job
+      if: github.event_name == 'push'
+      with:
+        name: packages
+        path: build/output/*.nupkg
+        if-no-files-found: error
+        retention-days: 1
+
+  # The only job with a write token and the publishing secrets. It runs for a push to main and for a tag, never for a
+  # pull request, and only publishes what the build job built and tested.
+  publish:
+    needs: build
+    if: github.event_name == 'push'
+    permissions:
+      contents: write # the release for a tag
+      issues: write # as before the permissions moved here
+      packages: write # the canary packages
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+
+    - run: |
+        git fetch --prune --unshallow --tags
+        echo exit code $?
+        git tag --list
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: ./global.json
+        dotnet-version: |
+          6.x
+
+    - uses: actions/download-artifact@v4
+      name: Take the packages the build job kept
+      with:
+        name: packages
+        path: build/output
 
     - name: publish canary packages github package repository
       if: github.event_name == 'push' && startswith(github.ref, 'refs/heads')
