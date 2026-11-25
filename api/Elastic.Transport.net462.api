@@ -1,7 +1,7 @@
 assembly Elastic.Transport
 using System: Action, Action<,>, Action<>, CLSCompliantAttribute, Exception, Func<,,,,>, Func<,,,>, Func<,,>, Func<,>, ObsoleteAttribute, Random, Tuple<,>, Type, Uri
 using struct System: DateTime, DateTimeOffset, Guid, ReadOnlySpan<>, TimeSpan, TypeCode
-using interface System: IComparable, IComparable<>, IConvertible, ICustomFormatter, IDisposable, IEquatable<>, IFormatProvider, IObserver<>
+using interface System: IConvertible, ICustomFormatter, IDisposable, IEquatable<>, IFormatProvider, IObserver<>
 using interface System.Collections: IEnumerable
 using System.Collections.Generic: Dictionary<,>, IEnumerator<>, IReadOnlyDictionary<,>, IReadOnlyList<>, List<>
 using struct System.Collections.Generic: KeyValuePair<,>
@@ -164,13 +164,11 @@ namespace Elastic.Transport
     override MemoryStream Create(byte[] bytes)
 
   sealed class DefaultMetaHeaderProducer : MetaHeaderProducer
-    DefaultMetaHeaderProducer(VersionInfo versionInfo, string serviceIdentifier)
     DefaultMetaHeaderProducer(Type clientType, string serviceIdentifier)
     override string HeaderName { get; }
     override string? ProduceHeaderValue(BoundConfiguration boundConfiguration, bool isAsync)
 
   sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
-    DefaultMetaHeaderProvider(VersionInfo versionInfo, string serviceIdentifier)
     DefaultMetaHeaderProvider(Type clientType, string serviceIdentifier)
     override MetaHeaderProducer[] Producers { get; }
 
@@ -485,7 +483,6 @@ namespace Elastic.Transport
     abstract MemoryStream Create(byte[] bytes)
 
   sealed class MetaDataHeader
-    MetaDataHeader(VersionInfo version, string serviceIdentifier, bool isAsync)
     string ClientVersion { get; }
     string RuntimeVersion { get; }
     string ServiceIdentifier { get; }
@@ -598,10 +595,18 @@ namespace Elastic.Transport
     override MemoryStream Create(byte[] bytes, int index, int count)
     override MemoryStream Create(byte[] bytes)
 
-  sealed class ReflectionVersionInfo : VersionInfo
+  sealed class ReflectionVersionInfo
     static readonly string TransportVersion
+    bool IsPrerelease { get; }
+    int Major { get; }
+    string? Metadata { get; }
+    int Minor { get; }
+    int Patch { get; }
+    string? Prerelease { get; }
     static ReflectionVersionInfo Create<T>()
     static ReflectionVersionInfo Create(Type type)
+    string ToMetadataHeaderValue()
+    override string ToString()
 
   record RequestConfiguration : IRequestConfiguration, IEquatable<RequestConfiguration>
     RequestConfiguration()
@@ -1064,17 +1069,6 @@ namespace Elastic.Transport
     static UserAgent Create(string fullUserAgentString)
     override string ToString()
 
-  abstract class VersionInfo
-    protected VersionInfo(SemVersion version)
-    bool IsPrerelease { get; }
-    int Major { get; }
-    string? Metadata { get; }
-    int Minor { get; }
-    int Patch { get; }
-    string? Prerelease { get; }
-    string ToMetadataHeaderValue()
-    override string ToString()
-
   sealed class VoidResponse : TransportResponse<VoidResponse.VoidBody>
     VoidResponse()
     static VoidResponse Default { get; }
@@ -1140,31 +1134,6 @@ namespace Elastic.Transport.Diagnostics.Auditing
     IEnumerator<Audit> GetEnumerator()
 
 namespace Elastic.Transport.Extensions
-  sealed class SemVersion : IEquatable<SemVersion>, IComparable<SemVersion>, IComparable
-    SemVersion(int major, int minor, int patch, string? prerelease, string? metadata)
-    SemVersion(int major, int minor, int patch, string? prerelease)
-    SemVersion(int major, int minor, int patch)
-    int Major { get; }
-    string Metadata { get; }
-    int Minor { get; }
-    int Patch { get; }
-    string Prerelease { get; }
-    int CompareByPrecedence(SemVersion? other)
-    int CompareTo(SemVersion? other)
-    int CompareTo(object? obj)
-    bool Equals(SemVersion? other)
-    override bool Equals(object? obj)
-    override int GetHashCode()
-    override string ToString()
-    static bool TryParse(string input, [NotNullWhen(true)] out SemVersion? version)
-    SemVersion Update(int? major = default, int? minor = default, int? patch = default, string? prerelease = null, string? metadata = null)
-    static bool operator ==(SemVersion left, SemVersion right)
-    static bool operator >(SemVersion left, SemVersion right)
-    static bool operator >=(SemVersion left, SemVersion right)
-    static bool operator !=(SemVersion left, SemVersion right)
-    static bool operator <(SemVersion left, SemVersion right)
-    static bool operator <=(SemVersion left, SemVersion right)
-
   static class TransportSerializerExtensions
     static T? Deserialize<T>(this Serializer serializer, ReadOnlySpan<byte> span, MemoryStreamFactory? memoryStreamFactory = null)
     static object? Deserialize(this Serializer serializer, ReadOnlySpan<byte> span, Type type, MemoryStreamFactory? memoryStreamFactory = null)
