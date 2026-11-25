@@ -98,6 +98,7 @@ namespace Elastic.Transport
     int KeepAliveInterval { get; }
     int KeepAliveTime { get; }
     int MaxRetries { get; }
+    TimeSpan MaxRetryTimeout { get; }
     MemoryStreamFactory MemoryStreamFactory { get; }
     MetaHeaderProvider? MetaHeaderProvider { get; }
     string? OpaqueId { get; }
@@ -600,6 +601,11 @@ namespace Elastic.Transport
     static ReflectionVersionInfo Create<T>()
     static ReflectionVersionInfo Create(Type type)
 
+  sealed class RequestAttempt
+    RequestAttempt()
+    int AttemptedNodes { get; set; }
+    bool RefreshRequested { get; set; }
+
   record RequestConfiguration : IRequestConfiguration, IEquatable<RequestConfiguration>
     RequestConfiguration()
     RequestConfiguration(IRequestConfiguration config)
@@ -710,15 +716,15 @@ namespace Elastic.Transport
     Task FirstPoolUsageAsync(SemaphoreSlim semaphore, Auditor? auditor, CancellationToken cancellationToken)
     void MarkAlive(Node node)
     void MarkDead(Node node)
-    IEnumerable<Node> NextNode(DateTimeOffset startedOn, int attemptedNodes, Auditor? auditor)
+    IEnumerable<Node> NextNode(DateTimeOffset startedOn, RequestAttempt attempt, Auditor? auditor)
     void Ping(Node node, Auditor? auditor)
     Task PingAsync(Node node, Auditor? auditor, CancellationToken cancellationToken = default)
-    void Sniff(Auditor? auditor)
-    Task SniffAsync(Auditor? auditor, CancellationToken cancellationToken = default)
-    void SniffOnConnectionFailure(Auditor? auditor)
-    Task SniffOnConnectionFailureAsync(Auditor? auditor, CancellationToken cancellationToken)
-    void SniffOnStaleCluster(Auditor? auditor)
-    Task SniffOnStaleClusterAsync(Auditor? auditor, CancellationToken cancellationToken)
+    void Sniff(Auditor? auditor, RequestAttempt? attempt = null)
+    Task SniffAsync(Auditor? auditor, RequestAttempt? attempt = null, CancellationToken cancellationToken = default)
+    void SniffOnConnectionFailure(Auditor? auditor, RequestAttempt? attempt = null)
+    Task SniffOnConnectionFailureAsync(Auditor? auditor, RequestAttempt? attempt, CancellationToken cancellationToken)
+    void SniffOnStaleCluster(Auditor? auditor, RequestAttempt? attempt = null)
+    Task SniffOnStaleClusterAsync(Auditor? auditor, RequestAttempt? attempt, CancellationToken cancellationToken)
     void ThrowNoNodesAttempted(Endpoint endpoint, Auditor? auditor, List<PipelineException>? seenExceptions)
     bool TryGetSingleNode(out Node? node)
 
@@ -769,7 +775,6 @@ namespace Elastic.Transport
     override IReadOnlyCollection<Node> Nodes { get; }
     override bool SupportsPinging { get; }
     override bool SupportsReseeding { get; }
-    override IEnumerable<Node> CreateView(Auditor? auditor)
     protected override void Dispose(bool disposing)
     override void Reseed(IEnumerable<Node> nodes)
 
