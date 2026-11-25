@@ -16,7 +16,8 @@ type Arguments =
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] GeneratePackages
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] ValidatePackages 
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] GenerateReleaseNotes 
-    | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] GenerateApiChanges 
+    | [<CliPrefix(CliPrefix.None);SubCommand>] Api
+    | [<CliPrefix(CliPrefix.None);SubCommand>] VerifyApi
     | [<CliPrefix(CliPrefix.None);SubCommand>] Release
     
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] CreateReleaseOnGithub 
@@ -32,6 +33,8 @@ with
             | Clean -> "clean known output locations"
             | Build -> "Run build"
             | Test -> "Runs build then tests"
+            | Api -> "Builds Release and writes the public API to api/, run it after an intended API change"
+            | VerifyApi -> "Builds Release and fails when api/ does not match the public API"
             | Release -> "runs build, tests, and create and validates the packages shy of publishing them"
             | Publish -> "Runs the full release"
             
@@ -43,7 +46,6 @@ with
             | GeneratePackages
             | ValidatePackages 
             | GenerateReleaseNotes
-            | GenerateApiChanges
             | CreateReleaseOnGithub 
                 -> "Undocumented, dependent target"
     member this.Name =
