@@ -77,7 +77,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		if (boundConfiguration.HttpCompression)
 			Headers.ContentEncoding.Add("gzip");
 
-#if NET6_0_OR_GREATER
+#if NET
 		_onStreamAvailable = OnStreamAvailable;
 #else
 		_onStreamAvailable = null!;
@@ -89,7 +89,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 	{
 		if (postData == null)
 		{
-#if NET6_0_OR_GREATER
+#if NET
 			await stream.DisposeAsync().ConfigureAwait(false);
 #else
 			stream.Dispose();
@@ -99,7 +99,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		if (boundConfiguration.HttpCompression)
 			stream = new GZipStream(stream, CompressionMode.Compress, false);
 
-#if NET6_0_OR_GREATER
+#if NET
 		await using (stream.ConfigureAwait(false))
 #else
 		using (stream)
@@ -120,7 +120,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		SerializeToStreamAsync(stream, context, default);
 
 
-#if NET6_0_OR_GREATER
+#if NET
 	protected override
 #else
 	private
@@ -148,7 +148,7 @@ internal sealed class BoundConfigurationContent : HttpContent
 		_ = await serializeToStreamTask.Task.ConfigureAwait(false);
 	}
 
-#if NET6_0_OR_GREATER
+#if NET
 	protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken _)
 	{
 		var serializeToStreamTask = new TaskCompletionSource<bool>();

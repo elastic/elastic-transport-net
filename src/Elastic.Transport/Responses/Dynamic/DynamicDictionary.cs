@@ -58,7 +58,7 @@ public sealed partial class DynamicDictionary
 	/// <returns>Always returns <see langword="false" />.</returns>
 	public bool IsReadOnly => false;
 
-#if NET7_0_OR_GREATER
+#if NET
 	[GeneratedRegex(@"(?<!\\)\.")]
 	private static partial Regex SplitRegexGen();
 

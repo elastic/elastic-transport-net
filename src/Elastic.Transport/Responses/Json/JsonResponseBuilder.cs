@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System;
-#if NET8_0_OR_GREATER
+#if NET
 using System.Buffers;
 #endif
 
@@ -37,7 +37,7 @@ internal class JsonResponseBuilder<T> : TypedResponseBuilder<T> where T : JsonRe
 				return new T { Body = new JsonObject { ["body"] = stringValue } };
 			}
 
-#if NET8_0_OR_GREATER
+#if NET
 			if (contentLength > -1 && contentLength <= 1_048_576)
 			{
 				var buffer = ArrayPool<byte>.Shared.Rent((int)contentLength);
@@ -54,7 +54,7 @@ internal class JsonResponseBuilder<T> : TypedResponseBuilder<T> where T : JsonRe
 			{
 				stringValue = await sr.ReadToEndAsync
 				(
-#if NET8_0_OR_GREATER
+#if NET
 					cancellationToken
 #endif
 				).ConfigureAwait(false);

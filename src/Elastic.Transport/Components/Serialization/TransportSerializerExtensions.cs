@@ -259,7 +259,7 @@ public static class TransportSerializerExtensions
 		serializer.Serialize(data, ms);
 		ms.Position = 0;
 
-#if NET6_0_OR_GREATER
+#if NET
 		writer.WriteRawValue(ms.GetBuffer().AsSpan()[..(int)ms.Length], true);
 #else
 		using var document = JsonDocument.Parse(ms);
@@ -321,7 +321,7 @@ public static class TransportSerializerExtensions
 		serializer.Serialize(data, ms);
 		ms.Position = 0;
 
-#if NET6_0_OR_GREATER
+#if NET
 		writer.WriteRawValue(ms.GetBuffer().AsSpan()[..(int)ms.Length], true);
 #else
 		using var document = JsonDocument.Parse(ms);

@@ -14,14 +14,14 @@ namespace Elastic.Transport;
 /// <summary>
 ///
 /// </summary>
-public sealed class ReflectionVersionInfo : VersionInfo
+internal sealed class ReflectedVersionInfo : VersionInfo
 {
 	private static readonly SemVersion Empty = new(0, 0, 0);
 
 	/// <summary> The version of Elastic.Transport itself </summary>
-	public static readonly string TransportVersion = Create<ReflectionVersionInfo>().ToString();
+	public static readonly string TransportVersion = Create<ReflectedVersionInfo>().ToString();
 
-	private ReflectionVersionInfo(SemVersion version) :
+	private ReflectedVersionInfo(SemVersion version) :
 		base(version)
 	{
 	}
@@ -31,10 +31,10 @@ public sealed class ReflectionVersionInfo : VersionInfo
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	/// <returns></returns>
-	public static ReflectionVersionInfo Create<T>()
+	public static ReflectedVersionInfo Create<T>()
 	{
 		var version = DetermineVersionFromType(typeof(T));
-		var versionInfo = new ReflectionVersionInfo(version);
+		var versionInfo = new ReflectedVersionInfo(version);
 		return versionInfo;
 	}
 
@@ -43,10 +43,10 @@ public sealed class ReflectionVersionInfo : VersionInfo
 	/// </summary>
 	/// <param name="type"></param>
 	/// <returns></returns>
-	public static ReflectionVersionInfo Create(Type type)
+	public static ReflectedVersionInfo Create(Type type)
 	{
 		var version = DetermineVersionFromType(type);
-		var versionInfo = new ReflectionVersionInfo(version);
+		var versionInfo = new ReflectedVersionInfo(version);
 		return versionInfo;
 	}
 
@@ -140,4 +140,49 @@ public sealed class ReflectionVersionInfo : VersionInfo
 	/// <returns></returns>
 	private static string GetVersionPrefixPart(string fullVersionName) =>
 		new(fullVersionName.TakeWhile(c => char.IsDigit(c) || c == '.').ToArray());
+}
+
+/// <summary>
+/// The version of an assembly, read from its metadata: the informational version if there is one, else the assembly version.
+/// </summary>
+public sealed class ReflectionVersionInfo
+{
+	private readonly ReflectedVersionInfo _info;
+
+	private ReflectionVersionInfo(ReflectedVersionInfo info) => _info = info;
+
+	/// <summary> The version of Elastic.Transport itself </summary>
+	public static readonly string TransportVersion = ReflectedVersionInfo.TransportVersion;
+
+	/// <summary> The version of the assembly that contains <typeparamref name="T"/>. </summary>
+	/// <typeparam name="T">A type from the assembly to read the version of.</typeparam>
+	public static ReflectionVersionInfo Create<T>() => new(ReflectedVersionInfo.Create<T>());
+
+	/// <summary> The version of the assembly that contains <paramref name="type"/>. </summary>
+	/// <param name="type">A type from the assembly to read the version of.</param>
+	public static ReflectionVersionInfo Create(Type type) => new(ReflectedVersionInfo.Create(type));
+
+	/// <summary> The major version. </summary>
+	public int Major => _info.Major;
+
+	/// <summary> The minor version. </summary>
+	public int Minor => _info.Minor;
+
+	/// <summary> The patch version. </summary>
+	public int Patch => _info.Patch;
+
+	/// <summary> The pre-release label, if any. </summary>
+	public string? Prerelease => _info.Prerelease;
+
+	/// <summary> The build metadata, if any. </summary>
+	public string? Metadata => _info.Metadata;
+
+	/// <summary> Whether this is a pre-release version. </summary>
+	public bool IsPrerelease => _info.IsPrerelease;
+
+	/// <summary> The version in the form the client meta header carries it: major.minor.patch, with a trailing p for a pre-release. </summary>
+	public string ToMetadataHeaderValue() => _info.ToMetadataHeaderValue();
+
+	/// <inheritdoc />
+	public override string ToString() => _info.ToString();
 }

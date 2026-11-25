@@ -14,7 +14,7 @@ namespace Elastic.Transport.Diagnostics;
 /// </summary>
 internal static class TcpStats
 {
-#if NET5_0_OR_GREATER
+#if NET
 	private static readonly int StateLength = Enum.GetNames<TcpState>().Length;
 #else
 	private static readonly int StateLength = Enum.GetNames(typeof(TcpState)).Length;

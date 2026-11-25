@@ -23,7 +23,7 @@ public sealed class DefaultMetaHeaderProvider : MetaHeaderProvider
 	/// <summary>
 	///
 	/// </summary>
-	public DefaultMetaHeaderProvider(VersionInfo versionInfo, string serviceIdentifier) =>
+	internal DefaultMetaHeaderProvider(VersionInfo versionInfo, string serviceIdentifier) =>
 		Producers = [new DefaultMetaHeaderProducer(versionInfo, serviceIdentifier)];
 }
 
@@ -42,7 +42,7 @@ public sealed class DefaultMetaHeaderProducer : MetaHeaderProducer
 	/// </summary>
 	public DefaultMetaHeaderProducer(Type clientType, string serviceIdentifier)
 	{
-		var clientVersionInfo = ReflectionVersionInfo.Create(clientType);
+		var clientVersionInfo = ReflectedVersionInfo.Create(clientType);
 		_asyncMetaDataHeader = new MetaDataHeader(clientVersionInfo, serviceIdentifier, true);
 		_syncMetaDataHeader = new MetaDataHeader(clientVersionInfo, serviceIdentifier, false);
 	}
@@ -50,7 +50,7 @@ public sealed class DefaultMetaHeaderProducer : MetaHeaderProducer
 	/// <summary>
 	///
 	/// </summary>
-	public DefaultMetaHeaderProducer(VersionInfo versionInfo, string serviceIdentifier)
+	internal DefaultMetaHeaderProducer(VersionInfo versionInfo, string serviceIdentifier)
 	{
 		_asyncMetaDataHeader = new MetaDataHeader(versionInfo, serviceIdentifier, true);
 		_syncMetaDataHeader = new MetaDataHeader(versionInfo, serviceIdentifier, false);
