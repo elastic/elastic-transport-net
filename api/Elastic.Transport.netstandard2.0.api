@@ -449,7 +449,6 @@ namespace Elastic.Transport
     Func<Node, bool>? NodePredicate { get; }
     Action<BoundConfiguration>? OnConfigurationBound { get; }
     Action<ApiCallDetails>? OnRequestCompleted { get; }
-    RequestPipelineFactory? PipelineProvider { get; }
     bool PrettyJson { get; }
     ProductRegistration ProductRegistration { get; }
     string? ProxyAddress { get; }
@@ -520,7 +519,7 @@ namespace Elastic.Transport
     IReadOnlyCollection<string> Features { get; set; }
     string? Id { get; }
     bool IsAlive { get; }
-    bool IsResurrected { get; set; }
+    bool IsResurrected { get; }
     string? Name { get; set; }
     IReadOnlyDictionary<string, object> Settings { get; set; }
     Uri Uri { get; }
@@ -611,11 +610,6 @@ namespace Elastic.Transport
     static readonly string TransportVersion
     static ReflectionVersionInfo Create<T>()
     static ReflectionVersionInfo Create(Type type)
-
-  sealed class RequestAttempt
-    RequestAttempt()
-    int AttemptedNodes { get; set; }
-    bool RefreshRequested { get; set; }
 
   record RequestConfiguration : IRequestConfiguration, IEquatable<RequestConfiguration>
     RequestConfiguration()
@@ -716,31 +710,6 @@ namespace Elastic.Transport
     protected void Q(string name, object value)
     protected TOut? Q<TOut>(string name)
     void SetQueryString(string name, object? value)
-
-  class RequestPipeline
-    void AuditCancellationRequested(Auditor? auditor)
-    void BadResponse<TResponse>(ref TResponse? response, ApiCallDetails? callDetails, Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, TransportException exception, IReadOnlyCollection<Audit>? auditTrail) where TResponse : TransportResponse, new()
-    TResponse CallProductEndpoint<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Auditor? auditor) where TResponse : TransportResponse, new()
-    Task<TResponse> CallProductEndpointAsync<TResponse>(Endpoint endpoint, BoundConfiguration boundConfiguration, PostData? postData, Auditor? auditor, CancellationToken cancellationToken = default) where TResponse : TransportResponse, new()
-    TransportException? CreateClientException<TResponse>(TResponse? response, ApiCallDetails? callDetails, Endpoint endpoint, Auditor? auditor, DateTimeOffset startedOn, int attemptedNodes, List<PipelineException>? seenExceptions) where TResponse : TransportResponse, new()
-    void FirstPoolUsage(SemaphoreSlim semaphore, Auditor? auditor)
-    Task FirstPoolUsageAsync(SemaphoreSlim semaphore, Auditor? auditor, CancellationToken cancellationToken)
-    void MarkAlive(Node node)
-    void MarkDead(Node node)
-    IEnumerable<Node> NextNode(DateTimeOffset startedOn, RequestAttempt attempt, Auditor? auditor)
-    void Ping(Node node, Auditor? auditor)
-    Task PingAsync(Node node, Auditor? auditor, CancellationToken cancellationToken = default)
-    void Sniff(Auditor? auditor, RequestAttempt? attempt = null)
-    Task SniffAsync(Auditor? auditor, RequestAttempt? attempt = null, CancellationToken cancellationToken = default)
-    void SniffOnConnectionFailure(Auditor? auditor, RequestAttempt? attempt = null)
-    Task SniffOnConnectionFailureAsync(Auditor? auditor, RequestAttempt? attempt, CancellationToken cancellationToken)
-    void SniffOnStaleCluster(Auditor? auditor, RequestAttempt? attempt = null)
-    Task SniffOnStaleClusterAsync(Auditor? auditor, RequestAttempt? attempt, CancellationToken cancellationToken)
-    void ThrowNoNodesAttempted(Endpoint endpoint, Auditor? auditor, List<PipelineException>? seenExceptions)
-    bool TryGetSingleNode(out Node? node)
-
-  abstract class RequestPipelineFactory
-    abstract RequestPipeline Create(BoundConfiguration boundConfiguration)
 
   abstract class ResponseFactory
     protected ResponseFactory()
@@ -915,7 +884,6 @@ namespace Elastic.Transport
     string? OpaqueId { get; init; }
     bool? ParseAllHeaders { get; init; }
     TimeSpan? PingTimeout { get; init; }
-    RequestPipelineFactory PipelineProvider { get; init; }
     bool PrettyJson { get; init; }
     ProductRegistration ProductRegistration { get; }
     string? ProxyAddress { get; init; }
@@ -996,7 +964,6 @@ namespace Elastic.Transport
     T OnRequestCompleted(Action<ApiCallDetails> handler)
     virtual T ParseAllHeaders(bool b = true)
     T PingTimeout(TimeSpan timeout)
-    T PipelineProvider(RequestPipelineFactory provider)
     virtual T PrettyJson(bool b = true)
     T Proxy(Uri proxyAddress, string username, string password)
     T Proxy(Uri proxyAddress)
@@ -1141,13 +1108,19 @@ namespace Elastic.Transport.Diagnostics
     protected TypedDiagnosticObserver(Action<KeyValuePair<string, TOnNextStart>> onNextStart, Action<KeyValuePair<string, TOnNextEnd>> onNextEnd, Action<Exception>? onError = null, Action? onCompleted = null)
 
 namespace Elastic.Transport.Diagnostics.Auditing
-  sealed class Audit
+  sealed record Audit : IEquatable<Audit>
     DateTimeOffset Ended { get; }
     AuditEvent Event { get; }
     Exception? Exception { get; }
     Node? Node { get; }
     DateTimeOffset Started { get; }
+    Audit <Clone>$()
+    bool Equals(Audit? other)
+    override bool Equals(object? obj)
+    override int GetHashCode()
     override string ToString()
+    static bool operator ==(Audit? left, Audit? right)
+    static bool operator !=(Audit? left, Audit? right)
 
   enum AuditEvent
     SniffOnStartup = 0
