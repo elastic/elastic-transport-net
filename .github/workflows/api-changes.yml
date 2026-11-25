@@ -19,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        # MinVer reads the version from the tags: a shallow checkout builds 0.x, and the libraries then differ from
+        # the release in their own version and in the version of the assemblies they reference
+        fetch-depth: 0
 
     - uses: actions/setup-dotnet@v4
       with:
@@ -35,6 +39,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        # MinVer reads the version from the tags: a shallow checkout builds 0.x, and the libraries then differ from
+        # the release in their own version and in the version of the assemblies they reference
+        fetch-depth: 0
 
     - uses: actions/setup-dotnet@v4
       with:
