@@ -16,17 +16,10 @@ namespace Elastic.Transport;
 public sealed class StreamResponse : StreamResponseBase, IDisposable
 {
 	/// <inheritdoc cref="StreamResponse"/>
-	public StreamResponse() : base(Stream.Null) =>
-		ContentType = string.Empty;
+	public StreamResponse() : base(Stream.Null) { }
 
 	/// <inheritdoc cref="StreamResponse"/>
-	public StreamResponse(Stream body, string? contentType) : base(body) =>
-		ContentType = contentType ?? string.Empty;
-
-	/// <summary>
-	/// The MIME type of the response, if present.
-	/// </summary>
-	public string ContentType { get; }
+	public StreamResponse(Stream body, string? contentType) : base(body, contentType) { }
 
 	/// <summary>
 	/// The raw response stream.

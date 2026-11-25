@@ -48,8 +48,8 @@ public sealed record BoundConfiguration : IRequestConfiguration
 		DisablePings = global.DisablePings ?? !global.NodePool.SupportsPinging;
 		HttpPipeliningEnabled = local?.HttpPipeliningEnabled ?? global.HttpPipeliningEnabled ?? true;
 		HttpCompression = global.EnableHttpCompression ?? local?.EnableHttpCompression ?? true;
-		ContentType = local?.ContentType ?? global.Accept ?? DefaultContentType;
-		Accept = local?.Accept ?? global.Accept ?? DefaultContentType;
+		ContentType = global.ProductRegistration.TransformContentType(local?.ContentType ?? global.Accept ?? DefaultContentType)!;
+		Accept = global.ProductRegistration.TransformContentType(local?.Accept ?? global.Accept ?? DefaultContentType)!;
 		ThrowExceptions = local?.ThrowExceptions ?? global.ThrowExceptions ?? false;
 		RequestTimeout = local?.RequestTimeout ?? global.RequestTimeout ?? RequestConfiguration.DefaultRequestTimeout;
 		RequestMetaData = local?.RequestMetaData;

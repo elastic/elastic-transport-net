@@ -3,11 +3,14 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Elastic.Transport.Diagnostics;
@@ -19,17 +22,30 @@ namespace Elastic.Transport.Products.Elasticsearch;
 /// for Elasticsearch so that <see cref="RequestPipeline"/> knows how to ping and sniff if we setup
 /// <see cref="ITransport{TConfiguration}"/> to talk to Elasticsearch
 /// </summary>
-public class ElasticsearchProductRegistration : ProductRegistration
+public partial class ElasticsearchProductRegistration : ProductRegistration
 {
 	internal const string XFoundHandlingClusterHeader = "X-Found-Handling-Cluster";
 	internal const string XFoundHandlingInstanceHeader = "X-Found-Handling-Instance";
+	internal const string ElasticClusterNameHeader = "Elastic-Cluster-Name";
 
-	private readonly HeadersList _headers;
-	private readonly MetaHeaderProvider _metaHeaderProvider;
+#if NET7_0_OR_GREATER
+	[GeneratedRegex(@"application/vnd\.elasticsearch\+([A-Za-z0-9.\-+]+)", RegexOptions.IgnoreCase)]
+	private static partial Regex VendorMimeRegex();
+
+	private static readonly Regex _vendorMimeRegex = VendorMimeRegex();
+#else
+	private static readonly Regex _vendorMimeRegex = new(
+		@"application/vnd\.elasticsearch\+([A-Za-z0-9.\-+]+)",
+		RegexOptions.Compiled | RegexOptions.IgnoreCase);
+#endif
+
 	private readonly int? _clientMajorVersion;
+	private readonly ConcurrentDictionary<string, string>? _contentTypeCache;
 
-	private static string? _clusterName;
-	private static readonly string[] _all = [XFoundHandlingClusterHeader, XFoundHandlingInstanceHeader];
+	// Cached per registration, and therefore per client, so clients talking to different clusters
+	// within one process do not report each other's cluster name.
+	private string? _clusterName;
+	private static readonly string[] _all = [XFoundHandlingClusterHeader, ElasticClusterNameHeader, XFoundHandlingInstanceHeader];
 	private static readonly string[] _instanceHeader = [XFoundHandlingInstanceHeader];
 
 	/// <summary>
@@ -37,8 +53,8 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	/// </summary>
 	internal ElasticsearchProductRegistration()
 	{
-		_headers = new HeadersList("warning");
-		_metaHeaderProvider = null!;
+		ResponseHeadersToParse = new HeadersList("warning");
+		MetaHeaderProvider = null!;
 		ProductAssemblyVersion = null!;
 	}
 
@@ -52,12 +68,15 @@ public class ElasticsearchProductRegistration : ProductRegistration
 
 		var identifier = ServiceIdentifier;
 		if (!string.IsNullOrEmpty(identifier))
-			_metaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, identifier!);
+			MetaHeaderProvider = new DefaultMetaHeaderProvider(clientVersionInfo, identifier!);
 
 		// Only set this if we have a version.
 		// If we don't have a version we won't apply the vendor-based REST API compatibility Accept header.
 		if (clientVersionInfo.Major > 0)
+		{
 			_clientMajorVersion = clientVersionInfo.Major;
+			_contentTypeCache = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+		}
 
 		ProductAssemblyVersion = markerType.Assembly
 			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
@@ -71,7 +90,7 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	public override string Name { get; } = "elasticsearch-net";
 
 	/// <inheritdoc cref="ProductRegistration.ServiceIdentifier"/>
-	public override string? ServiceIdentifier => "es";
+	public sealed override string ServiceIdentifier => "es";
 
 	/// <inheritdoc cref="ProductRegistration.SupportsPing"/>
 	public override bool SupportsPing { get; } = true;
@@ -80,13 +99,125 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	public override bool SupportsSniff { get; } = true;
 
 	/// <inheritdoc cref="ProductRegistration.ResponseHeadersToParse"/>
-	public override HeadersList ResponseHeadersToParse => _headers;
+	public override HeadersList ResponseHeadersToParse { get; }
 
 	/// <inheritdoc cref="ProductRegistration.MetaHeaderProvider"/>
-	public override MetaHeaderProvider MetaHeaderProvider => _metaHeaderProvider;
+	public override MetaHeaderProvider MetaHeaderProvider { get; }
 
 	/// <inheritdoc cref="ProductRegistration.DefaultContentType"/>
-	public override string? DefaultContentType => _clientMajorVersion.HasValue ? $"application/vnd.elasticsearch+json;compatible-with={_clientMajorVersion.Value}" : null;
+	/// <remarks>
+	/// Always returns the bare vendor MIME type. The <c>;compatible-with=N</c>
+	/// suffix is appended by <see cref="TransformContentType"/> when the value is
+	/// bound onto a request — but only when a client major version is known, so
+	/// the suffix is omitted for the parameterless registration.
+	/// </remarks>
+	public override string? DefaultContentType => "application/vnd.elasticsearch+json";
+
+	/// <inheritdoc cref="ProductRegistration.TransformContentType"/>
+	/// <remarks>
+	/// Appends <c>;compatible-with=N</c> to any <c>application/vnd.elasticsearch+SUBTYPE</c>
+	/// MIME type (e.g. <c>+json</c>, <c>+x-ndjson</c>, <c>+vnd.mapbox-vector-tile</c>)
+	/// when the parameter is not already present. Plain or third-party vendor MIME
+	/// types (<c>application/json</c>, <c>application/vnd.mapbox-vector-tile</c>, …)
+	/// are returned unchanged — appending a compatibility annotation to them is the
+	/// caller's responsibility.
+	/// </remarks>
+	public override string? TransformContentType(string? contentType)
+	{
+		if (string.IsNullOrEmpty(contentType) || !_clientMajorVersion.HasValue)
+			return contentType;
+
+		return _contentTypeCache!.GetOrAdd(contentType!, AppendCompatibleWithAnnotation);
+	}
+
+	private string AppendCompatibleWithAnnotation(string input)
+	{
+		// If a compatible-with parameter is already present anywhere in the
+		// value, treat it as user-controlled and leave it alone.
+		if (input.IndexOf("compatible-with=", StringComparison.OrdinalIgnoreCase) >= 0)
+			return input;
+
+		// If no supported vendor MIME type is present, nothing to do.
+		if (!_vendorMimeRegex.IsMatch(input))
+			return input;
+
+		return _vendorMimeRegex.Replace(input, $"$0;compatible-with={_clientMajorVersion!.Value}");
+	}
+
+	/// <inheritdoc cref="ProductRegistration.IsExpectedResponseContentType"/>
+	/// <remarks>
+	/// Extends the default rule with vendor-MIME equivalence: when the request's
+	/// <c>Accept</c> is <c>application/vnd.elasticsearch+SUBTYPE[;…]</c>, a response
+	/// is also accepted if its <c>Content-Type</c> matches the bare vendor form
+	/// (<c>application/vnd.elasticsearch+SUBTYPE</c>) or the bare form
+	/// (<c>application/SUBTYPE</c>) — Elasticsearch frequently omits the
+	/// <c>;compatible-with=N</c> annotation in responses (e.g. on 404, EQL, MVT)
+	/// and may strip the <c>vnd.elasticsearch+</c> wrapper too. Multi-value
+	/// <c>Accept</c> lists are checked entry-by-entry.
+	/// </remarks>
+	public override bool IsExpectedResponseContentType(string accept, string? responseContentType)
+	{
+		if (base.IsExpectedResponseContentType(accept, responseContentType))
+			return true;
+
+		if (string.IsNullOrEmpty(responseContentType))
+			return false;
+
+		var normalized = responseContentType!.Replace(" ", "");
+
+		foreach (var entry in accept.Split(','))
+		{
+			var trimmedEntry = entry.Replace(" ", "");
+			if (!TryParseElasticsearchVendorMime(trimmedEntry, out var bareVendor, out var bareForm))
+				continue;
+
+			if (normalized.Equals(bareVendor, StringComparison.OrdinalIgnoreCase)
+				|| normalized.StartsWith(bareVendor, StringComparison.OrdinalIgnoreCase)
+				|| normalized.Equals(bareForm, StringComparison.OrdinalIgnoreCase)
+				|| normalized.StartsWith(bareForm, StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+
+		return false;
+	}
+
+	/// <inheritdoc cref="ProductRegistration.IsJsonContentType"/>
+	/// <remarks>
+	/// In addition to the base <c>application/json</c> check, accepts
+	/// <c>application/vnd.elasticsearch+json</c> (and any <c>;compatible-with=N</c>
+	/// suffix variant), which Elasticsearch returns when the client sends
+	/// <c>Accept: application/vnd.elasticsearch+json</c>.
+	/// </remarks>
+	public override bool IsJsonContentType(string? contentType) =>
+		base.IsJsonContentType(contentType) ||
+		(contentType != null && contentType.StartsWith("application/vnd.elasticsearch+json", StringComparison.OrdinalIgnoreCase));
+
+	private static bool TryParseElasticsearchVendorMime(string mime, out string bareVendor, out string bareForm)
+	{
+		const string prefix = "application/vnd.elasticsearch+";
+		if (!mime.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+		{
+			bareVendor = string.Empty;
+			bareForm = string.Empty;
+			return false;
+		}
+
+		var afterPlus = mime.AsSpan(prefix.Length);
+		var endIdx = afterPlus.IndexOfAny(';', ',');
+		var subtypeSpan = endIdx < 0 ? afterPlus : afterPlus[..endIdx];
+
+		if (subtypeSpan.Length == 0)
+		{
+			bareVendor = string.Empty;
+			bareForm = string.Empty;
+			return false;
+		}
+
+		var subtype = subtypeSpan.ToString();
+		bareVendor = prefix + subtype;
+		bareForm = "application/" + subtype;
+		return true;
+	}
 
 	/// <summary> Exposes the path used for sniffing in Elasticsearch </summary>
 	public const string SniffPath = "_nodes/http,settings";
@@ -103,25 +234,56 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	/// API calls. They are considered for ping and sniff requests.
 	/// </summary>
 	public override bool NodePredicate(Node node) =>
-		// skip master only nodes (holds no data and is master eligible)
+		// Skip master only nodes (holds no data and is master eligible)
 		!(node.HasFeature(ElasticsearchNodeFeatures.MasterEligible) &&
 		  !node.HasFeature(ElasticsearchNodeFeatures.HoldsData));
 
 	/// <inheritdoc cref="ProductRegistration.HttpStatusCodeClassifier"/>
+	/// <remarks>
+	/// We consider all status codes &gt;= 200 and &lt; 300 valid by default.
+	/// Elasticsearch might return 404 for valid responses in some cases (e.g. `GET /my-index/_doc/missing-doc-id`) but also for actual error cases like
+	/// missing endpoints, missing indices (e.g. `GET /missing-index/_mapping`), etc.
+	/// The 404 case is handled on a per-request basis (see <see cref="IsValidResponse(ApiCallDetails)"/> for details).
+	/// </remarks>
 	public override bool HttpStatusCodeClassifier(HttpMethod method, int statusCode) =>
 		statusCode is >= 200 and < 300;
+
+	/// <inheritdoc cref="ProductRegistration.IsValidResponse(ApiCallDetails)"/>
+	/// <remarks>
+	/// A response is valid when:
+	/// <list type="bullet">
+	/// <item>The content-type matches what the caller asked for.</item>
+	/// <item>For 404 responses: there is no extracted Elasticsearch server error
+	/// (404s without an error body — e.g. <c>GET /my-index/_doc/missing-doc-id</c> — represent
+	/// a legitimate "missing entity" rather than a failure).</item>
+	/// <item>Otherwise: the status code is in the success range (or explicitly allowed via
+	/// <see cref="IRequestConfiguration.AllowedStatusCodes"/>).</item>
+	/// </list>
+	/// </remarks>
+	public override bool IsValidResponse(ApiCallDetails? details)
+	{
+		if (details is null || !details.HasExpectedContentType)
+			return false;
+
+		var serverError = details.ProductError as ElasticsearchServerError;
+		if (details.HttpStatusCode is 404)
+			return !serverError?.HasError() ?? true;
+
+		return details.HasSuccessfulStatusCode;
+	}
 
 	/// <inheritdoc cref="ProductRegistration.TryGetServerErrorReason{TResponse}"/>>
 	public override bool TryGetServerErrorReason<TResponse>(TResponse response, out string? reason)
 	{
 		reason = null;
-		if (response is StringResponse s && s.TryGetElasticsearchServerError(out var e))
-			reason = e?.Error?.ToString();
-		else if (response is BytesResponse b && b.TryGetElasticsearchServerError(out e))
-			reason = e?.Error?.ToString();
-		else if (response.TryGetElasticsearchServerError(out e))
-			reason = e?.Error?.ToString();
-		return e != null;
+
+		if (response.ApiCallDetails?.ProductError is ElasticsearchServerError error && error.HasError())
+		{
+			reason = error.Error?.ToString();
+			return true;
+		}
+
+		return false;
 	}
 
 	//TODO remove settings dependency
@@ -176,6 +338,11 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// Until a cluster name has been resolved, both <c>X-Found-Handling-Cluster</c> (added by the Elastic Cloud proxy)
+	/// and <c>Elastic-Cluster-Name</c> (emitted by Elasticsearch 9.6+ when <c>http.headers.cluster_name.enabled</c>
+	/// is set) are requested alongside <c>X-Found-Handling-Instance</c>. Afterwards only the instance header is requested.
+	/// </remarks>
 	public override IReadOnlyCollection<string> DefaultHeadersToParse()
 	{
 		if (OpenTelemetry.CurrentSpanIsElasticTransportOwnedAndHasListeners && (Activity.Current?.IsAllDataRequested ?? false))
@@ -190,14 +357,18 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	}
 
 	/// <inheritdoc/>
+	/// <remarks>
+	/// The cluster name is resolved once per registration and reused for subsequent responses.
+	/// <c>X-Found-Handling-Cluster</c> takes precedence over <c>Elastic-Cluster-Name</c>: its presence indicates an
+	/// Elastic Cloud deployment, and it carries the globally unique cluster id rather than the operator-chosen
+	/// <c>cluster.name</c>.
+	/// </remarks>
 	public override Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails)
 	{
 		Dictionary<string, object>? attributes = null;
 
-		if (string.IsNullOrEmpty(_clusterName) && callDetails.TryGetHeader(XFoundHandlingClusterHeader, out var clusterValues))
-		{
-			_clusterName = clusterValues.FirstOrDefault();
-		}
+		if (string.IsNullOrEmpty(_clusterName))
+			_clusterName = ResolveClusterName(callDetails);
 
 		if (!string.IsNullOrEmpty(_clusterName))
 		{
@@ -205,18 +376,28 @@ public class ElasticsearchProductRegistration : ProductRegistration
 			attributes.Add(OpenTelemetryAttributes.DbElasticsearchClusterName, _clusterName!);
 		}
 
-		if (callDetails.TryGetHeader(XFoundHandlingInstanceHeader, out var instanceValues))
+		var instance = FirstHeaderValue(callDetails, XFoundHandlingInstanceHeader);
+		if (!string.IsNullOrEmpty(instance))
 		{
-			var instance = instanceValues.FirstOrDefault();
-			if (!string.IsNullOrEmpty(instance))
-			{
-				attributes ??= [];
-				attributes.Add(OpenTelemetryAttributes.DbElasticsearchNodeName, instance);
-			}
+			attributes ??= [];
+			attributes.Add(OpenTelemetryAttributes.DbElasticsearchNodeName, instance!);
 		}
 
 		return attributes;
 	}
+
+	private static string? ResolveClusterName(ApiCallDetails callDetails)
+	{
+		var cloudCluster = FirstHeaderValue(callDetails, XFoundHandlingClusterHeader);
+		if (!string.IsNullOrEmpty(cloudCluster))
+			return cloudCluster;
+
+		var clusterName = FirstHeaderValue(callDetails, ElasticClusterNameHeader);
+		return string.IsNullOrEmpty(clusterName) ? null : clusterName;
+	}
+
+	private static string? FirstHeaderValue(ApiCallDetails callDetails, string header) =>
+		callDetails.TryGetHeader(header, out var values) ? values.FirstOrDefault() : null;
 
 	/// <inheritdoc/>
 	public override string ProductAssemblyVersion { get; }
@@ -228,5 +409,37 @@ public class ElasticsearchProductRegistration : ProductRegistration
 	};
 
 	/// <inheritdoc/>
-	public override IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } = [new ElasticsearchResponseBuilder()];
+	public override IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } =
+	[
+		new StringResponseBuilder<ElasticsearchStringResponse>(),
+		new DynamicResponseBuilder<ElasticsearchDynamicResponse>(),
+		new JsonResponseBuilder<ElasticsearchJsonResponse>(),
+		new ElasticsearchStreamResponseBuilder(),
+#if NET10_0_OR_GREATER
+		new ElasticsearchPipeResponseBuilder(),
+#endif
+		new ElasticsearchResponseBuilder()
+	];
+
+	/// <inheritdoc />
+	public override bool IsErrorContentType(string? contentType) => IsJsonContentType(contentType);
+
+	/// <inheritdoc />
+	public override ErrorResponse? TryExtractError(BoundConfiguration boundConfiguration, Stream responseStream)
+	{
+		try
+		{
+			var error = boundConfiguration.ConnectionSettings.RequestResponseSerializer
+				.Deserialize<ElasticsearchServerError>(responseStream);
+
+			if (error?.HasError() == true)
+				return error;
+		}
+		catch (System.Text.Json.JsonException)
+		{
+			// If the error deserialization fails, we'll let the builder try the original response type.
+		}
+
+		return null;
+	}
 }

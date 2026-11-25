@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,6 +28,40 @@ public abstract class ProductRegistration
 	/// The default MIME type used for Accept and Content-Type headers for requests.
 	/// </summary>
 	public abstract string? DefaultContentType { get; }
+
+	/// <summary>
+	/// Allows the product registration to rewrite the MIME type used in the
+	/// <c>Accept</c> and <c>Content-Type</c> request headers. The default
+	/// implementation returns the input unchanged. Products such as Elasticsearch
+	/// override this to append a REST API compatibility annotation
+	/// (<c>;compatible-with=N</c>) to supported vendor MIME types when missing.
+	/// </summary>
+	public virtual string? TransformContentType(string? contentType) => contentType;
+
+	/// <summary>
+	/// Decides whether a response <c>Content-Type</c> is acceptable given the
+	/// request's <c>Accept</c>. The default accepts an exact (case-insensitive)
+	/// match or a response Content-Type that starts with the Accept (so
+	/// <c>application/json</c> matches <c>application/json;charset=utf-8</c>).
+	/// Products override this to add their own equivalence rules — for example,
+	/// translating between a vendor MIME type and its bare form.
+	/// </summary>
+	/// <param name="accept">The <c>Accept</c> header sent on the request.</param>
+	/// <param name="responseContentType">The <c>Content-Type</c> returned by the server, if any.</param>
+	public virtual bool IsExpectedResponseContentType(string accept, string? responseContentType)
+	{
+		if (string.IsNullOrEmpty(responseContentType))
+			return false;
+
+		if (accept == responseContentType)
+			return true;
+
+		var trimmedAccept = accept.Replace(" ", "");
+		var normalized = responseContentType!.Replace(" ", "");
+
+		return normalized.Equals(trimmedAccept, StringComparison.OrdinalIgnoreCase)
+			|| normalized.StartsWith(trimmedAccept, StringComparison.OrdinalIgnoreCase);
+	}
 
 	/// <summary>
 	/// The name of the current product utilizing <see cref="ITransport{TConfiguration}"/>
@@ -138,7 +173,50 @@ public abstract class ProductRegistration
 	public abstract Dictionary<string, object>? ParseOpenTelemetryAttributesFromApiCallDetails(ApiCallDetails callDetails);
 
 	/// <summary>
-	/// 
+	///
 	/// </summary>
 	public virtual IReadOnlyCollection<IResponseBuilder> ResponseBuilders { get; } = [new DefaultResponseBuilder()];
+
+	/// <summary>
+	/// Determines whether the response <c>Content-Type</c> indicates that the body should be
+	/// parsed as a JSON document. The default accepts any <c>application/json</c> type
+	/// (including those with parameters such as <c>;charset=utf-8</c>). Products that use
+	/// vendor MIME types for JSON payloads (e.g. <c>application/vnd.elasticsearch+json</c>)
+	/// should override this to return <c>true</c> for those types too.
+	/// </summary>
+	/// <param name="contentType">The <c>Content-Type</c> header value from the response.</param>
+	public virtual bool IsJsonContentType(string? contentType) =>
+		contentType != null && contentType.StartsWith("application/json", StringComparison.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// Determines whether the given response content-type indicates a product-specific error body
+	/// that can be deserialized by <see cref="TryExtractError"/>.
+	/// <para>This is checked before attempting error extraction to avoid parsing non-error content
+	/// (e.g., HTML from a reverse proxy, or binary responses from non-JSON endpoints).</para>
+	/// </summary>
+	/// <param name="contentType">The value of the Content-Type header from the response.</param>
+	/// <returns><c>true</c> if the content-type represents a parseable error response.</returns>
+	public virtual bool IsErrorContentType(string? contentType) => false;
+
+	/// <summary>
+	/// Attempts to extract a product-specific error from the response stream for error status codes.
+	/// <para>Called by the response factory when the HTTP status code indicates an error (&gt; 399).
+	/// The factory guarantees the stream is seekable and resets its position after this call.</para>
+	/// </summary>
+	/// <param name="boundConfiguration">The bound configuration for the request.</param>
+	/// <param name="responseStream">A seekable stream containing the response body.</param>
+	/// <returns>An <see cref="ErrorResponse"/> if one was successfully extracted; otherwise <c>null</c>.</returns>
+	public virtual ErrorResponse? TryExtractError(BoundConfiguration boundConfiguration, Stream responseStream) => null;
+
+	/// <summary>
+	/// Whether the response should be treated as valid for the caller — meaning no exception is
+	/// raised under <see cref="IRequestConfiguration.ThrowExceptions"/>, and the product-level
+	/// <c>IsValidResponse</c> reads <c>true</c>.
+	/// <para>Default: a successful HTTP status code with the expected content type. Products override
+	/// to encode their own semantics (e.g. Elasticsearch treats a 404 with no extracted server error
+	/// as valid because it represents a missing entity rather than a true failure).</para>
+	/// </summary>
+	/// <param name="details">The <see cref="ApiCallDetails"/> for the response.</param>
+	public virtual bool IsValidResponse(ApiCallDetails? details) =>
+		details?.HasSuccessfulStatusCodeAndExpectedContentType ?? false;
 }

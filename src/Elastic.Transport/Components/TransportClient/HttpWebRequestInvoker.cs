@@ -216,12 +216,14 @@ public class HttpWebRequestInvoker : IRequestInvoker
 			}
 		}
 
+		// Indexer assignment rather than Add: the product's default telemetry headers may also be requested
+		// via ParseAllHeaders or ResponseHeadersToParse, and Add would throw on the duplicate key.
 		if (boundConfiguration.ParseAllHeaders)
 		{
 			foreach (var key in responseMessage.Headers.AllKeys)
 			{
 				responseHeaders ??= [];
-				responseHeaders.Add(key, responseMessage.Headers.GetValues(key)!);
+				responseHeaders[key] = responseMessage.Headers.GetValues(key)!;
 			}
 		}
 		else if (boundConfiguration.ResponseHeadersToParse is { Count: > 0 })
@@ -231,7 +233,7 @@ public class HttpWebRequestInvoker : IRequestInvoker
 				if (Enumerable.Contains(responseMessage.Headers.AllKeys, headerToParse, StringComparer.OrdinalIgnoreCase))
 				{
 					responseHeaders ??= [];
-					responseHeaders.Add(headerToParse, responseMessage.Headers.GetValues(headerToParse)!);
+					responseHeaders[headerToParse] = responseMessage.Headers.GetValues(headerToParse)!;
 				}
 			}
 		}

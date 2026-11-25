@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+#nullable enable
+
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -25,9 +27,73 @@ public class OpenTelemetryTests(TestServerFixture instance) : AssemblyServerTest
 {
 	internal const string Cluster = "e9106fc68e3044f0b1475b04bf4ffd5f";
 	internal const string Instance = "instance-0000000001";
+	internal const string OnPremCluster = "my-onprem-cluster";
 
 	[Fact]
 	public async Task ElasticsearchTagsShouldBeSetWhenUsingTheElasticsearchRegistration()
+	{
+		var (activity, _) = await CaptureActivityAsync("/opentelemetry");
+
+		var informationalVersion = (typeof(Clients.Elasticsearch.ElasticsearchClient)
+			.Assembly
+			.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false)
+			as AssemblyInformationalVersionAttribute[])?.FirstOrDefault()?.InformationalVersion;
+
+		TagValue(activity, OpenTelemetryAttributes.DbElasticsearchClusterName).Should().Be(Cluster);
+		TagValue(activity, OpenTelemetryAttributes.DbElasticsearchNodeName).Should().Be(Instance);
+		TagValue(activity, OpenTelemetryAttributes.ElasticTransportProductName).Should().Be("elasticsearch-net");
+		TagValue(activity, OpenTelemetryAttributes.ElasticTransportProductVersion).Should().Be(informationalVersion);
+	}
+
+	[Fact]
+	public async Task ClusterNameIsTakenFromElasticClusterNameHeaderWhenCloudHeaderIsAbsent()
+	{
+		var (activity, _) = await CaptureActivityAsync("/opentelemetry/onprem");
+
+		TagValue(activity, OpenTelemetryAttributes.DbElasticsearchClusterName).Should().Be(OnPremCluster);
+		_ = activity.TagObjects.Should().NotContain(t => t.Key == OpenTelemetryAttributes.DbElasticsearchNodeName);
+	}
+
+	[Fact]
+	public async Task CloudClusterHeaderTakesPrecedenceOverElasticClusterNameHeader()
+	{
+		var (activity, _) = await CaptureActivityAsync("/opentelemetry/both");
+
+		TagValue(activity, OpenTelemetryAttributes.DbElasticsearchClusterName).Should().Be(Cluster);
+	}
+
+	[Fact]
+	public async Task ParsingAllHeadersAlongsideTelemetryHeadersSucceeds()
+	{
+		var (_, response) = await CaptureActivityAsync("/opentelemetry", new RequestConfiguration { ParseAllHeaders = true });
+
+		_ = response.ApiCallDetails.OriginalException.Should().BeNull();
+		_ = response.ApiCallDetails.HttpStatusCode.Should().Be(200);
+		_ = response.ApiCallDetails.TryGetHeader(ElasticsearchProductRegistration.XFoundHandlingClusterHeader, out var values).Should().BeTrue();
+		_ = values.Should().ContainSingle().Which.Should().Be(Cluster);
+	}
+
+	[Fact]
+	public async Task ExplicitlyParsingATelemetryHeaderSucceeds()
+	{
+		var (_, response) = await CaptureActivityAsync("/opentelemetry/onprem",
+			new RequestConfiguration { ResponseHeadersToParse = new HeadersList("Elastic-Cluster-Name") });
+
+		_ = response.ApiCallDetails.OriginalException.Should().BeNull();
+		_ = response.ApiCallDetails.HttpStatusCode.Should().Be(200);
+		_ = response.ApiCallDetails.TryGetHeader("Elastic-Cluster-Name", out var values).Should().BeTrue();
+		_ = values.Should().ContainSingle().Which.Should().Be(OnPremCluster);
+	}
+
+	private static string? TagValue(Activity activity, string key) =>
+		activity.TagObjects.Should().Contain(t => t.Key == key).Subject.Value.Should().BeOfType<string>().Subject;
+
+	/// <summary>
+	/// Issues a single request through a fresh Elasticsearch registration and returns the stopped transport
+	/// activity together with the response. A fresh registration per call keeps the cached cluster name from
+	/// leaking between tests.
+	/// </summary>
+	private async Task<(Activity Activity, TransportResponse Response)> CaptureActivityAsync(string path, IRequestConfiguration? requestConfiguration = null)
 	{
 		var requestInvoker = new TrackingRequestInvoker();
 		var nodePool = new SingleNodePool(Server.Uri);
@@ -35,8 +101,9 @@ public class OpenTelemetryTests(TestServerFixture instance) : AssemblyServerTest
 		var transport = new DistributedTransport(config);
 
 		var mre = new ManualResetEvent(false);
-
+		Activity? stopped = null;
 		var callCounter = 0;
+
 		using var listener = new ActivityListener
 		{
 			ActivityStarted = _ => { },
@@ -47,7 +114,7 @@ public class OpenTelemetryTests(TestServerFixture instance) : AssemblyServerTest
 				if (callCounter > 1)
 					Assert.Fail("Expected one activity, but received multiple stop events.");
 
-				Assertions(activity);
+				stopped = activity;
 				_ = mre.Set();
 			},
 			ShouldListenTo = activitySource => activitySource.Name == Diagnostics.OpenTelemetry.ElasticTransportActivitySourceName,
@@ -55,33 +122,13 @@ public class OpenTelemetryTests(TestServerFixture instance) : AssemblyServerTest
 		};
 		ActivitySource.AddActivityListener(listener);
 
-		_ = await transport.GetAsync<VoidResponse>("/opentelemetry", cancellationToken: TestContext.Current.CancellationToken);
+		var response = await transport.RequestAsync<VoidResponse>(
+			new EndpointPath(HttpMethod.GET, path), postData: null, null, requestConfiguration, TestContext.Current.CancellationToken);
 
 		_ = mre.WaitOne(TimeSpan.FromSeconds(1)).Should().BeTrue();
+		_ = stopped.Should().NotBeNull();
 
-		static void Assertions(Activity activity)
-		{
-			var informationalVersion = (typeof(Clients.Elasticsearch.ElasticsearchClient)
-				.Assembly
-				.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false)
-				as AssemblyInformationalVersionAttribute[])?.FirstOrDefault()?.InformationalVersion;
-
-			_ = activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.DbElasticsearchClusterName)
-				.Subject.Value.Should().BeOfType<string>()
-				.Subject.Should().Be(Cluster);
-
-			_ = activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.DbElasticsearchNodeName)
-				.Subject.Value.Should().BeOfType<string>()
-				.Subject.Should().Be(Instance);
-
-			_ = activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportProductName)
-				.Subject.Value.Should().BeOfType<string>()
-				.Subject.Should().Be("elasticsearch-net");
-
-			_ = activity.TagObjects.Should().Contain(t => t.Key == OpenTelemetryAttributes.ElasticTransportProductVersion)
-				.Subject.Value.Should().BeOfType<string>()
-				.Subject.Should().Be(informationalVersion);
-		}
+		return (stopped!, response);
 	}
 }
 
@@ -93,6 +140,23 @@ public class OpenTelemetryController : ControllerBase
 	{
 		Response.Headers.Append(ElasticsearchProductRegistration.XFoundHandlingClusterHeader, OpenTelemetryTests.Cluster);
 		Response.Headers.Append(ElasticsearchProductRegistration.XFoundHandlingInstanceHeader, OpenTelemetryTests.Instance);
+
+		return Task.CompletedTask;
+	}
+
+	[HttpGet("onprem")]
+	public Task OnPrem()
+	{
+		Response.Headers.Append("Elastic-Cluster-Name", OpenTelemetryTests.OnPremCluster);
+
+		return Task.CompletedTask;
+	}
+
+	[HttpGet("both")]
+	public Task Both()
+	{
+		Response.Headers.Append(ElasticsearchProductRegistration.XFoundHandlingClusterHeader, OpenTelemetryTests.Cluster);
+		Response.Headers.Append("Elastic-Cluster-Name", OpenTelemetryTests.OnPremCluster);
 
 		return Task.CompletedTask;
 	}

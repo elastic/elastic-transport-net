@@ -14,16 +14,16 @@ using System.Threading.Tasks;
 
 namespace Elastic.Transport;
 
-internal class StringResponseBuilder : TypedResponseBuilder<StringResponse>
+internal class StringResponseBuilder<T> : TypedResponseBuilder<T> where T : StringResponseBase, new()
 {
-	protected override StringResponse Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength)
+	protected override T Build(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength)
 	{
 		string responseString;
 
 		if (apiCallDetails.ResponseBodyInBytes is not null)
 		{
 			responseString = Encoding.UTF8.GetString(apiCallDetails.ResponseBodyInBytes);
-			return new StringResponse(responseString);
+			return new T { Body = responseString };
 		}
 
 #if NET8_0_OR_GREATER
@@ -33,16 +33,16 @@ internal class StringResponseBuilder : TypedResponseBuilder<StringResponse>
 			responseStream.ReadExactly(buffer, 0, (int)contentLength);
 			responseString = Encoding.UTF8.GetString(buffer.AsSpan(0, (int)contentLength));
 			ArrayPool<byte>.Shared.Return(buffer);
-			return new StringResponse(responseString);
+			return new T { Body = responseString };
 		}
 #endif
 
 		var sr = new StreamReader(responseStream);
 		responseString = sr.ReadToEnd();
-		return new StringResponse(responseString);
+		return new T { Body = responseString };
 	}
 
-	protected override async Task<StringResponse> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength,
+	protected override async Task<T> BuildAsync(ApiCallDetails apiCallDetails, BoundConfiguration boundConfiguration, Stream responseStream, string contentType, long contentLength,
 		CancellationToken cancellationToken = default)
 	{
 		string responseString;
@@ -50,7 +50,7 @@ internal class StringResponseBuilder : TypedResponseBuilder<StringResponse>
 		if (apiCallDetails.ResponseBodyInBytes is not null)
 		{
 			responseString = Encoding.UTF8.GetString(apiCallDetails.ResponseBodyInBytes);
-			return new StringResponse(responseString);
+			return new T { Body = responseString };
 		}
 
 #if NET8_0_OR_GREATER
@@ -60,7 +60,7 @@ internal class StringResponseBuilder : TypedResponseBuilder<StringResponse>
 			await responseStream.ReadExactlyAsync(buffer, 0, (int)contentLength, cancellationToken).ConfigureAwait(false);
 			responseString = Encoding.UTF8.GetString(buffer.AsSpan(0, (int)contentLength));
 			ArrayPool<byte>.Shared.Return(buffer);
-			return new StringResponse(responseString);
+			return new T { Body = responseString };
 		}
 #endif
 
@@ -70,6 +70,8 @@ internal class StringResponseBuilder : TypedResponseBuilder<StringResponse>
 #else
 		responseString = await sr.ReadToEndAsync().ConfigureAwait(false);
 #endif
-		return new StringResponse(responseString);
+		return new T { Body = responseString };
 	}
 }
+
+internal class StringResponseBuilder : StringResponseBuilder<StringResponse>;

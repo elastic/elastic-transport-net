@@ -14,6 +14,10 @@ public static class ElasticsearchErrorExtensions
 	/// <summary> Try to parse an Elasticsearch <see cref="ElasticsearchServerError"/> </summary>
 	public static bool TryGetElasticsearchServerError(this StringResponse response, out ElasticsearchServerError? serverError)
 	{
+		// Prefer the factory-extracted error if available
+		if (TryGetFactoryExtractedError(response, out serverError))
+			return true;
+
 		serverError = null;
 		if (string.IsNullOrEmpty(response.Body) || response.ApiCallDetails.ResponseContentType != BoundConfiguration.DefaultContentType)
 			return false;
@@ -26,6 +30,10 @@ public static class ElasticsearchErrorExtensions
 	/// <summary> Try to parse an Elasticsearch <see cref="ElasticsearchServerError"/> </summary>
 	public static bool TryGetElasticsearchServerError(this BytesResponse response, out ElasticsearchServerError? serverError)
 	{
+		// Prefer the factory-extracted error if available
+		if (TryGetFactoryExtractedError(response, out serverError))
+			return true;
+
 		serverError = null;
 		if (response.Body == null || response.Body.Length == 0 || response.ApiCallDetails.ResponseContentType != BoundConfiguration.DefaultContentType)
 			return false;
@@ -41,6 +49,10 @@ public static class ElasticsearchErrorExtensions
 	/// </summary>
 	public static bool TryGetElasticsearchServerError(this TransportResponse response, out ElasticsearchServerError? serverError)
 	{
+		// Prefer the factory-extracted error if available
+		if (TryGetFactoryExtractedError(response, out serverError))
+			return true;
+
 		serverError = null;
 		var bytes = response.ApiCallDetails.ResponseBodyInBytes;
 		if (bytes == null || response.ApiCallDetails.ResponseContentType != BoundConfiguration.DefaultContentType)
@@ -49,5 +61,11 @@ public static class ElasticsearchErrorExtensions
 		var settings = response.ApiCallDetails.TransportConfiguration;
 		using var stream = settings.MemoryStreamFactory.Create(bytes);
 		return ElasticsearchServerError.TryCreate(stream, out serverError);
+	}
+
+	private static bool TryGetFactoryExtractedError(TransportResponse response, out ElasticsearchServerError? serverError)
+	{
+		serverError = response.ApiCallDetails?.ProductError as ElasticsearchServerError;
+		return serverError?.HasError() ?? false;
 	}
 }

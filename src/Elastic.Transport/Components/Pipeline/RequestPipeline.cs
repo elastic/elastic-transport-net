@@ -206,7 +206,7 @@ public class RequestPipeline
 	)
 		where TResponse : TransportResponse, new()
 	{
-		if (callDetails?.HasSuccessfulStatusCodeAndExpectedContentType ?? false)
+		if (_productRegistration.IsValidResponse(callDetails))
 			return null;
 
 		var pipelineFailure = callDetails?.HttpStatusCode != null ? PipelineFailure.BadResponse : PipelineFailure.BadRequest;
