@@ -113,7 +113,6 @@ jobs:
     # The packages the publish job pushes: built and validated here, from the commit that was tested, and kept for a day.
     - uses: actions/upload-artifact@v4
       name: Keep the packages for the publish job
-      if: github.event_name == 'push'
       with:
         name: packages
         path: build/output/*.nupkg
@@ -124,7 +123,7 @@ jobs:
   # pull request, and only publishes what the build job built and tested.
   publish:
     needs: build
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     permissions:
       contents: write # the release for a tag
       issues: write # as before the permissions moved here
@@ -153,6 +152,14 @@ jobs:
       with:
         name: packages
         path: build/output
+
+    - name: TEMPORARY try the hand-off on a pull request
+      if: github.event_name == 'pull_request'
+      run: |
+        ls -l build/output
+        test -n "$(ls build/output/*.nupkg)"
+        ./build.sh generatereleasenotes -s true
+        ls -l build/output
 
     - name: publish canary packages github package repository
       if: github.event_name == 'push' && startswith(github.ref, 'refs/heads')
