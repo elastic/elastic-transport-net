@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,8 +38,8 @@ public abstract class SystemTextJsonSerializer : Serializer
 	#region Serializer
 
 	/// <inheritdoc />
-	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext. Unregistered types will silently produce empty JSON in AOT — callers must use PostData.Serializable<T>(T, JsonTypeInfo<T>) for unregistered types.")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext. Unregistered types will silently produce empty JSON in AOT — callers must use PostData.Serializable<T>(T, JsonTypeInfo<T>) for unregistered types.")]
 	public override T Deserialize<T>(Stream stream)
 	{
 		if (TryReturnDefault(stream, out T? deserialize))
@@ -48,8 +49,8 @@ public abstract class SystemTextJsonSerializer : Serializer
 	}
 
 	/// <inheritdoc />
-	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext. Unregistered types will silently produce empty JSON in AOT — callers must use PostData.Serializable<T>(T, JsonTypeInfo<T>) for unregistered types.")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext. Unregistered types will silently produce empty JSON in AOT — callers must use PostData.Serializable<T>(T, JsonTypeInfo<T>) for unregistered types.")]
 	public override object? Deserialize(Type type, Stream stream)
 	{
 		if (TryReturnDefault(stream, out object? deserialize))
@@ -59,8 +60,8 @@ public abstract class SystemTextJsonSerializer : Serializer
 	}
 
 	/// <inheritdoc />
-	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext. Unregistered types will silently produce empty JSON in AOT — callers must use PostData.Serializable<T>(T, JsonTypeInfo<T>) for unregistered types.")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext. Unregistered types will silently produce empty JSON in AOT — callers must use PostData.Serializable<T>(T, JsonTypeInfo<T>) for unregistered types.")]
 	public override async ValueTask<T> DeserializeAsync<T>(Stream stream, CancellationToken cancellationToken = default)
 	{
 		if (TryReturnDefault(stream, out T? deserialize))
@@ -70,8 +71,8 @@ public abstract class SystemTextJsonSerializer : Serializer
 	}
 
 	/// <inheritdoc />
-	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext. Unregistered types will silently produce empty JSON in AOT — callers must use PostData.Serializable<T>(T, JsonTypeInfo<T>) for unregistered types.")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext. Unregistered types will silently produce empty JSON in AOT — callers must use PostData.Serializable<T>(T, JsonTypeInfo<T>) for unregistered types.")]
 	public override ValueTask<object?> DeserializeAsync(Type type, Stream stream, CancellationToken cancellationToken = default)
 	{
 		if (TryReturnDefault(stream, out object? deserialize))
@@ -81,33 +82,49 @@ public abstract class SystemTextJsonSerializer : Serializer
 	}
 
 	/// <inheritdoc />
-	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext.")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext.")]
 	public override void Serialize<T>(T data, Stream stream,
-		SerializationFormatting formatting = SerializationFormatting.None) =>
-		JsonSerializer.Serialize(stream, data, GetJsonSerializerOptions(formatting));
+		SerializationFormatting formatting = SerializationFormatting.None)
+	{
+		var options = GetJsonSerializerOptions(formatting);
+		ThrowOnEmptyTypeInfo<T>(options);
+		JsonSerializer.Serialize(stream, data, options);
+	}
 
 	/// <inheritdoc />
-	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext.")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext.")]
 	public override void Serialize(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None,
-		CancellationToken cancellationToken = default) =>
-		JsonSerializer.Serialize(stream, data, type, GetJsonSerializerOptions(formatting));
+		CancellationToken cancellationToken = default)
+	{
+		var options = GetJsonSerializerOptions(formatting);
+		ThrowOnEmptyTypeInfo(type, options);
+		JsonSerializer.Serialize(stream, data, type, options);
+	}
 
 	/// <inheritdoc />
-	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext.")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext.")]
 	public override Task SerializeAsync<T>(T data, Stream stream,
 		SerializationFormatting formatting = SerializationFormatting.None,
-		CancellationToken cancellationToken = default) =>
-		JsonSerializer.SerializeAsync(stream, data, GetJsonSerializerOptions(formatting), cancellationToken);
+		CancellationToken cancellationToken = default)
+	{
+		var options = GetJsonSerializerOptions(formatting);
+		ThrowOnEmptyTypeInfo<T>(options);
+		return JsonSerializer.SerializeAsync(stream, data, options, cancellationToken);
+	}
 
 	/// <inheritdoc />
-	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "We always provide a static JsonTypeInfoResolver")]
-	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "We always provide a static JsonTypeInfoResolver")]
+	[UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext.")]
+	[UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "Types serialized through this path are expected to be registered in the configured JsonSerializerContext.")]
 	public override Task SerializeAsync(object? data, Type type, Stream stream, SerializationFormatting formatting = SerializationFormatting.None,
-		CancellationToken cancellationToken = default) =>
-		JsonSerializer.SerializeAsync(stream, data, type, GetJsonSerializerOptions(formatting), cancellationToken);
+		CancellationToken cancellationToken = default)
+	{
+		var options = GetJsonSerializerOptions(formatting);
+		ThrowOnEmptyTypeInfo(type, options);
+		return JsonSerializer.SerializeAsync(stream, data, type, options, cancellationToken);
+	}
 
 	#endregion Serializer
 
@@ -149,4 +166,33 @@ public abstract class SystemTextJsonSerializer : Serializer
 		deserialize = default;
 		return (stream is null) || stream == Stream.Null || (stream.CanSeek && stream.Length == 0);
 	}
+
+#if NET8_0_OR_GREATER
+	private static void ThrowOnEmptyTypeInfo<T>(JsonSerializerOptions options) => ThrowOnEmptyTypeInfo(typeof(T), options);
+
+	private static void ThrowOnEmptyTypeInfo(Type type, JsonSerializerOptions options)
+	{
+		if (!options.TryGetTypeInfo(type, out var typeInfo))
+			throw new InvalidOperationException(
+				$"Type '{type.Name}' is not registered for JSON serialization. " +
+				$"Register the type with [JsonSerializable(typeof({type.Name}))] in your JsonSerializerContext, " +
+				$"or use PostData.Serializable<T>(T, JsonTypeInfo<T>).");
+
+		// When reflection is available, DefaultJsonTypeInfoResolver can serialize types correctly even if
+		// JsonTypeInfo.Properties appears empty (e.g. anonymous types). Only flag empty properties as an
+		// error when reflection is disabled (AOT/trimmed), where it indicates a genuinely missing registration.
+		if (!JsonSerializer.IsReflectionEnabledByDefault
+			&& typeInfo.Kind == JsonTypeInfoKind.Object
+			&& typeInfo.Properties.Count == 0
+			&& type != typeof(object))
+			throw new InvalidOperationException(
+				$"Type '{type.Name}' resolves to a JsonTypeInfo with no serializable properties and would serialize as '{{}}'. " +
+				$"This typically indicates the type is not registered in the configured JsonSerializerContext. " +
+				$"Register the type with [JsonSerializable(typeof({type.Name}))] or use PostData.Serializable<T>(T, JsonTypeInfo<T>).");
+	}
+#else
+	private static void ThrowOnEmptyTypeInfo<T>(JsonSerializerOptions options) { }
+
+	private static void ThrowOnEmptyTypeInfo(Type type, JsonSerializerOptions options) { }
+#endif
 }
