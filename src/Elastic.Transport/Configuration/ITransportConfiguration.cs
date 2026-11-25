@@ -65,15 +65,15 @@ public interface ITransportConfiguration : IRequestConfiguration, IDisposable
 	bool DisableAutomaticProxyDetection { get; }
 
 	/// <summary>
-	/// KeepAliveInterval - specifies the interval, in milliseconds, between
+	/// KeepAliveInterval - specifies the interval between
 	/// when successive keep-alive packets are sent if no acknowledgement is
-	/// received.
+	/// received. Defaults to 1 second. After 5 unanswered probes the connection is dropped.
 	/// </summary>
 	TimeSpan? KeepAliveInterval { get; }
 
 	/// <summary>
-	/// KeepAliveTime - specifies the timeout, in milliseconds, with no
-	/// activity until the first keep-alive packet is sent.
+	/// KeepAliveTime - specifies the timeout with no
+	/// activity until the first keep-alive packet is sent. Defaults to 5 minutes.
 	/// </summary>
 	TimeSpan? KeepAliveTime { get; }
 
