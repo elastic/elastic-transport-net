@@ -2,6 +2,8 @@ name: Always be deploying
 
 on:
   pull_request:
+    # labeled and unlabeled run the API check again when someone adds or removes breaking-allowed
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths-ignore:
       - 'README.md'
       - '.editorconfig'
@@ -14,13 +16,15 @@ on:
     tags:
       - "*.*.*"
 
-permissions:
-  contents: write
-  issues: write
-  packages: write
+# nothing by default: each job asks for what it needs
+permissions: {}
 
 jobs:
   aot-validate:
+    # adding a label only runs the API check again
+    if: github.event.action != 'labeled' && github.event.action != 'unlabeled'
+    permissions:
+      contents: read # publishes and runs pull request code: no write token
     runs-on: ${{ matrix.os.runner }}
     strategy:
       fail-fast: false
@@ -37,6 +41,8 @@ jobs:
           binary: transport-aot-example.exe
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
 
     - uses: actions/setup-dotnet@v4
       with:
@@ -49,12 +55,16 @@ jobs:
       run: .artifacts/publish/transport-aot-example/release/${{ matrix.os.binary }}
 
   build:
+    permissions:
+      contents: read # builds and runs pull request code: no write token
+      pull-requests: write # the API comment and labels on a pull request
     runs-on: ubuntu-latest
     steps:
 
     - uses: actions/checkout@v4
       with:
         fetch-depth: 1
+        persist-credentials: false
 
     - run: |
         git fetch --prune --unshallow --tags
@@ -70,17 +80,79 @@ jobs:
     - run: ./build.sh build -s true
       name: Build
 
+    # What the pull request changes in the public API of the libraries, against their latest release on nuget.org, and
+    # whether the committed api/*.api files match the build: one comment, the release label, and a failure on a
+    # breaking change until someone adds breaking-allowed, or on files that are out of date.
+    - uses: nullean/assembly-differ@89b7a68a9f34173d57ceef47a73d505f751cb086 # 1.4.0
+      name: Report the public API changes
+      if: github.event_name == 'pull_request'
+      with:
+        version: 1.4.0
+        api-files: api
+        projects: |
+          src/Elastic.Transport/Elastic.Transport.csproj
+          src/Elastic.Transport.VirtualizedCluster/Elastic.Transport.VirtualizedCluster.csproj
+
+    # a push and a tag have no pull request to comment on, and still must not release out of date API files
+    - run: ./build.sh verifyapi -s true
+      name: Verify the committed public API files
+      if: github.event_name != 'pull_request'
+
     - run: ./build.sh test -s true
       name: Test
+      if: github.event.action != 'labeled' && github.event.action != 'unlabeled'
 
     - run: ./build.sh generatepackages -s true
       name: Generate local nuget packages
+      if: github.event.action != 'labeled' && github.event.action != 'unlabeled'
 
     - run: ./build.sh validatepackages -s true
       name: "validate *.npkg files that were created"
+      if: github.event.action != 'labeled' && github.event.action != 'unlabeled'
 
-    - run: ./build.sh generateapichanges -s true
-      name: "Inspect public API changes"
+    # The packages the publish job pushes: built and validated here, from the commit that was tested, and kept for a day.
+    - uses: actions/upload-artifact@v4
+      name: Keep the packages for the publish job
+      if: github.event_name == 'push'
+      with:
+        name: packages
+        path: build/output/*.nupkg
+        if-no-files-found: error
+        retention-days: 1
+
+  # The only job with a write token and the publishing secrets. It runs for a push to main and for a tag, never for a
+  # pull request, and only publishes what the build job built and tested.
+  publish:
+    needs: build
+    if: github.event_name == 'push'
+    permissions:
+      contents: write # the release for a tag
+      issues: write # as before the permissions moved here
+      packages: write # the canary packages
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+
+    - run: |
+        git fetch --prune --unshallow --tags
+        echo exit code $?
+        git tag --list
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: ./global.json
+        dotnet-version: |
+          6.x
+
+    - uses: actions/download-artifact@v4
+      name: Take the packages the build job kept
+      with:
+        name: packages
+        path: build/output
 
     - name: publish canary packages github package repository
       if: github.event_name == 'push' && startswith(github.ref, 'refs/heads')

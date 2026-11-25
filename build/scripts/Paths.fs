@@ -14,7 +14,6 @@ let SignKey = "069ca2728db333c1"
 
 let ValidateAssemblyName = false
 let IncludeGitHashInInformational = true
-let GenerateApiChanges = false
 
 let Root =
     let mutable dir = DirectoryInfo(".")
