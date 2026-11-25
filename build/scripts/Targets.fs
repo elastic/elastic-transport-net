@@ -92,11 +92,13 @@ let private apiArgs (mode:string list) =
 
 // writes the public API of the Release build to api/, run it after an intended API change and commit the result
 let private writeApi (arguments:ParseResults<Arguments>) =
+    restoreTools.Value |> ignore
     exec "dotnet" ["build"; "-c"; "Release"] |> ignore
     exec "dotnet" (apiArgs ["-o"; "api"]) |> ignore
 
 // fails when api/ no longer matches the Release build
 let private verifyApi (arguments:ParseResults<Arguments>) =
+    restoreTools.Value |> ignore
     exec "dotnet" ["build"; "-c"; "Release"] |> ignore
     exec "dotnet" (apiArgs ["--verify"; "api"]) |> ignore
 
